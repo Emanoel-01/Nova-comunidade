@@ -1,0 +1,6 @@
+{
+  "name": "Comunidade Nova",
+  "description": "Estrutura inicial do aplicativo Comunidade Nova em Angular com componentes standalone, serviço Supabase e shell de navegação.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
