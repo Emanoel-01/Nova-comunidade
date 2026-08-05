@@ -7,7 +7,6 @@ export default defineConfig(() => {
   return {
     plugins: [
       angular({
-        jit: true,
         tsconfig: './tsconfig.app.json',
       }),
       tailwindcss(),
