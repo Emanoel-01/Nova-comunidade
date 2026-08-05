@@ -1,1 +1,6 @@
-export { environment } from './environment.template';
+export const environment = {
+  production: false,
+  apiBaseUrl: "",
+  supabaseUrl: "",
+  supabaseAnonKey: "",
+};
