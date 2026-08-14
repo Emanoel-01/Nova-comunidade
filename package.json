@@ -17,6 +17,7 @@
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
+    "@angular/router": "^22.1.0",
     "@google/genai": "^2.4.0",
     "@supabase/supabase-js": "^2.112.1",
     "@tailwindcss/vite": "^4.1.14",

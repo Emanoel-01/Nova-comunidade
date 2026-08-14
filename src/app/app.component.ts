@@ -1,30 +1,47 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+
+interface NavItem {
+  label: string;
+  path: string;
+}
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="h-screen w-full bg-slate-50 text-slate-900 flex flex-col font-sans overflow-hidden select-none">
+    <div class="min-h-screen w-full bg-slate-50 text-slate-900 flex flex-col font-sans select-none">
       <!-- Header Fixo no Topo (Sleek Interface) -->
-      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 shrink-0 z-50">
+      <header class="sticky top-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 shrink-0 z-50">
         <!-- Logo -->
-        <div class="text-[20px] font-bold text-slate-900 tracking-tight">
+        <a routerLink="/" class="text-[20px] font-bold text-slate-900 tracking-tight cursor-pointer">
           Comunidade Nova
-        </div>
+        </a>
 
         <!-- Menu de Navegação Horizontal (Desktop) -->
         <nav class="hidden md:flex items-center gap-6">
-          @for (item of navItems(); track item; let first = $first) {
-            <button
-              type="button"
-              [class]="item === 'Admin' 
-                ? 'bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer' 
-                : (first ? 'text-[13px] font-semibold text-slate-900 transition-colors cursor-pointer' : 'text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer')"
-            >
-              {{ item }}
-            </button>
+          @for (item of navItems(); track item.path) {
+            @if (item.label === 'Admin') {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="ring-2 ring-slate-400"
+                [routerLinkActiveOptions]="{exact: true}"
+                class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer inline-block"
+              >
+                {{ item.label }}
+              </a>
+            } @else {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="!font-semibold !text-slate-900"
+                [routerLinkActiveOptions]="{exact: true}"
+                class="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+              >
+                {{ item.label }}
+              </a>
+            }
           }
         </nav>
 
@@ -51,69 +68,45 @@ import { CommonModule } from '@angular/common';
       @if (isMobileMenuOpen()) {
         <div class="fixed top-16 left-0 right-0 bg-white border-b border-slate-200 z-40 md:hidden py-4 px-6 shadow-md">
           <nav class="flex flex-col space-y-2">
-            @for (item of navItems(); track item) {
-              <button
-                type="button"
-                class="text-left py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
+            @for (item of navItems(); track item.path) {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="!font-semibold !text-slate-900"
+                [routerLinkActiveOptions]="{exact: true}"
+                (click)="closeMobileMenu()"
+                class="text-left py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors cursor-pointer block"
               >
-                @if (item === 'Admin') {
+                @if (item.label === 'Admin') {
                   <span class="bg-slate-900 text-white px-3 py-1 rounded text-xs font-semibold inline-block">
                     Admin
                   </span>
                 } @else {
-                  {{ item }}
+                  {{ item.label }}
                 }
-              </button>
+              </a>
             }
           </nav>
         </div>
       }
 
       <!-- Corpo da Página Principal -->
-      <main class="flex-1 flex flex-col items-center justify-center relative p-6">
-        <!-- Caixa Central de Construção -->
-        <div class="text-center max-w-xl px-4">
-          <div class="inline-block px-3 py-1 bg-slate-100 border border-slate-200 rounded-full text-[12px] font-semibold text-slate-600 uppercase tracking-widest mb-4">
-            Foundation v1.0.0
-          </div>
-          <h1 class="text-3xl md:text-4xl font-light text-slate-800 tracking-tight">
-            Comunidade Nova — em construção
-          </h1>
-          <p class="text-slate-400 text-base mt-3 font-normal">
-            Arquitetura Angular 20 Signals + Supabase Standalone
-          </p>
-        </div>
-
-        <!-- Tech Stack Badges (Rodapé Elegante) -->
-        <div class="absolute bottom-8 left-6 md:left-10 right-6 md:right-10 flex flex-wrap items-center gap-6 justify-between md:justify-start">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">Angular Signals Ready</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-            <span class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">Supabase Auth Active</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-            <span class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">Standalone Components</span>
-          </div>
-        </div>
+      <main class="flex-1">
+        <router-outlet></router-outlet>
       </main>
     </div>
   `
 })
 export class AppComponent {
-  // Os 8 itens de menu solicitados
-  readonly navItems = signal<string[]>([
-    'Home',
-    'Amorim Arquitetura',
-    'Amorim Tech',
-    'Amorim Academy',
-    'Blog',
-    'Comunidade',
-    'Contato',
-    'Admin'
+  // Os 8 itens de menu mapeados com rota
+  readonly navItems = signal<NavItem[]>([
+    { label: 'Home', path: '/' },
+    { label: 'Amorim Arquitetura', path: '/amorim-arquitetura' },
+    { label: 'Amorim Tech', path: '/amorim-tech' },
+    { label: 'Amorim Academy', path: '/amorim-academy' },
+    { label: 'Blog', path: '/blog' },
+    { label: 'Comunidade', path: '/comunidade' },
+    { label: 'Contato', path: '/contato' },
+    { label: 'Admin', path: '/admin' }
   ]);
 
   readonly isMobileMenuOpen = signal<boolean>(false);
@@ -121,4 +114,9 @@ export class AppComponent {
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update(open => !open);
   }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen.set(false);
+  }
 }
+
