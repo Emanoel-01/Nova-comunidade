@@ -65,7 +65,7 @@ interface Institution {
     </section>
 
     <!-- Seção 2: Instituições -->
-    <section class="bg-white py-16 px-4 sm:px-6 lg:px-8 border-b border-slate-100">
+    <section id="clientes" class="bg-white py-16 px-4 sm:px-6 lg:px-8 border-b border-slate-100">
       <div class="max-w-7xl mx-auto">
         <h2 class="text-center text-xs md:text-sm font-bold tracking-widest text-slate-400 uppercase mb-12">
           Instituições que Confiam no Nosso Trabalho

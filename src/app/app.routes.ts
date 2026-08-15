@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './components/home.component';
 import { PlaceholderPageComponent } from './components/placeholder-page.component';
+import { AmorimArquiteturaComponent } from './components/amorim-arquitetura.component';
 
 export const routes: Routes = [
   {
@@ -9,8 +10,7 @@ export const routes: Routes = [
   },
   {
     path: 'amorim-arquitetura',
-    component: PlaceholderPageComponent,
-    data: { title: 'Amorim Arquitetura' },
+    component: AmorimArquiteturaComponent,
   },
   {
     path: 'amorim-tech',
