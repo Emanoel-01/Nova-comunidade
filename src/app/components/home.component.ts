@@ -285,9 +285,12 @@ interface Institution {
           <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
             <div>
               <div class="h-20 flex items-center mb-6">
-                <span class="text-2xl font-black text-emerald-600 tracking-tight">
-                  Amorim Academy
-                </span>
+                <img
+                  src="https://drive.google.com/uc?export=view&id=1GzJ8IxQKiNZcYR3j2Gilyc9imLcikY-x"
+                  alt="Amorim Academy"
+                  class="max-h-16 w-auto object-contain"
+                  referrerpolicy="no-referrer"
+                />
               </div>
               <h3 class="text-xl font-bold text-slate-900 mb-3">Amorim Academy</h3>
               <p class="text-slate-600 text-sm leading-relaxed mb-6">

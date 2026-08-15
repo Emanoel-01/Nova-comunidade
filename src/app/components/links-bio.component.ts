@@ -132,8 +132,13 @@ import { RouterModule } from '@angular/router';
               id="link-amorim-academy"
               class="group flex items-center gap-3.5 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 border-l-4 border-l-[#4a8251] transition-all duration-200 active:scale-[0.99]"
             >
-              <div class="w-12 h-12 rounded-xl bg-[#4a8251]/10 text-[#4a8251] flex items-center justify-center shrink-0 border border-[#4a8251]/20 font-black text-xs text-center leading-none p-1">
-                Amorim<br/>Academy
+              <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 border border-[#4a8251]/20 overflow-hidden p-1">
+                <img
+                  src="https://drive.google.com/uc?export=view&id=1GzJ8IxQKiNZcYR3j2Gilyc9imLcikY-x"
+                  alt="Amorim Academy"
+                  class="w-full h-full object-contain"
+                  referrerpolicy="no-referrer"
+                />
               </div>
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-bold text-slate-900 group-hover:text-[#4a8251] transition-colors leading-tight">
