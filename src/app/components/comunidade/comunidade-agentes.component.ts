@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { ReajusteContratoComponent } from './agentes/reajuste-contrato.component';
 import { BibliotecaPromptsComponent } from './agentes/biblioteca-prompts.component';
 import { SkillsCatalogoComponent } from './agentes/skills-catalogo.component';
+import { ChecklistLicitacaoComponent } from './agentes/checklist-licitacao.component';
 
-export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompts' | 'skills-catalogo';
+export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompts' | 'skills-catalogo' | 'checklist-licitacao';
 
 @Component({
   selector: 'app-comunidade-agentes',
   standalone: true,
-  imports: [CommonModule, ReajusteContratoComponent, BibliotecaPromptsComponent, SkillsCatalogoComponent],
+  imports: [CommonModule, ReajusteContratoComponent, BibliotecaPromptsComponent, SkillsCatalogoComponent, ChecklistLicitacaoComponent],
   template: `
     <div class="space-y-6">
 
@@ -33,19 +34,19 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
               </h3>
 
               <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Ferramentas, bibliotecas de prompts e skills de automação para agilizar o trabalho técnico.
+                Ferramentas, bibliotecas de prompts, checklists e skills de automação para agilizar o trabalho técnico.
               </p>
             </div>
 
             <!-- Contador de Ferramentas -->
             <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
               <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-                3
+                4
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos Ativos</div>
                 <div class="text-[11px] text-indigo-200">
-                  4 ferramentas no roadmap
+                  Prontos para uso
                 </div>
               </div>
             </div>
@@ -155,7 +156,7 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </div>
           </div>
 
-          <!-- CARD 3: SKILLS CLAUDE (ATIVO - NOVO) -->
+          <!-- CARD 3: SKILLS CLAUDE (ATIVO) -->
           <div class="bg-white rounded-3xl p-6 border-2 border-[#B5642A]/40 shadow-sm hover:shadow-xl hover:border-[#B5642A] transition-all flex flex-col justify-between group relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#B5642A]/15 to-transparent rounded-bl-full pointer-events-none"></div>
 
@@ -205,42 +206,52 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </div>
           </div>
 
-          <!-- CARD 4: ANÁLISE DE EDITAIS (EM BREVE) -->
-          <div class="bg-white/80 rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between opacity-80 cursor-not-allowed">
+          <!-- CARD 4: CHECKLIST DE LICITAÇÃO (ATIVO) -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-emerald-200 shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
             <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge -->
               <div class="flex items-center justify-between">
-                <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-emerald-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-wider">
-                  Em breve
+                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  Disponível
                 </span>
               </div>
 
+              <!-- Conteúdo -->
               <div class="space-y-2">
-                <h4 class="text-lg font-black text-slate-700">
-                  Análise de Editais
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
+                  Checklist de Licitação
                 </h4>
-                <p class="text-xs text-slate-500 leading-relaxed">
-                  Checklist de conformidade e extração de requisitos críticos de editais públicos de arquitetura e engenharia.
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Confira a documentação de habilitação exigida pela Lei 14.133/2021 antes de submeter sua proposta em editais.
                 </p>
               </div>
 
+              <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">Triagem de Riscos</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">Qualificação Técnica</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Lei 14.133/2021</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">4 Categorias</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Barra de Progresso</span>
               </div>
             </div>
 
+            <!-- Botão de Ação -->
             <div class="pt-6">
               <button
                 type="button"
-                disabled
-                class="w-full py-3 px-4 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed text-center"
+                (click)="abrirFerramenta('checklist-licitacao')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
               >
-                Em Desenvolvimento
+                <span>Abrir Checklist</span>
+                <svg class="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </button>
             </div>
           </div>
@@ -320,6 +331,31 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
 
           <!-- Componente do Catálogo de Skills -->
           <app-skills-catalogo></app-skills-catalogo>
+        </div>
+
+      } @else if (ferramentaAtiva() === 'checklist-licitacao') {
+
+        <!-- 6. Visualização do Módulo: Checklist de Licitação -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: Checklist de Habilitação (Lei 14.133/2021)
+            </span>
+          </div>
+
+          <!-- Componente do Checklist de Licitação -->
+          <app-checklist-licitacao></app-checklist-licitacao>
         </div>
 
       }
