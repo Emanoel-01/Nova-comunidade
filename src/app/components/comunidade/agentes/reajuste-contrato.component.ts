@@ -19,6 +19,7 @@ export interface IndiceMensal {
 }
 
 export type MesChave = keyof IndiceMensal;
+export type TipoDocumento = 'parecer' | 'oficio' | 'resumo' | 'pontos' | 'estruturado';
 
 export const BANCO_DE_INDICES: Record<string, Record<number, IndiceMensal>> = {
   // Coluna 35 (Edificação):
@@ -92,7 +93,7 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
             </h3>
 
             <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Cálculo automatizado do índice de reajustamento por FGV/SINAENCO (Coluna 35 - Edificação ou Coluna 39 - Consultoria e Projetos) com geração do parecer formal em PDF no padrão executivo da Amorim.
+              Cálculo automatizado do índice de reajustamento por FGV/SINAENCO (Coluna 35 - Edificação ou Coluna 39 - Consultoria e Projetos) com geração e revisão editável de 4 tipos de documentos e relatório técnico em PDF.
             </p>
           </div>
 
@@ -113,506 +114,749 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
         </div>
       </div>
 
-      <!-- 2. Formulário em 3 Blocos Estruturados -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        <!-- Formulário Principal (8 Colunas) -->
-        <div class="lg:col-span-8 space-y-6">
+      <!-- ===================================================================== -->
+      <!-- FLUXO ETAPA 1: FORMULÁRIO E CÁLCULO PRINCIPAL -->
+      <!-- ===================================================================== -->
+      @if (etapa() === 'formulario') {
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- Formulário Principal (8 Colunas) -->
+          <div class="lg:col-span-8 space-y-6">
 
-          <!-- ========================================================= -->
-          <!-- BLOCO A: IDENTIFICAÇÃO DO CONTRATO -->
-          <!-- ========================================================= -->
-          <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-            
-            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-              <div class="w-8 h-8 rounded-xl bg-[#132A41] text-white flex items-center justify-center font-black text-xs">
-                A
-              </div>
-              <div>
-                <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider">
-                  Identificação do Contrato
-                </h4>
-                <p class="text-xs text-slate-500">Dados cadastrais do edital e das partes envolvidas</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Edital -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">Edital / Processo</label>
-                <input
-                  type="text"
-                  [value]="edital()"
-                  (input)="edital.set($any($event.target).value)"
-                  placeholder="Ex: 001/2018"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-
-              <!-- Modalidade -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">Modalidade de Licitação</label>
-                <input
-                  type="text"
-                  [value]="modalidade()"
-                  (input)="modalidade.set($any($event.target).value)"
-                  placeholder="Ex: Tomada de Preço / Concorrência Pública"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-
-              <!-- Contratante -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">Contratante (Órgão / Cliente)</label>
-                <input
-                  type="text"
-                  [value]="contratante()"
-                  (input)="contratante.set($any($event.target).value)"
-                  placeholder="Ex: Autarquia Federal / Prefeitura Municipal"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-
-              <!-- Número do Contrato -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">Número do Contrato</label>
-                <input
-                  type="text"
-                  [value]="numeroContrato()"
-                  (input)="numeroContrato.set($any($event.target).value)"
-                  placeholder="Ex: 042/2018"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-
-              <!-- Empresa Contratada -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">Empresa Contratada</label>
-                <input
-                  type="text"
-                  [value]="empresaContratada()"
-                  (input)="empresaContratada.set($any($event.target).value)"
-                  placeholder="Razão social da empresa contratada"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-
-              <!-- CNPJ -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">CNPJ da Contratada</label>
-                <input
-                  type="text"
-                  [value]="cnpjContratada()"
-                  (input)="cnpjContratada.set($any($event.target).value)"
-                  placeholder="00.000.000/0000-00"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-            </div>
-
-            <!-- Objeto do Contrato -->
-            <div class="space-y-1.5">
-              <label class="text-xs font-bold text-slate-700">Objeto do Contrato</label>
-              <textarea
-                rows="3"
-                [value]="objeto()"
-                (input)="objeto.set($any($event.target).value)"
-                placeholder="Descrição técnica dos serviços contratados..."
-                class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-              ></textarea>
-            </div>
-
-          </div>
-
-          <!-- ========================================================= -->
-          <!-- BLOCO B: PARÂMETROS DO CÁLCULO E ÍNDICES FGV -->
-          <!-- ========================================================= -->
-          <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-            
-            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-              <div class="w-8 h-8 rounded-xl bg-[#B5642A] text-white flex items-center justify-center font-black text-xs">
-                B
-              </div>
-              <div>
-                <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider">
-                  Parâmetros do Cálculo e Índices FGV
-                </h4>
-                <p class="text-xs text-slate-500">Seleção da coluna setorial, datas-base e valor medido</p>
-              </div>
-            </div>
-
-            <!-- Categoria do Índice -->
-            <div class="space-y-1.5">
-              <label class="text-xs font-bold text-slate-700">Categoria do Índice (FGV)</label>
-              <select
-                [value]="categoriaIndice()"
-                (change)="onCategoriaChange($any($event.target).value)"
-                class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all font-semibold"
-              >
-                <option value="coluna39">Consultoria — Projeto e Fiscalização (Coluna 39)</option>
-                <option value="coluna35">Edificação — Execução de Obra (Coluna 35 / INCC)</option>
-              </select>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Período da Medição (Texto Livre ou Data Inicial e Final) -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">Período da Medição (Texto ou Intervalo)</label>
-                <input
-                  type="text"
-                  [value]="periodoMedicao()"
-                  (input)="periodoMedicao.set($any($event.target).value)"
-                  placeholder="Ex: 01/09/2020 a 30/09/2020"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-
-              <!-- Número da Medição -->
-              <div class="space-y-1.5">
-                <label class="text-xs font-bold text-slate-700">Número da Medição</label>
-                <input
-                  type="text"
-                  [value]="numeroMedicao()"
-                  (input)="numeroMedicao.set($any($event.target).value)"
-                  placeholder="Ex: 22"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-            </div>
-
-            <!-- Seleção Mês/Ano Inicial (Io) e Final (Ii) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-              
-              <!-- Bloco Io (Mês Base da Proposta) -->
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-slate-800 uppercase tracking-wider">
-                    Mês/Ano Inicial (Io — Base)
-                  </span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
-                    Proposta
-                  </span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                  <select
-                    [value]="mesIo()"
-                    (change)="onMesIoChange($any($event.target).value)"
-                    class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
-                  >
-                    @for (m of mesesDisponiveis; track m.id) {
-                      <option [value]="m.id">{{ m.nome }}</option>
-                    }
-                  </select>
-
-                  <select
-                    [value]="anoIo()"
-                    (change)="onAnoIoChange(+$any($event.target).value)"
-                    class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
-                  >
-                    @for (ano of anosDisponiveis; track ano) {
-                      <option [value]="ano">{{ ano }}</option>
-                    }
-                  </select>
-                </div>
-
-                <div class="space-y-1">
-                  <label class="text-[11px] font-bold text-slate-600">Valor do Índice Io (Editável)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    [value]="valorIo()"
-                    (input)="valorIo.set(+$any($event.target).value || 0)"
-                    placeholder="Ex: 223.666"
-                    class="w-full bg-white text-xs text-slate-900 font-bold rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <!-- Bloco Ii (Mês da Medição / Reajuste) -->
-              <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-slate-800 uppercase tracking-wider">
-                    Mês/Ano Final (Ii — Reajuste)
-                  </span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#B5642A]/20 text-[#B5642A]">
-                    Medição
-                  </span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                  <select
-                    [value]="mesIi()"
-                    (change)="onMesIiChange($any($event.target).value)"
-                    class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
-                  >
-                    @for (m of mesesDisponiveis; track m.id) {
-                      <option [value]="m.id">{{ m.nome }}</option>
-                    }
-                  </select>
-
-                  <select
-                    [value]="anoIi()"
-                    (change)="onAnoIiChange(+$any($event.target).value)"
-                    class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
-                  >
-                    @for (ano of anosDisponiveis; track ano) {
-                      <option [value]="ano">{{ ano }}</option>
-                    }
-                  </select>
-                </div>
-
-                <div class="space-y-1">
-                  <label class="text-[11px] font-bold text-slate-600">Valor do Índice Ii (Editável)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    [value]="valorIi()"
-                    (input)="valorIi.set(+$any($event.target).value || 0)"
-                    placeholder="Ex: 243.718"
-                    class="w-full bg-white text-xs text-slate-900 font-bold rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden"
-                  />
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Valor Total da Medição (V) -->
-            <div class="space-y-1.5">
-              <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
-                <span>Valor Total da Medição — V (R$)</span>
-                <span class="text-[11px] text-slate-400 font-normal">Valor a preços iniciais</span>
-              </label>
-              <div class="relative">
-                <span class="absolute left-3.5 top-3 text-xs sm:text-sm font-bold text-slate-400">R$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  [value]="valorMedicao()"
-                  (input)="valorMedicao.set(+$any($event.target).value || 0)"
-                  placeholder="Ex: 22083.64"
-                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 font-bold rounded-xl pl-10 pr-4 py-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
-                />
-              </div>
-            </div>
-
-            <!-- Aviso da Fonte dos Índices -->
-            <p class="text-[11px] text-slate-500 flex items-center gap-1.5 pt-1">
-              <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <span>Índices conforme SINAENCO — <a href="https://sinaenco.com.br/indices" target="_blank" rel="noopener noreferrer" class="underline text-indigo-600 hover:text-indigo-800">sinaenco.com.br/indices</a>. Atualização automática em desenvolvimento.</span>
-            </p>
-
-          </div>
-
-          <!-- ========================================================= -->
-          <!-- BLOCO C: RETENÇÕES NA FONTE (OPCIONAL) -->
-          <!-- ========================================================= -->
-          <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-            
-            <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-xl bg-slate-800 text-white flex items-center justify-center font-black text-xs">
-                  C
+            <!-- BLOCO A: IDENTIFICAÇÃO DO CONTRATO -->
+            <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
+              <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <div class="w-8 h-8 rounded-xl bg-[#132A41] text-white flex items-center justify-center font-black text-xs">
+                  A
                 </div>
                 <div>
                   <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider">
-                    Retenções Tributárias na Fonte
+                    Identificação do Contrato
                   </h4>
-                  <p class="text-xs text-slate-500">Cálculo de deduções fiscais incidentes sobre o reajuste</p>
+                  <p class="text-xs text-slate-500">Dados cadastrais do edital e das partes envolvidas</p>
                 </div>
               </div>
 
-              <!-- Checkbox Toggle -->
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  [checked]="incluirRetencoes()"
-                  (change)="incluirRetencoes.set(!incluirRetencoes())"
-                  class="sr-only peer"
-                />
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#B5642A]"></div>
-              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Edital -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">Edital / Processo</label>
+                  <input
+                    type="text"
+                    [value]="edital()"
+                    (input)="edital.set($any($event.target).value)"
+                    placeholder="Ex: 001/2018"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+
+                <!-- Modalidade -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">Modalidade de Licitação</label>
+                  <input
+                    type="text"
+                    [value]="modalidade()"
+                    (input)="modalidade.set($any($event.target).value)"
+                    placeholder="Ex: Tomada de Preço / Concorrência Pública"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+
+                <!-- Contratante -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">Contratante (Órgão / Cliente)</label>
+                  <input
+                    type="text"
+                    [value]="contratante()"
+                    (input)="contratante.set($any($event.target).value)"
+                    placeholder="Ex: Autarquia Federal / Prefeitura Municipal"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+
+                <!-- Número do Contrato -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">Número do Contrato</label>
+                  <input
+                    type="text"
+                    [value]="numeroContrato()"
+                    (input)="numeroContrato.set($any($event.target).value)"
+                    placeholder="Ex: 042/2018"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+
+                <!-- Empresa Contratada -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">Empresa Contratada</label>
+                  <input
+                    type="text"
+                    [value]="empresaContratada()"
+                    (input)="empresaContratada.set($any($event.target).value)"
+                    placeholder="Razão social da empresa contratada"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+
+                <!-- CNPJ Contratada -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">CNPJ da Contratada</label>
+                  <input
+                    type="text"
+                    [value]="cnpjContratada()"
+                    (input)="cnpjContratada.set($any($event.target).value)"
+                    placeholder="00.000.000/0000-00"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+              </div>
+
+              <!-- Objeto do Contrato -->
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-700">Objeto do Contrato</label>
+                <textarea
+                  rows="3"
+                  [value]="objeto()"
+                  (input)="objeto.set($any($event.target).value)"
+                  placeholder="Descrição técnica dos serviços contratados..."
+                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                ></textarea>
+              </div>
             </div>
 
-            @if (incluirRetencoes()) {
-              <div class="space-y-4 pt-1 animate-fadeIn">
-                <p class="text-xs text-slate-600">
-                  Informe ou ajuste os percentuais de retenção aplicáveis sobre o montante bruto do reajuste:
-                </p>
-
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                  <!-- PIS -->
-                  <div class="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label class="text-[11px] font-bold text-slate-700">PIS (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      [value]="aliquotaPis()"
-                      (input)="aliquotaPis.set(+$any($event.target).value || 0)"
-                      class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
-                    />
-                  </div>
-
-                  <!-- CSLL -->
-                  <div class="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label class="text-[11px] font-bold text-slate-700">CSLL (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      [value]="aliquotaCsll()"
-                      (input)="aliquotaCsll.set(+$any($event.target).value || 0)"
-                      class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
-                    />
-                  </div>
-
-                  <!-- IRPJ -->
-                  <div class="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label class="text-[11px] font-bold text-slate-700">IRPJ (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      [value]="aliquotaIrpj()"
-                      (input)="aliquotaIrpj.set(+$any($event.target).value || 0)"
-                      class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
-                    />
-                  </div>
-
-                  <!-- COFINS -->
-                  <div class="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label class="text-[11px] font-bold text-slate-700">COFINS (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      [value]="aliquotaCofins()"
-                      (input)="aliquotaCofins.set(+$any($event.target).value || 0)"
-                      class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
-                    />
-                  </div>
-
-                  <!-- ISS -->
-                  <div class="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label class="text-[11px] font-bold text-slate-700">ISS (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      [value]="aliquotaIss()"
-                      (input)="aliquotaIss.set(+$any($event.target).value || 0)"
-                      class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
-                    />
-                  </div>
+            <!-- BLOCO B: PARÂMETROS DO CÁLCULO -->
+            <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
+              <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <div class="w-8 h-8 rounded-xl bg-[#B5642A] text-white flex items-center justify-center font-black text-xs">
+                  B
                 </div>
-
-                <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium flex items-center justify-between">
-                  <span>Alíquota Total Acumulada de Retenções:</span>
-                  <span class="font-black">{{ totalAliquotaRetencoes() | number:'1.2-2' }}%</span>
+                <div>
+                  <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider">
+                    Parâmetros do Cálculo
+                  </h4>
+                  <p class="text-xs text-slate-500">Seleção dos índices FGV/SINAENCO e valores da medição</p>
                 </div>
               </div>
-            }
+
+              <!-- Categoria do Índice -->
+              <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-700">Categoria do Índice (FGV)</label>
+                <select
+                  [value]="categoriaIndice()"
+                  (change)="onCategoriaChange($any($event.target).value)"
+                  class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all font-semibold"
+                >
+                  <option value="coluna39">Consultoria — Projeto e Fiscalização (Coluna 39)</option>
+                  <option value="coluna35">Edificação — Execução de Obra (Coluna 35 - INCC)</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Período da Medição -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">Período da Medição (Texto ou Intervalo)</label>
+                  <input
+                    type="text"
+                    [value]="periodoMedicao()"
+                    (input)="periodoMedicao.set($any($event.target).value)"
+                    placeholder="Ex: 01/09/2020 a 30/09/2020"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+
+                <!-- Número da Medição -->
+                <div class="space-y-1.5">
+                  <label class="text-xs font-bold text-slate-700">Número da Medição</label>
+                  <input
+                    type="text"
+                    [value]="numeroMedicao()"
+                    (input)="numeroMedicao.set($any($event.target).value)"
+                    placeholder="Ex: 22"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+              </div>
+
+              <!-- Seletores dos Índices Io e Ii -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                
+                <!-- Índice Inicial Io -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span>📌 Índice Inicial (Io) — Base da Proposta</span>
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <select
+                      [value]="mesIo()"
+                      (change)="onMesIoChange($any($event.target).value)"
+                      class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
+                    >
+                      @for (m of mesesDisponiveis; track m.id) {
+                        <option [value]="m.id">{{ m.nome }}</option>
+                      }
+                    </select>
+
+                    <select
+                      [value]="anoIo()"
+                      (change)="onAnoIoChange(+$any($event.target).value)"
+                      class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
+                    >
+                      @for (ano of anosDisponiveis; track ano) {
+                        <option [value]="ano">{{ ano }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-semibold text-slate-600">Valor do Índice Io</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      [value]="valorIo()"
+                      (input)="valorIo.set(+$any($event.target).value || 0)"
+                      placeholder="Ex: 223.666"
+                      class="w-full bg-white text-xs text-slate-900 font-bold rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <!-- Índice Final Ii -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span>🎯 Índice de Reajuste (Ii) — Medição</span>
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <select
+                      [value]="mesIi()"
+                      (change)="onMesIiChange($any($event.target).value)"
+                      class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
+                    >
+                      @for (m of mesesDisponiveis; track m.id) {
+                        <option [value]="m.id">{{ m.nome }}</option>
+                      }
+                    </select>
+
+                    <select
+                      [value]="anoIi()"
+                      (change)="onAnoIiChange(+$any($event.target).value)"
+                      class="bg-white text-xs text-slate-900 rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden font-medium"
+                    >
+                      @for (ano of anosDisponiveis; track ano) {
+                        <option [value]="ano">{{ ano }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-semibold text-slate-600">Valor do Índice Ii</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      [value]="valorIi()"
+                      (input)="valorIi.set(+$any($event.target).value || 0)"
+                      placeholder="Ex: 243.718"
+                      class="w-full bg-white text-xs text-slate-900 font-bold rounded-lg p-2.5 border border-slate-300 focus:border-[#132A41] outline-hidden"
+                    />
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Texto explicativo da fonte dos índices -->
+              <p class="text-[11px] text-slate-500 italic">
+                Índices conforme SINAENCO — sinaenco.com.br/indices. Atualização automática em desenvolvimento.
+              </p>
+
+              <!-- Valor Total da Medição V -->
+              <div class="space-y-1.5 pt-2">
+                <label class="text-xs font-bold text-slate-700">Valor Total da Medição a Preços Iniciais (V em R$)</label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-3 text-xs font-bold text-slate-400">R$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    [value]="valorMedicao()"
+                    (input)="valorMedicao.set(+$any($event.target).value || 0)"
+                    placeholder="Ex: 22083.64"
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 font-bold rounded-xl pl-10 pr-4 py-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- BLOCO C: RETENÇÕES NA FONTE -->
+            <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800 text-white flex items-center justify-center font-black text-xs">
+                    C
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider">
+                      Retenções na Fonte (Opcional)
+                    </h4>
+                    <p class="text-xs text-slate-500">Cálculo de deduções tributárias sobre o valor do reajuste</p>
+                  </div>
+                </div>
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    [checked]="incluirRetencoes()"
+                    (change)="incluirRetencoes.set(!incluirRetencoes())"
+                    class="w-4 h-4 text-[#132A41] rounded-md border-slate-300 focus:ring-[#132A41]"
+                  />
+                  <span class="text-xs font-bold text-slate-700 select-none">Incluir Retenções</span>
+                </label>
+              </div>
+
+              @if (incluirRetencoes()) {
+                <div class="space-y-4 pt-1 animate-fadeIn">
+                  <p class="text-xs text-slate-600">
+                    Defina as alíquotas percentuais a serem retidas na fonte sobre o montante apurado de reajuste:
+                  </p>
+
+                  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div class="space-y-1">
+                      <label class="text-[11px] font-bold text-slate-700">PIS (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        [value]="aliquotaPis()"
+                        (input)="aliquotaPis.set(+$any($event.target).value || 0)"
+                        class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
+                      />
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="text-[11px] font-bold text-slate-700">CSLL (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        [value]="aliquotaCsll()"
+                        (input)="aliquotaCsll.set(+$any($event.target).value || 0)"
+                        class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
+                      />
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="text-[11px] font-bold text-slate-700">IRPJ (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        [value]="aliquotaIrpj()"
+                        (input)="aliquotaIrpj.set(+$any($event.target).value || 0)"
+                        class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
+                      />
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="text-[11px] font-bold text-slate-700">COFINS (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        [value]="aliquotaCofins()"
+                        (input)="aliquotaCofins.set(+$any($event.target).value || 0)"
+                        class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
+                      />
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="text-[11px] font-bold text-slate-700">ISS (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        [value]="aliquotaIss()"
+                        (input)="aliquotaIss.set(+$any($event.target).value || 0)"
+                        class="w-full bg-white text-xs font-bold text-slate-900 rounded-lg p-2 border border-slate-300 outline-hidden"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium flex items-center justify-between">
+                    <span>Alíquota Total Acumulada de Retenções:</span>
+                    <span class="font-black">{{ totalAliquotaRetencoes() | number:'1.2-2' }}%</span>
+                  </div>
+                </div>
+              }
+
+            </div>
+
+          </div>
+
+          <!-- Painel Lateral de Resultados & Geração do Documento (4 Colunas) -->
+          <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
+
+            <!-- Card de Resultados do Cálculo -->
+            <div class="bg-[#132A41] text-white rounded-3xl p-6 border border-slate-700 shadow-md space-y-5">
+              
+              <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+                <span class="text-xs font-black text-[#E59866] uppercase tracking-wider">
+                  Resumo do Cálculo
+                </span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white">
+                  Fórmula R = (Ii - Io)/Io × V
+                </span>
+              </div>
+
+              <!-- Fator de Reajuste -->
+              <div class="space-y-1">
+                <div class="text-[11px] text-slate-300 font-semibold">Fator de Reajuste (8 decimais)</div>
+                <div class="text-xl font-mono font-black text-white tracking-wider">
+                  {{ fatorCalculado() | number:'1.8-8' }}
+                </div>
+                <div class="text-xs text-[#E59866] font-bold">
+                  Variação: +{{ percentualCalculado() | number:'1.2-2' }}%
+                </div>
+              </div>
+
+              <!-- Valor Bruto do Reajuste -->
+              <div class="p-4 rounded-2xl bg-white/10 border border-white/10 space-y-1">
+                <div class="text-xs text-slate-300 font-medium">Total do Reajuste (Bruto)</div>
+                <div class="text-2xl sm:text-3xl font-black text-[#E59866]">
+                  R$ {{ valorReajusteCalculado() | number:'1.2-2' }}
+                </div>
+              </div>
+
+              <!-- Valor Total com Reajuste -->
+              <div class="space-y-1 pt-1">
+                <div class="text-xs text-slate-300 font-medium">Valor Total da Medição + Reajuste</div>
+                <div class="text-lg font-black text-white">
+                  R$ {{ valorTotalCalculado() | number:'1.2-2' }}
+                </div>
+              </div>
+
+              <!-- Seção de Retenções no Resumo -->
+              @if (incluirRetencoes() && valorReajusteCalculado() > 0) {
+                <div class="pt-4 border-t border-slate-700 space-y-2 text-xs">
+                  <div class="flex justify-between text-slate-300">
+                    <span>(-) Total Retenções ({{ totalAliquotaRetencoes() | number:'1.2-2' }}%):</span>
+                    <span class="font-bold text-red-300">- R$ {{ totalRetencoesCalculado() | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="flex justify-between text-white font-black text-sm pt-1 border-t border-slate-700/60">
+                    <span>Reajuste Líquido:</span>
+                    <span class="text-emerald-400">R$ {{ reajusteLiquidoCalculado() | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              }
+
+              <!-- Botão Principal: Abrir Seleção de Documento -->
+              <button
+                type="button"
+                (click)="abrirSelecaoDocumento()"
+                [disabled]="valorIo() <= 0 || valorIi() <= 0 || valorMedicao() <= 0"
+                [class]="valorIo() > 0 && valorIi() > 0 && valorMedicao() > 0
+                  ? 'bg-[#B5642A] hover:bg-[#9c5220] text-white shadow-lg shadow-[#B5642A]/30 cursor-pointer'
+                  : 'bg-slate-700 text-slate-400 cursor-not-allowed'"
+                class="w-full py-4 px-5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2.5"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Gerar Documento</span>
+              </button>
+
+            </div>
+
+            <!-- Card Informativo com a Fórmula Oficial -->
+            <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3 text-xs text-slate-600">
+              <h5 class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <span>📐 Memória da Fórmula Legal</span>
+              </h5>
+              <div class="p-3 bg-slate-50 rounded-xl font-mono text-center text-slate-800 font-bold text-xs border border-slate-200">
+                R = [(Ii - Io) / Io] × V
+              </div>
+              <ul class="space-y-1 text-[11px] text-slate-500">
+                <li>• <strong>R</strong> = Valor do reajuste financeiro procurado</li>
+                <li>• <strong>Io</strong> = Índice no mês de apresentação da proposta</li>
+                <li>• <strong>Ii</strong> = Índice no mês de execução da medição</li>
+                <li>• <strong>V</strong> = Valor a preços iniciais dos serviços medidos</li>
+              </ul>
+            </div>
 
           </div>
 
         </div>
+      }
 
-        <!-- Painel Lateral de Resultados & Geração do PDF (4 Colunas) -->
-        <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
-
-          <!-- Card de Resultados do Cálculo -->
-          <div class="bg-[#132A41] text-white rounded-3xl p-6 border border-slate-700 shadow-md space-y-5">
-            
-            <div class="flex items-center justify-between pb-3 border-b border-slate-700">
-              <span class="text-xs font-black text-[#E59866] uppercase tracking-wider">
-                Resumo do Cálculo
-              </span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white">
-                Fórmula R = (Ii - Io)/Io × V
-              </span>
+      <!-- ===================================================================== -->
+      <!-- FLUXO ETAPA 2: SELEÇÃO DO TIPO DE DOCUMENTO (4 MODELOS + ESTRUTURADO) -->
+      <!-- ===================================================================== -->
+      @if (etapa() === 'selecao') {
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 animate-fadeIn">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#132A41]/10 text-[#132A41] text-xs font-bold mb-2">
+                <span>Etapa 2 de 3</span>
+              </div>
+              <h3 class="text-xl font-black text-slate-900 tracking-tight">
+                Selecione o Tipo de Documento
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-500">
+                Escolha o formato e a redação adequada para o objetivo do seu reajuste contratual.
+              </p>
             </div>
 
-            <!-- Fator de Reajuste -->
-            <div class="space-y-1">
-              <div class="text-[11px] text-slate-300 font-semibold">Fator de Reajuste (8 decimais)</div>
-              <div class="text-xl font-mono font-black text-white tracking-wider">
-                {{ fatorCalculado() | number:'1.8-8' }}
-              </div>
-              <div class="text-xs text-[#E59866] font-bold">
-                Variação: +{{ percentualCalculado() | number:'1.2-2' }}%
-              </div>
-            </div>
-
-            <!-- Valor Bruto do Reajuste -->
-            <div class="p-4 rounded-2xl bg-white/10 border border-white/10 space-y-1">
-              <div class="text-xs text-slate-300 font-medium">Total do Reajuste (Bruto)</div>
-              <div class="text-2xl sm:text-3xl font-black text-[#E59866]">
-                R$ {{ valorReajusteCalculado() | number:'1.2-2' }}
-              </div>
-            </div>
-
-            <!-- Valor Total com Reajuste -->
-            <div class="space-y-1 pt-1">
-              <div class="text-xs text-slate-300 font-medium">Valor Total da Medição + Reajuste</div>
-              <div class="text-lg font-black text-white">
-                R$ {{ valorTotalCalculado() | number:'1.2-2' }}
-              </div>
-            </div>
-
-            <!-- Seção de Retenções no Resumo -->
-            @if (incluirRetencoes() && valorReajusteCalculado() > 0) {
-              <div class="pt-4 border-t border-slate-700 space-y-2 text-xs">
-                <div class="flex justify-between text-slate-300">
-                  <span>(-) Total Retenções ({{ totalAliquotaRetencoes() | number:'1.2-2' }}%):</span>
-                  <span class="font-bold text-red-300">- R$ {{ totalRetencoesCalculado() | number:'1.2-2' }}</span>
-                </div>
-                <div class="flex justify-between text-white font-black text-sm pt-1 border-t border-slate-700/60">
-                  <span>Reajuste Líquido:</span>
-                  <span class="text-emerald-400">R$ {{ reajusteLiquidoCalculado() | number:'1.2-2' }}</span>
-                </div>
-              </div>
-            }
-
-            <!-- Botão de Ação Primária: Gerar Relatório em PDF -->
             <button
               type="button"
-              (click)="gerarRelatorioPDF()"
-              [disabled]="valorIo() <= 0 || valorIi() <= 0 || valorMedicao() <= 0"
-              [class]="valorIo() > 0 && valorIi() > 0 && valorMedicao() > 0
-                ? 'bg-[#B5642A] hover:bg-[#9c5220] text-white shadow-lg shadow-[#B5642A]/30 cursor-pointer'
-                : 'bg-slate-700 text-slate-400 cursor-not-allowed'"
-              class="w-full py-4 px-5 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2.5"
+              (click)="etapa.set('formulario')"
+              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              <span>Gerar Relatório em PDF</span>
+              <span>Voltar ao Formulário</span>
             </button>
-
           </div>
 
-          <!-- Card Informativo com a Fórmula Oficial -->
-          <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3 text-xs text-slate-600">
-            <h5 class="font-black text-slate-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-              <span>📐 Memória da Fórmula Legal</span>
-            </h5>
-            <div class="p-3 bg-slate-50 rounded-xl font-mono text-center text-slate-800 font-bold text-xs border border-slate-200">
-              R = [(Ii - Io) / Io] × V
+          <!-- Grid dos 5 Tipos de Documentos -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            
+            <!-- 1. Parecer Técnico -->
+            <div
+              (click)="selecionarTipo('parecer')"
+              class="group p-6 rounded-2xl bg-white border-2 border-slate-200 hover:border-[#132A41] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden"
+            >
+              <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-[#132A41] text-white flex items-center justify-center font-bold">
+                  <svg class="w-5 h-5 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h4 class="font-black text-slate-900 text-base group-hover:text-[#132A41] transition-colors">
+                  1. Parecer Técnico
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Documento formal completo e circunstanciado com fundamentação legal, memória de cálculo e parecer conclusivo para instrução de processo.
+                </p>
+              </div>
+
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#132A41]">
+                <span>Revisar e Editar</span>
+                <span class="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
             </div>
-            <ul class="space-y-1 text-[11px] text-slate-500">
-              <li>• <strong>R</strong> = Valor do reajuste financeiro procurado</li>
-              <li>• <strong>Io</strong> = Índice no mês de apresentação da proposta</li>
-              <li>• <strong>Ii</strong> = Índice no mês de execução da medição</li>
-              <li>• <strong>V</strong> = Valor a preços iniciais dos serviços medidos</li>
-            </ul>
+
+            <!-- 2. Ofício -->
+            <div
+              (click)="selecionarTipo('oficio')"
+              class="group p-6 rounded-2xl bg-white border-2 border-slate-200 hover:border-[#132A41] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden"
+            >
+              <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-[#132A41] text-white flex items-center justify-center font-bold">
+                  <svg class="w-5 h-5 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h4 class="font-black text-slate-900 text-base group-hover:text-[#132A41] transition-colors">
+                  2. Ofício
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Comunicação externa formal endereçada à contratada comunicando o deferimento da repactuação e novos valores vigentes.
+                </p>
+              </div>
+
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#132A41]">
+                <span>Revisar e Editar</span>
+                <span class="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            <!-- 3. Resumo Executivo -->
+            <div
+              (click)="selecionarTipo('resumo')"
+              class="group p-6 rounded-2xl bg-white border-2 border-slate-200 hover:border-[#132A41] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden"
+            >
+              <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-[#132A41] text-white flex items-center justify-center font-bold">
+                  <svg class="w-5 h-5 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <h4 class="font-black text-slate-900 text-base group-hover:text-[#132A41] transition-colors">
+                  3. Resumo Executivo
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Síntese gerencial de alto nível com destaque para o impacto orçamentário e acréscimo financeiro sobre o contrato.
+                </p>
+              </div>
+
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#132A41]">
+                <span>Revisar e Editar</span>
+                <span class="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            <!-- 4. Pontos de Envio -->
+            <div
+              (click)="selecionarTipo('pontos')"
+              class="group p-6 rounded-2xl bg-white border-2 border-slate-200 hover:border-[#132A41] hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden"
+            >
+              <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-[#132A41] text-white flex items-center justify-center font-bold">
+                  <svg class="w-5 h-5 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                </div>
+                <h4 class="font-black text-slate-900 text-base group-hover:text-[#132A41] transition-colors">
+                  4. Pontos de Envio
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Lista estruturada em tópicos rápidos para inclusão em e-mails, despachos ágeis ou memorandos internos.
+                </p>
+              </div>
+
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#132A41]">
+                <span>Revisar e Editar</span>
+                <span class="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            <!-- 5. Relatório Técnico Estruturado (Tabelas) -->
+            <div
+              (click)="gerarRelatorioPDF()"
+              class="group p-6 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-300 hover:border-[#B5642A] hover:bg-white hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden"
+            >
+              <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-[#B5642A] text-white flex items-center justify-center font-bold">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-black text-slate-900 text-base group-hover:text-[#B5642A] transition-colors">
+                    Relatório Estruturado
+                  </h4>
+                  <span class="px-2 py-0.5 rounded-full bg-[#B5642A]/10 text-[#B5642A] text-[10px] font-bold">Tabelas</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Relatório técnico clássico diagramado em tabelas com identificação, quadro de reajustamento, memória da fórmula e retenções.
+                </p>
+              </div>
+
+              <div class="pt-3 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-[#B5642A]">
+                <span>Baixar PDF Direto</span>
+                <span class="group-hover:translate-x-1 transition-transform">↓</span>
+              </div>
+            </div>
+
           </div>
 
         </div>
+      }
 
-      </div>
+      <!-- ===================================================================== -->
+      <!-- FLUXO ETAPA 3: TELA DE REVISÃO E EDIÇÃO COMPLETA DO TEXTO -->
+      <!-- ===================================================================== -->
+      @if (etapa() === 'revisao') {
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 animate-fadeIn">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#132A41]/10 text-[#132A41] text-xs font-bold mb-2">
+                <span>Etapa 3 de 3 • Revisão Editável</span>
+                <span class="text-slate-400">|</span>
+                <span class="text-[#B5642A]">{{ getNomeTipoSelecionado() }}</span>
+              </div>
+              <h3 class="text-xl font-black text-slate-900 tracking-tight">
+                Revisão do Documento
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-500">
+                Edite livremente o texto abaixo antes de exportar o PDF oficial.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                (click)="etapa.set('selecao')"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>Trocar Tipo</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="restaurarTextoOriginal()"
+                class="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Restaurar o modelo padrão inicial"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Campo de Título Editável -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-700">Título do Documento (Cabeçalho do PDF)</label>
+            <input
+              type="text"
+              [value]="tituloDocumento()"
+              (input)="tituloDocumento.set($any($event.target).value)"
+              class="w-full bg-slate-50 text-sm font-bold text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all"
+            />
+          </div>
+
+          <!-- Textarea Grande e Totalmente Editável -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-slate-700">Corpo do Documento (Totalmente Editável)</label>
+              <span class="text-[11px] text-slate-400 font-mono">{{ corpoDocumento().length }} caracteres</span>
+            </div>
+            <textarea
+              rows="18"
+              [value]="corpoDocumento()"
+              (input)="corpoDocumento.set($any($event.target).value)"
+              class="w-full bg-slate-50 font-sans text-xs sm:text-sm text-slate-900 leading-relaxed rounded-2xl p-4 sm:p-5 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden transition-all resize-y"
+              placeholder="Digite ou edite o conteúdo do documento..."
+            ></textarea>
+          </div>
+
+          <!-- Card de Dica e Botão de Download do PDF -->
+          <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-base">💡</span>
+              <span class="font-medium">O PDF será exportado exatamente com o texto editado acima, formatado no padrão institucional da Amorim.</span>
+            </div>
+
+            <button
+              type="button"
+              (click)="baixarTextoPDF()"
+              class="px-6 py-3.5 rounded-xl bg-[#B5642A] hover:bg-[#9c5220] text-white text-xs sm:text-sm font-black transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Baixar em PDF</span>
+            </button>
+          </div>
+
+        </div>
+      }
 
     </div>
   `
 })
 export class ReajusteContratoComponent {
+  // Controle de Fluxo
+  readonly etapa = signal<'formulario' | 'selecao' | 'revisao'>('formulario');
+  readonly tipoDocumentoSelecionado = signal<TipoDocumento>('parecer');
+  readonly tituloDocumento = signal<string>('Parecer Técnico — Contrato 042/2018');
+  readonly corpoDocumento = signal<string>('');
+
   // Bloco A - Identificação
   readonly edital = signal<string>('001/2018');
   readonly modalidade = signal<string>('Tomada de Preço');
@@ -691,6 +935,12 @@ export class ReajusteContratoComponent {
     return this.valorReajusteCalculado() - this.totalRetencoesCalculado();
   });
 
+  readonly nomeColunaIndice = computed(() => {
+    return this.categoriaIndice() === 'coluna39'
+      ? 'Coluna 39 - Consultoria (Supervisão e Projetos)'
+      : 'Coluna 35 - Edificação (INCC - Execução de Obra)';
+  });
+
   // Mudança de Categoria / Datas
   onCategoriaChange(categoria: 'coluna39' | 'coluna35'): void {
     this.categoriaIndice.set(categoria);
@@ -760,7 +1010,293 @@ export class ReajusteContratoComponent {
   }
 
   // =========================================================================
-  // GERAÇÃO DO PARECER TÉCNICO FORMAL EM PDF (Paleta Navy/Copper da Amorim)
+  // FLUXO DE DOCUMENTOS & TEMPLATES DETERMINÍSTICOS (SEM CHAMADA DE IA)
+  // =========================================================================
+
+  abrirSelecaoDocumento(): void {
+    this.etapa.set('selecao');
+  }
+
+  selecionarTipo(tipo: TipoDocumento): void {
+    this.tipoDocumentoSelecionado.set(tipo);
+
+    if (tipo === 'estruturado') {
+      this.gerarRelatorioPDF();
+      return;
+    }
+
+    const numContrato = this.numeroContrato() || '000/2026';
+    let titulo = '';
+    let texto = '';
+
+    switch (tipo) {
+      case 'parecer':
+        titulo = `Parecer Técnico — Contrato nº ${numContrato}`;
+        texto = this.gerarTemplateParecer();
+        break;
+      case 'oficio':
+        titulo = `Ofício de Deferimento de Reajuste — Contrato nº ${numContrato}`;
+        texto = this.gerarTemplateOficio();
+        break;
+      case 'resumo':
+        titulo = `Resumo Executivo — Reajuste Contratual nº ${numContrato}`;
+        texto = this.gerarTemplateResumo();
+        break;
+      case 'pontos':
+        titulo = `Pontos-Chave — Reajuste Contratual nº ${numContrato}`;
+        texto = this.gerarTemplatePontos();
+        break;
+    }
+
+    this.tituloDocumento.set(titulo);
+    this.corpoDocumento.set(texto);
+    this.etapa.set('revisao');
+  }
+
+  getNomeTipoSelecionado(): string {
+    switch (this.tipoDocumentoSelecionado()) {
+      case 'parecer': return 'Parecer Técnico';
+      case 'oficio': return 'Ofício';
+      case 'resumo': return 'Resumo Executivo';
+      case 'pontos': return 'Pontos de Envio';
+      case 'estruturado': return 'Relatório Estruturado';
+      default: return 'Documento';
+    }
+  }
+
+  restaurarTextoOriginal(): void {
+    this.selecionarTipo(this.tipoDocumentoSelecionado());
+  }
+
+  private getDataExtenso(): string {
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const hoje = new Date();
+    return `${hoje.getDate()} de ${meses[hoje.getMonth()]} de ${hoje.getFullYear()}`;
+  }
+
+  private getNomeMes(mesChave: MesChave): string {
+    return this.mesesDisponiveis.find(m => m.id === mesChave)?.nome || mesChave;
+  }
+
+  // 1. Template Parecer Técnico
+  private gerarTemplateParecer(): string {
+    const numContrato = this.numeroContrato() || '-';
+    const edital = this.edital() || '-';
+    const contratante = this.contratante() || 'Contratante';
+    const empresa = this.empresaContratada() || 'Empresa Contratada';
+    const cnpj = this.cnpjContratada() || '00.000.000/0000-00';
+    const objeto = this.objeto() || '-';
+    const vMed = this.formatarMoeda(this.valorMedicao());
+    const nomeCol = this.nomeColunaIndice();
+    const mesIoNome = this.getNomeMes(this.mesIo());
+    const mesIiNome = this.getNomeMes(this.mesIi());
+    const vIo = this.valorIo().toFixed(3).replace('.', ',');
+    const vIi = this.valorIi().toFixed(3).replace('.', ',');
+    const fator = this.fatorCalculado().toFixed(8).replace('.', ',');
+    const perc = this.percentualCalculado().toFixed(2).replace('.', ',');
+    const vReaj = this.formatarMoeda(this.valorReajusteCalculado());
+    const vTot = this.formatarMoeda(this.valorTotalCalculado());
+    const dataExtenso = this.getDataExtenso();
+
+    return `PARECER TÉCNICO
+
+Assunto: Reajustamento de preços — Contrato nº ${numContrato}, Edital ${edital}
+
+Trata-se de parecer técnico para fundamentar o reajuste financeiro da medição referente ao contrato celebrado entre ${contratante} e ${empresa} (CNPJ ${cnpj}), cujo objeto é: ${objeto}.
+
+O valor da medição base é de R$ ${vMed}, apurado no período de referência. Aplicando-se a variação do índice setorial FGV/SINAENCO (${nomeCol}) entre ${mesIoNome}/${this.anoIo()} (Io = ${vIo}) e ${mesIiNome}/${this.anoIi()} (Ii = ${vIi}), obtém-se o fator de reajuste de ${fator} (equivalente a ${perc}%).
+
+Nesses termos, o valor do reajuste procurado corresponde a R$ ${vReaj}, elevando o valor total da medição para R$ ${vTot}.
+
+É o parecer, ficando a critério da autoridade competente a análise final quanto à sua aprovação e efetivação.
+
+Brasília - DF, ${dataExtenso}.
+
+Emanoel S. Amorim
+Arquiteto e Urbanista • CAU nº A133593-6`;
+  }
+
+  // 2. Template Ofício
+  private gerarTemplateOficio(): string {
+    const numContrato = this.numeroContrato() || '-';
+    const empresa = this.empresaContratada() || 'Empresa Contratada';
+    const vMed = this.formatarMoeda(this.valorMedicao());
+    const nomeCol = this.nomeColunaIndice();
+    const fator = this.fatorCalculado().toFixed(8).replace('.', ',');
+    const perc = this.percentualCalculado().toFixed(2).replace('.', ',');
+    const vReaj = this.formatarMoeda(this.valorReajusteCalculado());
+    const vTot = this.formatarMoeda(this.valorTotalCalculado());
+    const dataExtenso = this.getDataExtenso();
+    const anoAtual = new Date().getFullYear();
+
+    return `OFÍCIO Nº ___/${anoAtual}
+
+Ao(À) ${empresa}
+Ref.: Contrato nº ${numContrato} — Deferimento de Reajuste Contratual
+
+Prezados(as) Senhores(as),
+
+Comunicamos que o pedido de reajuste contratual referente ao contrato em epígrafe foi analisado e DEFERIDO, nos termos a seguir:
+
+• Valor da medição base: R$ ${vMed}
+• Índice aplicado: ${nomeCol}
+• Fator de reajuste: ${fator} (${perc}%)
+• Valor do reajuste: R$ ${vReaj}
+• Novo valor total: R$ ${vTot}
+
+Permanecemos à disposição para quaisquer esclarecimentos adicionais.
+
+Atenciosamente,
+
+Brasília - DF, ${dataExtenso}.
+
+Emanoel S. Amorim
+Arquiteto e Urbanista • CAU nº A133593-6`;
+  }
+
+  // 3. Template Resumo Executivo
+  private gerarTemplateResumo(): string {
+    const numContrato = this.numeroContrato() || '-';
+    const edital = this.edital() || '-';
+    const empresa = this.empresaContratada() || '-';
+    const objeto = this.objeto() || '-';
+    const perc = this.percentualCalculado().toFixed(2).replace('.', ',');
+    const vMed = this.formatarMoeda(this.valorMedicao());
+    const vReaj = this.formatarMoeda(this.valorReajusteCalculado());
+    const vTot = this.formatarMoeda(this.valorTotalCalculado());
+    const nomeCol = this.nomeColunaIndice();
+    const mesIoNome = this.getNomeMes(this.mesIo());
+    const mesIiNome = this.getNomeMes(this.mesIi());
+
+    return `RESUMO EXECUTIVO — REAJUSTE CONTRATUAL
+
+Contrato: nº ${numContrato} (${edital})
+Empresa: ${empresa}
+Objeto: ${objeto}
+
+O reajuste aplicado à medição corrente resultou em um acréscimo de ${perc}% sobre o valor base de R$ ${vMed}, totalizando R$ ${vReaj} em valores adicionais. O novo valor total da medição passa a ser R$ ${vTot}.
+
+O cálculo segue a variação do índice setorial FGV/SINAENCO (${nomeCol}) no período de ${mesIoNome}/${this.anoIo()} a ${mesIiNome}/${this.anoIi()}, em conformidade com a legislação de regência dos contratos administrativos.
+
+Impacto orçamentário: acréscimo de R$ ${vReaj} sobre a rubrica orçamentária correspondente.`;
+  }
+
+  // 4. Template Pontos de Envio
+  private gerarTemplatePontos(): string {
+    const numContrato = this.numeroContrato() || '-';
+    const empresa = this.empresaContratada() || '-';
+    const perc = this.percentualCalculado().toFixed(2).replace('.', ',');
+    const nomeCol = this.nomeColunaIndice();
+    const vReaj = this.formatarMoeda(this.valorReajusteCalculado());
+    const vTot = this.formatarMoeda(this.valorTotalCalculado());
+    const mesIoNome = this.getNomeMes(this.mesIo());
+    const mesIiNome = this.getNomeMes(this.mesIi());
+
+    return `PONTOS-CHAVE — REAJUSTE CONTRATUAL
+
+• Contrato nº ${numContrato} — ${empresa}
+• Reajuste aplicado: ${perc}% (Índice ${nomeCol})
+• Valor do reajuste: R$ ${vReaj}
+• Novo valor total: R$ ${vTot}
+• Período de referência: ${mesIoNome}/${this.anoIo()} a ${mesIiNome}/${this.anoIi()}
+• Fundamentação: variação FGV/SINAENCO, conforme legislação aplicável`;
+  }
+
+  // =========================================================================
+  // GERAÇÃO DE PDF COM TEXTO EDITADO (Design System Amorim: Navy/Copper)
+  // =========================================================================
+  baixarTextoPDF(): void {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - margin * 2;
+    let currentY = 20;
+
+    const navyPrimary = [19, 42, 65]; // #132A41
+    const copperAccent = [181, 100, 42]; // #B5642A
+    const slateDark = [51, 65, 85];
+
+    // 1. Cabeçalho Institucional Superior
+    doc.setFillColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    doc.rect(margin, currentY, contentWidth, 14, 'F');
+
+    // Faixa fina de destaque em cobre
+    doc.setFillColor(copperAccent[0], copperAccent[1], copperAccent[2]);
+    doc.rect(margin, currentY + 14, contentWidth, 1.5, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    const tituloHeader = (this.tituloDocumento() || 'REAJUSTE DE CONTRATOS PÚBLICOS').toUpperCase();
+    doc.text(tituloHeader, pageWidth / 2, currentY + 9, { align: 'center' });
+
+    currentY += 24;
+
+    // 2. Corpo do Texto (Processado parágrafo por parágrafo)
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
+
+    const textoCompleto = this.corpoDocumento();
+    const paragrafos = textoCompleto.split('\n');
+
+    for (const p of paragrafos) {
+      if (p.trim() === '') {
+        currentY += 4;
+        continue;
+      }
+
+      // Detectar cabeçalhos em maiúsculo ou destaque
+      const isHeader = p.toUpperCase() === p && p.length < 50 && !p.startsWith('•') && !p.startsWith('-');
+
+      if (isHeader) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      } else if (p.startsWith('•') || p.startsWith('-')) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
+      } else {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
+      }
+
+      const linhas = doc.splitTextToSize(p, contentWidth);
+
+      // Quebra de página se necessário
+      if (currentY + linhas.length * 5 > pageHeight - 35) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      doc.text(linhas, margin, currentY);
+      currentY += linhas.length * 5 + 2;
+    }
+
+    // 3. Rodapé Institucional
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Amorim Group • Agente Técnico de Reajuste de Contratos', margin, pageHeight - 12);
+    doc.text(`Página ${doc.getNumberOfPages()}`, pageWidth - margin, pageHeight - 12, { align: 'right' });
+
+    // Salvar PDF
+    const tipoStr = this.tipoDocumentoSelecionado();
+    const numLimpo = (this.numeroContrato() || '000').replace(/[^a-zA-Z0-9]/g, '_');
+    const nomeArquivo = `${tipoStr.toUpperCase()}_Contrato_${numLimpo}.pdf`;
+    doc.save(nomeArquivo);
+  }
+
+  // =========================================================================
+  // GERAÇÃO DO RELATÓRIO ESTRUTURADO EM TABELAS (PDF Fiel ao Modelo Real)
   // =========================================================================
   gerarRelatorioPDF(): void {
     const doc = new jsPDF({
@@ -774,11 +1310,9 @@ export class ReajusteContratoComponent {
     const contentWidth = pageWidth - margin * 2;
     let currentY = 15;
 
-    // Cores Institucionais com tuplas estritas para compatibilidade de tipos com jsPDF-autotable
     const navyPrimary: [number, number, number] = [19, 42, 65]; // #132A41
     const copperAccent: [number, number, number] = [181, 100, 42]; // #B5642A
     const slateDark: [number, number, number] = [51, 65, 85];
-    const slateLight: [number, number, number] = [241, 245, 249];
     const borderGray: [number, number, number] = [203, 213, 225];
     const textWhite: [number, number, number] = [255, 255, 255];
     const bgCellLight: [number, number, number] = [248, 250, 252];
@@ -904,8 +1438,8 @@ export class ReajusteContratoComponent {
     doc.text('2. ÍNDICES DE REAJUSTAMENTO APLICADOS', margin, currentY);
     currentY += 3;
 
-    const nomeMesIo = this.mesesDisponiveis.find(m => m.id === this.mesIo())?.nome || this.mesIo();
-    const nomeMesIi = this.mesesDisponiveis.find(m => m.id === this.mesIi())?.nome || this.mesIi();
+    const nomeMesIo = this.getNomeMes(this.mesIo());
+    const nomeMesIi = this.getNomeMes(this.mesIi());
 
     const indicesData = [
       ['ÍNDICE SETORIAL:', nomeColuna],
