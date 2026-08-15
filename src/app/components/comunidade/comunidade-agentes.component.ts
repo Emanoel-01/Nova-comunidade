@@ -1,13 +1,14 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReajusteContratoComponent } from './agentes/reajuste-contrato.component';
+import { BibliotecaPromptsComponent } from './agentes/biblioteca-prompts.component';
 
-export type FerramentaAtiva = 'lista' | 'reajuste-contrato';
+export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompts';
 
 @Component({
   selector: 'app-comunidade-agentes',
   standalone: true,
-  imports: [CommonModule, ReajusteContratoComponent],
+  imports: [CommonModule, ReajusteContratoComponent, BibliotecaPromptsComponent],
   template: `
     <div class="space-y-6">
 
@@ -38,7 +39,7 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato';
             <!-- Contador de Ferramentas -->
             <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
               <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-                1
+                2
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos Ativos</div>
@@ -103,42 +104,52 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato';
             </div>
           </div>
 
-          <!-- CARD 2: GERADOR DE OFÍCIOS (EM BREVE) -->
-          <div class="bg-white/80 rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between opacity-80 cursor-not-allowed">
+          <!-- CARD 2: BIBLIOTECA DE PROMPTS (ATIVO) -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-indigo-200 shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
             <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge -->
               <div class="flex items-center justify-between">
-                <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-wider">
-                  Em breve
+                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  Disponível
                 </span>
               </div>
 
+              <!-- Conteúdo -->
               <div class="space-y-2">
-                <h4 class="text-lg font-black text-slate-700">
-                  Gerador de Ofícios
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  Biblioteca de Prompts
                 </h4>
-                <p class="text-xs text-slate-500 leading-relaxed">
-                  Emissão padronizada e automática de ofícios técnicos, comunicações formais e notificações contratuais.
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  361 prompts especializados prontos para copiar e usar na sua ferramenta de IA preferida.
                 </p>
               </div>
 
+              <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">Modelos Padrão</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-400">Exportação DOCX/PDF</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">361 Prompts</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">6 Categorias</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Copiar c/ 1 Clique</span>
               </div>
             </div>
 
+            <!-- Botão de Ação -->
             <div class="pt-6">
               <button
                 type="button"
-                disabled
-                class="w-full py-3 px-4 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed text-center"
+                (click)="abrirFerramenta('biblioteca-prompts')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
               >
-                Em Desenvolvimento
+                <span>Abrir Catálogo</span>
+                <svg class="w-4 h-4 text-[#E59866] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </button>
             </div>
           </div>
@@ -187,7 +198,7 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato';
 
       } @else if (ferramentaAtiva() === 'reajuste-contrato') {
         
-        <!-- 3. Visualização da Ferramenta Ativa com Barra Superior de Navegação -->
+        <!-- 3. Visualização da Ferramenta: Reajuste de Contrato -->
         <div class="space-y-6">
           <div class="flex items-center justify-between">
             <button
@@ -210,6 +221,31 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato';
           <app-reajuste-contrato></app-reajuste-contrato>
         </div>
 
+      } @else if (ferramentaAtiva() === 'biblioteca-prompts') {
+
+        <!-- 4. Visualização da Ferramenta: Biblioteca de Prompts -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: Catálogo de 361 Prompts Especializados
+            </span>
+          </div>
+
+          <!-- Componente da Biblioteca de Prompts -->
+          <app-biblioteca-prompts></app-biblioteca-prompts>
+        </div>
+
       }
 
     </div>
@@ -226,3 +262,4 @@ export class ComunidadeAgentesComponent {
     this.ferramentaAtiva.set('lista');
   }
 }
+
