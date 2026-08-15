@@ -1,6 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { SiteFooterComponent } from './components/site-footer.component';
 
 interface NavItem {
   label: string;
@@ -10,7 +12,7 @@ interface NavItem {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, SiteFooterComponent],
   template: `
     <div class="min-h-screen w-full bg-slate-50 text-slate-900 flex flex-col font-sans select-none">
       <!-- Header Fixo no Topo (Sleek Interface) -->
@@ -93,10 +95,17 @@ interface NavItem {
       <main class="flex-1">
         <router-outlet></router-outlet>
       </main>
+
+      <!-- Rodapé Institucional (oculto em /admin) -->
+      @if (showFooter()) {
+        <app-site-footer></app-site-footer>
+      }
     </div>
   `
 })
 export class AppComponent {
+  private readonly router = inject(Router);
+
   // Os 8 itens de menu mapeados com rota
   readonly navItems = signal<NavItem[]>([
     { label: 'Home', path: '/' },
@@ -110,6 +119,22 @@ export class AppComponent {
   ]);
 
   readonly isMobileMenuOpen = signal<boolean>(false);
+  readonly showFooter = signal<boolean>(true);
+
+  constructor() {
+    this.updateFooterVisibility(this.router.url);
+
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.updateFooterVisibility(event.urlAfterRedirects || event.url);
+      });
+  }
+
+  private updateFooterVisibility(url: string): void {
+    const isUrlAdmin = url === '/admin' || url.startsWith('/admin?') || url.startsWith('/admin#') || url.startsWith('/admin/');
+    this.showFooter.set(!isUrlAdmin);
+  }
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update(open => !open);

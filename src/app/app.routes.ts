@@ -6,6 +6,8 @@ import { AmorimTechComponent } from './components/amorim-tech.component';
 import { AmorimAcademyComponent } from './components/amorim-academy.component';
 import { ContatoComponent } from './components/contato.component';
 import { LinksBioComponent } from './components/links-bio.component';
+import { ComunidadeComponent } from './components/comunidade.component';
+import { BlogComponent } from './components/blog.component';
 
 export const routes: Routes = [
   {
@@ -26,13 +28,11 @@ export const routes: Routes = [
   },
   {
     path: 'blog',
-    component: PlaceholderPageComponent,
-    data: { title: 'Blog' },
+    component: BlogComponent,
   },
   {
     path: 'comunidade',
-    component: PlaceholderPageComponent,
-    data: { title: 'Comunidade' },
+    component: ComunidadeComponent,
   },
   {
     path: 'contato',
