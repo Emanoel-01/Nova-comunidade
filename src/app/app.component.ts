@@ -15,80 +15,82 @@ interface NavItem {
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, SiteFooterComponent],
   template: `
     <div class="min-h-screen w-full bg-slate-50 text-slate-900 flex flex-col font-sans select-none">
-      <!-- Header Fixo no Topo (Sleek Interface) -->
-      <header class="sticky top-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 shrink-0 z-50">
-        <!-- Logo -->
-        <a routerLink="/" class="text-[20px] font-bold text-slate-900 tracking-tight cursor-pointer">
-          Comunidade Nova
-        </a>
+      <!-- Header Fixo no Topo (oculto em /admin e /comunidade/preview) -->
+      @if (showChromeDoSite()) {
+        <header class="sticky top-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 shrink-0 z-50">
+          <!-- Logo -->
+          <a routerLink="/" class="text-[20px] font-bold text-slate-900 tracking-tight cursor-pointer">
+            Amorim Group
+          </a>
 
-        <!-- Menu de Navegação Horizontal (Desktop) -->
-        <nav class="hidden md:flex items-center gap-6">
-          @for (item of navItems(); track item.path) {
-            @if (item.label === 'Admin') {
-              <a
-                [routerLink]="item.path"
-                routerLinkActive="ring-2 ring-slate-400"
-                [routerLinkActiveOptions]="{exact: true}"
-                class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer inline-block"
-              >
-                {{ item.label }}
-              </a>
-            } @else {
-              <a
-                [routerLink]="item.path"
-                routerLinkActive="!font-semibold !text-slate-900"
-                [routerLinkActiveOptions]="{exact: true}"
-                class="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-              >
-                {{ item.label }}
-              </a>
-            }
-          }
-        </nav>
-
-        <!-- Menu Mobile Button -->
-        <div class="md:hidden flex items-center">
-          <button
-            type="button"
-            (click)="toggleMobileMenu()"
-            class="p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none cursor-pointer"
-            aria-label="Abrir menu"
-          >
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              @if (!isMobileMenuOpen()) {
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              } @else {
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              }
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      <!-- Menu Mobile Dropdown -->
-      @if (isMobileMenuOpen()) {
-        <div class="fixed top-16 left-0 right-0 bg-white border-b border-slate-200 z-40 md:hidden py-4 px-6 shadow-md">
-          <nav class="flex flex-col space-y-2">
+          <!-- Menu de Navegação Horizontal (Desktop) -->
+          <nav class="hidden md:flex items-center gap-6">
             @for (item of navItems(); track item.path) {
-              <a
-                [routerLink]="item.path"
-                routerLinkActive="!font-semibold !text-slate-900"
-                [routerLinkActiveOptions]="{exact: true}"
-                (click)="closeMobileMenu()"
-                class="text-left py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors cursor-pointer block"
-              >
-                @if (item.label === 'Admin') {
-                  <span class="bg-slate-900 text-white px-3 py-1 rounded text-xs font-semibold inline-block">
-                    Admin
-                  </span>
-                } @else {
+              @if (item.label === 'Admin') {
+                <a
+                  [routerLink]="item.path"
+                  routerLinkActive="ring-2 ring-slate-400"
+                  [routerLinkActiveOptions]="{exact: true}"
+                  class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer inline-block"
+                >
                   {{ item.label }}
-                }
-              </a>
+                </a>
+              } @else {
+                <a
+                  [routerLink]="item.path"
+                  routerLinkActive="!font-semibold !text-slate-900"
+                  [routerLinkActiveOptions]="{exact: true}"
+                  class="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                >
+                  {{ item.label }}
+                </a>
+              }
             }
           </nav>
-        </div>
+
+          <!-- Menu Mobile Button -->
+          <div class="md:hidden flex items-center">
+            <button
+              type="button"
+              (click)="toggleMobileMenu()"
+              class="p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none cursor-pointer"
+              aria-label="Abrir menu"
+            >
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                @if (!isMobileMenuOpen()) {
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                } @else {
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                }
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Menu Mobile Dropdown -->
+        @if (isMobileMenuOpen()) {
+          <div class="fixed top-16 left-0 right-0 bg-white border-b border-slate-200 z-40 md:hidden py-4 px-6 shadow-md">
+            <nav class="flex flex-col space-y-2">
+              @for (item of navItems(); track item.path) {
+                <a
+                  [routerLink]="item.path"
+                  routerLinkActive="!font-semibold !text-slate-900"
+                  [routerLinkActiveOptions]="{exact: true}"
+                  (click)="closeMobileMenu()"
+                  class="text-left py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors cursor-pointer block"
+                >
+                  @if (item.label === 'Admin') {
+                    <span class="bg-slate-900 text-white px-3 py-1 rounded text-xs font-semibold inline-block">
+                      Admin
+                    </span>
+                  } @else {
+                    {{ item.label }}
+                  }
+                </a>
+              }
+            </nav>
+          </div>
+        }
       }
 
       <!-- Corpo da Página Principal -->
@@ -96,8 +98,8 @@ interface NavItem {
         <router-outlet></router-outlet>
       </main>
 
-      <!-- Rodapé Institucional (oculto em /admin) -->
-      @if (showFooter()) {
+      <!-- Rodapé Institucional (oculto em /admin e /comunidade/preview) -->
+      @if (showChromeDoSite()) {
         <app-site-footer></app-site-footer>
       }
     </div>
@@ -119,21 +121,23 @@ export class AppComponent {
   ]);
 
   readonly isMobileMenuOpen = signal<boolean>(false);
-  readonly showFooter = signal<boolean>(true);
+  readonly showChromeDoSite = signal<boolean>(true);
 
   constructor() {
-    this.updateFooterVisibility(this.router.url);
+    this.updateChromeVisibility(this.router.url);
 
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        this.updateFooterVisibility(event.urlAfterRedirects || event.url);
+        this.updateChromeVisibility(event.urlAfterRedirects || event.url);
       });
   }
 
-  private updateFooterVisibility(url: string): void {
-    const isUrlAdmin = url === '/admin' || url.startsWith('/admin?') || url.startsWith('/admin#') || url.startsWith('/admin/');
-    this.showFooter.set(!isUrlAdmin);
+  private updateChromeVisibility(url: string): void {
+    const isAppShellRoute =
+      url === '/admin' || url.startsWith('/admin?') || url.startsWith('/admin#') || url.startsWith('/admin/') ||
+      url === '/comunidade/preview' || url.startsWith('/comunidade/preview?') || url.startsWith('/comunidade/preview#') || url.startsWith('/comunidade/preview/');
+    this.showChromeDoSite.set(!isAppShellRoute);
   }
 
   toggleMobileMenu(): void {
