@@ -8,6 +8,7 @@ import { ContatoComponent } from './components/contato.component';
 import { LinksBioComponent } from './components/links-bio.component';
 import { ComunidadeComponent } from './components/comunidade.component';
 import { BlogComponent } from './components/blog.component';
+import { AdminPanelComponent } from './components/admin-panel.component';
 
 export const routes: Routes = [
   {
@@ -44,8 +45,7 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    component: PlaceholderPageComponent,
-    data: { title: 'Admin' },
+    component: AdminPanelComponent,
   },
   {
     path: '**',
