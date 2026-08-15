@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './components/home.component';
 import { PlaceholderPageComponent } from './components/placeholder-page.component';
 import { AmorimArquiteturaComponent } from './components/amorim-arquitetura.component';
+import { AmorimTechComponent } from './components/amorim-tech.component';
 
 export const routes: Routes = [
   {
@@ -14,8 +15,7 @@ export const routes: Routes = [
   },
   {
     path: 'amorim-tech',
-    component: PlaceholderPageComponent,
-    data: { title: 'Amorim Tech' },
+    component: AmorimTechComponent,
   },
   {
     path: 'amorim-academy',
