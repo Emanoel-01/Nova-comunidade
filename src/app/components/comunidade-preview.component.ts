@@ -333,77 +333,99 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
         
         <!-- Menu Suspenso "Mais" (quando aberto) -->
         @if (menuMaisAberto()) {
-          <div class="absolute bottom-full left-0 right-0 bg-white border-t border-slate-200 shadow-xl p-3 space-y-1 rounded-t-2xl">
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1">
+          <div class="absolute bottom-full left-0 right-0 bg-white border-t border-slate-200 shadow-xl rounded-t-2xl flex flex-col max-h-[70vh]">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-4 pt-3 pb-1 shrink-0">
               Outras Áreas
             </div>
             
-            <button
-              type="button"
-              (click)="selecionarAbaMobile('curso')"
-              [class]="abaAtiva() === 'curso' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left"
-            >
-              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              <span>Cursos</span>
-            </button>
+            <!-- Lista rolável de áreas restantes -->
+            <div class="p-3 space-y-1 overflow-y-auto flex-1">
+              <!-- 1. Vagas -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('vagas')"
+                [class]="abaAtiva() === 'vagas' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span>Vagas</span>
+              </button>
 
-            <button
-              type="button"
-              (click)="selecionarAbaMobile('forum')"
-              [class]="abaAtiva() === 'forum' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <span>Fórum</span>
-            </button>
+              <!-- 2. Materiais -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('materiais')"
+                [class]="abaAtiva() === 'materiais' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Materiais</span>
+              </button>
 
-            <button
-              type="button"
-              (click)="selecionarAbaMobile('hall-fama')"
-              [class]="abaAtiva() === 'hall-fama' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left"
-            >
-              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              <span>Hall da Fama</span>
-            </button>
+              <!-- 3. Eventos -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('eventos')"
+                [class]="abaAtiva() === 'eventos' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Eventos</span>
+              </button>
 
-            <button
-              type="button"
-              (click)="selecionarAbaMobile('mensagens')"
-              [class]="abaAtiva() === 'mensagens' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-              <span>Mensagens</span>
-            </button>
+              <!-- 4. Fórum -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('forum')"
+                [class]="abaAtiva() === 'forum' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>Fórum</span>
+              </button>
 
-            <button
-              type="button"
-              (click)="selecionarAbaMobile('agentes')"
-              [class]="abaAtiva() === 'agentes' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left"
-            >
-              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>Agentes</span>
-            </button>
+              <!-- 5. Mensagens -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('mensagens')"
+                [class]="abaAtiva() === 'mensagens' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <span>Mensagens</span>
+              </button>
 
-            <div class="border-t border-slate-100 pt-2 mt-2">
+              <!-- 6. Hall da Fama -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('hall-fama')"
+                [class]="abaAtiva() === 'hall-fama' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors"
+              >
+                <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span>Hall da Fama</span>
+              </button>
+            </div>
+
+            <!-- Fixo no rodapé do menu Mais (não rola junto) -->
+            <div class="border-t border-slate-200 p-3 bg-slate-50 rounded-b-2xl shrink-0">
               <a
                 routerLink="/comunidade"
-                class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900"
+                class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 <span>Voltar ao Portal</span>
@@ -412,10 +434,10 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
           </div>
         }
 
-        <!-- 5 Principais + Botão Mais -->
-        <div class="grid grid-cols-6 items-center">
+        <!-- 5 Posições Fixas na Tab Bar Mobile: Feed · Cursos · Agentes · Perfil · Mais -->
+        <div class="grid grid-cols-5 items-center">
           
-          <!-- Feed -->
+          <!-- 1. Feed -->
           <button
             type="button"
             (click)="selecionarAbaMobile('feed')"
@@ -428,46 +450,33 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             <span class="truncate">Feed</span>
           </button>
 
-          <!-- Vagas -->
+          <!-- 2. Cursos -->
           <button
             type="button"
-            (click)="selecionarAbaMobile('vagas')"
-            [class]="abaAtiva() === 'vagas' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
+            (click)="selecionarAbaMobile('curso')"
+            [class]="abaAtiva() === 'curso' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
             class="flex flex-col items-center justify-center py-1 gap-1 text-[10px]"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            <span class="truncate">Vagas</span>
+            <span class="truncate">Cursos</span>
           </button>
 
-          <!-- Materiais -->
+          <!-- 3. Agentes -->
           <button
             type="button"
-            (click)="selecionarAbaMobile('materiais')"
-            [class]="abaAtiva() === 'materiais' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
+            (click)="selecionarAbaMobile('agentes')"
+            [class]="abaAtiva() === 'agentes' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
             class="flex flex-col items-center justify-center py-1 gap-1 text-[10px]"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span class="truncate">Materiais</span>
+            <span class="truncate">Agentes</span>
           </button>
 
-          <!-- Eventos -->
-          <button
-            type="button"
-            (click)="selecionarAbaMobile('eventos')"
-            [class]="abaAtiva() === 'eventos' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center py-1 gap-1 text-[10px]"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span class="truncate">Eventos</span>
-          </button>
-
-          <!-- Perfil -->
+          <!-- 4. Perfil -->
           <button
             type="button"
             (click)="selecionarAbaMobile('perfil')"
@@ -480,11 +489,11 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             <span class="truncate">Perfil</span>
           </button>
 
-          <!-- Mais -->
+          <!-- 5. Mais -->
           <button
             type="button"
             (click)="toggleMenuMais()"
-            [class]="menuMaisAberto() || ['forum', 'hall-fama', 'mensagens', 'curso', 'agentes'].includes(abaAtiva()) ? 'text-indigo-600 font-bold' : 'text-slate-500'"
+            [class]="menuMaisAberto() || ['vagas', 'materiais', 'eventos', 'forum', 'hall-fama', 'mensagens'].includes(abaAtiva()) ? 'text-indigo-600 font-bold' : 'text-slate-500'"
             class="flex flex-col items-center justify-center py-1 gap-1 text-[10px]"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -2,13 +2,14 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReajusteContratoComponent } from './agentes/reajuste-contrato.component';
 import { BibliotecaPromptsComponent } from './agentes/biblioteca-prompts.component';
+import { SkillsCatalogoComponent } from './agentes/skills-catalogo.component';
 
-export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompts';
+export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompts' | 'skills-catalogo';
 
 @Component({
   selector: 'app-comunidade-agentes',
   standalone: true,
-  imports: [CommonModule, ReajusteContratoComponent, BibliotecaPromptsComponent],
+  imports: [CommonModule, ReajusteContratoComponent, BibliotecaPromptsComponent, SkillsCatalogoComponent],
   template: `
     <div class="space-y-6">
 
@@ -32,14 +33,14 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
               </h3>
 
               <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Ferramentas e automações internas para agilizar o trabalho técnico.
+                Ferramentas, bibliotecas de prompts e skills de automação para agilizar o trabalho técnico.
               </p>
             </div>
 
             <!-- Contador de Ferramentas -->
             <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
               <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-                2
+                3
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos Ativos</div>
@@ -154,7 +155,57 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </div>
           </div>
 
-          <!-- CARD 3: ANÁLISE DE EDITAIS (EM BREVE) -->
+          <!-- CARD 3: SKILLS CLAUDE (ATIVO - NOVO) -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-[#B5642A]/40 shadow-sm hover:shadow-xl hover:border-[#B5642A] transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#B5642A]/15 to-transparent rounded-bl-full pointer-events-none"></div>
+
+            <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge -->
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  Disponível
+                </span>
+              </div>
+
+              <!-- Conteúdo -->
+              <div class="space-y-2">
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-[#B5642A] transition-colors">
+                  Skills Claude
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Pacotes de instruções reutilizáveis para automatizar orçamentos, projetos e fluxos complexos no seu Claude.
+                </p>
+              </div>
+
+              <!-- Tags de Recursos -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#B5642A] border border-amber-200/60">Claude Code / CLI</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Claude Cowork</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Guia Passo a Passo</span>
+              </div>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div class="pt-6">
+              <button
+                type="button"
+                (click)="abrirFerramenta('skills-catalogo')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
+              >
+                <span>Acessar Skills & Guias</span>
+                <svg class="w-4 h-4 text-[#E59866] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD 4: ANÁLISE DE EDITAIS (EM BREVE) -->
           <div class="bg-white/80 rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between opacity-80 cursor-not-allowed">
             <div class="space-y-4">
               <div class="flex items-center justify-between">
@@ -238,12 +289,37 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </button>
 
             <span class="text-xs font-bold text-slate-400">
-              Módulo: Catálogo de 361 Prompts Especializados
+              Módulo: Catálogo de 369 Prompts Especializados
             </span>
           </div>
 
           <!-- Componente da Biblioteca de Prompts -->
           <app-biblioteca-prompts></app-biblioteca-prompts>
+        </div>
+
+      } @else if (ferramentaAtiva() === 'skills-catalogo') {
+
+        <!-- 5. Visualização do Módulo: Skills Claude -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: Skills Claude & Guias de Instalação
+            </span>
+          </div>
+
+          <!-- Componente do Catálogo de Skills -->
+          <app-skills-catalogo></app-skills-catalogo>
         </div>
 
       }
