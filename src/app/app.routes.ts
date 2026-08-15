@@ -5,6 +5,7 @@ import { AmorimArquiteturaComponent } from './components/amorim-arquitetura.comp
 import { AmorimTechComponent } from './components/amorim-tech.component';
 import { AmorimAcademyComponent } from './components/amorim-academy.component';
 import { ContatoComponent } from './components/contato.component';
+import { LinksBioComponent } from './components/links-bio.component';
 
 export const routes: Routes = [
   {
@@ -36,6 +37,10 @@ export const routes: Routes = [
   {
     path: 'contato',
     component: ContatoComponent,
+  },
+  {
+    path: 'links',
+    component: LinksBioComponent,
   },
   {
     path: 'admin',
