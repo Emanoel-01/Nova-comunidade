@@ -7,6 +7,8 @@ export interface PromptItem {
   titulo: string;
   descricao: string;
   prompt: string;
+  quandoUsar?: string;      // novo: 1 frase de contexto de uso
+  exemploSaida?: string;    // novo: breve exemplo do que a IA normalmente devolve
 }
 
 export interface CategoriaPrompts {
@@ -408,6 +410,87 @@ export const BIBLIOTECA_PROMPTS: CategoriaPrompts[] = [
       { id: 'RU030', titulo: 'Diretrizes para Reuso de Água no Canteiro', descricao: 'Reuso de água no canteiro.', prompt: 'Defina diretrizes práticas para captar e reutilizar água no canteiro: Área de captação: [area] m² / Atividades demandantes: [atividades]' },
       { id: 'RU031', titulo: 'Modelo de Ficha de Controle de EPI', descricao: 'Controle de entrega de EPI.', prompt: 'Crie um modelo de ficha individual de entrega e substituição de EPI: Nome do colaborador: [nome] / Função: [funcao] / Setor: [setor]' },
       { id: 'RU032', titulo: 'Termo de Compromisso de Descarte de Resíduos (PGRS)', descricao: 'Termo de descarte de resíduos.', prompt: 'Elabore uma minuta de termo de compromisso para transportadores de caçambas e resíduos: Obra: [obra] / Razão social da contratada: [empresa] / Destinação licenciada: [destino]' },
+      { id: 'RU033', titulo: 'Checklist de Manutenção de Equipamentos Pesados', descricao: 'Inspeção preventiva de máquinas pesadas.', prompt: 'Elabore um checklist de inspeção diária e semanal para operação segura de [Equipamento: Escavadeira/Guindaste/Retroescavadeira], abrangendo: níveis de fluidos, sistema hidráulico, freios, cabine, sinalização sonora/luminosa e registro de horas trabalhadas.' },
+      { id: 'RU034', titulo: 'Procedimento Operacional Padrão (POP) de Limpeza de Canteiro', descricao: 'Padronização da rotina de limpeza e organização.', prompt: 'Desenvolva um Procedimento Operacional Padrão (POP) para limpeza e segregação de entulho no canteiro de obras, definindo: responsáveis, periodicidade, destinação das caçambas e diretrizes de ordem e limpeza 5S.' },
+      { id: 'RU035', titulo: 'Guia Rápido de Primeiros Socorros no Canteiro', descricao: 'Orientações emergenciais para campo.', prompt: 'Monte um guia rápido e visual de primeiros socorros para atendimento inicial a ocorrências em canteiro de obras: quedas de nível, cortes profundos, queimaduras térmicas/químicas e insolação, antes da chegada do resgate médico.' },
+      { id: 'RU036', titulo: 'Modelo de Comunicação de Acidente de Trabalho Interno (CAT Interna)', descricao: 'Registro e investigação interna de acidentes.', prompt: 'Estruture um formulário interno de registro e investigação de incidentes/acidentes de trabalho na obra, contendo: dados do acidentado, descrição do evento, análise de causa-raiz (5 Porquês), medidas corretivas imediatas e plano de prevenção.' },
+      { id: 'RU037', titulo: 'Roteiro para Diálogo Diário de Segurança (DDS)', descricao: 'Planejamento de temas de DDS para o mês.', prompt: 'Crie um calendário temático mensal com 20 temas rápidos (5 a 10 min) de Diálogo Diário de Segurança (DDS) para canteiro de obras civis, focando em: trabalho em altura (NR 35), eletricidade (NR 10), ergonomia (NR 17) e EPIs (NR 06).' },
+      { id: 'RU038', titulo: 'Planilha de Controle de Abastecimento de Máquinas e Combustível', descricao: 'Gestão de consumo de diesel e lubrificantes.', prompt: 'Estruture um modelo de planilha de controle diário de abastecimento de maquinário no canteiro, contendo: data, prefixo do equipamento, horímetro/odômetro, volume de combustível abastecido, operador responsável e média de consumo calculada.' },
+      { id: 'RU039', titulo: 'Checklist para Instalações Provisórias de Canteiro (NR 18)', descricao: 'Conformidade de áreas de vivência e sanitários.', prompt: 'Desenvolva um checklist de conformidade com a NR 18 para as áreas de vivência do canteiro: refeitório, vestiários, instalações sanitárias, ambulatório e alojamentos, verificando ventilação, iluminação, higiene e dimensões mínimas.' },
+      { id: 'RU040', titulo: 'Minuta de Termo de Devolução de Ferramentas e Equipamentos', descricao: 'Controle de devolução e estado de conservação.', prompt: 'Elabore um termo de devolução de ferramentas manuais e elétricas locadas ou cauteladas pelo colaborador, registrando: estado de conservação, data de devolução, eventuais avarias constatadas e conferência do almoxarife.' },
+      { id: 'RU041', titulo: 'Roteiro de Treinamento de Integração de Novos Colaboradores', descricao: 'Integração de segurança e conduta para novos operários.', prompt: 'Crie um roteiro de integração para novos trabalhadores no canteiro de obras, abordando: regras gerais de convivência, uso obrigatório de EPIs, sinalização de perigo, canais de comunicação com a equipe de SST e procedimentos em caso de emergência.' },
+      { id: 'RU042', titulo: 'Plano de Desmobilização Final de Canteiro e Restauração', descricao: 'Procedimentos para desmonte e entrega do terreno.', prompt: 'Elabore um plano passo a passo para a desmobilização completa do canteiro após a conclusão da obra: remoção de estruturas temporárias, desligamento seguro de ligações provisórias de água/energia, limpeza geral e recuperação da área ocupada.' }
+    ]
+  },
+  {
+    nome: 'Amorim Tech & Predial 4.0',
+    icone: 'sparkles',
+    cor: 'copper',
+    prompts: [
+      {
+        id: 'AT001',
+        titulo: 'Estruturar Ficha de Dano para Laudo',
+        descricao: 'Ajuda a redigir uma ficha de dano tecnicamente precisa',
+        prompt: 'Redija a manifestação técnica e a recomendação preliminar para uma ocorrência de [tipo de dano] identificada em [elemento construtivo], classificando como Anomalia ou Falha e sugerindo criticidade P1/P2/P3, conforme os padrões da NBR 16747.',
+        quandoUsar: 'Ao redigir o corpo técnico de uma inspeção predial conforme NBR 16747 com foco em rigor normativo e classificação precisa de anomalias.',
+        exemploSaida: 'Manifestação Técnica: Identificada fissuração vertical com abertura média de 0,4mm em alvenaria de vedação externa. Classificação: Falha de Manutenção (NBR 16747). Grau de Criticidade: P2 (Média prioridade). Recomendação: Mapeamento de fissuras por 30 dias e tratamento com selante elastomérico.'
+      },
+      {
+        id: 'AT002',
+        titulo: 'Roteiro de Vistoria Cautelar',
+        descricao: 'Gera checklist de vistoria antes de início de obra vizinha',
+        prompt: 'Monte um roteiro de vistoria cautelar de vizinhança para uma obra de [tipo/porte], cobrindo os imóveis num raio de [distância], seguindo os 14 itens obrigatórios da IBAPE/SP 2025 e NBR 13752:2024 — sem determinar causas, apenas registro de estado.',
+        quandoUsar: 'Antes do início de escavações, fundações ou demolições para registrar o estado fático dos imóveis lindeiros e mitigar riscos jurídicos.',
+        exemploSaida: 'Checklist de Vistoria Cautelar: 1. Identificação do imóvel e proprietário; 2. Tipologia estrutural; 3. Registro fotográfico de trincas preexistentes; 4. Estado de esquadrias e pisos; 5. Nivelamento visual e fechamento de vãos; 6. Termo de anuência e registro de data fática.'
+      },
+      {
+        id: 'AT003',
+        titulo: 'Resumo Executivo de Laudo Predial',
+        descricao: 'Transforma um laudo técnico em resumo para leigos',
+        prompt: 'Com base no seguinte laudo técnico de inspeção predial [colar trecho ou resumo do laudo], escreva um resumo executivo em linguagem acessível para síndico/gestor não-técnico, destacando os pontos críticos e prazos recomendados.',
+        quandoUsar: 'Para apresentar conclusões de laudos complexos em reuniões de condomínio, assembleias ou para gestores sem formação em engenharia.',
+        exemploSaida: 'Resumo Executivo para Gestão Condominial: A inspeção identificou 3 itens prioritários: 1) Infiltração na laje da garagem (risco de corrosão - ação em 15 dias); 2) Quadro de bombas sem aterramento (risco elétrico - ação imediata); 3) Fissuras em fachada (estética - ação em 90 dias). Orçamento estimado e cronograma sugerido anexados.'
+      },
+      {
+        id: 'AT004',
+        titulo: 'Roteiro de Aula — Curso Predial 4.0',
+        descricao: 'Estrutura conteúdo didático para o curso presencial',
+        prompt: 'Desenvolva um roteiro de aula de [duração] sobre [tema do módulo do curso Predial 4.0], incluindo objetivos de aprendizagem, atividade prática e pontos de verificação de compreensão dos alunos.',
+        quandoUsar: 'Na elaboração de módulos de capacitação técnica, treinamentos in-company e cursos de inspeção e engenharia diagnóstica.',
+        exemploSaida: 'Plano de Aula: Módulo Diagnóstico de Fachadas (4h). Bloco 1 (60 min): Ensaios percussivos e termografia. Bloco 2 (90 min): Estudo de caso real com análise fotográfica em grupos. Bloco 3 (60 min): Elaboração da matriz de criticidade P1/P2/P3. Bloco 4 (30 min): Quiz interativo e fechamento.'
+      },
+      {
+        id: 'AT005',
+        titulo: 'Proposta Comercial — Serviço de Inspeção Predial',
+        descricao: 'Gera rascunho de proposta comercial genérica',
+        prompt: 'Redija uma proposta comercial para serviço de inspeção predial conforme NBR 16747, para uma edificação de [tipo/porte], incluindo escopo, prazo estimado e estrutura de honorários — usando linguagem genérica sem nomear cliente específico.',
+        quandoUsar: 'Para envio rápido a potenciais clientes, condomínios comerciais/residenciais e administradoras de bens.',
+        exemploSaida: 'Proposta Técnica e Comercial: Objeto: Inspeção Predial Global Nível 2 (NBR 16747). Escopo: Análise estrutural visual, instalações hidrossanitárias, elétricas, SPDA e impermeabilização. Entregáveis: Laudo com ART, fichas de não conformidade e plano de priorização. Prazos: 10 dias úteis de campo e 15 dias para entrega do laudo.'
+      },
+      {
+        id: 'AT006',
+        titulo: 'Roteiro de Post — Blog Mundo 4.0',
+        descricao: 'Gera pauta de conteúdo para o blog institucional',
+        prompt: 'Crie uma pauta de post para o Blog Mundo 4.0 sobre [tema de Construção 4.0/Gestão/Tecnologia], com título sugestivo, 3 subtópicos e uma chamada para ação relacionada à Comunidade Business 4.0.',
+        quandoUsar: 'Na produção de artigos para posicionamento de autoridade digital e atração de profissionais para a comunidade e ecossistema.',
+        exemploSaida: 'Pauta: Título: "Gêmeos Digitais na Manutenção Predial: Como Reduzir Custos em até 30%". Subtópicos: 1) O que são Digital Twins aplicados a facilities; 2) Sensores IoT e monitoramento contínuo de recalques e umidade; 3) Passo a passo para migrar do corretivo ao preditivo. CTA: Participe da discussão no Fórum de Tecnologia da Comunidade Business 4.0.'
+      },
+      {
+        id: 'AT007',
+        titulo: 'Justificativa Técnica — Nível de Inspeção',
+        descricao: 'Ajuda a fundamentar a escolha do nível de vistoria',
+        prompt: 'Justifique tecnicamente a adoção do Nível [1/2/3] de inspeção predial para uma edificação de [tipo/porte/idade], conforme os critérios da NBR 16747:2020.',
+        quandoUsar: 'Para respaldar perante clientes ou órgãos fiscalizadores a metodologia escolhida e a profundidade dos ensaios contratados.',
+        exemploSaida: 'Fundamentação Técnica: A escolha pelo Nível 2 de Inspeção Predial (NBR 16747:2020) justifica-se pela idade do edifício (18 anos), complexidade dos sistemas eletromecânicos e ausência de histórico completo de manutenções preventivas, demandando ensaios complementares não destrutivos.'
+      },
+      {
+        id: 'AT008',
+        titulo: 'Roteiro de Onboarding — Novo Membro da Comunidade',
+        descricao: 'Gera mensagem de boas-vindas personalizada',
+        prompt: 'Escreva uma mensagem de boas-vindas para um novo membro da Comunidade Business 4.0 que atua como [perfil profissional], destacando os recursos mais relevantes para esse perfil (Fórum, Vagas, Cursos, Materiais).',
+        quandoUsar: 'Para engajar novos membros recém-inscritos na plataforma e direcioná-los às áreas de maior valor de acordo com seu perfil.',
+        exemploSaida: 'Boas-vindas à Comunidade Business 4.0! Como perito em engenharia diagnóstica, você terá acesso imediato à Biblioteca de 369 Prompts Técnicos, ao Módulo de Reajuste de Contratos Públicos e às discussões sobre novas normas no Fórum. Comece apresentando-se no canal de Networking!'
+      }
     ]
   }
 ];

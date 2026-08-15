@@ -33,7 +33,7 @@ export interface PromptComCategoria extends PromptItem {
                 Biblioteca de Prompts
               </h2>
               <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                361 prompts especializados para engenharia civil — encontre, copie e use na sua ferramenta de IA preferida.
+                {{ totalPromptsGeral }} prompts especializados para engenharia civil e inspeção predial — encontre, copie e use na sua ferramenta de IA preferida.
               </p>
             </div>
 
@@ -131,7 +131,8 @@ export interface PromptComCategoria extends PromptItem {
           @for (item of promptsFiltrados(); track item.id) {
             <div
               class="bg-white rounded-2xl border transition-all duration-200 shadow-2xs overflow-hidden"
-              [class.border-indigo-300]="itemExpandido() === item.id"
+              [class.border-indigo-300]="itemExpandido() === item.id && item.categoriaCor !== 'copper'"
+              [class.border-[#B5642A]/50]="itemExpandido() === item.id && item.categoriaCor === 'copper'"
               [class.border-slate-200]="itemExpandido() !== item.id"
               [class.shadow-md]="itemExpandido() === item.id"
             >
@@ -147,6 +148,11 @@ export interface PromptComCategoria extends PromptItem {
                       {{ item.categoriaNome }}
                     </span>
                     <span class="text-[11px] font-mono font-bold text-slate-400">#{{ item.id }}</span>
+                    @if (item.quandoUsar) {
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#B5642A]/10 text-[#B5642A] border border-[#B5642A]/20">
+                        Contexto Especializado
+                      </span>
+                    }
                   </div>
 
                   <h3 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
@@ -193,7 +199,19 @@ export interface PromptComCategoria extends PromptItem {
               <!-- Conteúdo Expandido com Prompt Formatado -->
               @if (itemExpandido() === item.id) {
                 <div class="px-4 pb-4 sm:px-5 sm:pb-5 pt-1 border-t border-slate-100 bg-slate-50/50 space-y-3">
-                  <div class="flex items-center justify-between pt-2">
+                  
+                  <!-- Quando Usar (Contexto opcional) -->
+                  @if (item.quandoUsar) {
+                    <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200/70 text-amber-950 text-xs flex items-start gap-2.5">
+                      <span class="text-base shrink-0">💡</span>
+                      <div class="space-y-0.5">
+                        <span class="font-bold text-amber-900">Quando usar:</span>
+                        <p class="italic text-amber-900/90 leading-relaxed">{{ item.quandoUsar }}</p>
+                      </div>
+                    </div>
+                  }
+
+                  <div class="flex items-center justify-between pt-1">
                     <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                       <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -217,6 +235,39 @@ export interface PromptComCategoria extends PromptItem {
                     }
                   </div>
 
+                  <!-- Exemplo de Saída (Colapsável Opcional) -->
+                  @if (item.exemploSaida) {
+                    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                      <button
+                        type="button"
+                        (click)="toggleExemploSaida(item.id, $event)"
+                        class="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100 text-left text-xs font-bold text-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div class="flex items-center gap-2">
+                          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Ver exemplo de resultado esperado</span>
+                        </div>
+                        <svg
+                          class="w-4 h-4 text-slate-400 transition-transform duration-200"
+                          [class.rotate-180]="exemploExpandido() === item.id"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      @if (exemploExpandido() === item.id) {
+                        <div class="p-3.5 text-xs text-slate-700 font-sans leading-relaxed border-t border-slate-200 bg-slate-50/40">
+                          <p class="whitespace-pre-line">{{ item.exemploSaida }}</p>
+                        </div>
+                      }
+                    </div>
+                  }
+
                   <!-- Ações do Rodapé do Card -->
                   <div class="flex items-center justify-between pt-1">
                     <span class="text-[11px] text-slate-500">
@@ -238,7 +289,7 @@ export interface PromptComCategoria extends PromptItem {
                         <span>Copiado com Sucesso!</span>
                       } @else {
                         <svg class="w-4 h-4 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                         <span>Copiar Este Prompt</span>
                       }
@@ -298,6 +349,7 @@ export class BibliotecaPromptsComponent {
   readonly buscaTexto = signal<string>('');
   readonly categoriaSelecionada = signal<string>('todas');
   readonly itemExpandido = signal<string | null>(null);
+  readonly exemploExpandido = signal<string | null>(null);
   readonly promptCopiadoId = signal<string | null>(null);
 
   // Lista plana de todos os prompts com metadados de categoria
@@ -330,8 +382,9 @@ export class BibliotecaPromptsComponent {
         const matchPrompt = item.prompt.toLowerCase().includes(busca);
         const matchId = item.id.toLowerCase().includes(busca);
         const matchCat = item.categoriaNome.toLowerCase().includes(busca);
+        const matchQuando = item.quandoUsar?.toLowerCase().includes(busca) || false;
 
-        return matchTitulo || matchDesc || matchPrompt || matchId || matchCat;
+        return matchTitulo || matchDesc || matchPrompt || matchId || matchCat || matchQuando;
       }
 
       return true;
@@ -361,6 +414,15 @@ export class BibliotecaPromptsComponent {
       this.itemExpandido.set(null);
     } else {
       this.itemExpandido.set(id);
+    }
+  }
+
+  toggleExemploSaida(id: string, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.exemploExpandido() === id) {
+      this.exemploExpandido.set(null);
+    } else {
+      this.exemploExpandido.set(id);
     }
   }
 
@@ -425,6 +487,8 @@ export class BibliotecaPromptsComponent {
 
     if (selecionada) {
       switch (cor) {
+        case 'copper':
+          return 'bg-[#B5642A] text-white border-[#B5642A] font-black shadow-xs ring-2 ring-[#B5642A]/20';
         case 'blue':
           return 'bg-blue-600 text-white border-blue-600 font-black shadow-xs';
         case 'emerald':
@@ -442,6 +506,8 @@ export class BibliotecaPromptsComponent {
     }
 
     switch (cor) {
+      case 'copper':
+        return 'bg-[#B5642A]/10 text-[#B5642A] border-[#B5642A]/30 hover:bg-[#B5642A]/20 font-bold';
       case 'blue':
         return 'bg-blue-50/70 text-blue-900 border-blue-200 hover:bg-blue-100 font-semibold';
       case 'emerald':
@@ -464,6 +530,8 @@ export class BibliotecaPromptsComponent {
       return 'bg-white/20 text-white';
     }
     switch (cor) {
+      case 'copper':
+        return 'bg-[#B5642A]/20 text-[#B5642A] font-bold';
       case 'blue':
         return 'bg-blue-200/70 text-blue-900';
       case 'emerald':
@@ -482,6 +550,8 @@ export class BibliotecaPromptsComponent {
 
   obterBadgeCategoria(cor: string): string {
     switch (cor) {
+      case 'copper':
+        return 'bg-[#B5642A]/10 text-[#B5642A] border-[#B5642A]/30 font-bold';
       case 'blue':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'emerald':

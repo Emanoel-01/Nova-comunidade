@@ -127,14 +127,14 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
                   Biblioteca de Prompts
                 </h4>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                  361 prompts especializados prontos para copiar e usar na sua ferramenta de IA preferida.
+                  369 prompts especializados prontos para copiar e usar na sua ferramenta de IA preferida.
                 </p>
               </div>
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">361 Prompts</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">6 Categorias</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">369 Prompts</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">7 Categorias</span>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Copiar c/ 1 Clique</span>
               </div>
             </div>
