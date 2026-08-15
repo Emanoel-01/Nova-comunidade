@@ -4,6 +4,7 @@ import { PlaceholderPageComponent } from './components/placeholder-page.componen
 import { AmorimArquiteturaComponent } from './components/amorim-arquitetura.component';
 import { AmorimTechComponent } from './components/amorim-tech.component';
 import { AmorimAcademyComponent } from './components/amorim-academy.component';
+import { ContatoComponent } from './components/contato.component';
 
 export const routes: Routes = [
   {
@@ -34,8 +35,7 @@ export const routes: Routes = [
   },
   {
     path: 'contato',
-    component: PlaceholderPageComponent,
-    data: { title: 'Contato' },
+    component: ContatoComponent,
   },
   {
     path: 'admin',
