@@ -77,32 +77,50 @@ export class ServiceGridComponent {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md group">
+    <div
+      class="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-2xl overflow-hidden shadow-md group"
+      [class]="projects().length > 0 ? 'bg-slate-900 border border-slate-800' : 'bg-slate-100 border border-slate-200/80 flex items-center justify-center p-6 text-center'"
+    >
       @if (projects().length > 0) {
         @let current = projects()[currentIndex()];
-        <!-- Imagem de Fundo com Transição -->
-        <img
-          [src]="current.img"
-          [alt]="current.title"
-          class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
-          referrerpolicy="no-referrer"
-        />
+        @if (current.img) {
+          <!-- Imagem de Fundo com Transição -->
+          <img
+            [src]="current.img"
+            [alt]="current.title"
+            class="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+            referrerpolicy="no-referrer"
+          />
 
-        <!-- Gradiente Escuro Sobreposto -->
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+          <!-- Gradiente Escuro Sobreposto -->
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
 
-        <!-- Informações do Projeto na parte inferior -->
-        <div class="absolute inset-x-0 bottom-0 p-5 z-10 flex flex-col justify-end">
-          <span class="text-[11px] font-bold uppercase tracking-wider text-blue-400 mb-1">
-            {{ current.year }} · {{ current.client }}
-          </span>
-          <h4 class="text-base sm:text-lg font-bold text-white leading-snug mb-1">
-            {{ current.title }}
-          </h4>
-          <p class="text-xs text-slate-300 font-medium">
-            📍 {{ current.location }}
-          </p>
-        </div>
+          <!-- Informações do Projeto na parte inferior -->
+          <div class="absolute inset-x-0 bottom-0 p-5 z-10 flex flex-col justify-end">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-blue-400 mb-1">
+              {{ current.year }} · {{ current.client }}
+            </span>
+            <h4 class="text-base sm:text-lg font-bold text-white leading-snug mb-1">
+              {{ current.title }}
+            </h4>
+            <p class="text-xs text-slate-300 font-medium">
+              📍 {{ current.location }}
+            </p>
+          </div>
+        } @else {
+          <!-- Fallback para item sem imagem (fundo sólido escuro com texto legível) -->
+          <div class="w-full h-full bg-slate-800 flex flex-col items-center justify-center p-6 text-center z-10">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-blue-400 mb-2">
+              {{ current.year }} · {{ current.client }}
+            </span>
+            <h4 class="text-base sm:text-lg font-bold text-white leading-snug mb-2 max-w-[240px]">
+              {{ current.title }}
+            </h4>
+            <p class="text-xs text-slate-300 font-medium">
+              📍 {{ current.location }}
+            </p>
+          </div>
+        }
 
         <!-- Botões de Navegação Manual (Setas) -->
         <div class="absolute inset-y-0 left-2 right-2 flex items-center justify-between pointer-events-none z-20">
@@ -137,6 +155,17 @@ export class ServiceGridComponent {
             ></button>
           }
         </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center space-y-3 text-slate-500 max-w-[220px]">
+          <div class="w-10 h-10 rounded-full bg-slate-200/80 text-slate-500 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <p class="text-xs sm:text-sm font-medium text-slate-500 leading-relaxed">
+            Em breve: cases de manutenção predial contínua.
+          </p>
+        </div>
       }
     </div>
   `
@@ -157,6 +186,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
 
   startAutoPlay(): void {
     this.stopAutoPlay();
+    if (this.projects().length <= 1) return;
     this.intervalId = setInterval(() => {
       this.next();
     }, 4000);
@@ -353,13 +383,6 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
 export class AmorimArquiteturaComponent {
   readonly gestaoProjetos: PortfolioProject[] = [
     {
-      img: 'https://static.wixstatic.com/media/152459_6339ba323283427daa071eb7d16349ab~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/2014.jpg',
-      title: 'Gerenciamento da Nova Sede do CRC/PE',
-      year: '2021',
-      client: 'CRC/PE',
-      location: 'Recife/PE'
-    },
-    {
       img: 'https://static.wixstatic.com/media/152459_306189bdcd0d41e583a79b549afcba9c~mv2.jpg/v1/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/CRC-PE%20-%20VISTA%2001.jpg',
       title: 'Projeto Nova Sede CRC/PE',
       year: '2017',
@@ -393,23 +416,13 @@ export class AmorimArquiteturaComponent {
       year: '2015',
       client: 'SETUR/PE',
       location: 'Recife/PE'
-    }
-  ];
-
-  readonly gestaoObras: PortfolioProject[] = [
+    },
     {
       img: 'https://static.wixstatic.com/media/152459_bcf3588cf83b4d30afb4dd255a9c3e07~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/DSC00299_JPG.jpg',
       title: 'Capela São João Batista do Brum',
       year: '2017',
       client: 'Exército Brasileiro',
       location: 'Recife/PE'
-    },
-    {
-      img: 'https://static.wixstatic.com/media/152459_0dedafe2eeda4698981281984bcf0c99~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Basilica%20do%20Carmo%20_JPG.jpg',
-      title: 'Restauração Basílica do Carmo',
-      year: '2019',
-      client: 'FUNDARPE',
-      location: 'Olinda/PE'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_eba2191949b14057a6b1fc5693f2ab8c~mv2.jpg/v1/crop/x_322,y_0,w_957,h_1200/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/taatro11.jpg',
@@ -431,16 +444,6 @@ export class AmorimArquiteturaComponent {
       year: '2015',
       client: 'JFPE',
       location: 'Recife/PE'
-    }
-  ];
-
-  readonly gestaoManutencao: PortfolioProject[] = [
-    {
-      img: 'https://static.wixstatic.com/media/152459_15e60566f08a4fcf828b0c37630ce2ed~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/sol.jpg',
-      title: 'Usina Solar CRC/PE',
-      year: '2023',
-      client: 'CRC/PE',
-      location: 'Recife/PE'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_e7a542e59257490a8661700ab41915fa~mv2.jpg/v1/crop/x_77,y_0,w_265,h_332/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/blog-engenho_edited.jpg',
@@ -455,6 +458,47 @@ export class AmorimArquiteturaComponent {
       year: '2011',
       client: 'IPHAN',
       location: 'Pernambuco'
+    }
+  ];
+
+  readonly gestaoObras: PortfolioProject[] = [
+    {
+      img: 'https://static.wixstatic.com/media/152459_6339ba323283427daa071eb7d16349ab~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/2014.jpg',
+      title: 'Gerenciamento da Nova Sede do CRC/PE',
+      year: '2021',
+      client: 'CRC/PE',
+      location: 'Recife/PE'
+    },
+    {
+      img: 'https://static.wixstatic.com/media/152459_0dedafe2eeda4698981281984bcf0c99~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Basilica%20do%20Carmo%20_JPG.jpg',
+      title: 'Restauração Basílica do Carmo',
+      year: '2019',
+      client: 'FUNDARPE',
+      location: 'Olinda/PE'
+    },
+    {
+      img: 'https://static.wixstatic.com/media/152459_15e60566f08a4fcf828b0c37630ce2ed~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/sol.jpg',
+      title: 'Usina Solar CRC/PE',
+      year: '2023',
+      client: 'CRC/PE',
+      location: 'Recife/PE'
+    },
+    {
+      img: '',
+      title: 'Fiscalização das Obras de Restauro no Palácio Joaquim Nabuco (ALEPE)',
+      year: '2026',
+      client: 'ALEPE',
+      location: 'Recife/PE'
+    }
+  ];
+
+  readonly gestaoManutencao: PortfolioProject[] = [
+    {
+      img: 'https://static.wixstatic.com/media/152459_c74871c783f44018b3dd0af7f80dd576~mv2.jpg/v1/crop/x_161,y_0,w_373,h_464/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Artesanato%20Itapissuma.jpg',
+      title: 'Reforma do Mercado de Itapissuma',
+      year: '2013',
+      client: 'SETUR',
+      location: 'Itapissuma/PE'
     }
   ];
 

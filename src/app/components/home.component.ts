@@ -82,7 +82,7 @@ interface Institution {
               <img
                 [src]="inst.logo"
                 [alt]="inst.name"
-                class="max-h-12 w-auto object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+                class="max-h-12 w-auto object-contain"
                 referrerpolicy="no-referrer"
               />
             </a>
