@@ -10,11 +10,30 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HallFamaComponent } from './hall-fama.component';
 import { ComunidadeCursoComponent } from './comunidade/comunidade-curso.component';
+import { ComunidadeFeedComponent } from './comunidade/comunidade-feed.component';
+import { ComunidadePerfilComponent } from './comunidade/comunidade-perfil.component';
+import { ComunidadeVagasComponent } from './comunidade/comunidade-vagas.component';
+import { ComunidadeMateriaisComponent } from './comunidade/comunidade-materiais.component';
+import { ComunidadeEventosComponent } from './comunidade/comunidade-eventos.component';
+import { ComunidadeForumComponent } from './comunidade/comunidade-forum.component';
+import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.component';
 
 @Component({
   selector: 'app-comunidade-preview',
   standalone: true,
-  imports: [CommonModule, RouterModule, HallFamaComponent, ComunidadeCursoComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    HallFamaComponent,
+    ComunidadeCursoComponent,
+    ComunidadeFeedComponent,
+    ComunidadePerfilComponent,
+    ComunidadeVagasComponent,
+    ComunidadeMateriaisComponent,
+    ComunidadeEventosComponent,
+    ComunidadeForumComponent,
+    ComunidadeMensagensComponent
+  ],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col relative pb-20 md:pb-0">
       
@@ -183,7 +202,7 @@ import { ComunidadeCursoComponent } from './comunidade/comunidade-curso.componen
                 <span>Meu Perfil</span>
               </button>
 
-              <!-- 9. Curso Predial 4.0 -->
+              <!-- 9. Cursos -->
               <button
                 type="button"
                 (click)="selecionarAba('curso')"
@@ -194,7 +213,7 @@ import { ComunidadeCursoComponent } from './comunidade/comunidade-curso.componen
                 <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                <span>Curso Predial 4.0</span>
+                <span>Cursos</span>
               </button>
 
             </nav>
@@ -235,7 +254,28 @@ import { ComunidadeCursoComponent } from './comunidade/comunidade-curso.componen
           </div>
 
           <!-- Renderização do Conteúdo da Aba -->
-          @if (abaAtiva() === 'hall-fama') {
+          @if (abaAtiva() === 'feed') {
+            <!-- Área do Feed -->
+            <app-comunidade-feed></app-comunidade-feed>
+          } @else if (abaAtiva() === 'perfil') {
+            <!-- Área do Perfil -->
+            <app-comunidade-perfil></app-comunidade-perfil>
+          } @else if (abaAtiva() === 'vagas') {
+            <!-- Área do Mural de Vagas -->
+            <app-comunidade-vagas></app-comunidade-vagas>
+          } @else if (abaAtiva() === 'materiais') {
+            <!-- Área da Biblioteca de Materiais -->
+            <app-comunidade-materiais></app-comunidade-materiais>
+          } @else if (abaAtiva() === 'eventos') {
+            <!-- Área do Calendário de Eventos -->
+            <app-comunidade-eventos></app-comunidade-eventos>
+          } @else if (abaAtiva() === 'forum') {
+            <!-- Área do Fórum Técnico -->
+            <app-comunidade-forum></app-comunidade-forum>
+          } @else if (abaAtiva() === 'mensagens') {
+            <!-- Área de Mensagens Privadas (Chat) -->
+            <app-comunidade-mensagens></app-comunidade-mensagens>
+          } @else if (abaAtiva() === 'hall-fama') {
             <!-- Hall da Fama Conectado ao Componente Real -->
             <div class="space-y-6">
               <div class="p-4 rounded-2xl bg-white border border-slate-200 text-xs text-slate-600">
@@ -288,7 +328,7 @@ import { ComunidadeCursoComponent } from './comunidade/comunidade-curso.componen
               <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              <span>Curso Predial 4.0</span>
+              <span>Cursos</span>
             </button>
 
             <button
@@ -442,7 +482,7 @@ export class ComunidadePreviewComponent {
     'hall-fama': 'Hall da Fama',
     'mensagens': 'Mensagens Diretas',
     'perfil': 'Meu Perfil de Membro',
-    'curso': 'Curso Predial 4.0'
+    'curso': 'Cursos & Capacitações'
   };
 
   fecharFaixa(): void {

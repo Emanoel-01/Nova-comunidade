@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface ModuloCurso {
@@ -16,398 +16,573 @@ export interface PerguntaAvaliacao {
   respostaCorretaIndex: number;
 }
 
+export interface Curso {
+  id: string;
+  titulo: string;
+  descricao: string;
+  moduloPredialVinculado: string | null; // null = curso avulso, sem vínculo com o app
+  modulos: ModuloCurso[];
+  perguntas: PerguntaAvaliacao[];
+  textoValidadeCertificado: string;
+}
+
 @Component({
   selector: 'app-admin-curso',
   standalone: true,
   imports: [CommonModule],
   template: `
     <div class="space-y-8">
-      
-      <!-- Sub-navegação interna das 4 seções -->
-      <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 scrollbar-none">
-        <button
-          type="button"
-          (click)="setSecaoAtiva('modulos')"
-          [class]="secaoAtiva() === 'modulos'
-            ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-            : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-        >
-          1. Módulos do Curso
-        </button>
 
-        <button
-          type="button"
-          (click)="setSecaoAtiva('avaliacao')"
-          [class]="secaoAtiva() === 'avaliacao'
-            ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-            : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-        >
-          2. Avaliação & Prova
-        </button>
-
-        <button
-          type="button"
-          (click)="setSecaoAtiva('certificado')"
-          [class]="secaoAtiva() === 'certificado'
-            ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-            : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-        >
-          3. Certificado
-        </button>
-
-        <button
-          type="button"
-          (click)="setSecaoAtiva('alunos')"
-          [class]="secaoAtiva() === 'alunos'
-            ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-            : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-        >
-          4. Alunos Matriculados
-        </button>
-      </div>
-
-      <!-- SEÇÃO 1: MÓDULOS DO CURSO -->
-      @if (secaoAtiva() === 'modulos') {
+      <!-- CASO 1: NENHUM CURSO SELECIONADO -> LISTA "MEUS CURSOS" -->
+      @if (cursoSelecionadoId() === null) {
         <div class="space-y-6">
+          
+          <!-- Cabeçalho da Lista de Cursos -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 class="text-lg font-bold text-slate-900">
-                Grade de Módulos & Vídeos Vimeo
+              <h3 class="text-xl font-bold text-slate-900">
+                Meus Cursos & Capacitações
               </h3>
               <p class="text-xs sm:text-sm text-slate-500">
-                Estruture as aulas, links de streaming restrito e materiais de apoio.
+                Gerencie múltiplos cursos, grades de videoaulas, avaliações de proficiência e certificados.
               </p>
             </div>
 
             <button
               type="button"
-              (click)="adicionarModulo()"
+              (click)="abrirModalCriarCurso()"
               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              <span>Adicionar Módulo</span>
+              <span>Criar Novo Curso</span>
             </button>
           </div>
 
-          <!-- Lista de Cards de Módulo -->
-          <div class="space-y-6">
-            @for (modulo of modulos(); track modulo.id; let i = $index) {
-              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
-                
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center justify-center">
-                      {{ i + 1 }}
-                    </span>
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      Módulo {{ i + 1 }}
-                    </span>
+          <!-- Formulário / Modal de Criação de Curso -->
+          @if (criandoNovoCurso()) {
+            <div class="bg-indigo-50/50 border border-indigo-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+              <div class="flex items-center justify-between border-b border-indigo-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                    +
                   </div>
-
-                  @if (modulos().length > 1) {
-                    <button
-                      type="button"
-                      (click)="removerModulo(modulo.id)"
-                      class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
-                    >
-                      Remover módulo
-                    </button>
-                  }
+                  <h4 class="text-base font-bold text-slate-900">Novo Curso</h4>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  <!-- Título do Módulo -->
-                  <div class="md:col-span-8 space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700">
-                      Título do Módulo
-                    </label>
-                    <input
-                      type="text"
-                      [value]="modulo.titulo"
-                      (input)="atualizarTituloModulo(modulo.id, $event)"
-                      placeholder="Ex: Módulo 1 — Fundamentos de Patologia"
-                      class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
-                  </div>
-
-                  <!-- Duração Estimada -->
-                  <div class="md:col-span-4 space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700">
-                      Duração Estimada
-                    </label>
-                    <input
-                      type="text"
-                      [value]="modulo.duracaoEstimada"
-                      (input)="atualizarDuracaoModulo(modulo.id, $event)"
-                      placeholder="Ex: 45 min"
-                      class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
-                  </div>
-
-                  <!-- Link do Vídeo (Vimeo) -->
-                  <div class="md:col-span-12 space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700">
-                      Link do Vídeo (Vimeo)
-                    </label>
-                    <div class="relative">
-                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
-                        </svg>
-                      </div>
-                      <input
-                        type="url"
-                        [value]="modulo.linkVimeo"
-                        (input)="atualizarLinkVimeoModulo(modulo.id, $event)"
-                        placeholder="https://player.vimeo.com/video/123456789"
-                        class="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                      />
-                    </div>
-                    <p class="text-[11px] text-slate-500 italic">
-                      Cole aqui o link de embed do Vimeo (com restrição de domínio configurada no player).
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Lista de Materiais Anexos do Módulo -->
-                <div class="pt-3 border-t border-slate-100 space-y-3">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-700">
-                      Materiais de Apoio (PDF, Planilhas, Modelos)
-                    </span>
-                    <span class="text-[11px] text-slate-400 font-medium">
-                      {{ modulo.materiais.length }} anexo(s)
-                    </span>
-                  </div>
-
-                  @if (modulo.materiais.length > 0) {
-                    <div class="space-y-2">
-                      @for (mat of modulo.materiais; track mat.id) {
-                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-                          <div class="flex items-center gap-2 text-slate-700 truncate">
-                            <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            <span class="font-medium truncate">{{ mat.nome }}</span>
-                          </div>
-                          <button
-                            type="button"
-                            (click)="removerMaterial(modulo.id, mat.id)"
-                            class="text-slate-400 hover:text-rose-600 transition-colors p-1"
-                            title="Remover anexo"
-                          >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  }
-
-                  <!-- Formulário Rápido para Adicionar Material -->
-                  <div class="flex gap-2">
-                    <input
-                      type="text"
-                      #novoMatInput
-                      placeholder="Nome do arquivo (ex: Checklist_Inspecao_Predial.pdf)"
-                      class="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
-                    <button
-                      type="button"
-                      (click)="adicionarMaterial(modulo.id, novoMatInput.value); novoMatInput.value = ''"
-                      class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
-                    >
-                      + Anexar
-                    </button>
-                  </div>
-                </div>
-
+                <button
+                  type="button"
+                  (click)="cancelarCriacaoCurso()"
+                  class="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                >
+                  Cancelar
+                </button>
               </div>
-            }
-          </div>
-        </div>
-      }
 
-      <!-- SEÇÃO 2: AVALIAÇÃO & PROVA -->
-      @if (secaoAtiva() === 'avaliacao') {
-        <div class="space-y-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 class="text-lg font-bold text-slate-900">
-                Banco de Questões da Avaliação
-              </h3>
-              <p class="text-xs sm:text-sm text-slate-500">
-                Defina as perguntas, alternativas e o gabarito oficial para aprovação e certificação.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              (click)="adicionarPergunta()"
-              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Adicionar Pergunta</span>
-            </button>
-          </div>
-
-          <div class="space-y-6">
-            @for (pergunta of perguntas(); track pergunta.id; let i = $index) {
-              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-                
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-                    Questão {{ i + 1 }}
-                  </span>
-                  @if (perguntas().length > 1) {
-                    <button
-                      type="button"
-                      (click)="removerPergunta(pergunta.id)"
-                      class="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
-                    >
-                      Remover questão
-                    </button>
-                  }
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.5 sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700">Título do Curso *</label>
+                  <input
+                    type="text"
+                    #novoTituloInput
+                    placeholder="Ex: Fundamentos de BIM para Engenharia Diagnóstica"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
 
-                <!-- Enunciado -->
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-bold text-slate-700">
-                    Enunciado da Questão
-                  </label>
+                <div class="space-y-1.5 sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700">Descrição Curta *</label>
                   <textarea
+                    #novaDescricaoInput
                     rows="2"
-                    [value]="pergunta.enunciado"
-                    (input)="atualizarEnunciado(pergunta.id, $event)"
-                    placeholder="Escreva a pergunta técnica..."
-                    class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    placeholder="Breve resumo sobre os objetivos e diretrizes do curso..."
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   ></textarea>
                 </div>
 
-                <!-- 4 Alternativas com seleção de gabarito -->
-                <div class="space-y-2.5 pt-2">
+                <div class="space-y-1.5 sm:col-span-2">
                   <label class="block text-xs font-bold text-slate-700">
-                    Alternativas (Marque a opção correta):
+                    Vínculo com Módulo do Predial 4.0 (Opcional)
                   </label>
-                  
-                  @for (alt of pergunta.alternativas; track $index; let idxAlt = $index) {
-                    <div class="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        [name]="'gabarito-' + pergunta.id"
-                        [checked]="pergunta.respostaCorretaIndex === idxAlt"
-                        (change)="definirGabarito(pergunta.id, idxAlt)"
-                        class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
-                      />
-                      <span class="text-xs font-bold text-slate-500 w-4">
-                        {{ getLetraAlternativa(idxAlt) }})
+                  <select
+                    #novoVinculoSelect
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="nenhum">Nenhum (curso avulso / sem vínculo com o app)</option>
+                    <option value="Inspeção Predial">Inspeção Predial (Libera módulo de inspeção)</option>
+                    <option value="Vistoria Cautelar de Vizinhança">Vistoria Cautelar de Vizinhança</option>
+                    <option value="Outros futuros">Outros módulos futuros</option>
+                  </select>
+                  <p class="text-[11px] text-slate-500">
+                    Cursos avulsos não exigem módulo vinculado. Se vinculado, a conclusão habilitará a funcionalidade respectiva no Predial 4.0.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  (click)="cancelarCriacaoCurso()"
+                  class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  (click)="salvarNovoCurso(novoTituloInput.value, novaDescricaoInput.value, novoVinculoSelect.value)"
+                  class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer"
+                >
+                  Criar e Configurar Curso
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Grade de Cursos Cadastrados -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            @for (curso of cursos(); track curso.id) {
+              <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all space-y-4">
+                <div class="space-y-3">
+                  <div class="flex items-start justify-between gap-3">
+                    @if (curso.moduloPredialVinculado) {
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                        Vinculado: {{ curso.moduloPredialVinculado }}
                       </span>
-                      <input
-                        type="text"
-                        [value]="alt"
-                        (input)="atualizarAlternativa(pergunta.id, idxAlt, $event)"
-                        placeholder="Texto da alternativa..."
-                        class="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                      />
-                    </div>
-                  }
+                    } @else {
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
+                        Curso Avulso
+                      </span>
+                    }
+
+                    <span class="text-xs font-semibold text-slate-500">
+                      {{ curso.modulos.length }} {{ curso.modulos.length === 1 ? 'módulo' : 'módulos' }}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 class="text-base font-bold text-slate-900">
+                      {{ curso.titulo }}
+                    </h4>
+                    <p class="text-xs text-slate-500 line-clamp-2 mt-1">
+                      {{ curso.descricao }}
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                    <span>📝 {{ curso.perguntas.length }} questões</span>
+                    <span>•</span>
+                    <span>📜 Certificado ativo</span>
+                  </div>
                 </div>
 
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <button
+                    type="button"
+                    (click)="removerCurso(curso.id)"
+                    class="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                  >
+                    Excluir
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="selecionarCursoParaEdicao(curso.id)"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Editar Conteúdo</span>
+                  </button>
+                </div>
               </div>
             }
           </div>
-        </div>
-      }
 
-      <!-- SEÇÃO 3: CERTIFICADO -->
-      @if (secaoAtiva() === 'certificado') {
-        <div class="space-y-6">
-          <div>
-            <h3 class="text-lg font-bold text-slate-900">
-              Configuração e Prévia do Certificado
-            </h3>
-            <p class="text-xs sm:text-sm text-slate-500">
-              Visualize o modelo emitido automaticamente aos alunos aprovados na avaliação final.
-            </p>
+        </div>
+      } @else {
+        <!-- CASO 2: UM CURSO SELECIONADO -> VISÃO DE EDIÇÃO DETALHADA -->
+        
+        <!-- Barra de Navegação Superior / Voltar -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              (click)="voltarParaListaCursos()"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar aos Cursos</span>
+            </button>
+
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 truncate">
+                  {{ cursoAtivo()?.titulo }}
+                </h3>
+                @if (cursoAtivo()?.moduloPredialVinculado) {
+                  <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 hidden sm:inline">
+                    Vinculado: {{ cursoAtivo()?.moduloPredialVinculado }}
+                  </span>
+                }
+              </div>
+              <p class="text-[11px] text-slate-500">Editando estrutura e configurações do curso</p>
+            </div>
           </div>
 
-          <!-- Card de Prévia Visual do Certificado -->
-          <div class="bg-gradient-to-br from-amber-50/60 via-white to-amber-50/40 rounded-3xl border-2 border-amber-300/80 p-8 sm:p-12 shadow-md relative overflow-hidden text-center space-y-6 max-w-3xl mx-auto">
-            <div class="absolute -top-12 -right-12 w-36 h-36 bg-amber-400/10 rounded-full blur-2xl"></div>
-            <div class="absolute -bottom-12 -left-12 w-36 h-36 bg-amber-400/10 rounded-full blur-2xl"></div>
+          <div class="text-xs text-slate-500">
+            {{ cursoAtivo()?.modulos?.length || 0 }} Módulos cadastrados
+          </div>
+        </div>
 
-            <div class="space-y-2">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-widest border border-amber-200">
-                ★ Certificado de Conclusão ★
+        <!-- Sub-navegação interna das 4 seções do curso ativo -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 scrollbar-none">
+          <button
+            type="button"
+            (click)="setSecaoAtiva('modulos')"
+            [class]="secaoAtiva() === 'modulos'
+              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
+              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
+          >
+            1. Módulos do Curso
+          </button>
+
+          <button
+            type="button"
+            (click)="setSecaoAtiva('avaliacao')"
+            [class]="secaoAtiva() === 'avaliacao'
+              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
+              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
+          >
+            2. Avaliação & Prova
+          </button>
+
+          <button
+            type="button"
+            (click)="setSecaoAtiva('certificado')"
+            [class]="secaoAtiva() === 'certificado'
+              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
+              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
+          >
+            3. Certificado
+          </button>
+
+          <button
+            type="button"
+            (click)="setSecaoAtiva('alunos')"
+            [class]="secaoAtiva() === 'alunos'
+              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
+              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
+          >
+            4. Alunos Matriculados
+          </button>
+        </div>
+
+        <!-- SEÇÃO 1: MÓDULOS DO CURSO ATIVO -->
+        @if (secaoAtiva() === 'modulos') {
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-lg font-bold text-slate-900">
+                  Grade de Módulos & Vídeos Vimeo
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-500">
+                  Estruture as aulas, links de streaming restrito e materiais de apoio deste curso.
+                </p>
               </div>
-              <h4 class="text-2xl sm:text-3xl font-serif font-black text-slate-900">
-                Predial 4.0 — Gestão e Inspeção Técnica
-              </h4>
+
+              <button
+                type="button"
+                (click)="adicionarModulo()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Adicionar Módulo</span>
+              </button>
             </div>
 
-            <p class="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-              Certificamos que <strong>[Nome do Aluno Matriculado]</strong> concluiu com êxito todas as etapas teórico-práticas e a avaliação técnica de proficiência do curso oficial.
-            </p>
+            <!-- Lista de Cards de Módulo -->
+            <div class="space-y-6">
+              @for (modulo of cursoAtivo()?.modulos || []; track modulo.id; let i = $index) {
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
+                  
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                      <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center">
+                        {{ i + 1 }}
+                      </span>
+                      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Configuração de Aula
+                      </span>
+                    </div>
 
-            <div class="pt-4 border-t border-amber-200/60 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4 max-w-lg mx-auto">
+                    <button
+                      type="button"
+                      (click)="removerModulo(modulo.id)"
+                      class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Remover</span>
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="space-y-1.5 sm:col-span-2">
+                      <label class="block text-xs font-bold text-slate-700">Título do Módulo</label>
+                      <input
+                        type="text"
+                        [value]="modulo.titulo"
+                        (input)="atualizarTituloModulo(modulo.id, $event)"
+                        placeholder="Ex: Módulo 1 — Fundamentos e Normas"
+                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-bold text-slate-700">Duração Estimada</label>
+                      <input
+                        type="text"
+                        [value]="modulo.duracaoEstimada"
+                        (input)="atualizarDuracaoModulo(modulo.id, $event)"
+                        placeholder="Ex: 45 min"
+                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div class="space-y-1.5 sm:col-span-3">
+                      <label class="block text-xs font-bold text-slate-700">Link do Vídeo Vimeo (Restrição de Domínio)</label>
+                      <div class="relative">
+                        <input
+                          type="text"
+                          [value]="modulo.linkVimeo"
+                          (input)="atualizarLinkVimeoModulo(modulo.id, $event)"
+                          placeholder="https://player.vimeo.com/video/..."
+                          class="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p class="text-[11px] text-slate-400">
+                        Recomendado: Configure o vídeo no Vimeo com privacidade "Ocultar do Vimeo" e restrinja a incorporação ao seu domínio.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Materiais de Apoio (Download) -->
+                  <div class="pt-3 border-t border-slate-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                      <label class="text-xs font-bold text-slate-700">Materiais Complementares (PDFs / Modelos)</label>
+                      <span class="text-[11px] text-slate-400">{{ modulo.materiais.length }} arquivos anexados</span>
+                    </div>
+
+                    <!-- Lista de Materiais -->
+                    <div class="flex flex-wrap gap-2">
+                      @for (mat of modulo.materiais; track mat.id) {
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs">
+                          <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          <span class="font-medium">{{ mat.nome }}</span>
+                          <button
+                            type="button"
+                            (click)="removerMaterial(modulo.id, mat.id)"
+                            class="text-slate-400 hover:text-rose-600 ml-1 cursor-pointer"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      }
+
+                      @if (modulo.materiais.length === 0) {
+                        <span class="text-xs text-slate-400 italic">Nenhum material de apoio anexado a este módulo.</span>
+                      }
+                    </div>
+
+                    <!-- Input para adicionar novo material -->
+                    <div class="flex items-center gap-2 pt-1">
+                      <input
+                        type="text"
+                        #novoMaterialInput
+                        placeholder="Nome do arquivo (ex: Modelo_Laudo_Tecnico.pdf)"
+                        class="flex-1 max-w-sm px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        (click)="adicionarMaterial(modulo.id, novoMaterialInput.value); novoMaterialInput.value = ''"
+                        class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        + Anexar
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- SEÇÃO 2: AVALIAÇÃO & PROVA -->
+        @if (secaoAtiva() === 'avaliacao') {
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <p class="font-bold text-slate-800">Emanoel Amorim</p>
-                <p class="text-[11px]">Amorim Serviços de Engenharia</p>
+                <h3 class="text-lg font-bold text-slate-900">
+                  Banco de Questões & Avaliação Final
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-500">
+                  Configure as perguntas que o aluno deverá responder para comprovar proficiência e emitir o certificado.
+                </p>
               </div>
-              <div class="text-center sm:text-right">
-                <p class="font-mono text-[11px] text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-200">
-                  Cód: P40-DEMO-2026
+
+              <button
+                type="button"
+                (click)="adicionarPergunta()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Adicionar Questão</span>
+              </button>
+            </div>
+
+            <!-- Lista de Questões -->
+            <div class="space-y-6">
+              @for (perg of cursoAtivo()?.perguntas || []; track perg.id; let i = $index) {
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <span class="font-bold text-sm text-slate-900">Questão {{ i + 1 }}</span>
+                    <button
+                      type="button"
+                      (click)="removerPergunta(perg.id)"
+                      class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      Remover Questão
+                    </button>
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700">Enunciado da Questão</label>
+                    <textarea
+                      rows="2"
+                      [value]="perg.enunciado"
+                      (input)="atualizarEnunciado(perg.id, $event)"
+                      placeholder="Ex: De acordo com a norma regulamentadora..."
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    ></textarea>
+                  </div>
+
+                  <!-- Alternativas -->
+                  <div class="space-y-3 pt-2">
+                    <label class="block text-xs font-bold text-slate-700">
+                      Alternativas (Selecione a correta como Gabarito)
+                    </label>
+
+                    <div class="space-y-2">
+                      @for (alt of perg.alternativas; track $index; let idxAlt = $index) {
+                        <div class="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            [name]="'gabarito-' + perg.id"
+                            [checked]="perg.respostaCorretaIndex === idxAlt"
+                            (change)="definirGabarito(perg.id, idxAlt)"
+                            class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
+                            title="Marcar como gabarito correto"
+                          />
+                          <span class="text-xs font-bold text-slate-500 w-4">{{ getLetraAlternativa(idxAlt) }})</span>
+                          <input
+                            type="text"
+                            [value]="alt"
+                            (input)="atualizarAlternativa(perg.id, idxAlt, $event)"
+                            placeholder="Texto da alternativa..."
+                            class="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- SEÇÃO 3: CERTIFICADO -->
+        @if (secaoAtiva() === 'certificado') {
+          <div class="space-y-6">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900">
+                Modelo e Validade do Certificado
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-500">
+                Defina os termos legais, diretrizes normativas e carga horária que constarão no verso do certificado emitido.
+              </p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+              <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-700">
+                  Texto de Validade Normativa e Carga Horária
+                </label>
+                <textarea
+                  rows="4"
+                  [value]="cursoAtivo()?.textoValidadeCertificado || ''"
+                  (input)="atualizarTextoValidade($event)"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                ></textarea>
+                <p class="text-[11px] text-slate-400">
+                  Este texto será incorporado automaticamente no rodapé do PDF do certificado emitido ao aluno após aprovação.
+                </p>
+              </div>
+
+              <!-- Prévia do Certificado -->
+              <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Prévia Visual do Certificado</span>
+                <div class="p-6 rounded-xl bg-white border border-slate-200 text-center space-y-3 max-w-lg mx-auto shadow-xs">
+                  <div class="text-indigo-600 font-bold text-sm tracking-widest uppercase">Certificado de Capacitação Técnica</div>
+                  <div class="text-slate-800 font-extrabold text-lg">{{ cursoAtivo()?.titulo }}</div>
+                  <div class="text-xs text-slate-500">Certificamos que [Nome do Aluno] concluiu com êxito todas as etapas avaliativas.</div>
+                  <div class="text-[11px] text-slate-400 border-t border-slate-100 pt-2 italic">
+                    {{ cursoAtivo()?.textoValidadeCertificado }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- SEÇÃO 4: ALUNOS MATRICULADOS -->
+        @if (secaoAtiva() === 'alunos') {
+          <div class="space-y-6">
+            <div class="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-4 shadow-xs">
+              <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 mx-auto flex items-center justify-center shadow-inner">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+
+              <div class="space-y-1">
+                <h3 class="text-xl font-bold text-slate-900">
+                  Alunos & Progresso — {{ cursoAtivo()?.titulo }}
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
+                  A lista de alunos matriculados e status de aprovação neste curso aparecerá aqui quando a tabela de matrículas (<code class="font-mono text-indigo-600">course_enrollments</code>) for criada no Supabase.
                 </p>
               </div>
             </div>
           </div>
+        }
 
-          <!-- Configurações do Certificado -->
-          <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 max-w-3xl mx-auto">
-            <h4 class="text-sm font-bold text-slate-900">
-              Regras e Texto de Validade
-            </h4>
-            
-            <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-700">
-                Texto de Validade e Carga Horária
-              </label>
-              <textarea
-                rows="2"
-                [value]="textoValidadeCertificado()"
-                (input)="atualizarTextoValidade($event)"
-                class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- SEÇÃO 4: ALUNOS MATRICULADOS -->
-      @if (secaoAtiva() === 'alunos') {
-        <div class="space-y-6">
-          <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-14 text-center space-y-4 shadow-xs">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 mx-auto flex items-center justify-center shadow-inner">
-              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-
-            <div class="space-y-1">
-              <h3 class="text-xl font-bold text-slate-900">
-                Alunos & Progresso
-              </h3>
-              <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-                A lista de alunos matriculados e status de aprovação aparecerá aqui quando a tabela de matrículas (<code class="font-mono text-indigo-600">course_enrollments</code>) for criada no Supabase.
-              </p>
-            </div>
-          </div>
-        </div>
       }
 
       <!-- Aviso no Rodapé da Aba de Gestão de Curso -->
@@ -417,159 +592,374 @@ export interface PerguntaAvaliacao {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <span>Todas as alterações desta seção estão em modo demonstração e serão persistidas no Supabase quando as tabelas do curso forem criadas.</span>
+        <span>Todas as alterações desta seção estão em modo demonstração e serão persistidas no Supabase quando as tabelas de cursos forem criadas.</span>
       </div>
 
     </div>
   `
 })
 export class AdminCursoComponent {
+  readonly cursoSelecionadoId = signal<string | null>(null);
+  readonly criandoNovoCurso = signal<boolean>(false);
   readonly secaoAtiva = signal<'modulos' | 'avaliacao' | 'certificado' | 'alunos'>('modulos');
 
-  readonly modulos = signal<ModuloCurso[]>([
+  readonly cursos = signal<Curso[]>([
     {
-      id: 'mod-1',
-      titulo: 'Módulo 1 — Fundamentos de Patologia e Inspeção Predial',
-      linkVimeo: 'https://player.vimeo.com/video/892019283',
-      duracaoEstimada: '45 min',
-      materiais: [
-        { id: 'mat-1', nome: 'Guia_NBR_5674_Manutencao.pdf' },
-        { id: 'mat-2', nome: 'Checklist_Inspecao_Campo.pdf' }
-      ]
+      id: 'curso-predial-40',
+      titulo: 'Curso Predial 4.0 — Métodos de Inspeção e Laudos',
+      descricao: 'Capacitação técnica completa em conformidade com as diretrizes da NBR 5674 e NBR 16747.',
+      moduloPredialVinculado: 'Inspeção Predial',
+      modulos: [
+        {
+          id: 'mod-1',
+          titulo: 'Módulo 1 — Fundamentos de Patologia e Inspeção Predial',
+          linkVimeo: 'https://player.vimeo.com/video/892019283',
+          duracaoEstimada: '45 min',
+          materiais: [
+            { id: 'mat-1', nome: 'Guia_NBR_5674_Manutencao.pdf' },
+            { id: 'mat-2', nome: 'Checklist_Inspecao_Campo.pdf' }
+          ]
+        },
+        {
+          id: 'mod-2',
+          titulo: 'Módulo 2 — Checklist Técnico e Elaboração de Laudos 4.0',
+          linkVimeo: 'https://player.vimeo.com/video/892019284',
+          duracaoEstimada: '60 min',
+          materiais: [
+            { id: 'mat-3', nome: 'Modelo_Laudo_Predial_40.docx' }
+          ]
+        }
+      ],
+      perguntas: [
+        {
+          id: 'perg-1',
+          enunciado: 'De acordo com a NBR 5674, qual é o objetivo principal do programa de manutenção predial?',
+          alternativas: [
+            'Apenas reduzir custos operacionais emergenciais.',
+            'Preservar o desempenho, a segurança e a vida útil da edificação.',
+            'Substituir a necessidade de inspeção visual periódica.',
+            'Atender exclusivamente a fins estéticos do condomínio.'
+          ],
+          respostaCorretaIndex: 1
+        },
+        {
+          id: 'perg-2',
+          enunciado: 'Qual das alternativas descreve uma patologia recorrente ligada à umidade por ascensão capilar?',
+          alternativas: [
+            'Fissuras a 45 graus em vigas de concreto armado.',
+            'Eflorescências e descolamento de pintura no rodapé de alvenarias.',
+            'Corrosão pontual em coberturas metálicas.',
+            'Flecha excessiva no meio de vãos de laje.'
+          ],
+          respostaCorretaIndex: 1
+        }
+      ],
+      textoValidadeCertificado: 'Certificado de capacitação técnica profissional em conformidade com as diretrizes da ABNT NBR 5674 e NBR 16747. Carga horária total estimada: 20 horas.'
     },
     {
-      id: 'mod-2',
-      titulo: 'Módulo 2 — Checklist Técnico e Elaboração de Laudos 4.0',
-      linkVimeo: 'https://player.vimeo.com/video/892019284',
-      duracaoEstimada: '60 min',
-      materiais: [
-        { id: 'mat-3', nome: 'Modelo_Laudo_Predial_40.docx' }
-      ]
+      id: 'curso-bim-diagnostica',
+      titulo: 'Fundamentos de BIM para Engenharia Diagnóstica',
+      descricao: 'Integração de modelagem 3D paramétrica na detecção e mapeamento de anomalias construtivas.',
+      moduloPredialVinculado: null,
+      modulos: [
+        {
+          id: 'mod-bim-1',
+          titulo: 'Módulo 1 — Introdução ao BIM Aplicado a Edificações Existentes',
+          linkVimeo: 'https://player.vimeo.com/video/892019285',
+          duracaoEstimada: '40 min',
+          materiais: [
+            { id: 'mat-bim-1', nome: 'Introducao_BIM_Diagnostica.pdf' }
+          ]
+        },
+        {
+          id: 'mod-bim-2',
+          titulo: 'Módulo 2 — Integração de Laudos Técnicos em Modelos IFC',
+          linkVimeo: 'https://player.vimeo.com/video/892019286',
+          duracaoEstimada: '50 min',
+          materiais: []
+        }
+      ],
+      perguntas: [
+        {
+          id: 'perg-bim-1',
+          enunciado: 'Qual padrão aberto é comumente utilizado para interoperabilidade de modelos BIM entre diferentes softwares?',
+          alternativas: [
+            'DWG 2D',
+            'IFC (Industry Foundation Classes)',
+            'PDF rasterizado',
+            'XLSX'
+          ],
+          respostaCorretaIndex: 1
+        }
+      ],
+      textoValidadeCertificado: 'Certificado de capacitação em modelagem BIM aplicada à engenharia diagnóstica. Carga horária total estimada: 15 horas.'
     }
   ]);
 
-  readonly perguntas = signal<PerguntaAvaliacao[]>([
-    {
-      id: 'perg-1',
-      enunciado: 'De acordo com a NBR 5674, qual é o objetivo principal do programa de manutenção predial?',
-      alternativas: [
-        'Apenas reduzir custos operacionais emergenciais.',
-        'Preservar o desempenho, a segurança e a vida útil da edificação.',
-        'Substituir a necessidade de inspeção visual periódica.',
-        'Atender exclusivamente a fins estéticos do condomínio.'
-      ],
-      respostaCorretaIndex: 1
-    },
-    {
-      id: 'perg-2',
-      enunciado: 'Qual das alternativas descreve uma patologia recorrente ligada à umidade por ascensão capilar?',
-      alternativas: [
-        'Fissuras a 45 graus em vigas de concreto armado.',
-        'Eflorescências e descolamento de pintura no rodapé de alvenarias.',
-        'Corrosão pontual em coberturas metálicas.',
-        'Flecha excessiva no meio de vãos de laje.'
-      ],
-      respostaCorretaIndex: 1
-    }
-  ]);
+  readonly cursoAtivo = computed(() => {
+    const id = this.cursoSelecionadoId();
+    if (!id) return null;
+    return this.cursos().find(c => c.id === id) || null;
+  });
 
-  readonly textoValidadeCertificado = signal(
-    'Certificado de capacitação técnica profissional em conformidade com as diretrizes da ABNT NBR 5674 e NBR 16747. Carga horária total estimada: 20 horas.'
-  );
+  abrirModalCriarCurso(): void {
+    this.criandoNovoCurso.set(true);
+  }
+
+  cancelarCriacaoCurso(): void {
+    this.criandoNovoCurso.set(false);
+  }
+
+  salvarNovoCurso(titulo: string, descricao: string, vinculo: string): void {
+    if (!titulo.trim()) return;
+
+    const vinculoVal = vinculo === 'nenhum' ? null : vinculo;
+    const novoId = 'curso-' + Date.now();
+    const novoCurso: Curso = {
+      id: novoId,
+      titulo: titulo.trim(),
+      descricao: descricao.trim() || 'Curso de capacitação técnica profissional.',
+      moduloPredialVinculado: vinculoVal,
+      modulos: [
+        {
+          id: 'mod-' + Date.now(),
+          titulo: 'Módulo 1 — Introdução e Objetivos',
+          linkVimeo: '',
+          duracaoEstimada: '30 min',
+          materiais: []
+        }
+      ],
+      perguntas: [],
+      textoValidadeCertificado: `Certificado de capacitação técnica em ${titulo.trim()}. Carga horária total estimada: 10 horas.`
+    };
+
+    this.cursos.update(list => [...list, novoCurso]);
+    this.criandoNovoCurso.set(false);
+    this.cursoSelecionadoId.set(novoId);
+    this.secaoAtiva.set('modulos');
+  }
+
+  removerCurso(id: string): void {
+    this.cursos.update(list => list.filter(c => c.id !== id));
+    if (this.cursoSelecionadoId() === id) {
+      this.cursoSelecionadoId.set(null);
+    }
+  }
+
+  selecionarCursoParaEdicao(id: string): void {
+    this.cursoSelecionadoId.set(id);
+    this.secaoAtiva.set('modulos');
+  }
+
+  voltarParaListaCursos(): void {
+    this.cursoSelecionadoId.set(null);
+  }
 
   setSecaoAtiva(secao: 'modulos' | 'avaliacao' | 'certificado' | 'alunos'): void {
     this.secaoAtiva.set(secao);
   }
 
   adicionarModulo(): void {
-    const novoNum = this.modulos().length + 1;
-    const novo: ModuloCurso = {
-      id: 'mod-' + Date.now(),
-      titulo: `Módulo ${novoNum} — Novo Tópico Técnico`,
-      linkVimeo: '',
-      duracaoEstimada: '30 min',
-      materiais: []
-    };
-    this.modulos.update(list => [...list, novo]);
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        const novoNum = c.modulos.length + 1;
+        const novo: ModuloCurso = {
+          id: 'mod-' + Date.now(),
+          titulo: `Módulo ${novoNum} — Novo Tópico Técnico`,
+          linkVimeo: '',
+          duracaoEstimada: '30 min',
+          materiais: []
+        };
+        return { ...c, modulos: [...c.modulos, novo] };
+      }
+      return c;
+    }));
   }
 
-  removerModulo(id: string): void {
-    this.modulos.update(list => list.filter(m => m.id !== id));
+  removerModulo(moduloId: string): void {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return { ...c, modulos: c.modulos.filter(m => m.id !== moduloId) };
+      }
+      return c;
+    }));
   }
 
-  atualizarTituloModulo(id: string, event: Event): void {
+  atualizarTituloModulo(moduloId: string, event: Event): void {
     const val = (event.target as HTMLInputElement).value;
-    this.modulos.update(list => list.map(m => m.id === id ? { ...m, titulo: val } : m));
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return { ...c, modulos: c.modulos.map(m => m.id === moduloId ? { ...m, titulo: val } : m) };
+      }
+      return c;
+    }));
   }
 
-  atualizarDuracaoModulo(id: string, event: Event): void {
+  atualizarDuracaoModulo(moduloId: string, event: Event): void {
     const val = (event.target as HTMLInputElement).value;
-    this.modulos.update(list => list.map(m => m.id === id ? { ...m, duracaoEstimada: val } : m));
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return { ...c, modulos: c.modulos.map(m => m.id === moduloId ? { ...m, duracaoEstimada: val } : m) };
+      }
+      return c;
+    }));
   }
 
-  atualizarLinkVimeoModulo(id: string, event: Event): void {
+  atualizarLinkVimeoModulo(moduloId: string, event: Event): void {
     const val = (event.target as HTMLInputElement).value;
-    this.modulos.update(list => list.map(m => m.id === id ? { ...m, linkVimeo: val } : m));
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return { ...c, modulos: c.modulos.map(m => m.id === moduloId ? { ...m, linkVimeo: val } : m) };
+      }
+      return c;
+    }));
   }
 
   adicionarMaterial(moduloId: string, nomeArquivo: string): void {
     if (!nomeArquivo.trim()) return;
-    this.modulos.update(list => list.map(m => {
-      if (m.id === moduloId) {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
         return {
-          ...m,
-          materiais: [...m.materiais, { id: 'mat-' + Date.now(), nome: nomeArquivo.trim() }]
+          ...c,
+          modulos: c.modulos.map(m => {
+            if (m.id === moduloId) {
+              return {
+                ...m,
+                materiais: [...m.materiais, { id: 'mat-' + Date.now(), nome: nomeArquivo.trim() }]
+              };
+            }
+            return m;
+          })
         };
       }
-      return m;
+      return c;
     }));
   }
 
   removerMaterial(moduloId: string, materialId: string): void {
-    this.modulos.update(list => list.map(m => {
-      if (m.id === moduloId) {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
         return {
-          ...m,
-          materiais: m.materiais.filter(mat => mat.id !== materialId)
+          ...c,
+          modulos: c.modulos.map(m => {
+            if (m.id === moduloId) {
+              return {
+                ...m,
+                materiais: m.materiais.filter(mat => mat.id !== materialId)
+              };
+            }
+            return m;
+          })
         };
       }
-      return m;
+      return c;
     }));
   }
 
   adicionarPergunta(): void {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
     const nova: PerguntaAvaliacao = {
       id: 'perg-' + Date.now(),
       enunciado: '',
       alternativas: ['', '', '', ''],
       respostaCorretaIndex: 0
     };
-    this.perguntas.update(list => [...list, nova]);
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return { ...c, perguntas: [...c.perguntas, nova] };
+      }
+      return c;
+    }));
   }
 
-  removerPergunta(id: string): void {
-    this.perguntas.update(list => list.filter(p => p.id !== id));
+  removerPergunta(perguntaId: string): void {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return { ...c, perguntas: c.perguntas.filter(p => p.id !== perguntaId) };
+      }
+      return c;
+    }));
   }
 
-  atualizarEnunciado(id: string, event: Event): void {
+  atualizarEnunciado(perguntaId: string, event: Event): void {
     const val = (event.target as HTMLTextAreaElement).value;
-    this.perguntas.update(list => list.map(p => p.id === id ? { ...p, enunciado: val } : p));
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return {
+          ...c,
+          perguntas: c.perguntas.map(p => p.id === perguntaId ? { ...p, enunciado: val } : p)
+        };
+      }
+      return c;
+    }));
   }
 
   atualizarAlternativa(perguntaId: string, indexAlt: number, event: Event): void {
     const val = (event.target as HTMLInputElement).value;
-    this.perguntas.update(list => list.map(p => {
-      if (p.id === perguntaId) {
-        const novasAlts = [...p.alternativas];
-        novasAlts[indexAlt] = val;
-        return { ...p, alternativas: novasAlts };
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return {
+          ...c,
+          perguntas: c.perguntas.map(p => {
+            if (p.id === perguntaId) {
+              const novasAlts = [...p.alternativas];
+              novasAlts[indexAlt] = val;
+              return { ...p, alternativas: novasAlts };
+            }
+            return p;
+          })
+        };
       }
-      return p;
+      return c;
     }));
   }
 
   definirGabarito(perguntaId: string, indexAlt: number): void {
-    this.perguntas.update(list => list.map(p => p.id === perguntaId ? { ...p, respostaCorretaIndex: indexAlt } : p));
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return {
+          ...c,
+          perguntas: c.perguntas.map(p => p.id === perguntaId ? { ...p, respostaCorretaIndex: indexAlt } : p)
+        };
+      }
+      return c;
+    }));
   }
 
   getLetraAlternativa(idx: number): string {
@@ -578,6 +968,14 @@ export class AdminCursoComponent {
 
   atualizarTextoValidade(event: Event): void {
     const val = (event.target as HTMLTextAreaElement).value;
-    this.textoValidadeCertificado.set(val);
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.cursos.update(list => list.map(c => {
+      if (c.id === cId) {
+        return { ...c, textoValidadeCertificado: val };
+      }
+      return c;
+    }));
   }
 }
