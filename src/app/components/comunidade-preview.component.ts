@@ -17,6 +17,7 @@ import { ComunidadeMateriaisComponent } from './comunidade/comunidade-materiais.
 import { ComunidadeEventosComponent } from './comunidade/comunidade-eventos.component';
 import { ComunidadeForumComponent } from './comunidade/comunidade-forum.component';
 import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.component';
+import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.component';
 
 @Component({
   selector: 'app-comunidade-preview',
@@ -32,7 +33,8 @@ import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.
     ComunidadeMateriaisComponent,
     ComunidadeEventosComponent,
     ComunidadeForumComponent,
-    ComunidadeMensagensComponent
+    ComunidadeMensagensComponent,
+    ComunidadeAgentesComponent
   ],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col relative pb-20 md:pb-0">
@@ -216,6 +218,20 @@ import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.
                 <span>Cursos</span>
               </button>
 
+              <!-- 10. Agentes -->
+              <button
+                type="button"
+                (click)="selecionarAba('agentes')"
+                [class]="abaAtiva() === 'agentes'
+                  ? 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-indigo-50 text-indigo-700 font-bold shadow-xs'
+                  : 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors'"
+              >
+                <svg class="w-4 h-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Agentes</span>
+              </button>
+
             </nav>
           </div>
 
@@ -286,6 +302,9 @@ import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.
           } @else if (abaAtiva() === 'curso') {
             <!-- Área do Curso Predial 4.0 -->
             <app-comunidade-curso></app-comunidade-curso>
+          } @else if (abaAtiva() === 'agentes') {
+            <!-- Área de Agentes e Automações Técnicas -->
+            <app-comunidade-agentes></app-comunidade-agentes>
           } @else {
             <!-- Placeholder Padrão das Outras Áreas -->
             <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-16 text-center space-y-4 shadow-xs">
@@ -365,6 +384,18 @@ import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
               <span>Mensagens</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="selecionarAbaMobile('agentes')"
+              [class]="abaAtiva() === 'agentes' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left"
+            >
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Agentes</span>
             </button>
 
             <div class="border-t border-slate-100 pt-2 mt-2">
@@ -453,7 +484,7 @@ import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.
           <button
             type="button"
             (click)="toggleMenuMais()"
-            [class]="menuMaisAberto() || ['forum', 'hall-fama', 'mensagens', 'curso'].includes(abaAtiva()) ? 'text-indigo-600 font-bold' : 'text-slate-500'"
+            [class]="menuMaisAberto() || ['forum', 'hall-fama', 'mensagens', 'curso', 'agentes'].includes(abaAtiva()) ? 'text-indigo-600 font-bold' : 'text-slate-500'"
             class="flex flex-col items-center justify-center py-1 gap-1 text-[10px]"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -482,7 +513,8 @@ export class ComunidadePreviewComponent {
     'hall-fama': 'Hall da Fama',
     'mensagens': 'Mensagens Diretas',
     'perfil': 'Meu Perfil de Membro',
-    'curso': 'Cursos & Capacitações'
+    'curso': 'Cursos & Capacitações',
+    'agentes': 'Agentes & Automações Técnicas'
   };
 
   fecharFaixa(): void {
