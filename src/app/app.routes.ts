@@ -3,6 +3,7 @@ import { HomeComponent } from './components/home.component';
 import { PlaceholderPageComponent } from './components/placeholder-page.component';
 import { AmorimArquiteturaComponent } from './components/amorim-arquitetura.component';
 import { AmorimTechComponent } from './components/amorim-tech.component';
+import { AmorimAcademyComponent } from './components/amorim-academy.component';
 
 export const routes: Routes = [
   {
@@ -19,8 +20,7 @@ export const routes: Routes = [
   },
   {
     path: 'amorim-academy',
-    component: PlaceholderPageComponent,
-    data: { title: 'Amorim Academy' },
+    component: AmorimAcademyComponent,
   },
   {
     path: 'blog',
