@@ -1,9 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-comunidade',
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="min-h-screen bg-slate-100 py-10 sm:py-16 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div class="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
@@ -139,6 +140,21 @@ import { CommonModule } from '@angular/common';
                   </svg>
                   <span>Solicitar Acesso ao Administrador</span>
                 </button>
+
+                <!-- Botão Ver Prévia da Comunidade (Modo Demonstração) -->
+                <div class="pt-2">
+                  <a
+                    routerLink="/comunidade/preview"
+                    id="btn-ver-previa-comunidade"
+                    class="w-full py-3 px-4 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 text-slate-700 hover:text-indigo-700 font-semibold text-xs sm:text-sm border border-slate-300 hover:border-indigo-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>👁 Ver como vai funcionar (prévia)</span>
+                  </a>
+                </div>
               </div>
 
               <!-- Texto Informativo -->
