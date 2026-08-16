@@ -1,21 +1,84 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SupabaseService } from '../../../services/supabase.service';
 import { ReajusteContratoComponent } from './agentes/reajuste-contrato.component';
 import { BibliotecaPromptsComponent } from './agentes/biblioteca-prompts.component';
 import { SkillsCatalogoComponent } from './agentes/skills-catalogo.component';
 import { ChecklistLicitacaoComponent } from './agentes/checklist-licitacao.component';
 import { LevantamentoQuantitativosComponent } from './agentes/levantamento-quantitativos.component';
 
-export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompts' | 'skills-catalogo' | 'checklist-licitacao' | 'levantamento-quantitativos';
+export type FerramentaAtiva =
+  | 'lista'
+  | 'reajuste-contrato'
+  | 'biblioteca-prompts'
+  | 'skills-catalogo'
+  | 'checklist-licitacao'
+  | 'levantamento-quantitativos';
 
 @Component({
   selector: 'app-comunidade-agentes',
   standalone: true,
-  imports: [CommonModule, ReajusteContratoComponent, BibliotecaPromptsComponent, SkillsCatalogoComponent, ChecklistLicitacaoComponent, LevantamentoQuantitativosComponent],
+  imports: [
+    CommonModule,
+    ReajusteContratoComponent,
+    BibliotecaPromptsComponent,
+    SkillsCatalogoComponent,
+    ChecklistLicitacaoComponent,
+    LevantamentoQuantitativosComponent
+  ],
   template: `
     <div class="space-y-6">
 
-      @if (ferramentaAtiva() === 'lista') {
+      <!-- ======================================================= -->
+      <!-- CASO: TELA DE ACESSO RESTRITO (TRAVA POR CARD)         -->
+      <!-- ======================================================= -->
+      @if (mostrarAcessoRestrito(); as restrito) {
+        <div class="space-y-6 animate-fadeIn">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+              🔒 Módulo Restrito
+            </span>
+          </div>
+
+          <!-- Card Central de Acesso Restrito -->
+          <div class="bg-white rounded-3xl border border-amber-200/80 p-8 sm:p-12 shadow-sm text-center max-w-2xl mx-auto space-y-6">
+            <div class="w-20 h-20 rounded-3xl bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center font-bold text-4xl mx-auto shadow-inner">
+              🔒
+            </div>
+
+            <div class="space-y-2.5">
+              <h4 class="text-xl sm:text-2xl font-black text-slate-900">
+                Esta ferramenta é exclusiva para membros com acesso liberado
+              </h4>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                A ferramenta <strong class="text-amber-900 font-bold">"{{ getNomeFerramenta(restrito) }}"</strong> requer permissão de acesso liberada em seu perfil. Fale com o Admin da Comunidade para solicitar liberação deste módulo.
+              </p>
+            </div>
+
+            <div class="pt-2 flex justify-center gap-3">
+              <button
+                type="button"
+                (click)="voltarParaLista()"
+                class="px-6 py-3 rounded-2xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs sm:text-sm font-black transition-all cursor-pointer shadow-sm"
+              >
+                Voltar para todos os Agentes
+              </button>
+            </div>
+          </div>
+        </div>
+
+      } @else if (ferramentaAtiva() === 'lista') {
         
         <!-- 1. Cabeçalho da Área Agentes -->
         <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-indigo-800/30 shadow-md relative overflow-hidden">
@@ -45,33 +108,41 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
                 5
               </div>
               <div>
-                <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos Ativos</div>
+                <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos no Catálogo</div>
                 <div class="text-[11px] text-indigo-200">
-                  Prontos para uso
+                  {{ contarLiberados() }} liberados para você
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 2. Grid de Cards de Agentes -->
+        <!-- 2. Grid de Cards de Agentes (Sempre exibe os 5 cards) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-          <!-- CARD 1: REAJUSTE DE CONTRATO (ATIVO) -->
+          <!-- CARD 1: REAJUSTE DE CONTRATO -->
           <div class="bg-white rounded-3xl p-6 border-2 border-indigo-200 shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all flex flex-col justify-between group relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
 
             <div class="space-y-4">
-              <!-- Topo do Card com Ícone e Badge -->
+              <!-- Topo do Card com Ícone e Badge Condicional -->
               <div class="flex items-center justify-between">
                 <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
-                  Disponível
-                </span>
+
+                @if (temPermissao('reajuste-contrato')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
               </div>
 
               <!-- Conteúdo -->
@@ -107,21 +178,29 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </div>
           </div>
 
-          <!-- CARD 2: BIBLIOTECA DE PROMPTS (ATIVO) -->
+          <!-- CARD 2: BIBLIOTECA DE PROMPTS -->
           <div class="bg-white rounded-3xl p-6 border-2 border-indigo-200 shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all flex flex-col justify-between group relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
 
             <div class="space-y-4">
-              <!-- Topo do Card com Ícone e Badge -->
+              <!-- Topo do Card com Ícone e Badge Condicional -->
               <div class="flex items-center justify-between">
                 <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
-                  Disponível
-                </span>
+
+                @if (temPermissao('biblioteca-prompts')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
               </div>
 
               <!-- Conteúdo -->
@@ -157,21 +236,29 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </div>
           </div>
 
-          <!-- CARD 3: SKILLS CLAUDE (ATIVO) -->
+          <!-- CARD 3: SKILLS CLAUDE -->
           <div class="bg-white rounded-3xl p-6 border-2 border-[#B5642A]/40 shadow-sm hover:shadow-xl hover:border-[#B5642A] transition-all flex flex-col justify-between group relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#B5642A]/15 to-transparent rounded-bl-full pointer-events-none"></div>
 
             <div class="space-y-4">
-              <!-- Topo do Card com Ícone e Badge -->
+              <!-- Topo do Card com Ícone e Badge Condicional -->
               <div class="flex items-center justify-between">
                 <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
-                  Disponível
-                </span>
+
+                @if (temPermissao('skills-catalogo')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
               </div>
 
               <!-- Conteúdo -->
@@ -207,21 +294,29 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </div>
           </div>
 
-          <!-- CARD 4: CHECKLIST DE LICITAÇÃO (ATIVO) -->
+          <!-- CARD 4: CHECKLIST DE LICITAÇÃO -->
           <div class="bg-white rounded-3xl p-6 border-2 border-emerald-200 shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all flex flex-col justify-between group relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
 
             <div class="space-y-4">
-              <!-- Topo do Card com Ícone e Badge -->
+              <!-- Topo do Card com Ícone e Badge Condicional -->
               <div class="flex items-center justify-between">
                 <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-emerald-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
-                  Disponível
-                </span>
+
+                @if (temPermissao('checklist-licitacao')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
               </div>
 
               <!-- Conteúdo -->
@@ -257,21 +352,29 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
             </div>
           </div>
 
-          <!-- CARD 5: LEVANTAMENTO DE QUANTITATIVOS (ATIVO) -->
+          <!-- CARD 5: LEVANTAMENTO DE QUANTITATIVOS -->
           <div class="bg-white rounded-3xl p-6 border-2 border-indigo-200 shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all flex flex-col justify-between group relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
 
             <div class="space-y-4">
-              <!-- Topo do Card com Ícone e Badge -->
+              <!-- Topo do Card com Ícone e Badge Condicional -->
               <div class="flex items-center justify-between">
                 <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
-                  Disponível
-                </span>
+
+                @if (temPermissao('levantamento-quantitativos')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
               </div>
 
               <!-- Conteúdo -->
@@ -439,15 +542,75 @@ export type FerramentaAtiva = 'lista' | 'reajuste-contrato' | 'biblioteca-prompt
     </div>
   `
 })
-export class ComunidadeAgentesComponent {
+export class ComunidadeAgentesComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
   readonly ferramentaAtiva = signal<FerramentaAtiva>('lista');
+  readonly permissoesFerramentas = signal<Record<string, boolean>>({});
+  readonly carregandoPermissoes = signal<boolean>(true);
+  readonly mostrarAcessoRestrito = signal<FerramentaAtiva | null>(null);
+
+  async ngOnInit(): Promise<void> {
+    await this.carregarPermissoes();
+  }
+
+  async carregarPermissoes(): Promise<void> {
+    this.carregandoPermissoes.set(true);
+    const modulos: FerramentaAtiva[] = [
+      'reajuste-contrato',
+      'biblioteca-prompts',
+      'skills-catalogo',
+      'checklist-licitacao',
+      'levantamento-quantitativos'
+    ];
+    try {
+      const resultados = await Promise.all(
+        modulos.map(async (m) => [m, await this.supabaseService.temPermissaoModulo('comunidade', m)] as const)
+      );
+      this.permissoesFerramentas.set(Object.fromEntries(resultados));
+    } catch (e) {
+      console.warn('Erro ao verificar permissões de agentes:', e);
+    } finally {
+      this.carregandoPermissoes.set(false);
+    }
+  }
+
+  temPermissao(modulo: string): boolean {
+    return !!this.permissoesFerramentas()[modulo];
+  }
+
+  contarLiberados(): number {
+    return Object.values(this.permissoesFerramentas()).filter(Boolean).length;
+  }
 
   abrirFerramenta(ferramenta: FerramentaAtiva): void {
+    if (ferramenta !== 'lista' && !this.temPermissao(ferramenta)) {
+      this.mostrarAcessoRestrito.set(ferramenta);
+      return;
+    }
+    this.mostrarAcessoRestrito.set(null);
     this.ferramentaAtiva.set(ferramenta);
   }
 
   voltarParaLista(): void {
+    this.mostrarAcessoRestrito.set(null);
     this.ferramentaAtiva.set('lista');
   }
-}
 
+  getNomeFerramenta(ferramenta: FerramentaAtiva): string {
+    switch (ferramenta) {
+      case 'reajuste-contrato':
+        return 'Reajuste de Contrato';
+      case 'biblioteca-prompts':
+        return 'Biblioteca de Prompts';
+      case 'skills-catalogo':
+        return 'Skills Claude';
+      case 'checklist-licitacao':
+        return 'Checklist de Licitação';
+      case 'levantamento-quantitativos':
+        return 'Levantamento de Quantitativos';
+      default:
+        return 'Ferramenta de Agente';
+    }
+  }
+}
