@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { SupabaseService } from '../../services/supabase.service';
 
 @Component({
   selector: 'app-comunidade',
@@ -299,17 +300,36 @@ import { RouterModule } from '@angular/router';
                   ></textarea>
                 </div>
 
+                <!-- Mensagem de Erro Inline -->
+                @if (exibirErroValidacao()) {
+                  <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                    <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ exibirErroValidacao() }}</span>
+                  </div>
+                }
+
                 <!-- Botão Enviar Solicitação -->
                 <div class="pt-2">
                   <button
                     type="submit"
                     id="btn-submeter-solicitacao"
-                    class="w-full py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                    [disabled]="enviandoSolicitacao()"
+                    class="w-full py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                    <span>Enviar Solicitação</span>
+                    @if (enviandoSolicitacao()) {
+                      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Enviando...</span>
+                    } @else {
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      <span>Enviar Solicitação</span>
+                    }
                   </button>
                 </div>
               </form>
@@ -378,8 +398,12 @@ import { RouterModule } from '@angular/router';
   `
 })
 export class ComunidadeComponent {
+  private readonly supabaseService = inject(SupabaseService);
+
   readonly mostrarFormularioSolicitacao = signal(false);
   readonly solicitacaoEnviada = signal(false);
+  readonly exibirErroValidacao = signal<string | null>(null);
+  readonly enviandoSolicitacao = signal(false);
 
   // Campos do formulário em signals
   readonly nome = signal('');
@@ -396,21 +420,29 @@ export class ComunidadeComponent {
   abrirFormulario(): void {
     this.mostrarFormularioSolicitacao.set(true);
     this.solicitacaoEnviada.set(false);
+    this.exibirErroValidacao.set(null);
   }
 
   fecharFormulario(): void {
     this.mostrarFormularioSolicitacao.set(false);
     this.solicitacaoEnviada.set(false);
+    this.exibirErroValidacao.set(null);
   }
 
   onNomeInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.nome.set(target.value);
+    if (this.exibirErroValidacao()) {
+      this.exibirErroValidacao.set(null);
+    }
   }
 
   onEmailInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.email.set(target.value);
+    if (this.exibirErroValidacao()) {
+      this.exibirErroValidacao.set(null);
+    }
   }
 
   onTelefoneInput(event: Event): void {
@@ -426,6 +458,9 @@ export class ComunidadeComponent {
   onPerfilChange(event: Event): void {
     const target = event.target as HTMLSelectElement;
     this.perfil.set(target.value);
+    if (this.exibirErroValidacao()) {
+      this.exibirErroValidacao.set(null);
+    }
   }
 
   onMotivoInput(event: Event): void {
@@ -433,21 +468,37 @@ export class ComunidadeComponent {
     this.motivo.set(target.value);
   }
 
-  enviarSolicitacao(event: Event): void {
+  async enviarSolicitacao(event: Event): Promise<void> {
     event.preventDefault();
 
     if (!this.nome().trim() || !this.email().trim() || !this.perfil().trim()) {
-      alert('Por favor, preencha o Nome, E-mail e selecione o Tipo de Perfil.');
+      this.exibirErroValidacao.set('Por favor, preencha o Nome, E-mail e selecione o Tipo de Perfil.');
+      return;
+    }
+    this.exibirErroValidacao.set(null);
+
+    this.enviandoSolicitacao.set(true);
+    const { error } = await this.supabaseService.criarSolicitacaoAcesso({
+      nome: this.nome().trim(),
+      email: this.email().trim(),
+      telefone: this.telefone().trim(),
+      tipoPerfil: this.perfil(),
+      motivo: this.motivo().trim(),
+    });
+    this.enviandoSolicitacao.set(false);
+
+    if (error) {
+      this.exibirErroValidacao.set('Não foi possível enviar sua solicitação agora. Tente novamente em instantes.');
       return;
     }
 
-    // Marca como enviada para renderizar o estado de sucesso
     this.solicitacaoEnviada.set(true);
   }
 
   resetarFluxo(): void {
     this.mostrarFormularioSolicitacao.set(false);
     this.solicitacaoEnviada.set(false);
+    this.exibirErroValidacao.set(null);
     this.nome.set('');
     this.email.set('');
     this.telefone.set('');

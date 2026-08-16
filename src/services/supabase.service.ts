@@ -45,4 +45,27 @@ export class SupabaseService {
       return null;
     }
   }
+
+  async criarSolicitacaoAcesso(dados: {
+    nome: string;
+    email: string;
+    telefone?: string;
+    tipoPerfil: string;
+    motivo?: string;
+  }): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('solicitacoes_acesso')
+        .insert({
+          nome: dados.nome,
+          email: dados.email,
+          telefone: dados.telefone || null,
+          tipo_perfil: dados.tipoPerfil,
+          motivo: dados.motivo || null,
+        });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }
