@@ -1,6 +1,6 @@
-import { Component, computed, ElementRef, inject, signal, ViewChild, AfterViewChecked } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ComunidadeStateService, ConversaItem } from './comunidade-state.service';
+import { SupabaseService } from '../../../services/supabase.service';
 
 @Component({
   selector: 'app-comunidade-mensagens',
@@ -8,6 +8,26 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
   imports: [CommonModule],
   template: `
     <div class="space-y-6">
+
+      <!-- Feedback Inline (Erros/Avisos) -->
+      @if (mensagemFeedback()) {
+        <div
+          [class]="tipoFeedback() === 'sucesso'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-rose-50 border-rose-200 text-rose-800'"
+          class="p-4 rounded-2xl border flex items-center justify-between text-xs sm:text-sm font-semibold transition-all shadow-xs"
+        >
+          <div class="flex items-center gap-2">
+            @if (tipoFeedback() === 'sucesso') {
+              <span>✓</span>
+            } @else {
+              <span>⚠</span>
+            }
+            <span>{{ mensagemFeedback() }}</span>
+          </div>
+          <button type="button" (click)="mensagemFeedback.set(null)" class="text-slate-400 hover:text-slate-600 font-bold ml-3 cursor-pointer">✕</button>
+        </div>
+      }
 
       <!-- 1. Cabeçalho de Mensagens (Banner Escuro Gradiente) -->
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-indigo-800/30 shadow-md relative overflow-hidden">
@@ -54,7 +74,7 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
         <!-- Visível sempre no Desktop; no Mobile só quando nenhuma conversa aberta -->
         <!-- ================================================================= -->
         <div
-          [class.hidden]="conversaAberta() !== null"
+          [class.hidden]="conversaSelecionadaId() !== null"
           class="w-full md:w-80 lg:w-96 shrink-0 bg-white rounded-3xl border border-slate-200 shadow-xs flex flex-col overflow-hidden md:flex!"
         >
           
@@ -84,10 +104,39 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
 
           <!-- Lista de Conversas com Rolagem -->
           <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
-            @if (conversasFiltradas().length === 0) {
+            @if (carregandoConversas()) {
+              <!-- Skeleton Loading -->
+              <div class="p-4 space-y-4">
+                <div class="flex items-center gap-3 animate-pulse">
+                  <div class="w-11 h-11 bg-slate-200 rounded-2xl shrink-0"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-3 bg-slate-200 rounded-md w-28"></div>
+                    <div class="h-2.5 bg-slate-100 rounded-md w-40"></div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 animate-pulse">
+                  <div class="w-11 h-11 bg-slate-200 rounded-2xl shrink-0"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-3 bg-slate-200 rounded-md w-32"></div>
+                    <div class="h-2.5 bg-slate-100 rounded-md w-36"></div>
+                  </div>
+                </div>
+              </div>
+            } @else if (conversasFiltradas().length === 0) {
               <div class="p-8 text-center space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
                 <p class="text-xs font-bold text-slate-700">Nenhuma conversa encontrada</p>
-                <p class="text-[11px] text-slate-400">Verifique o termo buscado ou limpe o filtro.</p>
+                <p class="text-[11px] text-slate-400">
+                  @if (buscaTexto()) {
+                    Verifique o termo buscado ou limpe o filtro.
+                  } @else {
+                    Suas conversas diretas com colegas aparecerão aqui.
+                  }
+                </p>
               </div>
             } @else {
               @for (conv of conversasFiltradas(); track conv.id) {
@@ -99,17 +148,11 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
                     : 'hover:bg-slate-50/90 border-l-4 border-l-transparent'"
                   class="w-full text-left p-4 transition-colors flex items-start gap-3.5 cursor-pointer"
                 >
-                  <!-- Avatar com Indicador de Status -->
+                  <!-- Avatar com Iniciais -->
                   <div class="relative shrink-0">
                     <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                      {{ conv.avatar }}
+                      {{ getIniciais(conv.nome) }}
                     </div>
-
-                    <!-- Dot de Status (Online / Ausente / Offline) -->
-                    <span
-                      [class]="getStatusDotEstilo(conv.status)"
-                      class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white"
-                    ></span>
                   </div>
 
                   <!-- Conteúdo Central: Nome + Última Mensagem -->
@@ -119,19 +162,19 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
                         {{ conv.nome }}
                       </h5>
                       <span class="text-[10px] text-slate-400 shrink-0 font-medium">
-                        {{ conv.horario }}
+                        {{ formatarTempo(conv.ultimaMensagemEm || conv.criado_em) }}
                       </span>
                     </div>
 
                     <p class="text-[11px] text-slate-500 truncate mb-1">
-                      {{ conv.cargo }}
+                      {{ conv.cargo || 'Membro da Comunidade' }}
                     </p>
 
                     <p
                       [class]="conv.naoLidas > 0 ? 'font-bold text-slate-900' : 'text-slate-500 font-normal'"
                       class="text-xs truncate"
                     >
-                      {{ conv.ultimaMensagem }}
+                      {{ conv.ultimaMensagem || 'Conversa iniciada' }}
                     </p>
                   </div>
 
@@ -180,12 +223,8 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
                 <!-- Avatar e Identificação -->
                 <div class="relative shrink-0">
                   <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                    {{ conv.avatar }}
+                    {{ getIniciais(conv.nome) }}
                   </div>
-                  <span
-                    [class]="getStatusDotEstilo(conv.status)"
-                    class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white"
-                  ></span>
                 </div>
 
                 <div class="min-w-0">
@@ -193,18 +232,15 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
                     {{ conv.nome }}
                   </h4>
                   <div class="flex items-center gap-2 text-[11px] text-slate-500 truncate">
-                    <span>{{ conv.cargo }}</span>
-                    <span>•</span>
-                    <span [class]="conv.status === 'online' ? 'text-emerald-600 font-bold' : 'text-slate-400'">
-                      {{ conv.status === 'online' ? 'Online' : conv.status === 'ausente' ? 'Ausente' : 'Offline' }}
-                    </span>
+                    <span>{{ conv.cargo || 'Membro da Comunidade' }}</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Badge Modo Demonstração -->
-              <span class="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold shrink-0">
-                <span>💬 Chat Local</span>
+              <!-- Badge Segura -->
+              <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold shrink-0">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Conexão Direta</span>
               </span>
 
             </div>
@@ -215,53 +251,63 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
               <!-- Divisor de Início da Conversa -->
               <div class="flex items-center justify-center my-2">
                 <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                  Início da Conversa Segura
+                  Início da Conversa
                 </span>
               </div>
 
-              @for (msg of conv.mensagens; track msg.id) {
-                
-                <!-- MENSAGEM DO USUÁRIO LOGADO (DIREITA) -->
-                @if (msg.remetente === 'eu') {
-                  <div class="flex justify-end animate-fadeIn">
-                    <div class="max-w-[85%] sm:max-w-[70%] bg-indigo-600 text-white rounded-2xl rounded-tr-xs px-4 py-3 shadow-xs space-y-1">
-                      <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                        {{ msg.texto }}
-                      </p>
-                      
-                      <div class="flex items-center justify-end gap-1 text-[10px] text-indigo-200">
-                        <span>{{ msg.horario }}</span>
-                        <span title="Entregue">✓✓</span>
+              @if (carregandoMensagens()) {
+                <div class="p-6 text-center">
+                  <span class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin inline-block"></span>
+                  <p class="text-xs text-slate-400 mt-2">Carregando mensagens...</p>
+                </div>
+              } @else if (mensagens().length === 0) {
+                <div class="p-8 text-center space-y-1">
+                  <p class="text-xs font-bold text-slate-700">Nenhuma mensagem ainda.</p>
+                  <p class="text-[11px] text-slate-400">Envie a primeira mensagem para iniciar a conversa.</p>
+                </div>
+              } @else {
+                @for (msg of mensagens(); track msg.id) {
+                  
+                  <!-- MENSAGEM DO USUÁRIO LOGADO (DIREITA) -->
+                  @if (msg.remetente_id === meuId()) {
+                    <div class="flex justify-end animate-fadeIn">
+                      <div class="max-w-[85%] sm:max-w-[70%] bg-indigo-600 text-white rounded-2xl rounded-tr-xs px-4 py-3 shadow-xs space-y-1">
+                        <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                          {{ msg.texto }}
+                        </p>
+                        
+                        <div class="flex items-center justify-end gap-1 text-[10px] text-indigo-200">
+                          <span>{{ formatarHora(msg.criado_em) }}</span>
+                          <span [title]="msg.lida ? 'Lida' : 'Enviada'">{{ msg.lida ? '✓✓' : '✓' }}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                }
+                  } @else {
+                    <!-- MENSAGEM DO OUTRO PARTICIPANTE (ESQUERDA) -->
+                    <div class="flex justify-start items-end gap-2.5 animate-fadeIn">
+                      <div class="w-7 h-7 rounded-xl bg-slate-700 text-white text-[10px] font-black flex items-center justify-center shrink-0 mb-1">
+                        {{ getIniciais(conv.nome) }}
+                      </div>
 
-                <!-- MENSAGEM DO CONTATO (ESQUERDA) -->
-                @if (msg.remetente === 'contato') {
-                  <div class="flex justify-start items-end gap-2.5 animate-fadeIn">
-                    <div class="w-7 h-7 rounded-xl bg-slate-700 text-white text-[10px] font-black flex items-center justify-center shrink-0 mb-1">
-                      {{ conv.avatar }}
-                    </div>
-
-                    <div class="max-w-[85%] sm:max-w-[70%] bg-white text-slate-800 border border-slate-200 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs space-y-1">
-                      <p class="text-xs sm:text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
-                        {{ msg.texto }}
-                      </p>
-                      
-                      <div class="text-[10px] text-slate-400">
-                        {{ msg.horario }}
+                      <div class="max-w-[85%] sm:max-w-[70%] bg-white text-slate-800 border border-slate-200 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs space-y-1">
+                        <p class="text-xs sm:text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
+                          {{ msg.texto }}
+                        </p>
+                        
+                        <div class="text-[10px] text-slate-400">
+                          {{ formatarHora(msg.criado_em) }}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                }
+                  }
 
+                }
               }
             </div>
 
             <!-- Campo de Texto Fixo Inferior para Envio de Mensagem -->
             <div class="p-3 sm:p-4 border-t border-slate-200 bg-white">
-              <form (submit)="enviarMensagem($event)" class="flex items-end gap-2 sm:gap-3">
+              <form (submit)="enviarMensagemSubmit($event)" class="flex items-end gap-2 sm:gap-3">
                 <div class="flex-1 relative">
                   <textarea
                     #mensagemInput
@@ -276,16 +322,20 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
 
                 <button
                   type="submit"
-                  [disabled]="!textoMensagem().trim()"
-                  [class]="textoMensagem().trim()
+                  [disabled]="!textoMensagem().trim() || enviandoMensagem()"
+                  [class]="textoMensagem().trim() && !enviandoMensagem()
                     ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 cursor-pointer'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
                   class="h-11 px-4 sm:px-5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  <span class="hidden sm:inline">Enviar</span>
-                  <svg class="w-4 h-4 transform rotate-90" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                  </svg>
+                  @if (enviandoMensagem()) {
+                    <span class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                  } @else {
+                    <span class="hidden sm:inline">Enviar</span>
+                    <svg class="w-4 h-4 transform rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  }
                 </button>
               </form>
             </div>
@@ -331,19 +381,28 @@ import { ComunidadeStateService, ConversaItem } from './comunidade-state.service
     </div>
   `
 })
-export class ComunidadeMensagensComponent implements AfterViewChecked {
-  readonly state = inject(ComunidadeStateService);
-  readonly conversas = this.state.conversas;
+export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly conversas = signal<any[]>([]);
+  readonly mensagens = signal<any[]>([]);
+  readonly carregandoConversas = signal<boolean>(true);
+  readonly carregandoMensagens = signal<boolean>(false);
+  readonly enviandoMensagem = signal<boolean>(false);
+  readonly meuId = signal<string | null>(null);
 
   readonly conversaSelecionadaId = signal<string | null>(null);
   readonly buscaTexto = signal<string>('');
   readonly textoMensagem = signal<string>('');
 
+  readonly mensagemFeedback = signal<string | null>(null);
+  readonly tipoFeedback = signal<'sucesso' | 'erro'>('sucesso');
+
   @ViewChild('chatMessagesContainer') private chatContainer?: ElementRef<HTMLDivElement>;
   private scrollPendente = false;
 
   readonly totalNaoLidas = computed(() => {
-    return this.conversas().reduce((acc, c) => acc + c.naoLidas, 0);
+    return this.conversas().reduce((acc, c) => acc + (c.naoLidas || 0), 0);
   });
 
   readonly conversasFiltradas = computed(() => {
@@ -351,17 +410,23 @@ export class ComunidadeMensagensComponent implements AfterViewChecked {
     const lista = this.conversas();
     if (!busca) return lista;
     return lista.filter(c =>
-      c.nome.toLowerCase().includes(busca) ||
-      c.cargo.toLowerCase().includes(busca) ||
-      c.ultimaMensagem.toLowerCase().includes(busca)
+      (c.nome || '').toLowerCase().includes(busca) ||
+      (c.cargo || '').toLowerCase().includes(busca) ||
+      (c.ultimaMensagem || '').toLowerCase().includes(busca)
     );
   });
 
-  readonly conversaAberta = computed<ConversaItem | null>(() => {
+  readonly conversaAberta = computed(() => {
     const id = this.conversaSelecionadaId();
     if (!id) return null;
     return this.conversas().find(c => c.id === id) || null;
   });
+
+  async ngOnInit(): Promise<void> {
+    const session = await this.supabaseService.getSession();
+    this.meuId.set(session?.user?.id || null);
+    await this.carregarConversas();
+  }
 
   ngAfterViewChecked(): void {
     if (this.scrollPendente && this.chatContainer) {
@@ -370,10 +435,40 @@ export class ComunidadeMensagensComponent implements AfterViewChecked {
     }
   }
 
-  selecionarConversa(conversaId: string): void {
+  async carregarConversas(): Promise<void> {
+    this.carregandoConversas.set(true);
+    try {
+      const lista = await this.supabaseService.listarMinhasConversas();
+      this.conversas.set(lista);
+    } catch (e) {
+      console.warn('Erro ao carregar conversas:', e);
+    } finally {
+      this.carregandoConversas.set(false);
+    }
+  }
+
+  async selecionarConversa(conversaId: string): Promise<void> {
     this.conversaSelecionadaId.set(conversaId);
-    this.state.marcarConversaComoLida(conversaId);
+    this.carregandoMensagens.set(true);
     this.scrollPendente = true;
+
+    try {
+      const msgs = await this.supabaseService.listarMensagensDaConversa(conversaId);
+      this.mensagens.set(msgs);
+
+      // Marca mensagens não lidas como lidas
+      await this.supabaseService.marcarMensagensComoLidas(conversaId);
+
+      // Atualiza contador de não lidas localmente
+      this.conversas.update(lista =>
+        lista.map(c => (c.id === conversaId ? { ...c, naoLidas: 0 } : c))
+      );
+    } catch (e) {
+      console.warn('Erro ao carregar mensagens da conversa:', e);
+    } finally {
+      this.carregandoMensagens.set(false);
+      this.scrollPendente = true;
+    }
   }
 
   fecharConversaMobile(): void {
@@ -394,22 +489,54 @@ export class ComunidadeMensagensComponent implements AfterViewChecked {
     const keyEvent = event as KeyboardEvent;
     if (!keyEvent.shiftKey) {
       keyEvent.preventDefault();
-      this.enviarMensagem();
+      this.enviarMensagemSubmit();
     }
   }
 
-  enviarMensagem(event?: Event): void {
+  async enviarMensagemSubmit(event?: Event): Promise<void> {
     if (event) {
       event.preventDefault();
     }
 
     const id = this.conversaSelecionadaId();
     const texto = this.textoMensagem().trim();
-    if (!id || !texto) return;
+    if (!id || !texto || this.enviandoMensagem()) return;
 
-    this.state.enviarMensagem(id, texto);
+    this.enviandoMensagem.set(true);
+    this.mensagemFeedback.set(null);
+
+    const { error, data } = await this.supabaseService.enviarMensagem(id, texto);
+
+    this.enviandoMensagem.set(false);
+
+    if (error) {
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Erro ao enviar mensagem: ' + (error.message || 'Tente novamente.'));
+      return;
+    }
+
+    // Inserção otimista / do resultado no feed de mensagens
+    const novaMsg = data || {
+      id: 'temp-' + Date.now(),
+      conversa_id: id,
+      remetente_id: this.meuId(),
+      texto,
+      criado_em: new Date().toISOString(),
+      lida: false
+    };
+
+    this.mensagens.update(lista => [...lista, novaMsg]);
     this.textoMensagem.set('');
     this.scrollPendente = true;
+
+    // Atualiza a prévia na lista de conversas
+    this.conversas.update(lista =>
+      lista.map(c =>
+        c.id === id
+          ? { ...c, ultimaMensagem: texto, ultimaMensagemEm: new Date().toISOString() }
+          : c
+      )
+    );
   }
 
   private scrollParaFim(): void {
@@ -422,15 +549,45 @@ export class ComunidadeMensagensComponent implements AfterViewChecked {
     }
   }
 
-  getStatusDotEstilo(status: 'online' | 'ausente' | 'offline'): string {
-    switch (status) {
-      case 'online':
-        return 'bg-emerald-500';
-      case 'ausente':
-        return 'bg-amber-500';
-      case 'offline':
-      default:
-        return 'bg-slate-400';
+  getIniciais(nome: string | undefined): string {
+    if (!nome) return '👤';
+    const partes = nome.trim().split(/\s+/);
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  }
+
+  formatarTempo(tempoOuData: string | undefined): string {
+    if (!tempoOuData) return '';
+    try {
+      const data = new Date(tempoOuData);
+      if (isNaN(data.getTime())) return tempoOuData;
+
+      const agora = new Date();
+      const diffMs = agora.getTime() - data.getTime();
+      const diffMin = Math.floor(diffMs / (1000 * 60));
+      const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffMin < 1) return 'Agora';
+      if (diffMin < 60) return `${diffMin} min`;
+      if (diffHoras < 24) return `${diffHoras} h`;
+      if (diffDias === 1) return 'Ontem';
+      if (diffDias < 7) return `${diffDias} d`;
+
+      return data.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    } catch {
+      return tempoOuData;
+    }
+  }
+
+  formatarHora(dataStr: string | undefined): string {
+    if (!dataStr) return '';
+    try {
+      const d = new Date(dataStr);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
     }
   }
 }

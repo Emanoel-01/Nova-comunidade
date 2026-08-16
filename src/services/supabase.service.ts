@@ -674,5 +674,291 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  // ----------------------------------------------------
+  // FÓRUM TÉCNICO REAL
+  // ----------------------------------------------------
+
+  async listarForumTopicos(): Promise<any[]> {
+    try {
+      let topicos: any[] | null = null;
+      const res = await this.client
+        .from('forum_topicos')
+        .select('*, autor:profissionais!forum_topicos_autor_id_fkey(id, full_name, professional_title)')
+        .order('criado_em', { ascending: false });
+
+      if (!res.error && res.data) {
+        topicos = res.data;
+      } else {
+        const resFallback = await this.client
+          .from('forum_topicos')
+          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .order('criado_em', { ascending: false });
+
+        if (!resFallback.error && resFallback.data) {
+          topicos = resFallback.data;
+        } else {
+          const resSimples = await this.client
+            .from('forum_topicos')
+            .select('*')
+            .order('criado_em', { ascending: false });
+
+          if (!resSimples.error && resSimples.data) {
+            const autorIds = [...new Set(resSimples.data.map((t: any) => t.autor_id).filter(Boolean))];
+            const autoresMap: Record<string, any> = {};
+            if (autorIds.length > 0) {
+              const { data: autores } = await this.client
+                .from('profissionais')
+                .select('id, full_name, professional_title')
+                .in('id', autorIds);
+              (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
+            }
+            topicos = resSimples.data.map((t: any) => ({
+              ...t,
+              autor: autoresMap[t.autor_id] || null
+            }));
+          } else {
+            console.warn('Erro ao listar tópicos do fórum:', res.error?.message || resFallback.error?.message);
+            return [];
+          }
+        }
+      }
+
+      if (!topicos || topicos.length === 0) {
+        return [];
+      }
+
+      const topicoIds = topicos.map((t: any) => t.id);
+
+      let respostas: any[] = [];
+      const resResp = await this.client
+        .from('forum_respostas')
+        .select('*, autor:profissionais!forum_respostas_autor_id_fkey(id, full_name, professional_title)')
+        .in('topico_id', topicoIds)
+        .order('criado_em', { ascending: true });
+
+      if (!resResp.error && resResp.data) {
+        respostas = resResp.data;
+      } else {
+        const resRespFallback = await this.client
+          .from('forum_respostas')
+          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .in('topico_id', topicoIds)
+          .order('criado_em', { ascending: true });
+
+        if (!resRespFallback.error && resRespFallback.data) {
+          respostas = resRespFallback.data;
+        } else {
+          const resRespSimples = await this.client
+            .from('forum_respostas')
+            .select('*')
+            .in('topico_id', topicoIds)
+            .order('criado_em', { ascending: true });
+
+          if (resRespSimples.data) {
+            const respAutorIds = [...new Set(resRespSimples.data.map((r: any) => r.autor_id).filter(Boolean))];
+            const respAutoresMap: Record<string, any> = {};
+            if (respAutorIds.length > 0) {
+              const { data: respAutores } = await this.client
+                .from('profissionais')
+                .select('id, full_name, professional_title')
+                .in('id', respAutorIds);
+              (respAutores || []).forEach((a: any) => { respAutoresMap[a.id] = a; });
+            }
+            respostas = resRespSimples.data.map((r: any) => ({
+              ...r,
+              autor: respAutoresMap[r.autor_id] || null
+            }));
+          }
+        }
+      }
+
+      const { data: curtidasTopicos } = await this.client
+        .from('forum_curtidas')
+        .select('*')
+        .eq('alvo_tipo', 'topico')
+        .in('alvo_id', topicoIds);
+
+      const respostaIds = respostas.map((r: any) => r.id);
+      const { data: curtidasRespostas } = respostaIds.length > 0
+        ? await this.client.from('forum_curtidas').select('*').eq('alvo_tipo', 'resposta').in('alvo_id', respostaIds)
+        : { data: [] };
+
+      const session = await this.getSession();
+      const meuId = session?.user?.id;
+
+      return topicos.map((t: any) => {
+        const curtidasDoTopico = (curtidasTopicos || []).filter((c: any) => c.alvo_id === t.id);
+        const respostasDoTopico = (respostas || [])
+          .filter((r: any) => r.topico_id === t.id)
+          .map((r: any) => {
+            const curtidasDaResposta = (curtidasRespostas || []).filter((c: any) => c.alvo_id === r.id);
+            return {
+              ...r,
+              curtidas: curtidasDaResposta.length,
+              curtidoPorMim: curtidasDaResposta.some((c: any) => c.profissional_id === meuId),
+            };
+          });
+        return {
+          ...t,
+          curtidas: curtidasDoTopico.length,
+          curtidoPorMim: curtidasDoTopico.some((c: any) => c.profissional_id === meuId),
+          respostas: respostasDoTopico,
+        };
+      });
+    } catch (e: any) {
+      console.warn('Exceção ao listar tópicos do fórum:', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarForumTopico(titulo: string, categoria: string, conteudo: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { error } = await this.client
+        .from('forum_topicos')
+        .insert({ autor_id: session.user.id, titulo, categoria, conteudo });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async adicionarForumResposta(topicoId: string, texto: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { error } = await this.client
+        .from('forum_respostas')
+        .insert({ topico_id: topicoId, autor_id: session.user.id, texto });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async toggleForumCurtida(
+    alvoTipo: 'topico' | 'resposta',
+    alvoId: string,
+    curtidoAtualmente: boolean
+  ): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      if (curtidoAtualmente) {
+        const { error } = await this.client
+          .from('forum_curtidas')
+          .delete()
+          .eq('alvo_tipo', alvoTipo)
+          .eq('alvo_id', alvoId)
+          .eq('profissional_id', session.user.id);
+        return { error };
+      } else {
+        const { error } = await this.client
+          .from('forum_curtidas')
+          .insert({ alvo_tipo: alvoTipo, alvo_id: alvoId, profissional_id: session.user.id });
+        return { error };
+      }
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // ----------------------------------------------------
+  // MENSAGENS PRIVADAS REAL
+  // ----------------------------------------------------
+
+  async listarMinhasConversas(): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+      const meuId = session.user.id;
+
+      const { data: conversas, error } = await this.client
+        .from('conversas')
+        .select('*')
+        .or(`participante_1.eq.${meuId},participante_2.eq.${meuId}`);
+      if (error) { console.warn('Erro ao listar conversas:', error.message); return []; }
+
+      const conversaIds = (conversas || []).map((c: any) => c.id);
+      const outroParticipanteIds = (conversas || []).map((c: any) =>
+        c.participante_1 === meuId ? c.participante_2 : c.participante_1
+      );
+
+      const { data: participantes } = outroParticipanteIds.length > 0
+        ? await this.client.from('profissionais').select('id, full_name, professional_title').in('id', outroParticipanteIds)
+        : { data: [] };
+
+      const { data: ultimasMensagens } = conversaIds.length > 0
+        ? await this.client.from('mensagens').select('*').in('conversa_id', conversaIds).order('criado_em', { ascending: false })
+        : { data: [] };
+
+      return (conversas || []).map((c: any) => {
+        const outroId = c.participante_1 === meuId ? c.participante_2 : c.participante_1;
+        const participante = (participantes || []).find((p: any) => p.id === outroId);
+        const mensagensDaConversa = (ultimasMensagens || []).filter((m: any) => m.conversa_id === c.id);
+        const naoLidas = mensagensDaConversa.filter((m: any) => !m.lida && m.remetente_id !== meuId).length;
+        const ultimaMsg = mensagensDaConversa[0];
+        return {
+          ...c,
+          outroId,
+          nome: participante?.full_name || 'Membro da Comunidade',
+          cargo: participante?.professional_title || '',
+          ultimaMensagem: ultimaMsg?.texto || '',
+          ultimaMensagemEm: ultimaMsg?.criado_em || c.criado_em,
+          naoLidas,
+        };
+      });
+    } catch (e: any) {
+      console.warn('Exceção ao listar conversas:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarMensagensDaConversa(conversaId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('mensagens')
+        .select('*')
+        .eq('conversa_id', conversaId)
+        .order('criado_em', { ascending: true });
+      if (error) { console.warn('Erro ao listar mensagens:', error.message); return []; }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar mensagens:', e?.message || e);
+      return [];
+    }
+  }
+
+  async enviarMensagem(conversaId: string, texto: string): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { data, error } = await this.client
+        .from('mensagens')
+        .insert({ conversa_id: conversaId, remetente_id: session.user.id, texto })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async marcarMensagensComoLidas(conversaId: string): Promise<void> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return;
+      await this.client
+        .from('mensagens')
+        .update({ lida: true })
+        .eq('conversa_id', conversaId)
+        .neq('remetente_id', session.user.id)
+        .eq('lida', false);
+    } catch {
+      // silencioso — marcar como lida não é crítico o suficiente para travar a UI
+    }
+  }
 }
 
