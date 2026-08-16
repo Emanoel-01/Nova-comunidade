@@ -10,6 +10,7 @@ import { ComunidadeComponent } from './components/comunidade.component';
 import { ComunidadePreviewComponent } from './components/comunidade-preview.component';
 import { BlogComponent } from './components/blog.component';
 import { AdminPanelComponent } from './components/admin-panel.component';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -39,6 +40,11 @@ export const routes: Routes = [
   {
     path: 'comunidade/preview',
     component: ComunidadePreviewComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'redefinir-senha',
+    component: ComunidadeComponent,
   },
   {
     path: 'contato',

@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
+
+type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao' | 'solicitacao-sucesso';
 
 @Component({
   selector: 'app-comunidade',
@@ -100,11 +102,11 @@ import { SupabaseService } from '../../services/supabase.service';
           </div>
         </div>
 
-        <!-- Coluna Direita — Ações (fundo branco) -->
+        <!-- Coluna Direita — Ações e Formulários (fundo branco) -->
         <div class="lg:col-span-7 p-6 sm:p-12 flex flex-col justify-center bg-white">
           
           <!-- ESTADO 1: Tela Inicial Padrão -->
-          @if (!mostrarFormularioSolicitacao() && !solicitacaoEnviada()) {
+          @if (modoAcesso() === 'inicial') {
             <div class="max-w-md mx-auto w-full space-y-8 py-4">
               <div class="space-y-2 text-center lg:text-left">
                 <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -120,7 +122,7 @@ import { SupabaseService } from '../../services/supabase.service';
                 <button
                   type="button"
                   id="btn-entrar-conta"
-                  (click)="onEntrarComConta()"
+                  (click)="abrirLogin()"
                   class="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +135,7 @@ import { SupabaseService } from '../../services/supabase.service';
                 <button
                   type="button"
                   id="btn-solicitar-acesso"
-                  (click)="abrirFormulario()"
+                  (click)="abrirSolicitacao()"
                   class="w-full py-4 px-6 rounded-2xl bg-white hover:bg-indigo-50/50 text-indigo-700 font-bold text-base border-2 border-indigo-600 transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,35 +143,362 @@ import { SupabaseService } from '../../services/supabase.service';
                   </svg>
                   <span>Solicitar Acesso ao Administrador</span>
                 </button>
-
-                <!-- Botão Ver Prévia da Comunidade (Modo Demonstração) -->
-                <div class="pt-2">
-                  <a
-                    routerLink="/comunidade/preview"
-                    id="btn-ver-previa-comunidade"
-                    class="w-full py-3 px-4 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 text-slate-700 hover:text-indigo-700 font-semibold text-xs sm:text-sm border border-slate-300 hover:border-indigo-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span>👁 Ver como vai funcionar (prévia)</span>
-                  </a>
-                </div>
               </div>
 
               <!-- Texto Informativo -->
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 leading-relaxed space-y-1">
                 <span class="font-bold text-slate-800">Já é membro?</span>
                 <p>
-                  Se você já teve sua solicitação aprovada, basta clicar em "Entrar com minha conta" para acessar o feed, fóruns e materiais exclusivos.
+                  Se você já teve sua solicitação aprovada e recebeu suas credenciais, basta clicar em "Entrar com minha conta" para acessar o feed, fóruns e materiais exclusivos.
                 </p>
               </div>
             </div>
           }
 
-          <!-- ESTADO 2: Formulário de Solicitação de Acesso -->
-          @if (mostrarFormularioSolicitacao() && !solicitacaoEnviada()) {
+          <!-- ESTADO 2: Formulário Real de Login -->
+          @if (modoAcesso() === 'login') {
+            <div class="max-w-md mx-auto w-full space-y-6 py-2">
+              <div class="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
+                <div>
+                  <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    Entrar na Comunidade
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Digite seu e-mail e senha cadastrados.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="btn-voltar-inicio-login"
+                  (click)="voltarInicio()"
+                  class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                  title="Voltar"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form (submit)="executarLogin($event)" class="space-y-4" id="form-login-comunidade">
+                <!-- E-mail -->
+                <div class="space-y-1">
+                  <label for="login-email" class="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                    E-mail
+                  </label>
+                  <input
+                    id="login-email"
+                    type="email"
+                    [value]="loginEmail()"
+                    (input)="onLoginEmailInput($event)"
+                    placeholder="seu.email@exemplo.com"
+                    required
+                    autocomplete="username"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <!-- Senha -->
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between">
+                    <label for="login-senha" class="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                      Senha
+                    </label>
+                    <button
+                      type="button"
+                      id="btn-esqueceu-senha"
+                      (click)="abrirRecuperarSenha()"
+                      class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+                  <div class="relative">
+                    <input
+                      id="login-senha"
+                      [type]="mostrarSenhaLogin() ? 'text' : 'password'"
+                      [value]="loginSenha()"
+                      (input)="onLoginSenhaInput($event)"
+                      placeholder="••••••••"
+                      required
+                      autocomplete="current-password"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors pr-10"
+                    />
+                    <button
+                      type="button"
+                      (click)="toggleMostrarSenhaLogin()"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                      title="Alternar visualização da senha"
+                    >
+                      @if (mostrarSenhaLogin()) {
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                        </svg>
+                      } @else {
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mensagem de Erro Inline -->
+                @if (erroLogin()) {
+                  <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                    <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ erroLogin() }}</span>
+                  </div>
+                }
+
+                <!-- Botão Entrar -->
+                <div class="pt-2">
+                  <button
+                    type="submit"
+                    id="btn-submeter-login"
+                    [disabled]="processandoLogin()"
+                    class="w-full py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                  >
+                    @if (processandoLogin()) {
+                      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Entrando...</span>
+                    } @else {
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                      </svg>
+                      <span>Entrar</span>
+                    }
+                  </button>
+                </div>
+
+                <div class="text-center pt-2">
+                  <button
+                    type="button"
+                    (click)="abrirSolicitacao()"
+                    class="text-xs text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                  >
+                    Ainda não tem acesso? <strong class="text-indigo-600 underline">Solicite sua entrada</strong>
+                  </button>
+                </div>
+              </form>
+            </div>
+          }
+
+          <!-- ESTADO 3: Formulário de Recuperação de Senha -->
+          @if (modoAcesso() === 'recuperar') {
+            <div class="max-w-md mx-auto w-full space-y-6 py-2">
+              <div class="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
+                <div>
+                  <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    Recuperar Senha
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Enviaremos um link para você definir uma nova senha.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="btn-voltar-login-recuperar"
+                  (click)="abrirLogin()"
+                  class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                  title="Voltar ao login"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              @if (recuperacaoEnviada()) {
+                <div class="space-y-4 py-2">
+                  <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-2">
+                    <div class="flex items-center gap-2 font-bold text-emerald-800">
+                      <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Link de redefinição solicitado</span>
+                    </div>
+                    <p class="leading-relaxed">
+                      Se esse e-mail estiver cadastrado na plataforma, você receberá em instantes um link com instruções para redefinir sua senha.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="abrirLogin()"
+                    class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Voltar para o Login
+                  </button>
+                </div>
+              } @else {
+                <form (submit)="executarRecuperacaoSenha($event)" class="space-y-4" id="form-recuperar-senha">
+                  <div class="space-y-1">
+                    <label for="recuperar-email" class="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                      E-mail cadastrado
+                    </label>
+                    <input
+                      id="recuperar-email"
+                      type="email"
+                      [value]="recuperarEmail()"
+                      (input)="onRecuperarEmailInput($event)"
+                      placeholder="seu.email@exemplo.com"
+                      required
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
+
+                  @if (erroRecuperacao()) {
+                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                      <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{{ erroRecuperacao() }}</span>
+                    </div>
+                  }
+
+                  <div class="pt-2 space-y-2">
+                    <button
+                      type="submit"
+                      id="btn-submeter-recuperacao"
+                      [disabled]="processandoRecuperacao()"
+                      class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                    >
+                      @if (processandoRecuperacao()) {
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Enviando...</span>
+                      } @else {
+                        <span>Enviar link de redefinição</span>
+                      }
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="abrirLogin()"
+                      class="w-full py-2.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                    >
+                      Cancelar e voltar
+                    </button>
+                  </div>
+                </form>
+              }
+            </div>
+          }
+
+          <!-- ESTADO 4: Redefinição Real de Senha (Nova Senha) -->
+          @if (modoAcesso() === 'redefinir') {
+            <div class="max-w-md mx-auto w-full space-y-6 py-2">
+              <div class="space-y-1 pb-2 border-b border-slate-100">
+                <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  Criar Nova Senha
+                </h3>
+                <p class="text-xs text-slate-500">
+                  Informe sua nova senha para acessar a Comunidade Business 4.0.
+                </p>
+              </div>
+
+              @if (senhaRedefinidaComSucesso()) {
+                <div class="space-y-4 py-2">
+                  <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-2">
+                    <div class="flex items-center gap-2 font-bold text-emerald-800">
+                      <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Senha atualizada com sucesso!</span>
+                    </div>
+                    <p class="leading-relaxed">
+                      Sua nova senha foi salva. Você já pode acessar o ambiente exclusivo da Comunidade.
+                    </p>
+                  </div>
+
+                  <a
+                    routerLink="/comunidade/preview"
+                    id="btn-ir-comunidade-pos-senha"
+                    class="w-full py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Acessar Comunidade Agora</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </a>
+                </div>
+              } @else {
+                <form (submit)="executarSalvarNovaSenha($event)" class="space-y-4" id="form-nova-senha">
+                  <div class="space-y-1">
+                    <label for="nova-senha" class="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                      Nova Senha (mínimo 6 caracteres)
+                    </label>
+                    <input
+                      id="nova-senha"
+                      type="password"
+                      [value]="novaSenha()"
+                      (input)="onNovaSenhaInput($event)"
+                      placeholder="••••••••"
+                      required
+                      minlength="6"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
+
+                  <div class="space-y-1">
+                    <label for="confirma-nova-senha" class="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                      Confirmar Nova Senha
+                    </label>
+                    <input
+                      id="confirma-nova-senha"
+                      type="password"
+                      [value]="confirmaNovaSenha()"
+                      (input)="onConfirmaNovaSenhaInput($event)"
+                      placeholder="••••••••"
+                      required
+                      minlength="6"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
+
+                  @if (erroRedefinicao()) {
+                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                      <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{{ erroRedefinicao() }}</span>
+                    </div>
+                  }
+
+                  <div class="pt-2">
+                    <button
+                      type="submit"
+                      id="btn-salvar-nova-senha"
+                      [disabled]="processandoRedefinicao()"
+                      class="w-full py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                    >
+                      @if (processandoRedefinicao()) {
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Salvando nova senha...</span>
+                      } @else {
+                        <span>Atualizar Senha e Entrar</span>
+                      }
+                    </button>
+                  </div>
+                </form>
+              }
+            </div>
+          }
+
+          <!-- ESTADO 5: Formulário de Solicitação de Acesso -->
+          @if (modoAcesso() === 'solicitacao') {
             <div class="max-w-lg mx-auto w-full space-y-6">
               
               <!-- Cabeçalho do formulário com botão fechar -->
@@ -185,7 +514,7 @@ import { SupabaseService } from '../../services/supabase.service';
                 <button
                   type="button"
                   id="btn-fechar-formulario"
-                  (click)="fecharFormulario()"
+                  (click)="voltarInicio()"
                   class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
                   title="Fechar"
                 >
@@ -336,8 +665,8 @@ import { SupabaseService } from '../../services/supabase.service';
             </div>
           }
 
-          <!-- ESTADO 3: Tela de Confirmação (Solicitação Recebida com Sucesso) -->
-          @if (solicitacaoEnviada()) {
+          <!-- ESTADO 6: Tela de Confirmação (Solicitação Recebida com Sucesso) -->
+          @if (modoAcesso() === 'solicitacao-sucesso') {
             <div class="max-w-md mx-auto w-full space-y-6 py-2 text-center">
               
               <!-- Ícone grande de check -->
@@ -366,7 +695,7 @@ import { SupabaseService } from '../../services/supabase.service';
                     <strong class="text-slate-800">1. Validação:</strong> Verificaremos seu vínculo com os programas da Amorim Tech ou Amorim Arquitetura.
                   </p>
                   <p class="leading-relaxed">
-                    <strong class="text-slate-800">2. Aprovação:</strong> Você receberá uma notificação assim que seu e-mail for liberado.
+                    <strong class="text-slate-800">2. Aprovação:</strong> Você receberá uma notificação com suas credenciais assim que seu e-mail for liberado.
                   </p>
                 </div>
               </div>
@@ -377,15 +706,15 @@ import { SupabaseService } from '../../services/supabase.service';
                 Membros engajados têm prioridade em mentorias exclusivas e ganham destaque no nosso Hall da Fama. Prepare seu perfil e comece a interagir!
               </div>
 
-              <!-- Botão Fechar -->
+              <!-- Botão Concluir/Fechar -->
               <div class="pt-2">
                 <button
                   type="button"
                   id="btn-concluir-solicitacao"
-                  (click)="resetarFluxo()"
+                  (click)="voltarInicio()"
                   class="w-full py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-all shadow-md cursor-pointer"
                 >
-                  Fechar
+                  Concluir
                 </button>
               </div>
             </div>
@@ -397,15 +726,36 @@ import { SupabaseService } from '../../services/supabase.service';
     </div>
   `
 })
-export class ComunidadeComponent {
+export class ComunidadeComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly router = inject(Router);
 
-  readonly mostrarFormularioSolicitacao = signal(false);
-  readonly solicitacaoEnviada = signal(false);
+  // Modo ativo de navegação interna
+  readonly modoAcesso = signal<ModoAcesso>('inicial');
+
+  // Estados do Formulário de Login
+  readonly loginEmail = signal('');
+  readonly loginSenha = signal('');
+  readonly mostrarSenhaLogin = signal(false);
+  readonly processandoLogin = signal(false);
+  readonly erroLogin = signal<string | null>(null);
+
+  // Estados de Recuperação de Senha
+  readonly recuperarEmail = signal('');
+  readonly processandoRecuperacao = signal(false);
+  readonly recuperacaoEnviada = signal(false);
+  readonly erroRecuperacao = signal<string | null>(null);
+
+  // Estados de Nova Senha (Redefinição)
+  readonly novaSenha = signal('');
+  readonly confirmaNovaSenha = signal('');
+  readonly processandoRedefinicao = signal(false);
+  readonly senhaRedefinidaComSucesso = signal(false);
+  readonly erroRedefinicao = signal<string | null>(null);
+
+  // Estados do Formulário de Solicitação de Acesso
   readonly exibirErroValidacao = signal<string | null>(null);
   readonly enviandoSolicitacao = signal(false);
-
-  // Campos do formulário em signals
   readonly nome = signal('');
   readonly email = signal('');
   readonly telefone = signal('');
@@ -413,36 +763,184 @@ export class ComunidadeComponent {
   readonly perfil = signal('Especialista em Engenharia Diagnóstica');
   readonly motivo = signal('');
 
-  onEntrarComConta(): void {
-    alert('Login em breve — esta função ainda está em implantação.');
+  async ngOnInit(): Promise<void> {
+    // Detectar retorno de e-mail de recuperação de senha
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      const pathname = window.location.pathname || '';
+      
+      const isRecovery = 
+        hash.includes('type=recovery') || 
+        search.includes('type=recovery') || 
+        pathname.includes('redefinir-senha');
+
+      if (isRecovery) {
+        this.modoAcesso.set('redefinir');
+      }
+    }
+
+    // Monitorar eventos de autenticação
+    this.supabaseService.onAuthStateChange((session) => {
+      if (session?.user && this.modoAcesso() === 'login') {
+        this.router.navigate(['/comunidade/preview']);
+      }
+    });
   }
 
-  abrirFormulario(): void {
-    this.mostrarFormularioSolicitacao.set(true);
-    this.solicitacaoEnviada.set(false);
+  // Abertura e troca de telas
+  abrirLogin(): void {
+    this.modoAcesso.set('login');
+    this.erroLogin.set(null);
+  }
+
+  abrirRecuperarSenha(): void {
+    this.modoAcesso.set('recuperar');
+    this.erroRecuperacao.set(null);
+    this.recuperacaoEnviada.set(false);
+    if (this.loginEmail()) {
+      this.recuperarEmail.set(this.loginEmail());
+    }
+  }
+
+  abrirSolicitacao(): void {
+    this.modoAcesso.set('solicitacao');
     this.exibirErroValidacao.set(null);
   }
 
-  fecharFormulario(): void {
-    this.mostrarFormularioSolicitacao.set(false);
-    this.solicitacaoEnviada.set(false);
+  voltarInicio(): void {
+    this.modoAcesso.set('inicial');
+    this.erroLogin.set(null);
+    this.erroRecuperacao.set(null);
     this.exibirErroValidacao.set(null);
   }
 
+  // Handlers do Login
+  onLoginEmailInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.loginEmail.set(target.value);
+    if (this.erroLogin()) this.erroLogin.set(null);
+  }
+
+  onLoginSenhaInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.loginSenha.set(target.value);
+    if (this.erroLogin()) this.erroLogin.set(null);
+  }
+
+  toggleMostrarSenhaLogin(): void {
+    this.mostrarSenhaLogin.update(v => !v);
+  }
+
+  async executarLogin(event: Event): Promise<void> {
+    event.preventDefault();
+    const email = this.loginEmail().trim();
+    const password = this.loginSenha();
+
+    if (!email || !password) {
+      this.erroLogin.set('Por favor, informe seu e-mail e senha.');
+      return;
+    }
+
+    this.processandoLogin.set(true);
+    this.erroLogin.set(null);
+
+    const { error } = await this.supabaseService.signInWithPassword(email, password);
+    this.processandoLogin.set(false);
+
+    if (error) {
+      this.erroLogin.set('E-mail ou senha incorretos.');
+      return;
+    }
+
+    // Sucesso: navega para a área logada da comunidade
+    this.router.navigate(['/comunidade/preview']);
+  }
+
+  // Handlers de Recuperação de Senha
+  onRecuperarEmailInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.recuperarEmail.set(target.value);
+    if (this.erroRecuperacao()) this.erroRecuperacao.set(null);
+  }
+
+  async executarRecuperacaoSenha(event: Event): Promise<void> {
+    event.preventDefault();
+    const email = this.recuperarEmail().trim();
+
+    if (!email) {
+      this.erroRecuperacao.set('Por favor, informe o e-mail cadastrado.');
+      return;
+    }
+
+    this.processandoRecuperacao.set(true);
+    this.erroRecuperacao.set(null);
+
+    const { error } = await this.supabaseService.resetPasswordForEmail(email);
+    this.processandoRecuperacao.set(false);
+
+    if (error) {
+      // Exibir erro genérico por segurança
+      console.warn('Erro ao solicitar reset de senha:', error.message);
+    }
+
+    // Mensagem de sucesso genérica para proteger enumeração de e-mails
+    this.recuperacaoEnviada.set(true);
+  }
+
+  // Handlers de Nova Senha (Redefinição)
+  onNovaSenhaInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.novaSenha.set(target.value);
+    if (this.erroRedefinicao()) this.erroRedefinicao.set(null);
+  }
+
+  onConfirmaNovaSenhaInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.confirmaNovaSenha.set(target.value);
+    if (this.erroRedefinicao()) this.erroRedefinicao.set(null);
+  }
+
+  async executarSalvarNovaSenha(event: Event): Promise<void> {
+    event.preventDefault();
+    const s1 = this.novaSenha();
+    const s2 = this.confirmaNovaSenha();
+
+    if (!s1 || s1.length < 6) {
+      this.erroRedefinicao.set('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    if (s1 !== s2) {
+      this.erroRedefinicao.set('As senhas digitadas não coincidem.');
+      return;
+    }
+
+    this.processandoRedefinicao.set(true);
+    this.erroRedefinicao.set(null);
+
+    const { error } = await this.supabaseService.updatePassword(s1);
+    this.processandoRedefinicao.set(false);
+
+    if (error) {
+      this.erroRedefinicao.set('Não foi possível atualizar sua senha. O link pode ter expirado.');
+      return;
+    }
+
+    this.senhaRedefinidaComSucesso.set(true);
+  }
+
+  // Handlers da Solicitação de Acesso
   onNomeInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.nome.set(target.value);
-    if (this.exibirErroValidacao()) {
-      this.exibirErroValidacao.set(null);
-    }
+    if (this.exibirErroValidacao()) this.exibirErroValidacao.set(null);
   }
 
   onEmailInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.email.set(target.value);
-    if (this.exibirErroValidacao()) {
-      this.exibirErroValidacao.set(null);
-    }
+    if (this.exibirErroValidacao()) this.exibirErroValidacao.set(null);
   }
 
   onTelefoneInput(event: Event): void {
@@ -458,9 +956,7 @@ export class ComunidadeComponent {
   onPerfilChange(event: Event): void {
     const target = event.target as HTMLSelectElement;
     this.perfil.set(target.value);
-    if (this.exibirErroValidacao()) {
-      this.exibirErroValidacao.set(null);
-    }
+    if (this.exibirErroValidacao()) this.exibirErroValidacao.set(null);
   }
 
   onMotivoInput(event: Event): void {
@@ -492,18 +988,6 @@ export class ComunidadeComponent {
       return;
     }
 
-    this.solicitacaoEnviada.set(true);
-  }
-
-  resetarFluxo(): void {
-    this.mostrarFormularioSolicitacao.set(false);
-    this.solicitacaoEnviada.set(false);
-    this.exibirErroValidacao.set(null);
-    this.nome.set('');
-    this.email.set('');
-    this.telefone.set('');
-    this.profissao.set('');
-    this.perfil.set('Especialista em Engenharia Diagnóstica');
-    this.motivo.set('');
+    this.modoAcesso.set('solicitacao-sucesso');
   }
 }
