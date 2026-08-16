@@ -488,4 +488,80 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  // ----------------------------------------------------
+  // PERMISSÕES DE ACESSO (MÓDULOS)
+  // ----------------------------------------------------
+
+  async temPermissaoModulo(produto: 'predial4' | 'comunidade', modulo: string): Promise<boolean> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return false;
+      const { data, error } = await this.client
+        .from('permissoes_acesso')
+        .select('id, validade')
+        .eq('profissional_id', session.user.id)
+        .eq('produto', produto)
+        .eq('modulo', modulo)
+        .eq('liberado', true)
+        .limit(1);
+      if (error || !data || data.length === 0) return false;
+      const validade = data[0].validade;
+      if (validade && new Date(validade) < new Date()) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ----------------------------------------------------
+  // MURAL DE VAGAS REAL
+  // ----------------------------------------------------
+
+  async listarVagas(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('vagas')
+        .select('*')
+        .eq('ativa', true)
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar vagas:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar vagas:', e?.message || e);
+      return [];
+    }
+  }
+
+  async candidatarVaga(vagaId: string, mensagem?: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { error } = await this.client
+        .from('vagas_candidaturas')
+        .insert({ vaga_id: vagaId, profissional_id: session.user.id, mensagem: mensagem || null });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async jaMeCandidatei(vagaId: string): Promise<boolean> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return false;
+      const { data } = await this.client
+        .from('vagas_candidaturas')
+        .select('id')
+        .eq('vaga_id', vagaId)
+        .eq('profissional_id', session.user.id)
+        .limit(1);
+      return !!(data && data.length > 0);
+    } catch {
+      return false;
+    }
+  }
 }
