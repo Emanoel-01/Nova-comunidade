@@ -190,4 +190,30 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  async criarUsuarioAdminViaFunction(dados: {
+    email: string;
+    full_name: string;
+    password?: string;
+    nivel_atual?: string;
+  }): Promise<{ data?: any; error: Error | null; senhaProvisoria?: string }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('criar-usuario-admin', {
+        body: dados,
+      });
+      if (error) {
+        return { error };
+      }
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+      return {
+        data: data?.profissional || data?.user,
+        senhaProvisoria: data?.senhaProvisoria,
+        error: null,
+      };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }

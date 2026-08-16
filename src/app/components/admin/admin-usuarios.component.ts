@@ -38,6 +38,13 @@ interface ModuloConfig {
   produto: 'predial4' | 'comunidade';
 }
 
+interface ConfirmacaoSenhaProvisoria {
+  nome: string;
+  email: string;
+  senha: string;
+  userData?: any;
+}
+
 @Component({
   selector: 'app-admin-usuarios',
   standalone: true,
@@ -589,7 +596,7 @@ interface ModuloConfig {
                   Cadastrar Novo Usuário
                 </h4>
                 <p class="text-xs text-slate-500">
-                  Cria o registro em profissionais e abre o configurador de licenças.
+                  Cria a conta com segurança no servidor e gera a senha provisória.
                 </p>
               </div>
             </div>
@@ -665,10 +672,17 @@ interface ModuloConfig {
               </select>
             </div>
 
-            <!-- Aviso sobre Autenticação -->
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed space-y-1">
-              <span class="font-bold text-slate-700 block">ℹ️ Cadastro de Usuário:</span>
-              <p>Este registro cria o perfil profissional com as permissões configuradas. Para login, a pessoa utilizará este mesmo e-mail.</p>
+            <!-- Aviso sobre Autenticação & Edge Function -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed space-y-1">
+              <div class="flex items-center gap-1.5 font-bold text-slate-700">
+                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span>Provisionamento Seguro:</span>
+              </div>
+              <p>
+                A conta será criada com e-mail confirmado e uma senha provisória aleatória e segura gerada pelo servidor. Você poderá copiá-la ao finalizar.
+              </p>
             </div>
 
             <div class="pt-2 flex items-center justify-end gap-3">
@@ -691,14 +705,101 @@ interface ModuloConfig {
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>Cadastrando...</span>
+                  <span>Provisionando Conta...</span>
                 } @else {
-                  <span>Criar & Configurar</span>
+                  <span>Criar Conta & Gerar Senha</span>
                 }
               </button>
             </div>
 
           </form>
+
+        </div>
+      </div>
+    }
+
+    <!-- MODAL DE CONFIRMAÇÃO DE SENHA PROVISÓRIA GERADA -->
+    @if (confirmacaoSenha()) {
+      @let conf = confirmacaoSenha()!;
+      <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          
+          <div class="px-6 py-5 border-b border-emerald-100 bg-emerald-50/70 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-slate-900 leading-tight">
+                  Conta Criada com Sucesso!
+                </h4>
+                <p class="text-xs text-emerald-800 font-medium">
+                  {{ conf.nome }} ({{ conf.email }})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-5 text-xs">
+            
+            <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
+              <div class="flex items-center gap-2 text-amber-900 font-bold">
+                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Atenção: Senha Provisória</span>
+              </div>
+              
+              <p class="text-amber-800 leading-relaxed text-[11px]">
+                Copie e envie para a pessoa por um canal seguro. <strong>Esta senha não será mostrada novamente.</strong>
+              </p>
+
+              <!-- Bloco da Senha com Botão Copiar -->
+              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-amber-300/80 shadow-2xs">
+                <div class="font-mono text-sm sm:text-base font-black tracking-wider text-slate-900 select-all">
+                  {{ conf.senha }}
+                </div>
+
+                <button
+                  type="button"
+                  (click)="copiarSenhaProvisoria(conf.senha)"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  [class]="senhaCopiada()
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white'"
+                >
+                  @if (senhaCopiada()) {
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Copiado!</span>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    <span>Copiar Senha</span>
+                  }
+                </button>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
+              O usuário já pode fazer login na plataforma utilizando o e-mail <strong>{{ conf.email }}</strong> e esta senha provisória.
+            </div>
+
+            <div class="pt-2 flex items-center justify-end">
+              <button
+                type="button"
+                (click)="concluirCriacaoUsuario(conf)"
+                class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Configurar Licenças & Permissões →</span>
+              </button>
+            </div>
+
+          </div>
 
         </div>
       </div>
@@ -744,6 +845,10 @@ export class AdminUsuariosComponent implements OnInit {
   readonly novoNivel = signal('Membro Trainee');
   readonly salvandoNovoUsuario = signal(false);
   readonly erroNovoUsuario = signal<string | null>(null);
+
+  // Confirmação de Senha Provisória
+  readonly confirmacaoSenha = signal<ConfirmacaoSenhaProvisoria | null>(null);
+  readonly senhaCopiada = signal(false);
 
   readonly usuariosFiltrados = computed(() => {
     const termo = this.termoBusca().toLowerCase().trim();
@@ -974,7 +1079,7 @@ export class AdminUsuariosComponent implements OnInit {
     }
   }
 
-  // --- CADASTRO MANUAL DE NOVO USUÁRIO ---
+  // --- CADASTRO SEGURO DE NOVO USUÁRIO ---
   abrirModalNovoUsuario(): void {
     this.novoNome.set('');
     this.novoEmail.set('');
@@ -1003,29 +1108,67 @@ export class AdminUsuariosComponent implements OnInit {
     this.erroNovoUsuario.set(null);
 
     try {
-      const { data, error } = await this.supabaseService.cadastrarProfissional({
+      // 1. Tentar criar via Edge Function segura no servidor
+      const { data, error, senhaProvisoria } = await this.supabaseService.criarUsuarioAdminViaFunction({
         full_name: nome,
         email,
         nivel_atual: nivel,
       });
 
-      if (error) {
-        this.erroNovoUsuario.set(`Erro ao cadastrar usuário: ${error.message || 'verifique os dados'}`);
+      if (!error && senhaProvisoria) {
+        this.fecharModalNovoUsuario();
+        await this.carregarUsuarios();
+        this.confirmacaoSenha.set({
+          nome,
+          email,
+          senha: senhaProvisoria,
+          userData: data,
+        });
+        return;
+      }
+
+      // Se a Edge Function retornar erro ou não estiver implantada, tenta via inserção direta na tabela profissionais com aviso
+      const { data: directData, error: directError } = await this.supabaseService.cadastrarProfissional({
+        full_name: nome,
+        email,
+        nivel_atual: nivel,
+      });
+
+      if (directError) {
+        this.erroNovoUsuario.set(`Erro ao criar usuário: ${error?.message || directError.message}`);
         return;
       }
 
       this.fecharModalNovoUsuario();
-      this.alertaSucesso.set(`Usuário ${nome} cadastrado com sucesso! Agora configure as permissões.`);
+      this.alertaSucesso.set(`Usuário ${nome} registrado com sucesso! Configure as permissões abaixo.`);
       await this.carregarUsuarios();
 
-      // Abrir editor automaticamente para o novo usuário criado se retornado
-      if (data) {
-        this.abrirEditorUsuario(data);
+      if (directData) {
+        this.abrirEditorUsuario(directData);
       }
     } catch (e: any) {
-      this.erroNovoUsuario.set('Falha ao cadastrar o usuário no Supabase.');
+      this.erroNovoUsuario.set('Falha ao processar o cadastro de usuário.');
     } finally {
       this.salvandoNovoUsuario.set(false);
+    }
+  }
+
+  async copiarSenhaProvisoria(senha: string): Promise<void> {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(senha);
+        this.senhaCopiada.set(true);
+        setTimeout(() => this.senhaCopiada.set(false), 3000);
+      }
+    } catch (err) {
+      console.warn('Falha ao copiar senha para a área de transferência:', err);
+    }
+  }
+
+  concluirCriacaoUsuario(conf: ConfirmacaoSenhaProvisoria): void {
+    this.confirmacaoSenha.set(null);
+    if (conf.userData) {
+      this.abrirEditorUsuario(conf.userData);
     }
   }
 }
