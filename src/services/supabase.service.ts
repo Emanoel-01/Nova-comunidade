@@ -100,4 +100,94 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  async listarProfissionaisComPermissoes(): Promise<any[]> {
+    try {
+      const { data: pessoas, error: erroPessoas } = await this.client
+        .from('profissionais')
+        .select('*')
+        .order('full_name', { ascending: true });
+      if (erroPessoas) {
+        console.warn('Erro ao buscar profissionais:', erroPessoas.message);
+        return [];
+      }
+
+      const { data: permissoes, error: erroPermissoes } = await this.client
+        .from('permissoes_acesso')
+        .select('*');
+      if (erroPermissoes) {
+        console.warn('Aviso ao buscar permissões_acesso:', erroPermissoes.message);
+      }
+
+      return (pessoas || []).map((p: any) => ({
+        ...p,
+        permissoes: (permissoes || []).filter((perm: any) => perm.profissional_id === p.id),
+      }));
+    } catch (e: any) {
+      console.warn('Erro ao listar profissionais com permissões:', e?.message || e);
+      return [];
+    }
+  }
+
+  async upsertPermissao(permissao: {
+    profissionalId: string;
+    produto: 'predial4' | 'comunidade';
+    modulo: string;
+    liberado: boolean;
+    validade?: string | null;
+    nivelAcesso?: string | null;
+  }): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('permissoes_acesso')
+        .upsert({
+          profissional_id: permissao.profissionalId,
+          produto: permissao.produto,
+          modulo: permissao.modulo,
+          liberado: permissao.liberado,
+          validade: permissao.validade || null,
+          nivel_acesso: permissao.nivelAcesso || null,
+          atualizado_em: new Date().toISOString(),
+        }, { onConflict: 'profissional_id,produto,modulo' });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async cadastrarProfissional(dados: {
+    full_name: string;
+    email: string;
+    nivel_atual?: string;
+  }): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const { data, error } = await this.client
+        .from('profissionais')
+        .insert({
+          full_name: dados.full_name,
+          email: dados.email,
+          nivel_atual: dados.nivel_atual || 'Membro Trainee',
+        })
+        .select()
+        .single();
+      return { data, error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarNivelProfissional(
+    id: string,
+    nivelAtual: string
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('profissionais')
+        .update({ nivel_atual: nivelAtual })
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }

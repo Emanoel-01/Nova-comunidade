@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AdminCursoComponent } from './admin/admin-curso.component';
 import { AdminAcessosComponent } from './admin/admin-acessos.component';
+import { AdminUsuariosComponent } from './admin/admin-usuarios.component';
 import { SupabaseService } from '../../services/supabase.service';
 
 interface NavSectionItem {
@@ -15,7 +16,7 @@ interface NavSectionItem {
 @Component({
   selector: 'app-admin-panel',
   standalone: true,
-  imports: [CommonModule, RouterModule, AdminCursoComponent, AdminAcessosComponent],
+  imports: [CommonModule, RouterModule, AdminCursoComponent, AdminAcessosComponent, AdminUsuariosComponent],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col md:flex-row">
       
@@ -240,6 +241,19 @@ interface NavSectionItem {
                 </svg>
                 <span>Convites e Acessos</span>
               </button>
+
+              <button
+                type="button"
+                (click)="selecionarAba('gestao-usuarios')"
+                [class]="abaAtiva() === 'gestao-usuarios'
+                  ? 'w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold shadow-sm'
+                  : 'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-colors'"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Gestão de Usuários</span>
+              </button>
             </div>
 
           </nav>
@@ -377,6 +391,11 @@ interface NavSectionItem {
               <app-admin-acessos></app-admin-acessos>
             }
 
+            <!-- CASO 4: Gestão de Usuários & Licenças -->
+            @case ('gestao-usuarios') {
+              <app-admin-usuarios></app-admin-usuarios>
+            }
+
             <!-- DEMAIS ABAS: Card de "Conector Pendente / Em Construção" -->
             @default {
               <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-16 text-center space-y-5 shadow-xs max-w-2xl mx-auto">
@@ -432,6 +451,7 @@ export class AdminPanelComponent implements OnInit {
     'depoimentos': { titulo: 'Depoimentos', tabela: 'tabela testimonials' },
     'newsletter': { titulo: 'Newsletter', tabela: 'tabela newsletter_subscribers' },
     'convites-acessos': { titulo: 'Convites e Acessos' },
+    'gestao-usuarios': { titulo: 'Gestão de Usuários & Licenças' },
   };
 
   async ngOnInit(): Promise<void> {
