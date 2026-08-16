@@ -1,6 +1,23 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.service';
+import { SupabaseService } from '../../../services/supabase.service';
+
+export interface PerfilVisual {
+  nome: string;
+  cargo: string;
+  bio: string;
+  formacao: string;
+  instituicao: string;
+  creaCau: string;
+  especializacao: string;
+  experiencia: string;
+  skills: string[];
+  linkedin: string;
+  instagram: string;
+  whatsapp: string;
+  website: string;
+  nivelAtual?: string;
+}
 
 @Component({
   selector: 'app-comunidade-perfil',
@@ -8,6 +25,19 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
   imports: [CommonModule],
   template: `
     <div class="space-y-8">
+
+      <!-- Feedback de Sucesso/Erro -->
+      @if (mensagemFeedback()) {
+        <div
+          [class]="tipoFeedback() === 'sucesso'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-rose-50 border-rose-200 text-rose-800'"
+          class="p-4 rounded-2xl border flex items-center justify-between text-xs sm:text-sm font-semibold transition-all shadow-xs"
+        >
+          <span>{{ mensagemFeedback() }}</span>
+          <button type="button" (click)="mensagemFeedback.set(null)" class="text-slate-400 hover:text-slate-600 font-bold ml-3 cursor-pointer">✕</button>
+        </div>
+      }
 
       <!-- 1. Cabeçalho do Perfil & Banner -->
       <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
@@ -21,23 +51,24 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
         <div class="px-6 sm:px-8 pb-8 pt-0 relative">
           
           <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-6">
-            <!-- Avatar com Letra "M" -->
+            <!-- Avatar com Inicial Real -->
             <div class="flex items-end gap-4">
-              <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-indigo-600 border-4 border-white text-white font-black text-3xl sm:text-4xl flex items-center justify-center shadow-lg shrink-0">
-                M
+              <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-indigo-600 border-4 border-white text-white font-black text-3xl sm:text-4xl flex items-center justify-center shadow-lg shrink-0 uppercase">
+                {{ getInicial() }}
               </div>
 
               <div class="space-y-1 pb-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    {{ perfil().nome }}
+                    {{ perfil().nome || 'Membro da Comunidade' }}
                   </h3>
-                  <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
-                    Modo Prévia
+                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>{{ perfil().nivelAtual || 'Membro Ativo' }}</span>
                   </span>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-500 font-medium">
-                  {{ perfil().cargo }}
+                  {{ perfil().cargo || 'Engenheiro(a) / Arquiteto(a)' }}
                 </p>
               </div>
             </div>
@@ -60,23 +91,30 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                   <button
                     type="button"
                     (click)="cancelarEdicao()"
-                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                    [disabled]="salvando()"
+                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
                   >
                     Cancelar
                   </button>
                   <button
                     type="button"
                     (click)="salvarEdicao()"
-                    class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer"
+                    [disabled]="salvando()"
+                    class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
                   >
-                    Salvar Alterações
+                    @if (salvando()) {
+                      <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      <span>Salvando...</span>
+                    } @else {
+                      <span>Salvar Alterações</span>
+                    }
                   </button>
                 </div>
               }
             </div>
           </div>
 
-          <!-- Contadores de Conexões (Padrão "—") -->
+          <!-- Contadores de Conexões -->
           <div class="flex items-center gap-6 py-4 border-y border-slate-100 text-xs sm:text-sm">
             <div class="flex items-center gap-2">
               <span class="font-black text-slate-900 text-base sm:text-lg">—</span>
@@ -124,7 +162,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
             <div class="space-y-1.5">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Biografia</span>
               <p class="text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-                {{ perfil().bio }}
+                {{ perfil().bio || 'Nenhuma biografia informada ainda. Clique em "Editar Perfil" para adicionar.' }}
               </p>
             </div>
 
@@ -133,27 +171,27 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
               
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Formação</span>
-                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().formacao }}</p>
+                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().formacao || '—' }}</p>
               </div>
 
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Instituição</span>
-                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().instituicao }}</p>
+                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().instituicao || '—' }}</p>
               </div>
 
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Registro CREA / CAU</span>
-                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().creaCau }}</p>
+                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().creaCau || '—' }}</p>
               </div>
 
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1 sm:col-span-2">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Especialização</span>
-                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().especializacao }}</p>
+                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().especializacao || '—' }}</p>
               </div>
 
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Experiência</span>
-                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().experiencia }}</p>
+                <p class="text-xs sm:text-sm font-bold text-slate-900">{{ perfil().experiencia || '—' }}</p>
               </div>
 
             </div>
@@ -162,11 +200,15 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
             <div class="space-y-2 pt-2">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Competências Técnicas & Skills</span>
               <div class="flex items-center gap-2 flex-wrap pt-1">
-                @for (skill of perfil().skills; track skill) {
-                  <span class="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-800 text-xs font-bold flex items-center gap-1.5">
-                    <span>⚡</span>
-                    <span>{{ skill }}</span>
-                  </span>
+                @if (perfil().skills && perfil().skills.length > 0) {
+                  @for (skill of perfil().skills; track skill) {
+                    <span class="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-800 text-xs font-bold flex items-center gap-1.5">
+                      <span>⚡</span>
+                      <span>{{ skill }}</span>
+                    </span>
+                  }
+                } @else {
+                  <span class="text-xs text-slate-400 italic">Nenhuma competência cadastrada.</span>
                 }
               </div>
             </div>
@@ -178,21 +220,23 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700">Nome de Exibição</label>
+                <label class="block text-xs font-bold text-slate-700">Nome Completo (Compartilhado com Predial 4.0)</label>
                 <input
                   type="text"
                   [value]="formPerfil().nome"
                   (input)="atualizarCampo('nome', $event)"
+                  placeholder="Ex: Carlos Mendes"
                   class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden"
                 />
               </div>
 
               <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700">Cargo / Título</label>
+                <label class="block text-xs font-bold text-slate-700">Cargo / Título Profissional</label>
                 <input
                   type="text"
                   [value]="formPerfil().cargo"
                   (input)="atualizarCampo('cargo', $event)"
+                  placeholder="Ex: Engenheiro Civil & Perito"
                   class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden"
                 />
               </div>
@@ -204,6 +248,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                 [value]="formPerfil().bio"
                 (input)="atualizarCampo('bio', $event)"
                 rows="3"
+                placeholder="Conte sobre sua trajetória, atuação em campo e interesses..."
                 class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl p-3.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden resize-none"
               ></textarea>
             </div>
@@ -215,6 +260,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                   type="text"
                   [value]="formPerfil().formacao"
                   (input)="atualizarCampo('formacao', $event)"
+                  placeholder="Ex: Engenharia Civil"
                   class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden"
                 />
               </div>
@@ -225,6 +271,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                   type="text"
                   [value]="formPerfil().instituicao"
                   (input)="atualizarCampo('instituicao', $event)"
+                  placeholder="Ex: USP / POLI"
                   class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden"
                 />
               </div>
@@ -235,6 +282,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                   type="text"
                   [value]="formPerfil().creaCau"
                   (input)="atualizarCampo('creaCau', $event)"
+                  placeholder="Ex: 5069812345/SP"
                   class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden"
                 />
               </div>
@@ -247,6 +295,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                   type="text"
                   [value]="formPerfil().especializacao"
                   (input)="atualizarCampo('especializacao', $event)"
+                  placeholder="Ex: Perícias de Engenharia & Patologia"
                   class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden"
                 />
               </div>
@@ -257,6 +306,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                   type="text"
                   [value]="formPerfil().experiencia"
                   (input)="atualizarCampo('experiencia', $event)"
+                  placeholder="Ex: 12 anos em inspeção predial"
                   class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden"
                 />
               </div>
@@ -326,7 +376,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
               </div>
               <div class="min-w-0">
                 <span class="text-[10px] font-bold text-slate-400 uppercase">LinkedIn</span>
-                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().linkedin }}</p>
+                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().linkedin || '—' }}</p>
               </div>
             </div>
 
@@ -336,7 +386,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
               </div>
               <div class="min-w-0">
                 <span class="text-[10px] font-bold text-slate-400 uppercase">Instagram</span>
-                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().instagram }}</p>
+                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().instagram || '—' }}</p>
               </div>
             </div>
 
@@ -346,7 +396,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
               </div>
               <div class="min-w-0">
                 <span class="text-[10px] font-bold text-slate-400 uppercase">WhatsApp</span>
-                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().whatsapp }}</p>
+                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().whatsapp || '—' }}</p>
               </div>
             </div>
 
@@ -356,7 +406,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
               </div>
               <div class="min-w-0">
                 <span class="text-[10px] font-bold text-slate-400 uppercase">Website Profissional</span>
-                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().website }}</p>
+                <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().website || '—' }}</p>
               </div>
             </div>
 
@@ -364,41 +414,45 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
         } @else {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-700">LinkedIn</label>
+              <label class="block text-xs font-bold text-slate-700">LinkedIn (URL ou @)</label>
               <input
                 type="text"
                 [value]="formPerfil().linkedin"
                 (input)="atualizarCampo('linkedin', $event)"
+                placeholder="Ex: linkedin.com/in/perfil"
                 class="w-full bg-slate-50 text-xs text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 outline-hidden"
               />
             </div>
 
             <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-700">Instagram</label>
+              <label class="block text-xs font-bold text-slate-700">Instagram (@usuario)</label>
               <input
                 type="text"
                 [value]="formPerfil().instagram"
                 (input)="atualizarCampo('instagram', $event)"
+                placeholder="Ex: @engenharia.pratica"
                 class="w-full bg-slate-50 text-xs text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 outline-hidden"
               />
             </div>
 
             <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-700">WhatsApp</label>
+              <label class="block text-xs font-bold text-slate-700">WhatsApp Comercial</label>
               <input
                 type="text"
                 [value]="formPerfil().whatsapp"
                 (input)="atualizarCampo('whatsapp', $event)"
+                placeholder="Ex: +55 (11) 99999-9999"
                 class="w-full bg-slate-50 text-xs text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 outline-hidden"
               />
             </div>
 
             <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-700">Website</label>
+              <label class="block text-xs font-bold text-slate-700">Website Profissional</label>
               <input
                 type="text"
                 [value]="formPerfil().website"
                 (input)="atualizarCampo('website', $event)"
+                placeholder="Ex: https://meusite.com.br"
                 class="w-full bg-slate-50 text-xs text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 outline-hidden"
               />
             </div>
@@ -407,7 +461,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
 
       </div>
 
-      <!-- 4. Meus Posts (Publicações do Membro na Sessão) -->
+      <!-- 4. Meus Posts (Publicações Reais do Membro no Feed) -->
       <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
         
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -425,7 +479,7 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
         @if (meusPosts().length === 0) {
           <!-- Estado Informativo de Nenhum Post -->
           <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center font-bold">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center font-bold text-lg">
               ✍️
             </div>
             <h5 class="text-sm font-bold text-slate-800">
@@ -444,16 +498,16 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
                   <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
                     {{ post.tag || 'Publicação' }}
                   </span>
-                  <span class="text-slate-400">{{ post.tempo }}</span>
+                  <span class="text-slate-400">{{ formatarTempo(post.criado_em) }}</span>
                 </div>
 
-                <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                   {{ post.conteudo }}
                 </p>
 
                 <div class="pt-2 border-t border-slate-200/60 flex items-center gap-4 text-xs text-slate-500 font-semibold">
-                  <span>❤️ {{ post.curtidas }} curtidas</span>
-                  <span>💬 {{ post.comentarios.length }} comentários</span>
+                  <span>❤️ {{ post.totalCurtidas || (post.curtidas ? post.curtidas.length : 0) }} curtidas</span>
+                  <span>💬 {{ post.comentarios ? post.comentarios.length : 0 }} comentários</span>
                 </div>
               </div>
             }
@@ -465,17 +519,101 @@ import { ComunidadeStateService, PerfilUsuario } from './comunidade-state.servic
     </div>
   `
 })
-export class ComunidadePerfilComponent {
-  readonly state = inject(ComunidadeStateService);
-  readonly perfil = this.state.perfil;
+export class ComunidadePerfilComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly perfil = signal<PerfilVisual>({
+    nome: '',
+    cargo: '',
+    bio: '',
+    formacao: '',
+    instituicao: '',
+    creaCau: '',
+    especializacao: '',
+    experiencia: '',
+    skills: [],
+    linkedin: '',
+    instagram: '',
+    whatsapp: '',
+    website: '',
+    nivelAtual: 'Membro Ativo'
+  });
 
   readonly editando = signal<boolean>(false);
-  readonly formPerfil = signal<PerfilUsuario>({ ...this.perfil() });
+  readonly salvando = signal<boolean>(false);
+  readonly formPerfil = signal<PerfilVisual>({ ...this.perfil() });
   readonly novaSkillInput = signal<string>('');
+  readonly meusPosts = signal<any[]>([]);
 
-  readonly meusPosts = computed(() => {
-    return this.state.posts().filter(p => p.isCurrentUser);
-  });
+  readonly mensagemFeedback = signal<string | null>(null);
+  readonly tipoFeedback = signal<'sucesso' | 'erro'>('sucesso');
+
+  async ngOnInit(): Promise<void> {
+    await this.carregarPerfil();
+    await this.carregarMeusPosts();
+  }
+
+  async carregarPerfil(): Promise<void> {
+    const dados = await this.supabaseService.obterMeuPerfilCompleto();
+    if (dados) {
+      const p: PerfilVisual = {
+        nome: dados.full_name || '',
+        cargo: dados.professional_title || '',
+        bio: dados.bio || '',
+        formacao: dados.formacao || '',
+        instituicao: dados.instituicao || '',
+        creaCau: dados.crea_cau || '',
+        especializacao: dados.especializacao || '',
+        experiencia: dados.anos_experiencia || '',
+        skills: Array.isArray(dados.skills) ? dados.skills : [],
+        linkedin: dados.linkedin_url || '',
+        instagram: dados.instagram_url || '',
+        whatsapp: dados.whatsapp_url || '',
+        website: dados.website_url || '',
+        nivelAtual: dados.nivel_atual || 'Membro Ativo'
+      };
+      this.perfil.set(p);
+      this.formPerfil.set({ ...p, skills: [...p.skills] });
+    }
+  }
+
+  async carregarMeusPosts(): Promise<void> {
+    try {
+      const session = await this.supabaseService.getSession();
+      if (!session?.user) return;
+      const todosPosts = await this.supabaseService.listarFeedPosts();
+      const meus = (todosPosts || []).filter((p: any) => p.autor_id === session.user.id);
+      this.meusPosts.set(meus);
+    } catch (e) {
+      console.warn('Erro ao carregar posts do usuário:', e);
+    }
+  }
+
+  getInicial(): string {
+    const n = this.perfil().nome || 'Membro';
+    return n.charAt(0).toUpperCase() || 'M';
+  }
+
+  formatarTempo(dataIso: string | undefined): string {
+    if (!dataIso) return 'Agora';
+    try {
+      const data = new Date(dataIso);
+      const agora = new Date();
+      const diffMs = agora.getTime() - data.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffHoras = Math.floor(diffMin / 60);
+      const diffDias = Math.floor(diffHoras / 24);
+
+      if (diffMin < 1) return 'Agora mesmo';
+      if (diffMin < 60) return `há ${diffMin} min`;
+      if (diffHoras < 24) return `há ${diffHoras}h`;
+      if (diffDias < 7) return `há ${diffDias}d`;
+
+      return data.toLocaleDateString('pt-BR');
+    } catch {
+      return 'Recentemente';
+    }
+  }
 
   iniciarEdicao(): void {
     this.formPerfil.set({
@@ -483,18 +621,51 @@ export class ComunidadePerfilComponent {
       skills: [...this.perfil().skills]
     });
     this.editando.set(true);
+    this.mensagemFeedback.set(null);
   }
 
   cancelarEdicao(): void {
     this.editando.set(false);
+    this.mensagemFeedback.set(null);
   }
 
-  salvarEdicao(): void {
-    this.state.salvarPerfil(this.formPerfil());
+  async salvarEdicao(): Promise<void> {
+    if (this.salvando()) return;
+    this.salvando.set(true);
+    this.mensagemFeedback.set(null);
+
+    const f = this.formPerfil();
+    const { error } = await this.supabaseService.atualizarMeuPerfilCompleto({
+      fullName: f.nome.trim() || undefined,
+      professionalTitle: f.cargo.trim() || undefined,
+      bio: f.bio.trim() || undefined,
+      formacao: f.formacao.trim() || undefined,
+      instituicao: f.instituicao.trim() || undefined,
+      creaCau: f.creaCau.trim() || undefined,
+      especializacao: f.especializacao.trim() || undefined,
+      anosExperiencia: f.experiencia.trim() || undefined,
+      skills: f.skills,
+      linkedinUrl: f.linkedin.trim() || undefined,
+      instagramUrl: f.instagram.trim() || undefined,
+      whatsappUrl: f.whatsapp.trim() || undefined,
+      websiteUrl: f.website.trim() || undefined,
+    });
+
+    this.salvando.set(false);
+
+    if (error) {
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Erro ao salvar perfil: ' + (error.message || 'Tente novamente.'));
+      return;
+    }
+
+    this.perfil.set({ ...f });
     this.editando.set(false);
+    this.tipoFeedback.set('sucesso');
+    this.mensagemFeedback.set('Perfil profissional atualizado com sucesso!');
   }
 
-  atualizarCampo(campo: keyof PerfilUsuario, event: Event): void {
+  atualizarCampo(campo: keyof PerfilVisual, event: Event): void {
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
     this.formPerfil.update(p => ({
       ...p,

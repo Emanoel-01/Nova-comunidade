@@ -397,6 +397,72 @@ export class SupabaseService {
     }
   }
 
+  // ----------------------------------------------------
+  // MÉTODOS DO PERFIL REAL (profissionais)
+  // ----------------------------------------------------
+
+  async obterMeuPerfilCompleto(): Promise<any | null> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return null;
+      const { data, error } = await this.client
+        .from('profissionais')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle();
+      if (error) {
+        console.warn('Erro ao obter perfil:', error.message);
+        return null;
+      }
+      return data;
+    } catch (e: any) {
+      console.warn('Exceção ao obter perfil:', e?.message || e);
+      return null;
+    }
+  }
+
+  async atualizarMeuPerfilCompleto(dados: {
+    fullName?: string;
+    professionalTitle?: string;
+    bio?: string;
+    formacao?: string;
+    instituicao?: string;
+    creaCau?: string;
+    especializacao?: string;
+    anosExperiencia?: string;
+    skills?: string[];
+    linkedinUrl?: string;
+    instagramUrl?: string;
+    whatsappUrl?: string;
+    websiteUrl?: string;
+  }): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { error } = await this.client
+        .from('profissionais')
+        .update({
+          full_name: dados.fullName,
+          professional_title: dados.professionalTitle,
+          bio: dados.bio,
+          formacao: dados.formacao,
+          instituicao: dados.instituicao,
+          crea_cau: dados.creaCau,
+          especializacao: dados.especializacao,
+          anos_experiencia: dados.anosExperiencia,
+          skills: dados.skills,
+          linkedin_url: dados.linkedinUrl,
+          instagram_url: dados.instagramUrl,
+          whatsapp_url: dados.whatsappUrl,
+          website_url: dados.websiteUrl,
+        })
+        .eq('id', session.user.id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
   async criarUsuarioAdminViaFunction(dados: {
     email: string;
     full_name: string;
