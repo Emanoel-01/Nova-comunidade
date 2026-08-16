@@ -11,6 +11,7 @@ import { ComunidadePreviewComponent } from './components/comunidade-preview.comp
 import { BlogComponent } from './components/blog.component';
 import { AdminPanelComponent } from './components/admin-panel.component';
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   {
@@ -57,6 +58,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminPanelComponent,
+    canActivate: [adminGuard],
   },
   {
     path: '**',
