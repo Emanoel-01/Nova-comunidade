@@ -564,4 +564,49 @@ export class SupabaseService {
       return false;
     }
   }
+
+  // ----------------------------------------------------
+  // ACERVO DE MATERIAIS REAL
+  // ----------------------------------------------------
+
+  async listarMateriais(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('materiais')
+        .select('*')
+        .eq('ativo', true)
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar materiais:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar materiais:', e?.message || e);
+      return [];
+    }
+  }
+
+  async solicitarDownloadMaterial(materialId: string): Promise<{ error: Error | null; urlArquivo?: string | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+
+      const { error } = await this.client
+        .from('materiais_downloads')
+        .insert({ material_id: materialId, profissional_id: session.user.id });
+      if (error) return { error };
+
+      const { data } = await this.client
+        .from('materiais')
+        .select('url_arquivo')
+        .eq('id', materialId)
+        .maybeSingle();
+
+      return { error: null, urlArquivo: data?.url_arquivo || null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }
+
