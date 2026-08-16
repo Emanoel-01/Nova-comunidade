@@ -209,6 +209,194 @@ export class SupabaseService {
     }
   }
 
+  // ----------------------------------------------------
+  // MÉTODOS DO FEED REAL (feed_posts, feed_curtidas, feed_comentarios)
+  // ----------------------------------------------------
+
+  async listarFeedPosts(): Promise<any[]> {
+    try {
+      let { data: posts, error } = await this.client
+        .from('feed_posts')
+        .select('*, autor:profissionais!feed_posts_autor_id_fkey(id, full_name, professional_title)')
+        .order('criado_em', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        // Fallback 1: sem FK constraint explícita
+        const resFallback = await this.client
+          .from('feed_posts')
+          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .order('criado_em', { ascending: false })
+          .limit(50);
+
+        if (!resFallback.error && resFallback.data) {
+          posts = resFallback.data;
+          error = null;
+        } else {
+          // Fallback 2: busca direta e join manual com profissionais
+          const resSimples = await this.client
+            .from('feed_posts')
+            .select('*')
+            .order('criado_em', { ascending: false })
+            .limit(50);
+
+          if (!resSimples.error && resSimples.data) {
+            const autorIds = [...new Set(resSimples.data.map((p: any) => p.autor_id).filter(Boolean))];
+            const autoresMap: Record<string, any> = {};
+            if (autorIds.length > 0) {
+              const { data: autores } = await this.client
+                .from('profissionais')
+                .select('id, full_name, professional_title')
+                .in('id', autorIds);
+              (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
+            }
+            posts = resSimples.data.map((p: any) => ({
+              ...p,
+              autor: autoresMap[p.autor_id] || null
+            }));
+            error = null;
+          } else {
+            console.warn('Erro ao listar feed_posts:', error?.message || resFallback.error?.message);
+            return [];
+          }
+        }
+      }
+
+      if (!posts || posts.length === 0) {
+        return [];
+      }
+
+      const postIds = posts.map((p: any) => p.id);
+      
+      const { data: curtidas } = await this.client
+        .from('feed_curtidas')
+        .select('*')
+        .in('post_id', postIds);
+
+      let { data: comentarios } = await this.client
+        .from('feed_comentarios')
+        .select('*, autor:profissionais!feed_comentarios_autor_id_fkey(id, full_name, professional_title)')
+        .in('post_id', postIds)
+        .order('criado_em', { ascending: true });
+
+      if (!comentarios) {
+        const resComFallback = await this.client
+          .from('feed_comentarios')
+          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .in('post_id', postIds)
+          .order('criado_em', { ascending: true });
+
+        if (resComFallback.data) {
+          comentarios = resComFallback.data;
+        } else {
+          const resComSimples = await this.client
+            .from('feed_comentarios')
+            .select('*')
+            .in('post_id', postIds)
+            .order('criado_em', { ascending: true });
+
+          if (resComSimples.data) {
+            const comAutorIds = [...new Set(resComSimples.data.map((c: any) => c.autor_id).filter(Boolean))];
+            const comAutoresMap: Record<string, any> = {};
+            if (comAutorIds.length > 0) {
+              const { data: comAutores } = await this.client
+                .from('profissionais')
+                .select('id, full_name, professional_title')
+                .in('id', comAutorIds);
+              (comAutores || []).forEach((a: any) => { comAutoresMap[a.id] = a; });
+            }
+            comentarios = resComSimples.data.map((c: any) => ({
+              ...c,
+              autor: comAutoresMap[c.autor_id] || null
+            }));
+          }
+        }
+      }
+
+      const session = await this.getSession();
+      const meuId = session?.user?.id;
+
+      return (posts || []).map((p: any) => {
+        const curtidasDoPost = (curtidas || []).filter((c: any) => c.post_id === p.id);
+        const comentariosDoPost = (comentarios || []).filter((c: any) => c.post_id === p.id);
+        return {
+          ...p,
+          curtidas: curtidasDoPost,
+          totalCurtidas: curtidasDoPost.length,
+          curtidoPorMim: curtidasDoPost.some((c: any) => c.profissional_id === meuId),
+          comentarios: comentariosDoPost,
+        };
+      });
+    } catch (e: any) {
+      console.warn('Exceção ao listar feed_posts:', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarFeedPost(conteudo: string, tag?: string): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { data, error } = await this.client
+        .from('feed_posts')
+        .insert({
+          autor_id: session.user.id,
+          conteudo,
+          tag: tag || null,
+          tipo: 'post'
+        })
+        .select()
+        .single();
+      return { data, error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async toggleCurtidaFeedPost(postId: string, curtidoAtualmente: boolean): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      if (curtidoAtualmente) {
+        const { error } = await this.client
+          .from('feed_curtidas')
+          .delete()
+          .eq('post_id', postId)
+          .eq('profissional_id', session.user.id);
+        return { error };
+      } else {
+        const { error } = await this.client
+          .from('feed_curtidas')
+          .insert({
+            post_id: postId,
+            profissional_id: session.user.id
+          });
+        return { error };
+      }
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async adicionarFeedComentario(postId: string, texto: string): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { data, error } = await this.client
+        .from('feed_comentarios')
+        .insert({
+          post_id: postId,
+          autor_id: session.user.id,
+          texto
+        })
+        .select()
+        .single();
+      return { data, error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
   async criarUsuarioAdminViaFunction(dados: {
     email: string;
     full_name: string;

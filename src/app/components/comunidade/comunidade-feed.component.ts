@@ -1,6 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ComunidadeStateService } from './comunidade-state.service';
+import { SupabaseService } from '../../../services/supabase.service';
 
 @Component({
   selector: 'app-comunidade-feed',
@@ -13,9 +13,9 @@ import { ComunidadeStateService } from './comunidade-state.service';
       <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs transition-all space-y-4">
         
         <div class="flex items-start gap-3.5 sm:gap-4">
-          <!-- Avatar Usuário Demonstração -->
-          <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-base flex items-center justify-center shadow-inner shrink-0">
-            M
+          <!-- Avatar Usuário Autenticado -->
+          <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-base flex items-center justify-center shadow-inner shrink-0 uppercase">
+            {{ getMinhaInicial() }}
           </div>
 
           <div class="flex-1 min-w-0">
@@ -29,6 +29,14 @@ import { ComunidadeStateService } from './comunidade-state.service';
             ></textarea>
           </div>
         </div>
+
+        <!-- Feedback de Erro Inline na Criação -->
+        @if (erroFeedback()) {
+          <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
+            <span>{{ erroFeedback() }}</span>
+            <button type="button" (click)="erroFeedback.set(null)" class="text-rose-500 hover:text-rose-700 font-bold ml-2">✕</button>
+          </div>
+        }
 
         <!-- Área expandida com tags e botão Publicar -->
         @if (caixaExpandida()) {
@@ -88,16 +96,21 @@ import { ComunidadeStateService } from './comunidade-state.service';
               <button
                 type="button"
                 (click)="publicarPost()"
-                [disabled]="!novoPostTexto().trim()"
-                [class]="novoPostTexto().trim()
+                [disabled]="!novoPostTexto().trim() || publicando()"
+                [class]="novoPostTexto().trim() && !publicando()
                   ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs cursor-pointer'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
                 class="px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                <span>Publicar</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
+                @if (publicando()) {
+                  <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <span>Publicando...</span>
+                } @else {
+                  <span>Publicar</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                }
               </button>
             </div>
 
@@ -106,36 +119,73 @@ import { ComunidadeStateService } from './comunidade-state.service';
 
       </div>
 
-      <!-- 2. Lista de Publicações do Feed -->
-      <div class="space-y-5">
-        @for (post of posts(); track post.id) {
-          
-          <!-- ITEM DO FEED: POST PADRÃO -->
-          @if (post.tipo === 'post') {
+      <!-- 2. Lista de Publicações do Feed Real -->
+      @if (carregando()) {
+        <!-- Estado de Carregamento -->
+        <div class="space-y-4">
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-slate-200"></div>
+              <div class="space-y-1.5 flex-1">
+                <div class="h-3.5 bg-slate-200 rounded-md w-32"></div>
+                <div class="h-2.5 bg-slate-200 rounded-md w-24"></div>
+              </div>
+            </div>
+            <div class="h-12 bg-slate-100 rounded-xl"></div>
+          </div>
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-slate-200"></div>
+              <div class="space-y-1.5 flex-1">
+                <div class="h-3.5 bg-slate-200 rounded-md w-36"></div>
+                <div class="h-2.5 bg-slate-200 rounded-md w-28"></div>
+              </div>
+            </div>
+            <div class="h-16 bg-slate-100 rounded-xl"></div>
+          </div>
+        </div>
+      } @else if (posts().length === 0) {
+        <!-- Estado Vazio -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-12 text-center space-y-3 shadow-xs">
+          <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center border border-indigo-100">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Nenhuma publicação ainda</h3>
+          <p class="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
+            Seja o primeiro a compartilhar uma dica técnica, dúvida ou conquista com a comunidade!
+          </p>
+        </div>
+      } @else {
+        <!-- Lista de Posts Reais -->
+        <div class="space-y-5">
+          @for (post of posts(); track post.id) {
+            
             <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-7 shadow-xs space-y-4 hover:border-slate-300 transition-all">
               
               <!-- Header do Post -->
               <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                   <div
-                    [class]="post.isCurrentUser ? 'bg-indigo-600' : 'bg-slate-800'"
-                    class="w-10 h-10 rounded-2xl text-white font-black text-sm flex items-center justify-center shadow-inner shrink-0"
+                    [class]="isMeuPost(post) ? 'bg-indigo-600' : 'bg-slate-800'"
+                    class="w-10 h-10 rounded-2xl text-white font-black text-sm flex items-center justify-center shadow-inner shrink-0 uppercase"
                   >
-                    {{ post.avatar }}
+                    {{ getAutorInicial(post) }}
                   </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                       <h4 class="text-xs sm:text-sm font-black text-slate-900 truncate">
-                        {{ post.autor }}
+                        {{ getAutorNome(post) }}
                       </h4>
-                      @if (post.isCurrentUser) {
+                      @if (isMeuPost(post)) {
                         <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
                           Você
                         </span>
                       }
                     </div>
                     <p class="text-[11px] text-slate-500 truncate">
-                      {{ post.cargo }}
+                      {{ getAutorCargo(post) }}
                     </p>
                   </div>
                 </div>
@@ -147,7 +197,7 @@ import { ComunidadeStateService } from './comunidade-state.service';
                     </span>
                   }
                   <span class="text-[11px] text-slate-400 font-medium">
-                    {{ post.tempo }}
+                    {{ formatarTempo(post.criado_em) }}
                   </span>
                 </div>
               </div>
@@ -163,19 +213,19 @@ import { ComunidadeStateService } from './comunidade-state.service';
                   <!-- Botão Curtir -->
                   <button
                     type="button"
-                    (click)="state.toggleCurtir(post.id)"
-                    [class]="post.curtido ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+                    (click)="toggleCurtir(post)"
+                    [class]="post.curtidoPorMim ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer"
                   >
                     <svg
-                      [class]="post.curtido ? 'fill-rose-500 text-rose-500' : 'fill-none text-slate-500'"
+                      [class]="post.curtidoPorMim ? 'fill-rose-500 text-rose-500' : 'fill-none text-slate-500'"
                       class="w-4 h-4"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
-                    <span>{{ post.curtidas }}</span>
+                    <span>{{ post.totalCurtidas || 0 }}</span>
                   </button>
 
                   <!-- Botão Comentários (abre/fecha seção) -->
@@ -187,11 +237,14 @@ import { ComunidadeStateService } from './comunidade-state.service';
                     <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span>{{ post.comentarios.length }}</span>
+                    <span>{{ post.comentarios ? post.comentarios.length : 0 }}</span>
                   </button>
                 </div>
 
-                <span class="text-[11px] text-slate-400 italic">Interação em memória</span>
+                <span class="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span>Sincronizado Supabase</span>
+                </span>
               </div>
 
               <!-- Seção Expandida de Comentários -->
@@ -199,7 +252,7 @@ import { ComunidadeStateService } from './comunidade-state.service';
                 <div class="border-t border-slate-100 pt-4 mt-2 space-y-4 bg-slate-50/60 p-4 rounded-2xl">
                   
                   <!-- Lista de Comentários -->
-                  @if (post.comentarios.length === 0) {
+                  @if (!post.comentarios || post.comentarios.length === 0) {
                     <div class="text-center py-3 text-xs text-slate-400">
                       <span>Nenhum comentário ainda. Seja o primeiro a comentar!</span>
                     </div>
@@ -207,13 +260,18 @@ import { ComunidadeStateService } from './comunidade-state.service';
                     <div class="space-y-3">
                       @for (com of post.comentarios; track com.id) {
                         <div class="flex items-start gap-2.5 text-xs">
-                          <div class="w-7 h-7 rounded-xl bg-slate-700 text-white font-bold text-[11px] flex items-center justify-center shrink-0">
-                            {{ com.avatar }}
+                          <div class="w-7 h-7 rounded-xl bg-slate-700 text-white font-bold text-[11px] flex items-center justify-center shrink-0 uppercase">
+                            {{ getComentarioAutorInicial(com) }}
                           </div>
                           <div class="flex-1 bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
                             <div class="flex items-center justify-between gap-2">
-                              <span class="font-bold text-slate-900">{{ com.autor }}</span>
-                              <span class="text-[10px] text-slate-400">{{ com.tempo }}</span>
+                              <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-slate-900">{{ getComentarioAutorNome(com) }}</span>
+                                @if (com.autor_id === usuarioAtual()?.id) {
+                                  <span class="text-[10px] text-indigo-600 font-semibold">(você)</span>
+                                }
+                              </div>
+                              <span class="text-[10px] text-slate-400">{{ formatarTempo(com.criado_em) }}</span>
                             </div>
                             <p class="text-slate-600 leading-normal">{{ com.texto }}</p>
                           </div>
@@ -229,15 +287,21 @@ import { ComunidadeStateService } from './comunidade-state.service';
                       [value]="getComentarioInput(post.id)"
                       (input)="setComentarioInput(post.id, $event)"
                       (keyup.enter)="enviarComentario(post.id)"
+                      [disabled]="comentandoEm() === post.id"
                       placeholder="Escreva um comentário..."
-                      class="flex-1 bg-white text-xs text-slate-800 placeholder-slate-400 rounded-xl px-3.5 py-2 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-hidden"
+                      class="flex-1 bg-white text-xs text-slate-800 placeholder-slate-400 rounded-xl px-3.5 py-2 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-hidden disabled:opacity-50"
                     />
                     <button
                       type="button"
                       (click)="enviarComentario(post.id)"
-                      class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                      [disabled]="!getComentarioInput(post.id).trim() || comentandoEm() === post.id"
+                      class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
-                      Enviar
+                      @if (comentandoEm() === post.id) {
+                        <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      } @else {
+                        <span>Enviar</span>
+                      }
                     </button>
                   </div>
 
@@ -246,168 +310,23 @@ import { ComunidadeStateService } from './comunidade-state.service';
 
             </div>
           }
-
-          <!-- ITEM DO FEED: CARD DE EVENTO AO VIVO -->
-          @if (post.tipo === 'evento' && post.evento) {
-            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl border border-indigo-800/40 p-6 sm:p-7 text-white shadow-md space-y-5">
-              
-              <div class="flex items-center justify-between gap-3">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30">
-                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                  <span>Evento da Comunidade</span>
-                </div>
-
-                <span class="text-xs text-slate-400">{{ post.tempo }}</span>
-              </div>
-
-              <div class="space-y-2">
-                <h4 class="text-lg sm:text-xl font-black text-white leading-snug">
-                  {{ post.evento.titulo }}
-                </h4>
-                <p class="text-xs sm:text-sm text-indigo-200">
-                  {{ post.conteudo }}
-                </p>
-              </div>
-
-              <!-- Bloco de Informações do Evento -->
-              <div class="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2 text-xs sm:text-sm">
-                <div class="flex items-center gap-2 text-slate-200">
-                  <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span>{{ post.evento.dataHora }}</span>
-                </div>
-                <div class="flex items-center gap-2 text-slate-300">
-                  <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>{{ post.evento.palestrante }}</span>
-                </div>
-              </div>
-
-              <!-- Rodapé com Botão de Inscrição -->
-              <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="flex items-center gap-2 text-xs text-slate-400">
-                  <span>{{ post.curtidas }} interessados</span>
-                </div>
-
-                <button
-                  type="button"
-                  (click)="state.toggleInscricaoEvento(post.id)"
-                  [class]="post.evento.inscrito
-                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                    : 'bg-amber-400 hover:bg-amber-300 text-slate-950 font-black'"
-                  class="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  @if (post.evento.inscrito) {
-                    <span>✓ Inscrito no Evento</span>
-                  } @else {
-                    <span>Inscrever-me Gratuitamente</span>
-                  }
-                </button>
-              </div>
-
-            </div>
-          }
-
-          <!-- ITEM DO FEED: CARD DE VAGA EM DESTAQUE -->
-          @if (post.tipo === 'vaga' && post.vaga) {
-            <div class="bg-white rounded-3xl border border-indigo-100 p-5 sm:p-7 shadow-xs space-y-4">
-              
-              <div class="flex items-center justify-between gap-3">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span>Mural de Oportunidades</span>
-                </span>
-
-                <span class="text-xs text-slate-400">{{ post.tempo }}</span>
-              </div>
-
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <div class="flex items-center justify-between gap-2 flex-wrap">
-                  <h4 class="text-sm sm:text-base font-black text-slate-900">
-                    {{ post.vaga.titulo }}
-                  </h4>
-                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200/60">
-                    {{ post.vaga.tipoContrato }}
-                  </span>
-                </div>
-
-                <p class="text-xs text-slate-600 flex items-center gap-1.5">
-                  <span class="font-semibold text-slate-800">{{ post.vaga.empresa }}</span>
-                  <span>•</span>
-                  <span>{{ post.vaga.local }}</span>
-                </p>
-              </div>
-
-              <!-- Formulário / Botão de Candidatura Rápida no Feed -->
-              <div class="pt-2">
-                @if (post.vaga.candidatado) {
-                  <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
-                    <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <span>✓ Candidatura enviada com sucesso!</span>
-                  </div>
-                } @else if (vagaModalAberta() === post.id) {
-                  <!-- Formulário Aberto no Card -->
-                  <div class="space-y-3 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
-                    <label class="block text-xs font-bold text-slate-700">
-                      Mensagem de apresentação rápida (opcional):
-                    </label>
-                    <textarea
-                      [value]="mensagemCandidatura()"
-                      (input)="onMensagemCandidaturaInput($event)"
-                      rows="2"
-                      placeholder="Olá! Gostaria de me candidatar com base na minha experiência em laudos e vistorias..."
-                      class="w-full bg-white text-xs text-slate-800 rounded-xl p-3 border border-slate-200 focus:border-indigo-500 outline-hidden resize-none"
-                    ></textarea>
-
-                    <div class="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        (click)="vagaModalAberta.set(null)"
-                        class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        (click)="confirmarCandidaturaFeed(post.id)"
-                        class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
-                      >
-                        Confirmar Candidatura
-                      </button>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs text-slate-500">Vaga exclusiva para membros</span>
-                    <button
-                      type="button"
-                      (click)="vagaModalAberta.set(post.id)"
-                      class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
-                    >
-                      Candidatar-se
-                    </button>
-                  </div>
-                }
-              </div>
-
-            </div>
-          }
-
-        }
-      </div>
+        </div>
+      }
 
     </div>
   `
 })
-export class ComunidadeFeedComponent {
-  readonly state = inject(ComunidadeStateService);
-  readonly posts = this.state.posts;
+export class ComunidadeFeedComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly posts = signal<any[]>([]);
+  readonly carregando = signal<boolean>(true);
+  readonly publicando = signal<boolean>(false);
+  readonly comentandoEm = signal<string | null>(null);
+  readonly erroFeedback = signal<string | null>(null);
+
+  readonly usuarioAtual = signal<any | null>(null);
+  readonly profissionalAtual = signal<any | null>(null);
 
   readonly caixaExpandida = signal<boolean>(false);
   readonly tagSelecionada = signal<string>('Dica técnica');
@@ -416,26 +335,158 @@ export class ComunidadeFeedComponent {
   readonly comentariosAbertos = signal<string[]>([]);
   readonly comentarioInputs = signal<{ [postId: string]: string }>({});
 
-  readonly vagaModalAberta = signal<string | null>(null);
-  readonly mensagemCandidatura = signal<string>('');
+  async ngOnInit(): Promise<void> {
+    await this.carregarUsuario();
+    await this.carregarPosts();
+  }
+
+  async carregarUsuario(): Promise<void> {
+    const session = await this.supabaseService.getSession();
+    if (session?.user) {
+      this.usuarioAtual.set(session.user);
+      const prof = await this.supabaseService.getProfissional(session.user.id);
+      if (prof) {
+        this.profissionalAtual.set(prof);
+      }
+    }
+  }
+
+  async carregarPosts(): Promise<void> {
+    this.carregando.set(true);
+    try {
+      const posts = await this.supabaseService.listarFeedPosts();
+      this.posts.set(posts);
+    } catch (e) {
+      console.warn('Falha ao carregar posts do feed:', e);
+    } finally {
+      this.carregando.set(false);
+    }
+  }
+
+  getMinhaInicial(): string {
+    const nome =
+      this.profissionalAtual()?.full_name ||
+      this.usuarioAtual()?.user_metadata?.full_name ||
+      this.usuarioAtual()?.email?.split('@')[0] ||
+      'M';
+    return nome.charAt(0).toUpperCase();
+  }
+
+  getAutorNome(post: any): string {
+    return post.autor?.full_name || 'Membro da Comunidade';
+  }
+
+  getAutorCargo(post: any): string {
+    return post.autor?.professional_title || 'Membro';
+  }
+
+  getAutorInicial(post: any): string {
+    const nome = this.getAutorNome(post);
+    return nome.charAt(0).toUpperCase() || 'M';
+  }
+
+  getComentarioAutorNome(com: any): string {
+    return com.autor?.full_name || 'Membro da Comunidade';
+  }
+
+  getComentarioAutorInicial(com: any): string {
+    const nome = this.getComentarioAutorNome(com);
+    return nome.charAt(0).toUpperCase() || 'M';
+  }
+
+  isMeuPost(post: any): boolean {
+    return post.autor_id === this.usuarioAtual()?.id;
+  }
+
+  formatarTempo(dataIso: string | undefined): string {
+    if (!dataIso) return 'Agora';
+    try {
+      const data = new Date(dataIso);
+      const agora = new Date();
+      const diffMs = agora.getTime() - data.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffHoras = Math.floor(diffMin / 60);
+      const diffDias = Math.floor(diffHoras / 24);
+
+      if (diffMin < 1) return 'Agora mesmo';
+      if (diffMin < 60) return `há ${diffMin} min`;
+      if (diffHoras < 24) return `há ${diffHoras}h`;
+      if (diffDias < 7) return `há ${diffDias}d`;
+
+      return data.toLocaleDateString('pt-BR');
+    } catch {
+      return 'Recentemente';
+    }
+  }
 
   onTextoInput(event: Event): void {
     const target = event.target as HTMLTextAreaElement;
     this.novoPostTexto.set(target.value);
   }
 
-  publicarPost(): void {
+  async publicarPost(): Promise<void> {
     const texto = this.novoPostTexto().trim();
-    if (!texto) return;
+    if (!texto || this.publicando()) return;
 
-    this.state.adicionarPost(texto, this.tagSelecionada());
+    this.publicando.set(true);
+    this.erroFeedback.set(null);
+
+    const { error } = await this.supabaseService.criarFeedPost(texto, this.tagSelecionada());
+
+    if (error) {
+      this.erroFeedback.set('Erro ao publicar: ' + (error.message || 'Verifique sua conexão.'));
+      this.publicando.set(false);
+      return;
+    }
+
     this.novoPostTexto.set('');
     this.caixaExpandida.set(false);
+    await this.carregarPosts();
+    this.publicando.set(false);
   }
 
   cancelarCriacao(): void {
     this.novoPostTexto.set('');
     this.caixaExpandida.set(false);
+    this.erroFeedback.set(null);
+  }
+
+  async toggleCurtir(post: any): Promise<void> {
+    const curtidoAtual = !!post.curtidoPorMim;
+    const totalAtual = post.totalCurtidas || 0;
+
+    // Atualização otimista local
+    this.posts.update(lista =>
+      lista.map(p => {
+        if (p.id === post.id) {
+          return {
+            ...p,
+            curtidoPorMim: !curtidoAtual,
+            totalCurtidas: curtidoAtual ? Math.max(0, totalAtual - 1) : totalAtual + 1
+          };
+        }
+        return p;
+      })
+    );
+
+    const { error } = await this.supabaseService.toggleCurtidaFeedPost(post.id, curtidoAtual);
+
+    if (error) {
+      console.warn('Erro ao alternar curtida:', error.message);
+      // Reverte em caso de falha
+      this.posts.update(lista =>
+        lista.map(p => {
+          if (p.id === post.id) {
+            return {
+              ...p,
+              curtidoPorMim: curtidoAtual,
+              totalCurtidas: totalAtual
+            };
+          }
+          return p;
+        })
+      );
+    }
   }
 
   toggleComentarios(postId: string): void {
@@ -460,25 +511,28 @@ export class ComunidadeFeedComponent {
     }));
   }
 
-  enviarComentario(postId: string): void {
+  async enviarComentario(postId: string): Promise<void> {
     const texto = this.getComentarioInput(postId).trim();
-    if (!texto) return;
+    if (!texto || this.comentandoEm() === postId) return;
 
-    this.state.adicionarComentario(postId, texto);
+    this.comentandoEm.set(postId);
+
+    const { error } = await this.supabaseService.adicionarFeedComentario(postId, texto);
+
+    if (error) {
+      console.warn('Erro ao enviar comentário:', error.message);
+      this.comentandoEm.set(null);
+      return;
+    }
+
+    // Limpa o input do comentário
     this.comentarioInputs.update(dict => ({
       ...dict,
       [postId]: ''
     }));
-  }
 
-  onMensagemCandidaturaInput(event: Event): void {
-    const target = event.target as HTMLTextAreaElement;
-    this.mensagemCandidatura.set(target.value);
-  }
-
-  confirmarCandidaturaFeed(postId: string): void {
-    this.state.candidatarVagaFeed(postId);
-    this.vagaModalAberta.set(null);
-    this.mensagemCandidatura.set('');
+    // Recarrega posts para exibir o novo comentário formatado
+    await this.carregarPosts();
+    this.comentandoEm.set(null);
   }
 }
