@@ -68,4 +68,36 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  async listarSolicitacoesAcesso(status?: 'pendente' | 'aprovado' | 'recusado'): Promise<any[]> {
+    try {
+      let query = this.client.from('solicitacoes_acesso').select('*').order('criado_em', { ascending: false });
+      if (status) query = query.eq('status', status);
+      const { data, error } = await query;
+      if (error) {
+        console.warn('Erro ao listar solicitações de acesso:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar solicitações de acesso:', e?.message || e);
+      return [];
+    }
+  }
+
+  async atualizarStatusSolicitacao(
+    id: string,
+    status: 'aprovado' | 'recusado',
+    analisadoPor: string | null
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('solicitacoes_acesso')
+        .update({ status, analisado_em: new Date().toISOString(), analisado_por: analisadoPor })
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }

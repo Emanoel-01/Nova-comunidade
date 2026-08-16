@@ -1,7 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AdminCursoComponent } from './admin/admin-curso.component';
+import { AdminAcessosComponent } from './admin/admin-acessos.component';
+import { SupabaseService } from '../../services/supabase.service';
 
 interface NavSectionItem {
   id: string;
@@ -13,7 +15,7 @@ interface NavSectionItem {
 @Component({
   selector: 'app-admin-panel',
   standalone: true,
-  imports: [CommonModule, RouterModule, AdminCursoComponent],
+  imports: [CommonModule, RouterModule, AdminCursoComponent, AdminAcessosComponent],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col md:flex-row">
       
@@ -319,17 +321,20 @@ interface NavSectionItem {
                   </div>
 
                   <!-- Card 3: Solicitações Pendentes -->
-                  <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-2">
+                  <div 
+                    (click)="selecionarAba('convites-acessos')"
+                    class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-2 cursor-pointer hover:border-indigo-300 transition-colors group"
+                  >
                     <div class="flex items-center justify-between text-slate-400">
-                      <span class="text-xs uppercase tracking-wider font-bold text-slate-500">Solicitações Pendentes</span>
-                      <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <span class="text-xs uppercase tracking-wider font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">Solicitações Pendentes</span>
+                      <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
                       </div>
                     </div>
                     <div class="text-3xl font-black text-slate-900">
-                      —
+                      {{ totalSolicitacoesPendentes() }}
                     </div>
                   </div>
 
@@ -364,7 +369,12 @@ interface NavSectionItem {
 
             <!-- CASO 2: Curso Predial 4.0 -->
             @case ('curso-predial') {
-              <app-admin-curso></app-admin-curso>
+               <app-admin-curso></app-admin-curso>
+             }
+
+            <!-- CASO 3: Convites e Solicitações de Acesso -->
+            @case ('convites-acessos') {
+              <app-admin-acessos></app-admin-acessos>
             }
 
             <!-- DEMAIS ABAS: Card de "Conector Pendente / Em Construção" -->
@@ -401,8 +411,11 @@ interface NavSectionItem {
     </div>
   `
 })
-export class AdminPanelComponent {
+export class AdminPanelComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
   readonly abaAtiva = signal<string>('visao-geral');
+  readonly totalSolicitacoesPendentes = signal<number | string>('—');
 
   private readonly abasInfo: Record<string, { titulo: string; tabela?: string }> = {
     'visao-geral': { titulo: 'Visão Geral' },
@@ -418,11 +431,27 @@ export class AdminPanelComponent {
     'enviar-notificacao': { titulo: 'Enviar Notificação', tabela: 'tabela notifications' },
     'depoimentos': { titulo: 'Depoimentos', tabela: 'tabela testimonials' },
     'newsletter': { titulo: 'Newsletter', tabela: 'tabela newsletter_subscribers' },
-    'convites-acessos': { titulo: 'Convites e Acessos', tabela: 'tabela access_requests' },
+    'convites-acessos': { titulo: 'Convites e Acessos' },
   };
+
+  async ngOnInit(): Promise<void> {
+    await this.carregarContadores();
+  }
+
+  async carregarContadores(): Promise<void> {
+    try {
+      const pendentes = await this.supabaseService.listarSolicitacoesAcesso('pendente');
+      this.totalSolicitacoesPendentes.set(pendentes.length);
+    } catch {
+      this.totalSolicitacoesPendentes.set('0');
+    }
+  }
 
   selecionarAba(id: string): void {
     this.abaAtiva.set(id);
+    if (id === 'visao-geral') {
+      this.carregarContadores();
+    }
   }
 
   getAbaTitulo(): string {
