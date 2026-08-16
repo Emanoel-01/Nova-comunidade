@@ -608,5 +608,71 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  // ----------------------------------------------------
+  // CALENDÁRIO DE EVENTOS REAL
+  // ----------------------------------------------------
+
+  async listarEventos(): Promise<any[]> {
+    try {
+      const { data: eventos, error } = await this.client
+        .from('eventos')
+        .select('*')
+        .order('data_hora', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar eventos:', error.message);
+        return [];
+      }
+
+      const eventoIds = (eventos || []).map((e: any) => e.id);
+      let inscricoes: any[] = [];
+      if (eventoIds.length > 0) {
+        const { data: inscricoesData } = await this.client
+          .from('eventos_inscricoes')
+          .select('*')
+          .in('evento_id', eventoIds);
+        inscricoes = inscricoesData || [];
+      }
+
+      const session = await this.getSession();
+      const meuId = session?.user?.id;
+      const agora = new Date();
+
+      return (eventos || []).map((e: any) => {
+        const inscricoesDoEvento = inscricoes.filter((i: any) => i.evento_id === e.id);
+        return {
+          ...e,
+          tipo: new Date(e.data_hora) >= agora ? 'futuro' : 'passado',
+          inscritos: inscricoesDoEvento.length,
+          inscrito: inscricoesDoEvento.some((i: any) => i.profissional_id === meuId),
+        };
+      });
+    } catch (e: any) {
+      console.warn('Exceção ao listar eventos:', e?.message || e);
+      return [];
+    }
+  }
+
+  async toggleInscricaoEvento(eventoId: string, inscritoAtualmente: boolean): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      if (inscritoAtualmente) {
+        const { error } = await this.client
+          .from('eventos_inscricoes')
+          .delete()
+          .eq('evento_id', eventoId)
+          .eq('profissional_id', session.user.id);
+        return { error };
+      } else {
+        const { error } = await this.client
+          .from('eventos_inscricoes')
+          .insert({ evento_id: eventoId, profissional_id: session.user.id });
+        return { error };
+      }
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }
 
