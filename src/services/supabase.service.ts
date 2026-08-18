@@ -960,5 +960,163 @@ export class SupabaseService {
       // silencioso — marcar como lida não é crítico o suficiente para travar a UI
     }
   }
+
+  async buscarMembrosParaConversa(termo: string): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user || !termo.trim()) return [];
+      const { data, error } = await this.client
+        .from('profissionais')
+        .select('id, full_name, professional_title')
+        .neq('id', session.user.id)
+        .ilike('full_name', `%${termo.trim()}%`)
+        .limit(10);
+      if (error) { console.warn('Erro ao buscar membros:', error.message); return []; }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao buscar membros:', e?.message || e);
+      return [];
+    }
+  }
+
+  async obterOuCriarConversa(outroProfissionalId: string): Promise<{ conversaId: string | null; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { conversaId: null, error: new Error('Não autenticado.') };
+      const meuId = session.user.id;
+
+      const [p1, p2] = [meuId, outroProfissionalId].sort();
+
+      const { data: existente } = await this.client
+        .from('conversas')
+        .select('id')
+        .eq('participante_1', p1)
+        .eq('participante_2', p2)
+        .maybeSingle();
+
+      if (existente?.id) {
+        return { conversaId: existente.id, error: null };
+      }
+
+      const { data: nova, error } = await this.client
+        .from('conversas')
+        .insert({ participante_1: p1, participante_2: p2 })
+        .select('id')
+        .single();
+
+      if (error) return { conversaId: null, error };
+      return { conversaId: nova.id, error: null };
+    } catch (e: any) {
+      return { conversaId: null, error: e };
+    }
+  }
+
+  // ----------------------------------------------------
+  // CURSOS DO ALUNO (PROGRESSO, AVALIAÇÃO, CERTIFICADO)
+  // ----------------------------------------------------
+
+  async listarCursosParaAluno(): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+      const meuId = session.user.id;
+
+      const { data: cursos, error } = await this.client
+        .from('cursos')
+        .select('*')
+        .eq('ativo', true)
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar cursos:', error.message);
+        return [];
+      }
+
+      const cursoIds = (cursos || []).map((c: any) => c.id);
+
+      const { data: modulos } = cursoIds.length > 0
+        ? await this.client.from('cursos_modulos').select('*').in('curso_id', cursoIds).order('ordem', { ascending: true })
+        : { data: [] };
+
+      const { data: matriculas } = cursoIds.length > 0
+        ? await this.client.from('cursos_matriculas').select('*').eq('profissional_id', meuId).in('curso_id', cursoIds)
+        : { data: [] };
+
+      const permissoesPorCurso = await Promise.all(
+        cursoIds.map(async (id: string) => [id, await this.temPermissaoModulo('comunidade', id)] as const)
+      );
+      const mapaPermissoes = Object.fromEntries(permissoesPorCurso);
+
+      return (cursos || []).map((c: any) => {
+        const modulosDoCurso = (modulos || []).filter((m: any) => m.curso_id === c.id);
+        const matricula = (matriculas || []).find((mt: any) => mt.curso_id === c.id);
+        const modulosConcluidos: string[] = matricula?.modulos_concluidos || [];
+        const totalModulos = modulosDoCurso.length;
+        const progresso = totalModulos > 0 ? Math.round((modulosConcluidos.length / totalModulos) * 100) : 0;
+
+        return {
+          ...c,
+          modulos: modulosDoCurso,
+          temAcesso: !!mapaPermissoes[c.id],
+          matriculado: !!matricula,
+          modulosConcluidos,
+          progresso,
+          avaliacaoAprovado: matricula?.avaliacao_aprovado || false,
+          certificadoEmitidoEm: matricula?.certificado_emitido_em || null,
+        };
+      });
+    } catch (e: any) {
+      console.warn('Exceção ao listar cursos para aluno:', e?.message || e);
+      return [];
+    }
+  }
+
+  async marcarModuloConcluido(cursoId: string, moduloId: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const meuId = session.user.id;
+
+      const { data: existente } = await this.client
+        .from('cursos_matriculas')
+        .select('*')
+        .eq('curso_id', cursoId)
+        .eq('profissional_id', meuId)
+        .maybeSingle();
+
+      const modulosAtuais: string[] = existente?.modulos_concluidos || [];
+      if (modulosAtuais.includes(moduloId)) {
+        return { error: null };
+      }
+      const novosModulos = [...modulosAtuais, moduloId];
+
+      const { error } = await this.client
+        .from('cursos_matriculas')
+        .upsert({
+          curso_id: cursoId,
+          profissional_id: meuId,
+          modulos_concluidos: novosModulos,
+          atualizado_em: new Date().toISOString(),
+        }, { onConflict: 'curso_id,profissional_id' });
+
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async emitirCertificado(cursoId: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { error } = await this.client
+        .from('cursos_matriculas')
+        .update({ certificado_emitido_em: new Date().toISOString(), avaliacao_aprovado: true })
+        .eq('curso_id', cursoId)
+        .eq('profissional_id', session.user.id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }
 
