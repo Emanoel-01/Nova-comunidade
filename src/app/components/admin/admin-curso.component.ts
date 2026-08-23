@@ -1,29 +1,29 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SupabaseService } from '../../../services/supabase.service';
 
-export interface ModuloCurso {
+export interface ModuloCursoAdmin {
   id: string;
+  curso_id: string;
   titulo: string;
-  linkVimeo: string;
-  duracaoEstimada: string;
-  materiais: { id: string; nome: string }[];
+  descricao?: string | null;
+  duracao?: string | null;
+  vimeo_id?: string | null;
+  ordem: number;
 }
 
-export interface PerguntaAvaliacao {
-  id: string;
-  enunciado: string;
-  alternativas: string[];
-  respostaCorretaIndex: number;
-}
-
-export interface Curso {
+export interface CursoAdmin {
   id: string;
   titulo: string;
-  descricao: string;
-  moduloPredialVinculado: string | null; // null = curso avulso, sem vínculo com o app
-  modulos: ModuloCurso[];
-  perguntas: PerguntaAvaliacao[];
-  textoValidadeCertificado: string;
+  descricao?: string | null;
+  categoria?: string | null;
+  ativo: boolean;
+  modulo_predial_vinculado?: string | null;
+  texto_certificado?: string | null;
+  criado_em?: string;
+  modulos?: ModuloCursoAdmin[];
+  totalMatriculados?: number;
+  totalCertificados?: number;
 }
 
 @Component({
@@ -33,7 +33,34 @@ export interface Curso {
   template: `
     <div class="space-y-8">
 
-      <!-- CASO 1: NENHUM CURSO SELECIONADO -> LISTA "MEUS CURSOS" -->
+      <!-- Notificações / Feedbacks -->
+      @if (mensagemSucesso()) {
+        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xs animate-fadeIn">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{{ mensagemSucesso() }}</span>
+          </div>
+          <button type="button" (click)="mensagemSucesso.set(null)" class="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+        </div>
+      }
+
+      @if (mensagemErro()) {
+        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xs animate-fadeIn">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{{ mensagemErro() }}</span>
+          </div>
+          <button type="button" (click)="mensagemErro.set(null)" class="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+        </div>
+      }
+
+      <!-- ============================================================= -->
+      <!-- CASO 1: NENHUM CURSO SELECIONADO -> LISTA "MEUS CURSOS"       -->
+      <!-- ============================================================= -->
       @if (cursoSelecionadoId() === null) {
         <div class="space-y-6">
           
@@ -41,10 +68,10 @@ export interface Curso {
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 class="text-xl font-bold text-slate-900">
-                Meus Cursos & Capacitações
+                Gestão de Cursos & Capacitações
               </h3>
               <p class="text-xs sm:text-sm text-slate-500">
-                Gerencie múltiplos cursos, grades de videoaulas, avaliações de proficiência e certificados.
+                Gerencie os treinamentos técnicos, videoaulas integradas ao Vimeo, certificados e progresso dos membros.
               </p>
             </div>
 
@@ -62,18 +89,18 @@ export interface Curso {
 
           <!-- Formulário / Modal de Criação de Curso -->
           @if (criandoNovoCurso()) {
-            <div class="bg-indigo-50/50 border border-indigo-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
+            <div class="bg-indigo-50/60 border border-indigo-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm animate-scaleUp">
               <div class="flex items-center justify-between border-b border-indigo-100 pb-3">
                 <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                  <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-inner">
                     +
                   </div>
-                  <h4 class="text-base font-bold text-slate-900">Novo Curso</h4>
+                  <h4 class="text-base font-bold text-slate-900">Novo Curso de Capacitação</h4>
                 </div>
                 <button
                   type="button"
                   (click)="cancelarCriacaoCurso()"
-                  class="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  class="text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -85,22 +112,32 @@ export interface Curso {
                   <input
                     type="text"
                     #novoTituloInput
-                    placeholder="Ex: Fundamentos de BIM para Engenharia Diagnóstica"
+                    placeholder="Ex: Curso Predial 4.0 — Métodos de Inspeção e Laudos"
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
                 <div class="space-y-1.5 sm:col-span-2">
-                  <label class="block text-xs font-bold text-slate-700">Descrição Curta *</label>
+                  <label class="block text-xs font-bold text-slate-700">Descrição Curta</label>
                   <textarea
                     #novaDescricaoInput
                     rows="2"
-                    placeholder="Breve resumo sobre os objetivos e diretrizes do curso..."
+                    placeholder="Breve resumo sobre os objetivos técnicos e diretrizes do treinamento..."
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   ></textarea>
                 </div>
 
-                <div class="space-y-1.5 sm:col-span-2">
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Categoria</label>
+                  <input
+                    type="text"
+                    #novaCategoriaInput
+                    placeholder="Ex: Engenharia Diagnóstica, Patologias, Perícias"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div class="space-y-1.5">
                   <label class="block text-xs font-bold text-slate-700">
                     Vínculo com Módulo do Predial 4.0 (Opcional)
                   </label>
@@ -108,318 +145,186 @@ export interface Curso {
                     #novoVinculoSelect
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="nenhum">Nenhum (curso avulso / sem vínculo com o app)</option>
-                    <option value="Inspeção Predial">Inspeção Predial (Libera módulo de inspeção)</option>
+                    <option value="nenhum">Nenhum (curso avulso / sem vínculo)</option>
+                    <option value="Inspeção Predial">Inspeção Predial</option>
                     <option value="Vistoria Cautelar de Vizinhança">Vistoria Cautelar de Vizinhança</option>
-                    <option value="Outros futuros">Outros módulos futuros</option>
+                    <option value="Perícia Judicial">Perícia Judicial</option>
+                    <option value="Recebimento de Obras">Recebimento de Obras</option>
                   </select>
-                  <p class="text-[11px] text-slate-500">
-                    Cursos avulsos não exigem módulo vinculado. Se vinculado, a conclusão habilitará a funcionalidade respectiva no Predial 4.0.
-                  </p>
+                </div>
+
+                <div class="space-y-1.5 sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-700">
+                    Texto do Certificado (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    #novoTextoCertificadoInput
+                    placeholder="Ex: Certificado de Capacitação Profissional conforme ABNT NBR 5674 e NBR 16747"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
               </div>
 
               <div class="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
+                  [disabled]="salvando()"
                   (click)="cancelarCriacaoCurso()"
-                  class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50"
+                  class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  (click)="salvarNovoCurso(novoTituloInput.value, novaDescricaoInput.value, novoVinculoSelect.value)"
-                  class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer"
+                  [disabled]="salvando()"
+                  (click)="salvarNovoCurso(novoTituloInput.value, novaDescricaoInput.value, novaCategoriaInput.value, novoVinculoSelect.value, novoTextoCertificadoInput.value)"
+                  class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
                 >
-                  Criar e Configurar Curso
+                  @if (salvando()) {
+                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Criando...</span>
+                  } @else {
+                    <span>Criar e Configurar Módulos</span>
+                  }
                 </button>
               </div>
             </div>
           }
 
-          <!-- Grade de Cursos Cadastrados -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            @for (curso of cursos(); track curso.id) {
-              <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all space-y-4">
-                <div class="space-y-3">
-                  <div class="flex items-start justify-between gap-3">
-                    @if (curso.moduloPredialVinculado) {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
-                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
-                        Vinculado: {{ curso.moduloPredialVinculado }}
-                      </span>
-                    } @else {
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
-                        Curso Avulso
-                      </span>
-                    }
-
-                    <span class="text-xs font-semibold text-slate-500">
-                      {{ curso.modulos.length }} {{ curso.modulos.length === 1 ? 'módulo' : 'módulos' }}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h4 class="text-base font-bold text-slate-900">
-                      {{ curso.titulo }}
-                    </h4>
-                    <p class="text-xs text-slate-500 line-clamp-2 mt-1">
-                      {{ curso.descricao }}
-                    </p>
-                  </div>
-
-                  <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
-                    <span>📝 {{ curso.perguntas.length }} questões</span>
-                    <span>•</span>
-                    <span>📜 Certificado ativo</span>
-                  </div>
+          <!-- Carregamento -->
+          @if (carregando()) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              @for (i of [1, 2, 3, 4]; track i) {
+                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4 animate-pulse">
+                  <div class="h-4 bg-slate-200 rounded-md w-1/3"></div>
+                  <div class="h-6 bg-slate-200 rounded-md w-3/4"></div>
+                  <div class="h-16 bg-slate-100 rounded-xl w-full"></div>
+                  <div class="h-8 bg-slate-200 rounded-xl w-full"></div>
                 </div>
-
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <button
-                    type="button"
-                    (click)="removerCurso(curso.id)"
-                    class="text-xs font-semibold text-rose-600 hover:text-rose-700"
-                  >
-                    Excluir
-                  </button>
-
-                  <button
-                    type="button"
-                    (click)="selecionarCursoParaEdicao(curso.id)"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
-                  >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    <span>Editar Conteúdo</span>
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
-
-        </div>
-      } @else {
-        <!-- CASO 2: UM CURSO SELECIONADO -> VISÃO DE EDIÇÃO DETALHADA -->
-        
-        <!-- Barra de Navegação Superior / Voltar -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-          <div class="flex items-center gap-3">
-            <button
-              type="button"
-              (click)="voltarParaListaCursos()"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Voltar aos Cursos</span>
-            </button>
-
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm sm:text-base font-bold text-slate-900 truncate">
-                  {{ cursoAtivo()?.titulo }}
-                </h3>
-                @if (cursoAtivo()?.moduloPredialVinculado) {
-                  <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 hidden sm:inline">
-                    Vinculado: {{ cursoAtivo()?.moduloPredialVinculado }}
-                  </span>
-                }
-              </div>
-              <p class="text-[11px] text-slate-500">Editando estrutura e configurações do curso</p>
+              }
             </div>
-          </div>
-
-          <div class="text-xs text-slate-500">
-            {{ cursoAtivo()?.modulos?.length || 0 }} Módulos cadastrados
-          </div>
-        </div>
-
-        <!-- Sub-navegação interna das 4 seções do curso ativo -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 scrollbar-none">
-          <button
-            type="button"
-            (click)="setSecaoAtiva('modulos')"
-            [class]="secaoAtiva() === 'modulos'
-              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-          >
-            1. Módulos do Curso
-          </button>
-
-          <button
-            type="button"
-            (click)="setSecaoAtiva('avaliacao')"
-            [class]="secaoAtiva() === 'avaliacao'
-              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-          >
-            2. Avaliação & Prova
-          </button>
-
-          <button
-            type="button"
-            (click)="setSecaoAtiva('certificado')"
-            [class]="secaoAtiva() === 'certificado'
-              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-          >
-            3. Certificado
-          </button>
-
-          <button
-            type="button"
-            (click)="setSecaoAtiva('alunos')"
-            [class]="secaoAtiva() === 'alunos'
-              ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm'
-              : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors'"
-          >
-            4. Alunos Matriculados
-          </button>
-        </div>
-
-        <!-- SEÇÃO 1: MÓDULOS DO CURSO ATIVO -->
-        @if (secaoAtiva() === 'modulos') {
-          <div class="space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 class="text-lg font-bold text-slate-900">
-                  Grade de Módulos & Vídeos Vimeo
-                </h3>
-                <p class="text-xs sm:text-sm text-slate-500">
-                  Estruture as aulas, links de streaming restrito e materiais de apoio deste curso.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                (click)="adicionarModulo()"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          } @else if (cursos().length === 0) {
+            <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
+              <div class="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                <span>Adicionar Módulo</span>
-              </button>
+              </div>
+              <div class="max-w-md mx-auto space-y-1">
+                <h4 class="text-base font-black text-slate-900">Nenhum curso cadastrado no Supabase</h4>
+                <p class="text-xs text-slate-500">Clique em "Criar Novo Curso" acima para começar a montar suas capacitações técnicas.</p>
+              </div>
             </div>
+          } @else {
+            <!-- Grade de Cursos Cadastrados -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              @for (curso of cursos(); track curso.id) {
+                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs flex flex-col justify-between hover:border-indigo-200 hover:shadow-md transition-all space-y-5">
+                  <div class="space-y-3.5">
+                    
+                    <!-- Badges Topo -->
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                      <div class="flex items-center gap-2">
+                        @if (curso.modulo_predial_vinculado) {
+                          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                            Vinculado: {{ curso.modulo_predial_vinculado }}
+                          </span>
+                        } @else {
+                          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
+                            {{ curso.categoria || 'Capacitação Técnica' }}
+                          </span>
+                        }
 
-            <!-- Lista de Cards de Módulo -->
-            <div class="space-y-6">
-              @for (modulo of cursoAtivo()?.modulos || []; track modulo.id; let i = $index) {
-                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
-                  
-                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div class="flex items-center gap-2">
-                      <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center">
-                        {{ i + 1 }}
-                      </span>
-                      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Configuração de Aula
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      (click)="removerModulo(modulo.id)"
-                      class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      <span>Remover</span>
-                    </button>
-                  </div>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="space-y-1.5 sm:col-span-2">
-                      <label class="block text-xs font-bold text-slate-700">Título do Módulo</label>
-                      <input
-                        type="text"
-                        [value]="modulo.titulo"
-                        (input)="atualizarTituloModulo(modulo.id, $event)"
-                        placeholder="Ex: Módulo 1 — Fundamentos e Normas"
-                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    <div class="space-y-1.5">
-                      <label class="block text-xs font-bold text-slate-700">Duração Estimada</label>
-                      <input
-                        type="text"
-                        [value]="modulo.duracaoEstimada"
-                        (input)="atualizarDuracaoModulo(modulo.id, $event)"
-                        placeholder="Ex: 45 min"
-                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-
-                    <div class="space-y-1.5 sm:col-span-3">
-                      <label class="block text-xs font-bold text-slate-700">Link do Vídeo Vimeo (Restrição de Domínio)</label>
-                      <div class="relative">
-                        <input
-                          type="text"
-                          [value]="modulo.linkVimeo"
-                          (input)="atualizarLinkVimeoModulo(modulo.id, $event)"
-                          placeholder="https://player.vimeo.com/video/..."
-                          class="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
+                        <span
+                          [class]="curso.ativo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'"
+                          class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                        >
+                          {{ curso.ativo ? 'Ativo' : 'Inativo' }}
+                        </span>
                       </div>
-                      <p class="text-[11px] text-slate-400">
-                        Recomendado: Configure o vídeo no Vimeo com privacidade "Ocultar do Vimeo" e restrinja a incorporação ao seu domínio.
+
+                      <span class="text-xs font-semibold text-slate-500">
+                        {{ curso.modulos?.length || 0 }} {{ (curso.modulos?.length || 0) === 1 ? 'aula' : 'aulas' }}
+                      </span>
+                    </div>
+
+                    <!-- Título & Descrição -->
+                    <div class="space-y-1">
+                      <h4 class="text-base font-black text-slate-900 leading-snug">
+                        {{ curso.titulo }}
+                      </h4>
+                      <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        {{ curso.descricao || 'Sem descrição informada.' }}
                       </p>
                     </div>
+
+                    <!-- Estatísticas rápidas de matrículas -->
+                    <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                      <span class="flex items-center gap-1 font-medium">
+                        <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span>{{ curso.totalMatriculados || 0 }} matriculados</span>
+                      </span>
+                      <span>•</span>
+                      <span class="flex items-center gap-1 font-medium">
+                        <span>🎓</span>
+                        <span>{{ curso.totalCertificados || 0 }} certificados</span>
+                      </span>
+                    </div>
                   </div>
 
-                  <!-- Materiais de Apoio (Download) -->
-                  <div class="pt-3 border-t border-slate-100 space-y-3">
-                    <div class="flex items-center justify-between">
-                      <label class="text-xs font-bold text-slate-700">Materiais Complementares (PDFs / Modelos)</label>
-                      <span class="text-[11px] text-slate-400">{{ modulo.materiais.length }} arquivos anexados</span>
-                    </div>
-
-                    <!-- Lista de Materiais -->
-                    <div class="flex flex-wrap gap-2">
-                      @for (mat of modulo.materiais; track mat.id) {
-                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs">
-                          <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          <span class="font-medium">{{ mat.nome }}</span>
-                          <button
-                            type="button"
-                            (click)="removerMaterial(modulo.id, mat.id)"
-                            class="text-slate-400 hover:text-rose-600 ml-1 cursor-pointer"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      }
-
-                      @if (modulo.materiais.length === 0) {
-                        <span class="text-xs text-slate-400 italic">Nenhum material de apoio anexado a este módulo.</span>
-                      }
-                    </div>
-
-                    <!-- Input para adicionar novo material -->
-                    <div class="flex items-center gap-2 pt-1">
-                      <input
-                        type="text"
-                        #novoMaterialInput
-                        placeholder="Nome do arquivo (ex: Modelo_Laudo_Tecnico.pdf)"
-                        class="flex-1 max-w-sm px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+                  <!-- Ações no Rodapé do Card -->
+                  <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <!-- Botão de Excluir com 2 cliques -->
+                    @if (cursoExcluirId() === curso.id) {
+                      <div class="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          (click)="confirmarExclusaoCurso(curso.id)"
+                          class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+                        >
+                          Confirmar?
+                        </button>
+                        <button
+                          type="button"
+                          (click)="cursoExcluirId.set(null)"
+                          class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    } @else {
                       <button
                         type="button"
-                        (click)="adicionarMaterial(modulo.id, novoMaterialInput.value); novoMaterialInput.value = ''"
-                        class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                        (click)="cursoExcluirId.set(curso.id)"
+                        class="text-xs font-semibold text-rose-600 hover:text-rose-700 cursor-pointer"
                       >
-                        + Anexar
+                        Excluir
+                      </button>
+                    }
+
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="toggleStatusCurso(curso)"
+                        [class]="curso.ativo ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'"
+                        class="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        {{ curso.ativo ? 'Desativar' : 'Ativar' }}
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="selecionarCursoParaEdicao(curso.id)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Gerenciar</span>
                       </button>
                     </div>
                   </div>
@@ -427,280 +332,634 @@ export interface Curso {
                 </div>
               }
             </div>
-          </div>
-        }
+          }
 
-        <!-- SEÇÃO 2: AVALIAÇÃO & PROVA -->
-        @if (secaoAtiva() === 'avaliacao') {
-          <div class="space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 class="text-lg font-bold text-slate-900">
-                  Banco de Questões & Avaliação Final
-                </h3>
-                <p class="text-xs sm:text-sm text-slate-500">
-                  Configure as perguntas que o aluno deverá responder para comprovar proficiência e emitir o certificado.
-                </p>
-              </div>
+        </div>
+      } @else {
+        <!-- ============================================================= -->
+        <!-- CASO 2: UM CURSO SELECIONADO -> VISÃO DE EDIÇÃO DETALHADA     -->
+        <!-- ============================================================= -->
+        
+        <div class="space-y-6">
 
+          <!-- Barra de Navegação Superior / Voltar -->
+          <div class="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+            <div class="flex items-center gap-3">
               <button
                 type="button"
-                (click)="adicionarPergunta()"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
+                (click)="voltarParaListaCursos()"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer shrink-0"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span>Adicionar Questão</span>
+                <span>Voltar aos Cursos</span>
               </button>
+
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-base sm:text-lg font-black text-slate-900 truncate">
+                    {{ cursoAtivo()?.titulo }}
+                  </h3>
+                  @if (cursoAtivo()?.modulo_predial_vinculado) {
+                    <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
+                      Vinculado: {{ cursoAtivo()?.modulo_predial_vinculado }}
+                    </span>
+                  }
+                </div>
+                <p class="text-xs text-slate-500">Editando estrutura técnica do curso</p>
+              </div>
             </div>
 
-            <!-- Lista de Questões -->
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-xs text-slate-500 font-medium">
+                {{ cursoAtivo()?.modulos?.length || 0 }} aulas cadastradas
+              </span>
+            </div>
+          </div>
+
+          <!-- Sub-navegação interna das seções do curso ativo -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 scrollbar-none">
+            <button
+              type="button"
+              (click)="setSecaoAtiva('modulos')"
+              [class]="secaoAtiva() === 'modulos'
+                ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm cursor-pointer'
+                : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer'"
+            >
+              1. Aulas & Vídeos Vimeo ({{ cursoAtivo()?.modulos?.length || 0 }})
+            </button>
+
+            <button
+              type="button"
+              (click)="setSecaoAtiva('certificado')"
+              [class]="secaoAtiva() === 'certificado'
+                ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm cursor-pointer'
+                : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer'"
+            >
+              2. Certificado & Validade
+            </button>
+
+            <button
+              type="button"
+              (click)="setSecaoAtiva('alunos')"
+              [class]="secaoAtiva() === 'alunos'
+                ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm cursor-pointer'
+                : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer'"
+            >
+              3. Alunos Matriculados ({{ cursoAtivo()?.totalMatriculados || 0 }})
+            </button>
+
+            <button
+              type="button"
+              (click)="setSecaoAtiva('dados')"
+              [class]="secaoAtiva() === 'dados'
+                ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm cursor-pointer'
+                : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer'"
+            >
+              4. Dados Gerais do Curso
+            </button>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SEÇÃO 1: MÓDULOS & VÍDEOS VIMEO                           -->
+          <!-- ========================================================= -->
+          @if (secaoAtiva() === 'modulos') {
             <div class="space-y-6">
-              @for (perg of cursoAtivo()?.perguntas || []; track perg.id; let i = $index) {
-                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5">
-                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <span class="font-bold text-sm text-slate-900">Questão {{ i + 1 }}</span>
+              
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h4 class="text-lg font-bold text-slate-900">
+                    Grade de Aulas & Vídeos Vimeo
+                  </h4>
+                  <p class="text-xs sm:text-sm text-slate-500">
+                    Estruture a sequência pedagógica e vincule os IDs numéricos dos vídeos hospedados no Vimeo.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  (click)="abrirModalCriarModulo()"
+                  class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer self-start sm:self-auto"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Adicionar Aula / Módulo</span>
+                </button>
+              </div>
+
+              <!-- Formulário / Modal de Criação ou Edição de Módulo -->
+              @if (criandoModulo() || editandoModuloId()) {
+                <div class="bg-indigo-50/50 border border-indigo-200 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm animate-scaleUp">
+                  <div class="flex items-center justify-between border-b border-indigo-100 pb-3">
+                    <h5 class="text-sm font-bold text-slate-900">
+                      {{ editandoModuloId() ? 'Editar Aula / Módulo' : 'Nova Aula / Módulo' }}
+                    </h5>
                     <button
                       type="button"
-                      (click)="removerPergunta(perg.id)"
-                      class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer"
+                      (click)="cancelarFormularioModulo()"
+                      class="text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer"
                     >
-                      Remover Questão
+                      Cancelar
                     </button>
                   </div>
 
-                  <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700">Enunciado da Questão</label>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="space-y-1.5 sm:col-span-2">
+                      <label class="block text-xs font-bold text-slate-700">Título da Aula / Módulo *</label>
+                      <input
+                        type="text"
+                        #formModTituloInput
+                        [value]="moduloFormDados.titulo"
+                        (input)="moduloFormDados.titulo = formModTituloInput.value"
+                        placeholder="Ex: Aula 1 — Introdução aos Métodos de Diagnóstico"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-bold text-slate-700">Duração</label>
+                      <input
+                        type="text"
+                        #formModDuracaoInput
+                        [value]="moduloFormDados.duracao"
+                        (input)="moduloFormDados.duracao = formModDuracaoInput.value"
+                        placeholder="Ex: 45 min"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div class="space-y-1.5 sm:col-span-2">
+                      <label class="block text-xs font-bold text-slate-700">ID do Vídeo no Vimeo *</label>
+                      <input
+                        type="text"
+                        #formModVimeoInput
+                        [value]="moduloFormDados.vimeo_id"
+                        (input)="moduloFormDados.vimeo_id = formModVimeoInput.value"
+                        placeholder="Ex: 892019283 (apenas o número/ID do Vimeo)"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                      />
+                      <p class="text-[11px] text-slate-500">
+                        Insira apenas o <strong>ID numérico</strong> do vídeo (ex: se o link for <code class="bg-slate-100 px-1 py-0.5 rounded">vimeo.com/892019283</code>, insira <strong>892019283</strong>). O player monta a URL de transmissão automaticamente.
+                      </p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-bold text-slate-700">Ordem de Exibição</label>
+                      <input
+                        type="number"
+                        #formModOrdemInput
+                        [value]="moduloFormDados.ordem"
+                        (input)="moduloFormDados.ordem = +formModOrdemInput.value"
+                        min="1"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div class="space-y-1.5 sm:col-span-3">
+                      <label class="block text-xs font-bold text-slate-700">Descrição dos Conteúdos Abordados</label>
+                      <textarea
+                        #formModDescricaoInput
+                        [value]="moduloFormDados.descricao"
+                        (input)="moduloFormDados.descricao = formModDescricaoInput.value"
+                        rows="2"
+                        placeholder="Resumo das normas, procedimentos práticos ou temas abordados nesta aula..."
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      [disabled]="salvando()"
+                      (click)="cancelarFormularioModulo()"
+                      class="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      [disabled]="salvando()"
+                      (click)="salvarModulo()"
+                      class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
+                    >
+                      @if (salvando()) {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Salvando...</span>
+                      } @else {
+                        <span>{{ editandoModuloId() ? 'Salvar Alterações' : 'Adicionar Aula' }}</span>
+                      }
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- Lista de Aulas / Módulos -->
+              @if ((cursoAtivo()?.modulos?.length || 0) === 0) {
+                <div class="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3 shadow-xs">
+                  <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h5 class="text-sm font-bold text-slate-900">Nenhuma aula cadastrada</h5>
+                  <p class="text-xs text-slate-500">Clique em "Adicionar Aula / Módulo" acima para cadastrar a primeira videoaula.</p>
+                </div>
+              } @else {
+                <div class="space-y-4">
+                  @for (mod of cursoAtivo()?.modulos || []; track mod.id; let i = $index) {
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-indigo-200 transition-all">
+                      
+                      <div class="flex items-start gap-3.5 min-w-0">
+                        <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 font-black text-xs flex items-center justify-center shrink-0 border border-indigo-100">
+                          {{ mod.ordem || (i + 1) }}
+                        </div>
+
+                        <div class="space-y-1 min-w-0">
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <h5 class="text-sm font-bold text-slate-900">
+                              {{ mod.titulo }}
+                            </h5>
+                            @if (mod.duracao) {
+                              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                ⏱ {{ mod.duracao }}
+                              </span>
+                            }
+                            @if (mod.vimeo_id) {
+                              <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold border border-indigo-100 flex items-center gap-1">
+                                <svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
+                                </svg>
+                                Vimeo: {{ mod.vimeo_id }}
+                              </span>
+                            }
+                          </div>
+
+                          @if (mod.descricao) {
+                            <p class="text-xs text-slate-500 line-clamp-1">
+                              {{ mod.descricao }}
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          (click)="iniciarEdicaoModulo(mod)"
+                          class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Editar
+                        </button>
+
+                        @if (moduloExcluirId() === mod.id) {
+                          <div class="flex items-center gap-1">
+                            <button
+                              type="button"
+                              (click)="confirmarExclusaoModulo(mod.id)"
+                              class="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+                            >
+                              Excluir?
+                            </button>
+                            <button
+                              type="button"
+                              (click)="moduloExcluirId.set(null)"
+                              class="px-2 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        } @else {
+                          <button
+                            type="button"
+                            (click)="moduloExcluirId.set(mod.id)"
+                            class="px-2.5 py-1.5 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-semibold cursor-pointer"
+                          >
+                            Excluir
+                          </button>
+                        }
+                      </div>
+
+                    </div>
+                  }
+                </div>
+              }
+
+            </div>
+          }
+
+          <!-- ========================================================= -->
+          <!-- SEÇÃO 2: CERTIFICADO & VALIDADE                           -->
+          <!-- ========================================================= -->
+          @if (secaoAtiva() === 'certificado') {
+            <div class="space-y-6">
+              <div>
+                <h4 class="text-lg font-bold text-slate-900">
+                  Modelo & Validade do Certificado
+                </h4>
+                <p class="text-xs sm:text-sm text-slate-500">
+                  Configure os termos legais, diretrizes normativas e carga horária que constarão no certificado emitido automaticamente aos alunos ao concluírem todas as aulas.
+                </p>
+              </div>
+
+              <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                <div class="space-y-2">
+                  <label class="block text-xs font-bold text-slate-700">
+                    Texto de Validade Normativa e Carga Horária do Certificado
+                  </label>
+                  <textarea
+                    #textoCertificadoInput
+                    rows="4"
+                    [value]="cursoAtivo()?.texto_certificado || ''"
+                    placeholder="Ex: Certificado de capacitação técnica profissional em conformidade com as diretrizes da ABNT NBR 5674 e NBR 16747. Carga horária estimada: 20 horas."
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  ></textarea>
+                  <p class="text-[11px] text-slate-400">
+                    Este texto será exibido na área do aluno e no selo oficial de conclusão técnica.
+                  </p>
+                </div>
+
+                <div class="flex items-center justify-end">
+                  <button
+                    type="button"
+                    [disabled]="salvando()"
+                    (click)="salvarTextoCertificado(textoCertificadoInput.value)"
+                    class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
+                  >
+                    @if (salvando()) {
+                      <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Salvando...</span>
+                    } @else {
+                      <span>Salvar Configuração do Certificado</span>
+                    }
+                  </button>
+                </div>
+
+                <!-- Prévia Visual do Certificado -->
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-amber-50/50 via-slate-50 to-amber-50/30 border border-amber-200/80 space-y-4">
+                  <span class="text-xs font-bold uppercase tracking-wider text-amber-800">Prévia Visual do Certificado</span>
+                  <div class="p-6 rounded-2xl bg-white border border-amber-200 text-center space-y-3 max-w-lg mx-auto shadow-xs">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-400 text-white mx-auto flex items-center justify-center text-xl shadow-md">🎓</div>
+                    <div class="text-indigo-600 font-black text-xs tracking-widest uppercase">Certificado de Capacitação Técnica</div>
+                    <div class="text-slate-900 font-extrabold text-base sm:text-lg">{{ cursoAtivo()?.titulo }}</div>
+                    <div class="text-xs text-slate-500">Certificamos que o membro concluiu com êxito todas as etapas de capacitação técnica.</div>
+                    <div class="text-[11px] text-slate-600 border-t border-slate-100 pt-2 italic">
+                      {{ textoCertificadoInput.value || cursoAtivo()?.texto_certificado || 'Texto de validade normativa padrão...' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ========================================================= -->
+          <!-- SEÇÃO 3: ALUNOS MATRICULADOS & PROGRESSO                  -->
+          <!-- ========================================================= -->
+          @if (secaoAtiva() === 'alunos') {
+            <div class="space-y-6">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h4 class="text-lg font-bold text-slate-900">
+                    Alunos Matriculados & Progresso
+                  </h4>
+                  <p class="text-xs sm:text-sm text-slate-500">
+                    Acompanhe em tempo real o avanço das aulas e os certificados emitidos para os membros.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  (click)="carregarAlunosMatriculados()"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold shadow-xs cursor-pointer self-start sm:self-auto"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Recarregar Lista</span>
+                </button>
+              </div>
+
+              @if (carregandoAlunos()) {
+                <div class="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3 shadow-xs">
+                  <div class="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p class="text-xs text-slate-500 font-medium">Carregando matrículas dos membros...</p>
+                </div>
+              } @else if (alunosMatriculados().length === 0) {
+                <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
+                  <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                  <div class="space-y-1 max-w-md mx-auto">
+                    <h5 class="text-base font-bold text-slate-900">Nenhum aluno matriculado ainda</h5>
+                    <p class="text-xs text-slate-500">Assim que os membros acessarem e iniciarem as videoaulas deste curso, seus registros de progresso e certificados constarão aqui.</p>
+                  </div>
+                </div>
+              } @else {
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                      <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[10px]">
+                        <tr>
+                          <th class="py-3.5 px-4 sm:px-6">Aluno</th>
+                          <th class="py-3.5 px-4">Progresso nas Aulas</th>
+                          <th class="py-3.5 px-4">Status Certificado</th>
+                          <th class="py-3.5 px-4 text-right">Última Atividade</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        @for (mat of alunosMatriculados(); track mat.id || mat.profissional_id) {
+                          <tr class="hover:bg-slate-50/60 transition-colors">
+                            <td class="py-4 px-4 sm:px-6">
+                              <div class="font-bold text-slate-900">{{ mat.aluno?.full_name || 'Membro da Comunidade' }}</div>
+                              <div class="text-[11px] text-slate-500">{{ mat.aluno?.email || mat.aluno?.professional_title || 'Sem email cadastrado' }}</div>
+                            </td>
+                            <td class="py-4 px-4 min-w-[180px]">
+                              @let totalAulas = cursoAtivo()?.modulos?.length || 0;
+                              @let aulasConcluidas = mat.modulos_concluidos?.length || 0;
+                              @let pct = totalAulas > 0 ? Math.round((aulasConcluidas / totalAulas) * 100) : 0;
+                              <div class="space-y-1">
+                                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                                  <span>{{ aulasConcluidas }} de {{ totalAulas }} aulas</span>
+                                  <span class="text-indigo-600 font-bold">{{ pct }}%</span>
+                                </div>
+                                <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                  <div class="h-full rounded-full bg-indigo-600" [style.width.%]="pct"></div>
+                                </div>
+                              </div>
+                            </td>
+                            <td class="py-4 px-4">
+                              @if (mat.certificado_emitido_em) {
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200">
+                                  <span>🎓</span>
+                                  <span>Emitido ({{ formatarData(mat.certificado_emitido_em) }})</span>
+                                </span>
+                              } @else {
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">
+                                  <span>Em andamento</span>
+                                </span>
+                              }
+                            </td>
+                            <td class="py-4 px-4 text-right text-[11px] text-slate-500">
+                              {{ formatarData(mat.atualizado_em || mat.criado_em) }}
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- ========================================================= -->
+          <!-- SEÇÃO 4: DADOS GERAIS DO CURSO                            -->
+          <!-- ========================================================= -->
+          @if (secaoAtiva() === 'dados') {
+            <div class="space-y-6">
+              <div>
+                <h4 class="text-lg font-bold text-slate-900">
+                  Dados Gerais & Vínculo com o App
+                </h4>
+                <p class="text-xs sm:text-sm text-slate-500">
+                  Atualize título, categoria, descrição e vinculação com os módulos operacionais do Predial 4.0.
+                </p>
+              </div>
+
+              <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1.5 sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700">Título do Curso *</label>
+                    <input
+                      type="text"
+                      #editTituloInput
+                      [value]="cursoAtivo()?.titulo"
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div class="space-y-1.5 sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700">Descrição</label>
                     <textarea
-                      rows="2"
-                      [value]="perg.enunciado"
-                      (input)="atualizarEnunciado(perg.id, $event)"
-                      placeholder="Ex: De acordo com a norma regulamentadora..."
+                      #editDescricaoInput
+                      rows="3"
+                      [value]="cursoAtivo()?.descricao || ''"
                       class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     ></textarea>
                   </div>
 
-                  <!-- Alternativas -->
-                  <div class="space-y-3 pt-2">
-                    <label class="block text-xs font-bold text-slate-700">
-                      Alternativas (Selecione a correta como Gabarito)
-                    </label>
-
-                    <div class="space-y-2">
-                      @for (alt of perg.alternativas; track $index; let idxAlt = $index) {
-                        <div class="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            [name]="'gabarito-' + perg.id"
-                            [checked]="perg.respostaCorretaIndex === idxAlt"
-                            (change)="definirGabarito(perg.id, idxAlt)"
-                            class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
-                            title="Marcar como gabarito correto"
-                          />
-                          <span class="text-xs font-bold text-slate-500 w-4">{{ getLetraAlternativa(idxAlt) }})</span>
-                          <input
-                            type="text"
-                            [value]="alt"
-                            (input)="atualizarAlternativa(perg.id, idxAlt, $event)"
-                            placeholder="Texto da alternativa..."
-                            class="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
-                        </div>
-                      }
-                    </div>
+                  <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700">Categoria</label>
+                    <input
+                      type="text"
+                      #editCategoriaInput
+                      [value]="cursoAtivo()?.categoria || ''"
+                      placeholder="Ex: Engenharia Diagnóstica"
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
                   </div>
 
+                  <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700">Vínculo com Módulo Predial 4.0</label>
+                    <select
+                      #editVinculoSelect
+                      [value]="cursoAtivo()?.modulo_predial_vinculado || 'nenhum'"
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="nenhum">Nenhum (curso avulso)</option>
+                      <option value="Inspeção Predial">Inspeção Predial</option>
+                      <option value="Vistoria Cautelar de Vizinhança">Vistoria Cautelar de Vizinhança</option>
+                      <option value="Perícia Judicial">Perícia Judicial</option>
+                      <option value="Recebimento de Obras">Recebimento de Obras</option>
+                    </select>
+                  </div>
                 </div>
-              }
-            </div>
-          </div>
-        }
 
-        <!-- SEÇÃO 3: CERTIFICADO -->
-        @if (secaoAtiva() === 'certificado') {
-          <div class="space-y-6">
-            <div>
-              <h3 class="text-lg font-bold text-slate-900">
-                Modelo e Validade do Certificado
-              </h3>
-              <p class="text-xs sm:text-sm text-slate-500">
-                Defina os termos legais, diretrizes normativas e carga horária que constarão no verso do certificado emitido.
-              </p>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
-              <div class="space-y-2">
-                <label class="block text-xs font-bold text-slate-700">
-                  Texto de Validade Normativa e Carga Horária
-                </label>
-                <textarea
-                  rows="4"
-                  [value]="cursoAtivo()?.textoValidadeCertificado || ''"
-                  (input)="atualizarTextoValidade($event)"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                ></textarea>
-                <p class="text-[11px] text-slate-400">
-                  Este texto será incorporado automaticamente no rodapé do PDF do certificado emitido ao aluno após aprovação.
-                </p>
-              </div>
-
-              <!-- Prévia do Certificado -->
-              <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Prévia Visual do Certificado</span>
-                <div class="p-6 rounded-xl bg-white border border-slate-200 text-center space-y-3 max-w-lg mx-auto shadow-xs">
-                  <div class="text-indigo-600 font-bold text-sm tracking-widest uppercase">Certificado de Capacitação Técnica</div>
-                  <div class="text-slate-800 font-extrabold text-lg">{{ cursoAtivo()?.titulo }}</div>
-                  <div class="text-xs text-slate-500">Certificamos que [Nome do Aluno] concluiu com êxito todas as etapas avaliativas.</div>
-                  <div class="text-[11px] text-slate-400 border-t border-slate-100 pt-2 italic">
-                    {{ cursoAtivo()?.textoValidadeCertificado }}
-                  </div>
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    [disabled]="salvando()"
+                    (click)="salvarDadosGeraisCurso(editTituloInput.value, editDescricaoInput.value, editCategoriaInput.value, editVinculoSelect.value)"
+                    class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
+                  >
+                    @if (salvando()) {
+                      <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Salvando...</span>
+                    } @else {
+                      <span>Salvar Dados Gerais</span>
+                    }
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        }
+          }
 
-        <!-- SEÇÃO 4: ALUNOS MATRICULADOS -->
-        @if (secaoAtiva() === 'alunos') {
-          <div class="space-y-6">
-            <div class="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-4 shadow-xs">
-              <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 mx-auto flex items-center justify-center shadow-inner">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-
-              <div class="space-y-1">
-                <h3 class="text-xl font-bold text-slate-900">
-                  Alunos & Progresso — {{ cursoAtivo()?.titulo }}
-                </h3>
-                <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-                  A lista de alunos matriculados e status de aprovação neste curso aparecerá aqui quando a tabela de matrículas (<code class="font-mono text-indigo-600">course_enrollments</code>) for criada no Supabase.
-                </p>
-              </div>
-            </div>
-          </div>
-        }
+        </div>
 
       }
-
-      <!-- Aviso no Rodapé da Aba de Gestão de Curso -->
-      <div class="p-4 rounded-2xl bg-white border border-slate-200 text-xs text-slate-500 flex items-center gap-3">
-        <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <span>Todas as alterações desta seção estão em modo demonstração e serão persistidas no Supabase quando as tabelas de cursos forem criadas.</span>
-      </div>
 
     </div>
   `
 })
-export class AdminCursoComponent {
+export class AdminCursoComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly Math = Math;
+
+  readonly cursos = signal<CursoAdmin[]>([]);
+  readonly carregando = signal<boolean>(true);
   readonly cursoSelecionadoId = signal<string | null>(null);
+  readonly secaoAtiva = signal<'modulos' | 'certificado' | 'alunos' | 'dados'>('modulos');
   readonly criandoNovoCurso = signal<boolean>(false);
-  readonly secaoAtiva = signal<'modulos' | 'avaliacao' | 'certificado' | 'alunos'>('modulos');
+  readonly salvando = signal<boolean>(false);
 
-  readonly cursos = signal<Curso[]>([
-    {
-      id: 'curso-predial-40',
-      titulo: 'Curso Predial 4.0 — Métodos de Inspeção e Laudos',
-      descricao: 'Capacitação técnica completa em conformidade com as diretrizes da NBR 5674 e NBR 16747.',
-      moduloPredialVinculado: 'Inspeção Predial',
-      modulos: [
-        {
-          id: 'mod-1',
-          titulo: 'Módulo 1 — Fundamentos de Patologia e Inspeção Predial',
-          linkVimeo: 'https://player.vimeo.com/video/892019283',
-          duracaoEstimada: '45 min',
-          materiais: [
-            { id: 'mat-1', nome: 'Guia_NBR_5674_Manutencao.pdf' },
-            { id: 'mat-2', nome: 'Checklist_Inspecao_Campo.pdf' }
-          ]
-        },
-        {
-          id: 'mod-2',
-          titulo: 'Módulo 2 — Checklist Técnico e Elaboração de Laudos 4.0',
-          linkVimeo: 'https://player.vimeo.com/video/892019284',
-          duracaoEstimada: '60 min',
-          materiais: [
-            { id: 'mat-3', nome: 'Modelo_Laudo_Predial_40.docx' }
-          ]
-        }
-      ],
-      perguntas: [
-        {
-          id: 'perg-1',
-          enunciado: 'De acordo com a NBR 5674, qual é o objetivo principal do programa de manutenção predial?',
-          alternativas: [
-            'Apenas reduzir custos operacionais emergenciais.',
-            'Preservar o desempenho, a segurança e a vida útil da edificação.',
-            'Substituir a necessidade de inspeção visual periódica.',
-            'Atender exclusivamente a fins estéticos do condomínio.'
-          ],
-          respostaCorretaIndex: 1
-        },
-        {
-          id: 'perg-2',
-          enunciado: 'Qual das alternativas descreve uma patologia recorrente ligada à umidade por ascensão capilar?',
-          alternativas: [
-            'Fissuras a 45 graus em vigas de concreto armado.',
-            'Eflorescências e descolamento de pintura no rodapé de alvenarias.',
-            'Corrosão pontual em coberturas metálicas.',
-            'Flecha excessiva no meio de vãos de laje.'
-          ],
-          respostaCorretaIndex: 1
-        }
-      ],
-      textoValidadeCertificado: 'Certificado de capacitação técnica profissional em conformidade com as diretrizes da ABNT NBR 5674 e NBR 16747. Carga horária total estimada: 20 horas.'
-    },
-    {
-      id: 'curso-bim-diagnostica',
-      titulo: 'Fundamentos de BIM para Engenharia Diagnóstica',
-      descricao: 'Integração de modelagem 3D paramétrica na detecção e mapeamento de anomalias construtivas.',
-      moduloPredialVinculado: null,
-      modulos: [
-        {
-          id: 'mod-bim-1',
-          titulo: 'Módulo 1 — Introdução ao BIM Aplicado a Edificações Existentes',
-          linkVimeo: 'https://player.vimeo.com/video/892019285',
-          duracaoEstimada: '40 min',
-          materiais: [
-            { id: 'mat-bim-1', nome: 'Introducao_BIM_Diagnostica.pdf' }
-          ]
-        },
-        {
-          id: 'mod-bim-2',
-          titulo: 'Módulo 2 — Integração de Laudos Técnicos em Modelos IFC',
-          linkVimeo: 'https://player.vimeo.com/video/892019286',
-          duracaoEstimada: '50 min',
-          materiais: []
-        }
-      ],
-      perguntas: [
-        {
-          id: 'perg-bim-1',
-          enunciado: 'Qual padrão aberto é comumente utilizado para interoperabilidade de modelos BIM entre diferentes softwares?',
-          alternativas: [
-            'DWG 2D',
-            'IFC (Industry Foundation Classes)',
-            'PDF rasterizado',
-            'XLSX'
-          ],
-          respostaCorretaIndex: 1
-        }
-      ],
-      textoValidadeCertificado: 'Certificado de capacitação em modelagem BIM aplicada à engenharia diagnóstica. Carga horária total estimada: 15 horas.'
-    }
-  ]);
+  readonly cursoExcluirId = signal<string | null>(null);
+  readonly moduloExcluirId = signal<string | null>(null);
 
-  readonly cursoAtivo = computed(() => {
+  // Módulo form state
+  readonly criandoModulo = signal<boolean>(false);
+  readonly editandoModuloId = signal<string | null>(null);
+  moduloFormDados = {
+    titulo: '',
+    descricao: '',
+    duracao: '',
+    vimeo_id: '',
+    ordem: 1,
+  };
+
+  // Alunos matriculados
+  readonly alunosMatriculados = signal<any[]>([]);
+  readonly carregandoAlunos = signal<boolean>(false);
+
+  // Feedbacks
+  readonly mensagemSucesso = signal<string | null>(null);
+  readonly mensagemErro = signal<string | null>(null);
+
+  readonly cursoAtivo = computed<CursoAdmin | null>(() => {
     const id = this.cursoSelecionadoId();
     if (!id) return null;
     return this.cursos().find(c => c.id === id) || null;
   });
+
+  async ngOnInit(): Promise<void> {
+    await this.carregarCursos();
+  }
+
+  async carregarCursos(): Promise<void> {
+    this.carregando.set(true);
+    try {
+      const data = await this.supabaseService.listarTodosCursosAdmin();
+      this.cursos.set(data);
+    } catch (e: any) {
+      this.exibirErro('Erro ao carregar cursos do Supabase.');
+    } finally {
+      this.carregando.set(false);
+    }
+  }
 
   abrirModalCriarCurso(): void {
     this.criandoNovoCurso.set(true);
@@ -710,272 +969,320 @@ export class AdminCursoComponent {
     this.criandoNovoCurso.set(false);
   }
 
-  salvarNovoCurso(titulo: string, descricao: string, vinculo: string): void {
-    if (!titulo.trim()) return;
+  async salvarNovoCurso(
+    titulo: string,
+    descricao: string,
+    categoria: string,
+    vinculo: string,
+    textoCertificado: string
+  ): Promise<void> {
+    if (!titulo.trim()) {
+      this.exibirErro('Por favor, informe o título do curso.');
+      return;
+    }
 
-    const vinculoVal = vinculo === 'nenhum' ? null : vinculo;
-    const novoId = 'curso-' + Date.now();
-    const novoCurso: Curso = {
-      id: novoId,
-      titulo: titulo.trim(),
-      descricao: descricao.trim() || 'Curso de capacitação técnica profissional.',
-      moduloPredialVinculado: vinculoVal,
-      modulos: [
-        {
-          id: 'mod-' + Date.now(),
-          titulo: 'Módulo 1 — Introdução e Objetivos',
-          linkVimeo: '',
-          duracaoEstimada: '30 min',
-          materiais: []
-        }
-      ],
-      perguntas: [],
-      textoValidadeCertificado: `Certificado de capacitação técnica em ${titulo.trim()}. Carga horária total estimada: 10 horas.`
-    };
+    this.salvando.set(true);
+    try {
+      const vinculoVal = vinculo === 'nenhum' ? null : vinculo.trim();
+      const res = await this.supabaseService.criarCurso({
+        titulo: titulo.trim(),
+        descricao: descricao.trim() || undefined,
+        categoria: categoria.trim() || undefined,
+        modulo_predial_vinculado: vinculoVal,
+        texto_certificado: textoCertificado.trim() || undefined,
+      });
 
-    this.cursos.update(list => [...list, novoCurso]);
-    this.criandoNovoCurso.set(false);
-    this.cursoSelecionadoId.set(novoId);
-    this.secaoAtiva.set('modulos');
+      if (res.error) {
+        this.exibirErro('Erro ao criar curso: ' + res.error.message);
+        return;
+      }
+
+      this.exibirSucesso('Curso criado com sucesso!');
+      this.criandoNovoCurso.set(false);
+      await this.carregarCursos();
+
+      if (res.data?.id) {
+        this.cursoSelecionadoId.set(res.data.id);
+        this.secaoAtiva.set('modulos');
+      }
+    } catch (e: any) {
+      this.exibirErro('Erro inesperado ao criar curso: ' + (e?.message || e));
+    } finally {
+      this.salvando.set(false);
+    }
   }
 
-  removerCurso(id: string): void {
-    this.cursos.update(list => list.filter(c => c.id !== id));
-    if (this.cursoSelecionadoId() === id) {
-      this.cursoSelecionadoId.set(null);
+  async confirmarExclusaoCurso(id: string): Promise<void> {
+    try {
+      const res = await this.supabaseService.excluirCurso(id);
+      if (res.error) {
+        this.exibirErro('Erro ao excluir curso: ' + res.error.message);
+        return;
+      }
+
+      this.exibirSucesso('Curso e seus módulos excluídos com sucesso.');
+      this.cursoExcluirId.set(null);
+      if (this.cursoSelecionadoId() === id) {
+        this.cursoSelecionadoId.set(null);
+      }
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.exibirErro('Erro ao excluir curso: ' + (e?.message || e));
+    }
+  }
+
+  async toggleStatusCurso(curso: CursoAdmin): Promise<void> {
+    try {
+      const novoStatus = !curso.ativo;
+      const res = await this.supabaseService.atualizarCurso(curso.id, { ativo: novoStatus });
+      if (res.error) {
+        this.exibirErro('Erro ao alterar status: ' + res.error.message);
+        return;
+      }
+      this.exibirSucesso(`Curso ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`);
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.exibirErro('Erro ao alterar status do curso.');
     }
   }
 
   selecionarCursoParaEdicao(id: string): void {
     this.cursoSelecionadoId.set(id);
     this.secaoAtiva.set('modulos');
+    this.cancelarFormularioModulo();
   }
 
   voltarParaListaCursos(): void {
     this.cursoSelecionadoId.set(null);
+    this.cancelarFormularioModulo();
   }
 
-  setSecaoAtiva(secao: 'modulos' | 'avaliacao' | 'certificado' | 'alunos'): void {
+  setSecaoAtiva(secao: 'modulos' | 'certificado' | 'alunos' | 'dados'): void {
     this.secaoAtiva.set(secao);
+    if (secao === 'alunos') {
+      this.carregarAlunosMatriculados();
+    }
   }
 
-  adicionarModulo(): void {
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
+  // ==========================================
+  // GESTÃO DE MÓDULOS / AULAS
+  // ==========================================
 
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        const novoNum = c.modulos.length + 1;
-        const novo: ModuloCurso = {
-          id: 'mod-' + Date.now(),
-          titulo: `Módulo ${novoNum} — Novo Tópico Técnico`,
-          linkVimeo: '',
-          duracaoEstimada: '30 min',
-          materiais: []
-        };
-        return { ...c, modulos: [...c.modulos, novo] };
-      }
-      return c;
-    }));
-  }
-
-  removerModulo(moduloId: string): void {
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return { ...c, modulos: c.modulos.filter(m => m.id !== moduloId) };
-      }
-      return c;
-    }));
-  }
-
-  atualizarTituloModulo(moduloId: string, event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return { ...c, modulos: c.modulos.map(m => m.id === moduloId ? { ...m, titulo: val } : m) };
-      }
-      return c;
-    }));
-  }
-
-  atualizarDuracaoModulo(moduloId: string, event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return { ...c, modulos: c.modulos.map(m => m.id === moduloId ? { ...m, duracaoEstimada: val } : m) };
-      }
-      return c;
-    }));
-  }
-
-  atualizarLinkVimeoModulo(moduloId: string, event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return { ...c, modulos: c.modulos.map(m => m.id === moduloId ? { ...m, linkVimeo: val } : m) };
-      }
-      return c;
-    }));
-  }
-
-  adicionarMaterial(moduloId: string, nomeArquivo: string): void {
-    if (!nomeArquivo.trim()) return;
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return {
-          ...c,
-          modulos: c.modulos.map(m => {
-            if (m.id === moduloId) {
-              return {
-                ...m,
-                materiais: [...m.materiais, { id: 'mat-' + Date.now(), nome: nomeArquivo.trim() }]
-              };
-            }
-            return m;
-          })
-        };
-      }
-      return c;
-    }));
-  }
-
-  removerMaterial(moduloId: string, materialId: string): void {
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return {
-          ...c,
-          modulos: c.modulos.map(m => {
-            if (m.id === moduloId) {
-              return {
-                ...m,
-                materiais: m.materiais.filter(mat => mat.id !== materialId)
-              };
-            }
-            return m;
-          })
-        };
-      }
-      return c;
-    }));
-  }
-
-  adicionarPergunta(): void {
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    const nova: PerguntaAvaliacao = {
-      id: 'perg-' + Date.now(),
-      enunciado: '',
-      alternativas: ['', '', '', ''],
-      respostaCorretaIndex: 0
+  abrirModalCriarModulo(): void {
+    const totalExistentes = this.cursoAtivo()?.modulos?.length || 0;
+    this.moduloFormDados = {
+      titulo: '',
+      descricao: '',
+      duracao: '',
+      vimeo_id: '',
+      ordem: totalExistentes + 1,
     };
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return { ...c, perguntas: [...c.perguntas, nova] };
-      }
-      return c;
-    }));
+    this.editandoModuloId.set(null);
+    this.criandoModulo.set(true);
   }
 
-  removerPergunta(perguntaId: string): void {
+  iniciarEdicaoModulo(modulo: ModuloCursoAdmin): void {
+    this.moduloFormDados = {
+      titulo: modulo.titulo,
+      descricao: modulo.descricao || '',
+      duracao: modulo.duracao || '',
+      vimeo_id: modulo.vimeo_id || '',
+      ordem: modulo.ordem,
+    };
+    this.criandoModulo.set(false);
+    this.editandoModuloId.set(modulo.id);
+  }
+
+  cancelarFormularioModulo(): void {
+    this.criandoModulo.set(false);
+    this.editandoModuloId.set(null);
+    this.moduloExcluirId.set(null);
+  }
+
+  async salvarModulo(): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
 
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return { ...c, perguntas: c.perguntas.filter(p => p.id !== perguntaId) };
+    if (!this.moduloFormDados.titulo.trim()) {
+      this.exibirErro('Por favor, informe o título da aula.');
+      return;
+    }
+
+    this.salvando.set(true);
+    try {
+      const editId = this.editandoModuloId();
+      if (editId) {
+        // Atualizar módulo existente
+        const res = await this.supabaseService.atualizarModuloCurso(editId, {
+          titulo: this.moduloFormDados.titulo.trim(),
+          descricao: this.moduloFormDados.descricao.trim() || '',
+          duracao: this.moduloFormDados.duracao.trim() || '',
+          vimeo_id: this.moduloFormDados.vimeo_id.trim() || '',
+          ordem: this.moduloFormDados.ordem || 1,
+        });
+
+        if (res.error) {
+          this.exibirErro('Erro ao atualizar aula: ' + res.error.message);
+          return;
+        }
+
+        this.exibirSucesso('Aula atualizada com sucesso!');
+      } else {
+        // Criar novo módulo
+        const res = await this.supabaseService.criarModuloCurso({
+          curso_id: cId,
+          titulo: this.moduloFormDados.titulo.trim(),
+          descricao: this.moduloFormDados.descricao.trim() || undefined,
+          duracao: this.moduloFormDados.duracao.trim() || undefined,
+          vimeo_id: this.moduloFormDados.vimeo_id.trim() || undefined,
+          ordem: this.moduloFormDados.ordem || 1,
+        });
+
+        if (res.error) {
+          this.exibirErro('Erro ao criar aula: ' + res.error.message);
+          return;
+        }
+
+        this.exibirSucesso('Aula cadastrada com sucesso!');
       }
-      return c;
-    }));
+
+      this.cancelarFormularioModulo();
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.exibirErro('Erro ao salvar aula: ' + (e?.message || e));
+    } finally {
+      this.salvando.set(false);
+    }
   }
 
-  atualizarEnunciado(perguntaId: string, event: Event): void {
-    const val = (event.target as HTMLTextAreaElement).value;
+  async confirmarExclusaoModulo(moduloId: string): Promise<void> {
+    try {
+      const res = await this.supabaseService.excluirModuloCurso(moduloId);
+      if (res.error) {
+        this.exibirErro('Erro ao excluir aula: ' + res.error.message);
+        return;
+      }
+      this.exibirSucesso('Aula excluída com sucesso!');
+      this.moduloExcluirId.set(null);
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.exibirErro('Erro ao excluir aula: ' + (e?.message || e));
+    }
+  }
+
+  // ==========================================
+  // CONFIGURAÇÃO DO CERTIFICADO & DADOS GERAIS
+  // ==========================================
+
+  async salvarTextoCertificado(texto: string): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
 
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return {
-          ...c,
-          perguntas: c.perguntas.map(p => p.id === perguntaId ? { ...p, enunciado: val } : p)
-        };
+    this.salvando.set(true);
+    try {
+      const res = await this.supabaseService.atualizarCurso(cId, {
+        texto_certificado: texto.trim() || null,
+      });
+
+      if (res.error) {
+        this.exibirErro('Erro ao salvar configuração do certificado: ' + res.error.message);
+        return;
       }
-      return c;
-    }));
+
+      this.exibirSucesso('Configurações do certificado salvas com sucesso!');
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.exibirErro('Erro ao salvar certificado: ' + (e?.message || e));
+    } finally {
+      this.salvando.set(false);
+    }
   }
 
-  atualizarAlternativa(perguntaId: string, indexAlt: number, event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
+  async salvarDadosGeraisCurso(
+    titulo: string,
+    descricao: string,
+    categoria: string,
+    vinculo: string
+  ): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
 
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return {
-          ...c,
-          perguntas: c.perguntas.map(p => {
-            if (p.id === perguntaId) {
-              const novasAlts = [...p.alternativas];
-              novasAlts[indexAlt] = val;
-              return { ...p, alternativas: novasAlts };
-            }
-            return p;
-          })
-        };
+    if (!titulo.trim()) {
+      this.exibirErro('Por favor, informe o título do curso.');
+      return;
+    }
+
+    this.salvando.set(true);
+    try {
+      const vinculoVal = vinculo === 'nenhum' ? null : vinculo.trim();
+      const res = await this.supabaseService.atualizarCurso(cId, {
+        titulo: titulo.trim(),
+        descricao: descricao.trim() || null,
+        categoria: categoria.trim() || null,
+        modulo_predial_vinculado: vinculoVal,
+      });
+
+      if (res.error) {
+        this.exibirErro('Erro ao atualizar dados do curso: ' + res.error.message);
+        return;
       }
-      return c;
-    }));
+
+      this.exibirSucesso('Dados gerais do curso atualizados com sucesso!');
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.exibirErro('Erro ao atualizar dados: ' + (e?.message || e));
+    } finally {
+      this.salvando.set(false);
+    }
   }
 
-  definirGabarito(perguntaId: string, indexAlt: number): void {
+  // ==========================================
+  // ALUNOS MATRICULADOS
+  // ==========================================
+
+  async carregarAlunosMatriculados(): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
 
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return {
-          ...c,
-          perguntas: c.perguntas.map(p => p.id === perguntaId ? { ...p, respostaCorretaIndex: indexAlt } : p)
-        };
-      }
-      return c;
-    }));
+    this.carregandoAlunos.set(true);
+    try {
+      const dados = await this.supabaseService.listarMatriculadosDoCurso(cId);
+      this.alunosMatriculados.set(dados);
+    } catch (e: any) {
+      console.warn('Erro ao carregar matriculados:', e);
+      this.alunosMatriculados.set([]);
+    } finally {
+      this.carregandoAlunos.set(false);
+    }
   }
 
-  getLetraAlternativa(idx: number): string {
-    return ['A', 'B', 'C', 'D', 'E'][idx] || `${idx + 1}`;
+  formatarData(dataStr?: string | null): string {
+    if (!dataStr) return '—';
+    try {
+      const d = new Date(dataStr);
+      if (isNaN(d.getTime())) return dataStr;
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch {
+      return dataStr;
+    }
   }
 
-  atualizarTextoValidade(event: Event): void {
-    const val = (event.target as HTMLTextAreaElement).value;
-    const cId = this.cursoSelecionadoId();
-    if (!cId) return;
-
-    this.cursos.update(list => list.map(c => {
-      if (c.id === cId) {
-        return { ...c, textoValidadeCertificado: val };
+  private exibirSucesso(msg: string): void {
+    this.mensagemSucesso.set(msg);
+    this.mensagemErro.set(null);
+    setTimeout(() => {
+      if (this.mensagemSucesso() === msg) {
+        this.mensagemSucesso.set(null);
       }
-      return c;
-    }));
+    }, 4000);
+  }
+
+  private exibirErro(msg: string): void {
+    this.mensagemErro.set(msg);
+    this.mensagemSucesso.set(null);
   }
 }

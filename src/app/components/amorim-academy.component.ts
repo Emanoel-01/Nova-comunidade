@@ -1,10 +1,12 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
 
 @Component({
   selector: 'app-amorim-academy',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <div class="w-full bg-slate-50 py-12 sm:py-16 px-4 sm:px-6 lg:px-8 space-y-20 sm:space-y-28">
       <div class="max-w-7xl mx-auto space-y-20 sm:space-y-28">
@@ -143,6 +145,89 @@ import { CommonModule } from '@angular/common';
                 <strong class="font-bold text-slate-200">O acesso à Comunidade Business 4.0 está incluído</strong> para todos os matriculados no curso.
               </p>
             </div>
+          </div>
+        </section>
+
+        <!-- Seção: Comunidade Business 4.0 -->
+        <section class="space-y-12">
+          <div class="text-center max-w-3xl mx-auto space-y-4">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-50 border border-sky-200/80 text-sky-700 text-xs sm:text-sm font-semibold tracking-wide shadow-sm">
+              <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+              </svg>
+              <span>O que continua depois do curso</span>
+            </div>
+
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Comunidade Business 4.0
+            </h2>
+
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+              O curso ensina a técnica. A Comunidade mantém você conectado ao mercado — com ferramentas reais, oportunidades de trabalho e um espaço de troca entre profissionais que emitem laudos todos os dias.
+            </p>
+          </div>
+
+          <!-- Grid de 6 cards com as ferramentas reais -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Fórum Técnico</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">Tire dúvidas e troque experiências com outros profissionais que já emitem laudos no dia a dia.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Mural de Vagas</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">Oportunidades reais de trabalho publicadas para a rede — freelas, vagas fixas e projetos.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Biblioteca de Materiais</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">Modelos, referências técnicas e materiais de apoio prontos para uso na sua rotina de laudos.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Agenda de Eventos</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">Encontros, lives e capacitações continuadas para quem quer se manter atualizado.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center border border-violet-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Agentes de IA</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">Ferramentas de automação para reajuste de contratos e análise de custos e viabilidade de obras.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center border border-slate-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5" /></svg>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Incluída no Curso</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">O acesso completo à Comunidade já está incluído para todos os matriculados no Curso Predial 4.0 — sem custo adicional.</p>
+            </div>
+
+          </div>
+
+          <!-- CTA da seção -->
+          <div class="flex justify-center pt-2">
+            <a
+              routerLink="/comunidade"
+              class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-lg shadow-sky-600/20 transition-all duration-200 cursor-pointer text-sm sm:text-base"
+            >
+              <span>Conhecer a Comunidade</span>
+            </a>
           </div>
         </section>
 
@@ -478,7 +563,7 @@ import { CommonModule } from '@angular/common';
           <!-- Botão CTA Mentor Anjo -->
           <div class="flex justify-center pt-2">
             <a
-              href="https://wa.me/5581991298803"
+              [href]="linkWhatsapp"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all duration-200 cursor-pointer text-sm sm:text-base"
@@ -497,6 +582,7 @@ import { CommonModule } from '@angular/common';
 })
 export class AmorimAcademyComponent {
   readonly mostrarObjetivos = signal(false);
+  readonly linkWhatsapp = gerarLinkWhatsapp('academy');
 
   toggleObjetivos(): void {
     this.mostrarObjetivos.update(v => !v);

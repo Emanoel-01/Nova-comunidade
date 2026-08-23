@@ -6,6 +6,7 @@ import { BibliotecaPromptsComponent } from './agentes/biblioteca-prompts.compone
 import { SkillsCatalogoComponent } from './agentes/skills-catalogo.component';
 import { ChecklistLicitacaoComponent } from './agentes/checklist-licitacao.component';
 import { LevantamentoQuantitativosComponent } from './agentes/levantamento-quantitativos.component';
+import { CustosViabilidadeComponent } from './agentes/custos-viabilidade.component';
 
 export type FerramentaAtiva =
   | 'lista'
@@ -13,7 +14,8 @@ export type FerramentaAtiva =
   | 'biblioteca-prompts'
   | 'skills-catalogo'
   | 'checklist-licitacao'
-  | 'levantamento-quantitativos';
+  | 'levantamento-quantitativos'
+  | 'custos-viabilidade';
 
 @Component({
   selector: 'app-comunidade-agentes',
@@ -24,7 +26,8 @@ export type FerramentaAtiva =
     BibliotecaPromptsComponent,
     SkillsCatalogoComponent,
     ChecklistLicitacaoComponent,
-    LevantamentoQuantitativosComponent
+    LevantamentoQuantitativosComponent,
+    CustosViabilidadeComponent
   ],
   template: `
     <div class="space-y-6">
@@ -105,7 +108,7 @@ export type FerramentaAtiva =
             <!-- Contador de Ferramentas -->
             <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
               <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-                5
+                6
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos no Catálogo</div>
@@ -117,7 +120,7 @@ export type FerramentaAtiva =
           </div>
         </div>
 
-        <!-- 2. Grid de Cards de Agentes (Sempre exibe os 5 cards) -->
+        <!-- 2. Grid de Cards de Agentes (Sempre exibe os 6 cards) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
           <!-- CARD 1: REAJUSTE DE CONTRATO -->
@@ -410,6 +413,65 @@ export type FerramentaAtiva =
             </div>
           </div>
 
+          <!-- CARD 6: CUSTOS & VIABILIDADE IMOBILIÁRIA (NBR 12.721) -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-amber-200 shadow-sm hover:shadow-xl hover:border-amber-500 transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
+            <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge Condicional -->
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-amber-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+
+                @if (temPermissao('custos-viabilidade')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
+              </div>
+
+              <!-- Conteúdo -->
+              <div class="space-y-2">
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-amber-600 transition-colors">
+                  Custos & Viabilidade Imobiliária
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Estudo de viabilidade NBR 12.721, orçamentação pelo CUB Sinduscon, VGV, extracontratuais, matriz de sensibilidade e TIR/VPL.
+                </p>
+              </div>
+
+              <!-- Tags de Recursos -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">NBR 12.721</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">CUB Sinduscon</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">TIR / VPL</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Sensibilidade</span>
+              </div>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div class="pt-6">
+              <button
+                type="button"
+                (click)="abrirFerramenta('custos-viabilidade')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
+              >
+                <span>Abrir Estudo de Viabilidade</span>
+                <svg class="w-4 h-4 text-amber-400 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
         </div>
 
       } @else if (ferramentaAtiva() === 'reajuste-contrato') {
@@ -537,6 +599,31 @@ export type FerramentaAtiva =
           <app-levantamento-quantitativos></app-levantamento-quantitativos>
         </div>
 
+      } @else if (ferramentaAtiva() === 'custos-viabilidade') {
+
+        <!-- 8. Visualização do Módulo: Custos & Viabilidade Imobiliária -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: Custos & Viabilidade Imobiliária (NBR 12.721)
+            </span>
+          </div>
+
+          <!-- Componente de Custos & Viabilidade -->
+          <app-custos-viabilidade></app-custos-viabilidade>
+        </div>
+
       }
 
     </div>
@@ -561,7 +648,8 @@ export class ComunidadeAgentesComponent implements OnInit {
       'biblioteca-prompts',
       'skills-catalogo',
       'checklist-licitacao',
-      'levantamento-quantitativos'
+      'levantamento-quantitativos',
+      'custos-viabilidade'
     ];
     try {
       const resultados = await Promise.all(
@@ -609,6 +697,8 @@ export class ComunidadeAgentesComponent implements OnInit {
         return 'Checklist de Licitação';
       case 'levantamento-quantitativos':
         return 'Levantamento de Quantitativos';
+      case 'custos-viabilidade':
+        return 'Custos & Viabilidade Imobiliária';
       default:
         return 'Ferramenta de Agente';
     }

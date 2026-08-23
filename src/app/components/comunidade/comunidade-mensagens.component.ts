@@ -7,7 +7,139 @@ import { SupabaseService } from '../../../services/supabase.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-6 relative">
+
+      <!-- Modal / Overlay: Iniciar Nova Conversa -->
+      @if (modalNovaConversaAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div
+            class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] animate-scaleUp"
+            (click)="$event.stopPropagation()"
+          >
+            <!-- Cabeçalho do Modal -->
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-base font-black text-slate-900">Iniciar Nova Conversa</h4>
+                  <p class="text-xs text-slate-500">Busque colegas peritos e engenheiros para conversar</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                (click)="fecharModalNovaConversa()"
+                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+                title="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Campo de Busca de Membros -->
+            <div class="p-5 border-b border-slate-100 space-y-2">
+              <div class="relative">
+                <input
+                  type="text"
+                  [value]="buscaMembroTexto()"
+                  (input)="onBuscaMembroInput($event)"
+                  placeholder="Digite o nome do membro (ex: Carlos, Mariana)..."
+                  class="w-full bg-slate-50 text-sm text-slate-800 placeholder-slate-400 rounded-2xl pl-10 pr-4 py-3 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden transition-all"
+                  autofocus
+                />
+                <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              @if (erroModal()) {
+                <p class="text-xs text-rose-600 font-semibold px-1">{{ erroModal() }}</p>
+              }
+            </div>
+
+            <!-- Lista de Resultados de Membros -->
+            <div class="p-4 flex-1 overflow-y-auto min-h-[220px] max-h-[360px] space-y-2 divide-y divide-slate-50">
+              @if (buscandoMembros()) {
+                <div class="py-8 text-center space-y-2">
+                  <span class="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin inline-block"></span>
+                  <p class="text-xs text-slate-400">Buscando membros da comunidade...</p>
+                </div>
+              } @else if (!buscaMembroTexto().trim()) {
+                <div class="py-10 text-center space-y-2">
+                  <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 mx-auto flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <p class="text-xs font-bold text-slate-700">Digite para buscar</p>
+                  <p class="text-[11px] text-slate-400 max-w-xs mx-auto">
+                    Digite ao menos 2 letras do nome para encontrar membros ativos na comunidade.
+                  </p>
+                </div>
+              } @else if (membrosEncontrados().length === 0) {
+                <div class="py-10 text-center space-y-2">
+                  <p class="text-xs font-bold text-slate-700">Nenhum membro encontrado</p>
+                  <p class="text-[11px] text-slate-400">
+                    Não encontramos ninguém com "{{ buscaMembroTexto() }}". Tente outro nome.
+                  </p>
+                </div>
+              } @else {
+                @for (membro of membrosEncontrados(); track membro.id) {
+                  <div
+                    class="pt-2 first:pt-0 flex items-center justify-between gap-3 p-3 rounded-2xl hover:bg-slate-50 transition-colors"
+                  >
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-10 h-10 rounded-2xl bg-[#132A41] text-[#E59866] font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                        {{ getIniciais(membro.full_name) }}
+                      </div>
+                      <div class="min-w-0">
+                        <h5 class="text-xs sm:text-sm font-black text-slate-900 truncate">
+                          {{ membro.full_name }}
+                        </h5>
+                        <p class="text-[11px] text-slate-500 truncate">
+                          {{ membro.professional_title || 'Membro da Comunidade' }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      [disabled]="iniciandoComId() === membro.id"
+                      (click)="selecionarMembroParaConversa(membro)"
+                      class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 text-white font-black text-xs transition-all shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      @if (iniciandoComId() === membro.id) {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Abrindo...</span>
+                      } @else {
+                        <span>Conversar</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Rodapé do Modal -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+              <button
+                type="button"
+                (click)="fecharModalNovaConversa()"
+                class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Feedback Inline (Erros/Avisos) -->
       @if (mensagemFeedback()) {
@@ -51,15 +183,28 @@ import { SupabaseService } from '../../../services/supabase.service';
             </p>
           </div>
 
-          <!-- Total de Mensagens Não Lidas -->
-          <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-              {{ totalNaoLidas() }}
-            </div>
-            <div>
-              <div class="text-xs font-bold text-white uppercase tracking-wider">Mensagens Pendentes</div>
-              <div class="text-[11px] text-indigo-200">
-                {{ conversas().length }} conversas ativas
+          <!-- Total de Mensagens Não Lidas + Ação Rápida Nova Conversa -->
+          <div class="flex items-center gap-3 shrink-0 self-start md:self-auto">
+            <button
+              type="button"
+              (click)="abrirModalNovaConversa()"
+              class="px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-black transition-all shadow-md shadow-indigo-900/40 flex items-center gap-2 cursor-pointer border border-indigo-400/30"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Nova Conversa</span>
+            </button>
+
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs flex items-center gap-3">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-base sm:text-lg shadow-inner">
+                {{ totalNaoLidas() }}
+              </div>
+              <div>
+                <div class="text-[11px] sm:text-xs font-bold text-white uppercase tracking-wider">Pendentes</div>
+                <div class="text-[10px] sm:text-[11px] text-indigo-200">
+                  {{ conversas().length }} conversas
+                </div>
               </div>
             </div>
           </div>
@@ -78,22 +223,37 @@ import { SupabaseService } from '../../../services/supabase.service';
           class="w-full md:w-80 lg:w-96 shrink-0 bg-white rounded-3xl border border-slate-200 shadow-xs flex flex-col overflow-hidden md:flex!"
         >
           
-          <!-- Topo da Lista: Busca de Conversas -->
+          <!-- Topo da Lista: Busca de Conversas + Botão Nova Conversa -->
           <div class="p-4 border-b border-slate-100 space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-black text-slate-800 uppercase tracking-wider">Conversas Recentes</span>
-              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                {{ conversasFiltradas().length }}
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-slate-800 uppercase tracking-wider">Conversas</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  {{ conversasFiltradas().length }}
+                </span>
+              </div>
+
+              <!-- Botão Nova Conversa no topo da lista -->
+              <button
+                type="button"
+                (click)="abrirModalNovaConversa()"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-black transition-colors cursor-pointer"
+                title="Iniciar nova conversa com um membro"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Nova</span>
+              </button>
             </div>
 
-            <!-- Campo de Busca -->
+            <!-- Campo de Busca de Conversas Abertas -->
             <div class="relative">
               <input
                 type="text"
                 [value]="buscaTexto()"
                 (input)="onBuscaInput($event)"
-                placeholder="Buscar conversa..."
+                placeholder="Filtrar conversas..."
                 class="w-full bg-slate-50 text-xs text-slate-800 placeholder-slate-400 rounded-xl pl-9 pr-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden transition-all"
               />
               <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,20 +283,32 @@ import { SupabaseService } from '../../../services/supabase.service';
                 </div>
               </div>
             } @else if (conversasFiltradas().length === 0) {
-              <div class="p-8 text-center space-y-2">
+              <div class="p-8 text-center space-y-3">
                 <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
-                <p class="text-xs font-bold text-slate-700">Nenhuma conversa encontrada</p>
-                <p class="text-[11px] text-slate-400">
-                  @if (buscaTexto()) {
-                    Verifique o termo buscado ou limpe o filtro.
-                  } @else {
-                    Suas conversas diretas com colegas aparecerão aqui.
-                  }
-                </p>
+                <div>
+                  <p class="text-xs font-bold text-slate-700">Nenhuma conversa encontrada</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">
+                    @if (buscaTexto()) {
+                      Verifique o termo buscado ou limpe o filtro.
+                    } @else {
+                      Inicie uma conversa direta com qualquer membro.
+                    }
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="abrirModalNovaConversa()"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Iniciar Conversa</span>
+                </button>
               </div>
             } @else {
               @for (conv of conversasFiltradas(); track conv.id) {
@@ -155,7 +327,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                     </div>
                   </div>
 
-                  <!-- Conteúdo Central: Nome + Última Mensagem -->
+                  <!-- Conteúdo Central: Nome +障 Última Mensagem -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-1 mb-0.5">
                       <h5 class="text-xs font-black text-slate-900 truncate">
@@ -263,7 +435,7 @@ import { SupabaseService } from '../../../services/supabase.service';
               } @else if (mensagens().length === 0) {
                 <div class="p-8 text-center space-y-1">
                   <p class="text-xs font-bold text-slate-700">Nenhuma mensagem ainda.</p>
-                  <p class="text-[11px] text-slate-400">Envie a primeira mensagem para iniciar a conversa.</p>
+                  <p class="text-[11px] text-slate-400">Envie a primeira mensagem para iniciar a conversa com {{ conv.nome }}.</p>
                 </div>
               } @else {
                 @for (msg of mensagens(); track msg.id) {
@@ -360,15 +532,16 @@ import { SupabaseService } from '../../../services/supabase.service';
               </div>
 
               <div class="pt-2 flex flex-wrap justify-center gap-2">
-                @for (conv of conversas(); track conv.id) {
-                  <button
-                    type="button"
-                    (click)="selecionarConversa(conv.id)"
-                    class="px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-xs font-bold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer shadow-2xs"
-                  >
-                    Conversar com {{ conv.nome }}
-                  </button>
-                }
+                <button
+                  type="button"
+                  (click)="abrirModalNovaConversa()"
+                  class="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Iniciar Nova Conversa</span>
+                </button>
               </div>
             </div>
 
@@ -394,6 +567,15 @@ export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
   readonly conversaSelecionadaId = signal<string | null>(null);
   readonly buscaTexto = signal<string>('');
   readonly textoMensagem = signal<string>('');
+
+  // Modal de Nova Conversa
+  readonly modalNovaConversaAberto = signal<boolean>(false);
+  readonly buscaMembroTexto = signal<string>('');
+  readonly buscandoMembros = signal<boolean>(false);
+  readonly membrosEncontrados = signal<any[]>([]);
+  readonly iniciandoComId = signal<string | null>(null);
+  readonly erroModal = signal<string | null>(null);
+  private debounceTimer: any = null;
 
   readonly mensagemFeedback = signal<string | null>(null);
   readonly tipoFeedback = signal<'sucesso' | 'erro'>('sucesso');
@@ -473,6 +655,80 @@ export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
 
   fecharConversaMobile(): void {
     this.conversaSelecionadaId.set(null);
+  }
+
+  abrirModalNovaConversa(): void {
+    this.buscaMembroTexto.set('');
+    this.membrosEncontrados.set([]);
+    this.erroModal.set(null);
+    this.modalNovaConversaAberto.set(true);
+  }
+
+  fecharModalNovaConversa(): void {
+    this.modalNovaConversaAberto.set(false);
+    this.buscaMembroTexto.set('');
+    this.membrosEncontrados.set([]);
+    this.erroModal.set(null);
+  }
+
+  onBuscaMembroInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const termo = target.value;
+    this.buscaMembroTexto.set(termo);
+    this.erroModal.set(null);
+
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    if (!termo.trim()) {
+      this.membrosEncontrados.set([]);
+      this.buscandoMembros.set(false);
+      return;
+    }
+
+    this.buscandoMembros.set(true);
+    this.debounceTimer = setTimeout(async () => {
+      try {
+        const resultados = await this.supabaseService.buscarMembrosParaConversa(termo);
+        this.membrosEncontrados.set(resultados);
+      } catch (e) {
+        console.warn('Erro na busca de membros:', e);
+      } finally {
+        this.buscandoMembros.set(false);
+      }
+    }, 300);
+  }
+
+  async selecionarMembroParaConversa(membro: any): Promise<void> {
+    if (!membro?.id || this.iniciandoComId()) return;
+
+    this.iniciandoComId.set(membro.id);
+    this.erroModal.set(null);
+
+    try {
+      const { conversaId, error } = await this.supabaseService.obterOuCriarConversa(membro.id);
+
+      if (error || !conversaId) {
+        this.erroModal.set('Não foi possível iniciar a conversa. Tente novamente.');
+        this.iniciandoComId.set(null);
+        return;
+      }
+
+      // Fecha o modal
+      this.fecharModalNovaConversa();
+
+      // Recarrega a lista de conversas e seleciona a conversa aberta
+      await this.carregarConversas();
+      await this.selecionarConversa(conversaId);
+
+      this.tipoFeedback.set('sucesso');
+      this.mensagemFeedback.set(`Conversa com ${membro.full_name} iniciada com sucesso.`);
+    } catch (e: any) {
+      this.erroModal.set('Exceção ao criar conversa: ' + (e?.message || e));
+    } finally {
+      this.iniciandoComId.set(null);
+    }
   }
 
   onBuscaInput(event: Event): void {

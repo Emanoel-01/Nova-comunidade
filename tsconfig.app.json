@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist/out-tsc",
     "noEmit": false,
+    "sourceMap": true,
     "types": []
   },
   "files": [

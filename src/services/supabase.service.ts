@@ -6,18 +6,44 @@ import { environment } from '../environments/environment';
 export class SupabaseService {
   public readonly client: SupabaseClient;
 
+  private authCallbacks: Array<(session: Session | null) => void> = [];
+
   constructor() {
-    this.client = createClient(environment.supabaseUrl || 'https://placeholder.supabase.co', environment.supabaseAnonKey || 'placeholder-key');
+    this.client = createClient(
+      environment.supabaseUrl || 'https://qtrypzzcjebvfcihiynt.supabase.co',
+      environment.supabaseAnonKey || 'placeholder-key'
+    );
+  }
+
+  isConfigurado(): boolean {
+    return (
+      !!environment.supabaseUrl &&
+      environment.supabaseUrl !== 'https://placeholder.supabase.co' &&
+      !!environment.supabaseAnonKey &&
+      environment.supabaseAnonKey !== 'placeholder-key' &&
+      environment.supabaseAnonKey !== ''
+    );
   }
 
   async getSession(): Promise<Session | null> {
-    const { data } = await this.client.auth.getSession();
-    return data.session;
+    try {
+      const { data } = await this.client.auth.getSession();
+      if (data?.session) {
+        return data.session;
+      }
+    } catch (err) {
+      console.warn('Aviso ao buscar sessão Supabase:', err);
+    }
+    return null;
   }
 
   async signInWithPassword(email: string, password: string): Promise<{ error: Error | null }> {
-    const { error } = await this.client.auth.signInWithPassword({ email, password });
-    return { error };
+    try {
+      const { error } = await this.client.auth.signInWithPassword({ email, password });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
   }
 
   async resetPasswordForEmail(email: string): Promise<{ error: Error | null }> {
@@ -39,11 +65,29 @@ export class SupabaseService {
   }
 
   async signOut(): Promise<void> {
-    await this.client.auth.signOut();
+    try {
+      await this.client.auth.signOut();
+    } catch {}
+    this.authCallbacks.forEach((cb) => {
+      try {
+        cb(null);
+      } catch {}
+    });
   }
 
   onAuthStateChange(callback: (session: Session | null) => void) {
-    return this.client.auth.onAuthStateChange((_event, session) => callback(session));
+    this.authCallbacks.push(callback);
+    const sub = this.client.auth.onAuthStateChange((_event, session) => callback(session));
+    return {
+      data: {
+        subscription: {
+          unsubscribe: () => {
+            this.authCallbacks = this.authCallbacks.filter((cb) => cb !== callback);
+            sub?.data?.subscription?.unsubscribe?.();
+          },
+        },
+      },
+    };
   }
 
   async getProfissional(userId: string): Promise<any | null> {
@@ -497,6 +541,7 @@ export class SupabaseService {
     try {
       const session = await this.getSession();
       if (!session?.user) return false;
+
       const { data, error } = await this.client
         .from('permissoes_acesso')
         .select('id, validade')
@@ -505,11 +550,13 @@ export class SupabaseService {
         .eq('modulo', modulo)
         .eq('liberado', true)
         .limit(1);
+
       if (error || !data || data.length === 0) return false;
       const validade = data[0].validade;
       if (validade && new Date(validade) < new Date()) return false;
       return true;
-    } catch {
+    } catch (e) {
+      console.warn('Erro ao verificar permissão de módulo:', e);
       return false;
     }
   }
@@ -532,6 +579,136 @@ export class SupabaseService {
       return data || [];
     } catch (e: any) {
       console.warn('Exceção ao listar vagas:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTodasVagas(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('vagas')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar todas as vagas (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar todas as vagas (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarVaga(vaga: {
+    titulo: string;
+    empresa?: string;
+    descricao: string;
+    localizacao?: string;
+    tipo_contrato?: string;
+    remuneracao?: string;
+    requisitos?: string;
+    beneficios?: string;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const payload: any = {
+        titulo: vaga.titulo,
+        empresa: vaga.empresa || '',
+        descricao: vaga.descricao || '',
+        localizacao: vaga.localizacao || '',
+        tipo_contrato: vaga.tipo_contrato || 'CLT',
+        ativa: true
+      };
+      if (vaga.remuneracao !== undefined) payload.remuneracao = vaga.remuneracao;
+      if (vaga.requisitos !== undefined) payload.requisitos = vaga.requisitos;
+      if (vaga.beneficios !== undefined) payload.beneficios = vaga.beneficios;
+
+      const { data, error } = await this.client.from('vagas').insert(payload).select().single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarVaga(
+    id: string,
+    dados: Partial<{
+      titulo: string;
+      empresa: string;
+      descricao: string;
+      localizacao: string;
+      tipo_contrato: string;
+      remuneracao: string;
+      requisitos: string;
+      beneficios: string;
+      ativa: boolean;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('vagas').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirVaga(id: string): Promise<{ error: Error | null }> {
+    try {
+      await this.client.from('vagas_candidaturas').delete().eq('vaga_id', id);
+      const { error } = await this.client.from('vagas').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarCandidaturasDaVaga(vagaId: string): Promise<any[]> {
+    try {
+      const res = await this.client
+        .from('vagas_candidaturas')
+        .select('*, candidato:profissionais!vagas_candidaturas_profissional_id_fkey(id, full_name, professional_title, email)')
+        .eq('vaga_id', vagaId)
+        .order('criado_em', { ascending: false });
+
+      if (!res.error && res.data) {
+        return res.data;
+      }
+
+      const resFallback = await this.client
+        .from('vagas_candidaturas')
+        .select('*, candidato:profissionais(id, full_name, professional_title, email)')
+        .eq('vaga_id', vagaId)
+        .order('criado_em', { ascending: false });
+
+      if (!resFallback.error && resFallback.data) {
+        return resFallback.data;
+      }
+
+      const resSimples = await this.client
+        .from('vagas_candidaturas')
+        .select('*')
+        .eq('vaga_id', vagaId)
+        .order('criado_em', { ascending: false });
+
+      if (resSimples.data) {
+        const candidatoIds = [...new Set(resSimples.data.map((c: any) => c.profissional_id).filter(Boolean))];
+        const candidatosMap: Record<string, any> = {};
+        if (candidatoIds.length > 0) {
+          const { data: profs } = await this.client
+            .from('profissionais')
+            .select('id, full_name, professional_title, email')
+            .in('id', candidatoIds);
+          (profs || []).forEach((p: any) => { candidatosMap[p.id] = p; });
+        }
+        return resSimples.data.map((c: any) => ({
+          ...c,
+          candidato: candidatosMap[c.profissional_id] || null
+        }));
+      }
+
+      return [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar candidaturas:', e?.message || e);
       return [];
     }
   }
@@ -584,6 +761,92 @@ export class SupabaseService {
     } catch (e: any) {
       console.warn('Exceção ao listar materiais:', e?.message || e);
       return [];
+    }
+  }
+
+  async listarTodosMateriais(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('materiais')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar todos os materiais (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar todos os materiais (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarMaterial(material: {
+    titulo: string;
+    descricao?: string;
+    categoria: string;
+    formato?: string;
+    tamanho?: string;
+    url_arquivo?: string;
+    ativo?: boolean;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const payload: any = {
+        titulo: material.titulo,
+        descricao: material.descricao || '',
+        categoria: material.categoria,
+        formato: material.formato || 'PDF',
+        tamanho: material.tamanho || 'Arquivo',
+        url_arquivo: material.url_arquivo || '',
+        ativo: material.ativo !== undefined ? material.ativo : true,
+      };
+      const { data, error } = await this.client.from('materiais').insert(payload).select().single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarMaterial(
+    id: string,
+    dados: Partial<{
+      titulo: string;
+      descricao: string;
+      categoria: string;
+      formato: string;
+      tamanho: string;
+      url_arquivo: string;
+      ativo: boolean;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('materiais').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirMaterial(id: string): Promise<{ error: Error | null }> {
+    try {
+      await this.client.from('materiais_downloads').delete().eq('material_id', id);
+      const { error } = await this.client.from('materiais').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async contarDownloadsDoMaterial(materialId: string): Promise<number> {
+    try {
+      const { count, error } = await this.client
+        .from('materiais_downloads')
+        .select('*', { count: 'exact', head: true })
+        .eq('material_id', materialId);
+      if (error) return 0;
+      return count || 0;
+    } catch {
+      return 0;
     }
   }
 
@@ -649,6 +912,144 @@ export class SupabaseService {
       });
     } catch (e: any) {
       console.warn('Exceção ao listar eventos:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTodosEventosAdmin(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('eventos')
+        .select('*')
+        .order('data_hora', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar eventos (admin):', error.message);
+        return [];
+      }
+
+      const eventoIds = (data || []).map((e: any) => e.id);
+      let inscricoes: any[] = [];
+      if (eventoIds.length > 0) {
+        const { data: inscricoesData } = await this.client
+          .from('eventos_inscricoes')
+          .select('*')
+          .in('evento_id', eventoIds);
+        inscricoes = inscricoesData || [];
+      }
+
+      return (data || []).map((e: any) => ({
+        ...e,
+        total_inscritos: inscricoes.filter((i: any) => i.evento_id === e.id).length,
+      }));
+    } catch (e: any) {
+      console.warn('Exceção ao listar eventos (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarEvento(evento: {
+    titulo: string;
+    descricao?: string;
+    data_hora: string;
+    tag?: string;
+    plataforma?: string;
+    palestrante?: string;
+    cargo_palestrante?: string;
+    link_transmissao?: string;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const payload: any = {
+        titulo: evento.titulo,
+        data_hora: evento.data_hora,
+      };
+      if (evento.descricao !== undefined) payload.descricao = evento.descricao;
+      if (evento.tag !== undefined) payload.tag = evento.tag;
+      if (evento.plataforma !== undefined) payload.plataforma = evento.plataforma;
+      if (evento.palestrante !== undefined) payload.palestrante = evento.palestrante;
+      if (evento.cargo_palestrante !== undefined) payload.cargo_palestrante = evento.cargo_palestrante;
+      if (evento.link_transmissao !== undefined) payload.link_transmissao = evento.link_transmissao;
+
+      const { data, error } = await this.client.from('eventos').insert(payload).select().single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarEvento(
+    id: string,
+    dados: Partial<{
+      titulo: string;
+      descricao: string;
+      data_hora: string;
+      tag: string;
+      plataforma: string;
+      palestrante: string;
+      cargo_palestrante: string;
+      link_transmissao: string;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('eventos').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirEvento(id: string): Promise<{ error: Error | null }> {
+    try {
+      await this.client.from('eventos_inscricoes').delete().eq('evento_id', id);
+      const { error } = await this.client.from('eventos').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarInscritosDoEvento(eventoId: string): Promise<any[]> {
+    try {
+      const res = await this.client
+        .from('eventos_inscricoes')
+        .select('*, inscrito:profissionais!eventos_inscricoes_profissional_id_fkey(id, full_name, professional_title, email)')
+        .eq('evento_id', eventoId);
+
+      if (!res.error && res.data) {
+        return res.data;
+      }
+
+      const resFallback = await this.client
+        .from('eventos_inscricoes')
+        .select('*, inscrito:profissionais(id, full_name, professional_title, email)')
+        .eq('evento_id', eventoId);
+
+      if (!resFallback.error && resFallback.data) {
+        return resFallback.data;
+      }
+
+      // Fallback manual se join falhar
+      const { data: inscricoes } = await this.client
+        .from('eventos_inscricoes')
+        .select('*')
+        .eq('evento_id', eventoId);
+
+      if (!inscricoes || inscricoes.length === 0) return [];
+      const profIds = inscricoes.map((i: any) => i.profissional_id).filter(Boolean);
+      let profsMap: Record<string, any> = {};
+      if (profIds.length > 0) {
+        const { data: profs } = await this.client
+          .from('profissionais')
+          .select('id, full_name, professional_title, email')
+          .in('id', profIds);
+        (profs || []).forEach((p: any) => { profsMap[p.id] = p; });
+      }
+
+      return inscricoes.map((i: any) => ({
+        ...i,
+        inscrito: profsMap[i.profissional_id] || null,
+      }));
+    } catch (e: any) {
+      console.warn('Exceção ao listar inscritos do evento:', e?.message || e);
       return [];
     }
   }
@@ -865,6 +1266,131 @@ export class SupabaseService {
     }
   }
 
+  async listarTodosTopicosForum(): Promise<any[]> {
+    try {
+      let topicos: any[] | null = null;
+      const res = await this.client
+        .from('forum_topicos')
+        .select('*, autor:profissionais!forum_topicos_autor_id_fkey(id, full_name, professional_title, email)')
+        .order('criado_em', { ascending: false });
+
+      if (!res.error && res.data) {
+        topicos = res.data;
+      } else {
+        const resFallback = await this.client
+          .from('forum_topicos')
+          .select('*, autor:profissionais(id, full_name, professional_title, email)')
+          .order('criado_em', { ascending: false });
+
+        if (!resFallback.error && resFallback.data) {
+          topicos = resFallback.data;
+        } else {
+          const resSimples = await this.client
+            .from('forum_topicos')
+            .select('*')
+            .order('criado_em', { ascending: false });
+
+          if (!resSimples.error && resSimples.data) {
+            const autorIds = [...new Set(resSimples.data.map((t: any) => t.autor_id).filter(Boolean))];
+            const autoresMap: Record<string, any> = {};
+            if (autorIds.length > 0) {
+              const { data: autores } = await this.client
+                .from('profissionais')
+                .select('id, full_name, professional_title, email')
+                .in('id', autorIds);
+              (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
+            }
+            topicos = resSimples.data.map((t: any) => ({
+              ...t,
+              autor: autoresMap[t.autor_id] || null
+            }));
+          } else {
+            console.warn('Erro ao listar tópicos do fórum (admin):', res.error?.message || resFallback.error?.message);
+            return [];
+          }
+        }
+      }
+
+      if (!topicos || topicos.length === 0) {
+        return [];
+      }
+
+      const topicoIds = topicos.map((t: any) => t.id);
+
+      let respostas: any[] = [];
+      const resResp = await this.client
+        .from('forum_respostas')
+        .select('*, autor:profissionais!forum_respostas_autor_id_fkey(id, full_name, professional_title, email)')
+        .in('topico_id', topicoIds)
+        .order('criado_em', { ascending: true });
+
+      if (!resResp.error && resResp.data) {
+        respostas = resResp.data;
+      } else {
+        const resRespFallback = await this.client
+          .from('forum_respostas')
+          .select('*, autor:profissionais(id, full_name, professional_title, email)')
+          .in('topico_id', topicoIds)
+          .order('criado_em', { ascending: true });
+
+        if (!resRespFallback.error && resRespFallback.data) {
+          respostas = resRespFallback.data;
+        } else {
+          const resRespSimples = await this.client
+            .from('forum_respostas')
+            .select('*')
+            .in('topico_id', topicoIds)
+            .order('criado_em', { ascending: true });
+
+          if (resRespSimples.data) {
+            const respAutorIds = [...new Set(resRespSimples.data.map((r: any) => r.autor_id).filter(Boolean))];
+            const respAutoresMap: Record<string, any> = {};
+            if (respAutorIds.length > 0) {
+              const { data: respAutores } = await this.client
+                .from('profissionais')
+                .select('id, full_name, professional_title, email')
+                .in('id', respAutorIds);
+              (respAutores || []).forEach((a: any) => { respAutoresMap[a.id] = a; });
+            }
+            respostas = resRespSimples.data.map((r: any) => ({
+              ...r,
+              autor: respAutoresMap[r.autor_id] || null
+            }));
+          }
+        }
+      }
+
+      return topicos.map((t: any) => ({
+        ...t,
+        respostas: (respostas || []).filter((r: any) => r.topico_id === t.id)
+      }));
+    } catch (e: any) {
+      console.warn('Exceção ao listar tópicos do fórum (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async excluirTopicoForum(topicoId: string): Promise<{ error: Error | null }> {
+    try {
+      await this.client.from('forum_respostas').delete().eq('topico_id', topicoId);
+      await this.client.from('forum_curtidas').delete().eq('alvo_id', topicoId);
+      const { error } = await this.client.from('forum_topicos').delete().eq('id', topicoId);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirRespostaForum(respostaId: string): Promise<{ error: Error | null }> {
+    try {
+      await this.client.from('forum_curtidas').delete().eq('alvo_id', respostaId);
+      const { error } = await this.client.from('forum_respostas').delete().eq('id', respostaId);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
   // ----------------------------------------------------
   // MENSAGENS PRIVADAS REAL
   // ----------------------------------------------------
@@ -1012,6 +1538,178 @@ export class SupabaseService {
   }
 
   // ----------------------------------------------------
+  // GESTÃO DE CURSOS (ADMIN)
+  // ----------------------------------------------------
+
+  async listarTodosCursosAdmin(): Promise<any[]> {
+    try {
+      const { data: cursos, error } = await this.client
+        .from('cursos')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar cursos (admin):', error.message);
+        return [];
+      }
+
+      const cursoIds = (cursos || []).map((c: any) => c.id);
+      const { data: modulos } = cursoIds.length > 0
+        ? await this.client.from('cursos_modulos').select('*').in('curso_id', cursoIds).order('ordem', { ascending: true })
+        : { data: [] };
+
+      const { data: matriculas } = cursoIds.length > 0
+        ? await this.client.from('cursos_matriculas').select('*').in('curso_id', cursoIds)
+        : { data: [] };
+
+      return (cursos || []).map((c: any) => ({
+        ...c,
+        modulos: (modulos || []).filter((m: any) => m.curso_id === c.id),
+        totalMatriculados: (matriculas || []).filter((mt: any) => mt.curso_id === c.id).length,
+        totalCertificados: (matriculas || []).filter((mt: any) => mt.curso_id === c.id && mt.certificado_emitido_em).length,
+      }));
+    } catch (e: any) {
+      console.warn('Exceção ao listar cursos (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarCurso(curso: {
+    titulo: string;
+    descricao?: string;
+    categoria?: string;
+    modulo_predial_vinculado?: string | null;
+    texto_certificado?: string | null;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const payload: any = {
+        titulo: curso.titulo,
+        ativo: true,
+      };
+      if (curso.descricao !== undefined) payload.descricao = curso.descricao;
+      if (curso.categoria !== undefined) payload.categoria = curso.categoria;
+      if (curso.modulo_predial_vinculado !== undefined) payload.modulo_predial_vinculado = curso.modulo_predial_vinculado;
+      if (curso.texto_certificado !== undefined) payload.texto_certificado = curso.texto_certificado;
+
+      const { data, error } = await this.client.from('cursos').insert(payload).select().single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarCurso(id: string, dados: Record<string, any>): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('cursos').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirCurso(id: string): Promise<{ error: Error | null }> {
+    try {
+      await this.client.from('cursos_matriculas').delete().eq('curso_id', id);
+      await this.client.from('cursos_modulos').delete().eq('curso_id', id);
+      const { error } = await this.client.from('cursos').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async criarModuloCurso(modulo: {
+    curso_id: string;
+    titulo: string;
+    descricao?: string;
+    duracao?: string;
+    vimeo_id?: string;
+    ordem: number;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const payload: any = {
+        curso_id: modulo.curso_id,
+        titulo: modulo.titulo,
+        ordem: modulo.ordem,
+      };
+      if (modulo.descricao !== undefined) payload.descricao = modulo.descricao;
+      if (modulo.duracao !== undefined) payload.duracao = modulo.duracao;
+      if (modulo.vimeo_id !== undefined) payload.vimeo_id = modulo.vimeo_id;
+
+      const { data, error } = await this.client.from('cursos_modulos').insert(payload).select().single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarModuloCurso(
+    id: string,
+    dados: Partial<{ titulo: string; descricao: string; duracao: string; vimeo_id: string; ordem: number }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('cursos_modulos').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirModuloCurso(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('cursos_modulos').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarMatriculadosDoCurso(cursoId: string): Promise<any[]> {
+    try {
+      const res = await this.client
+        .from('cursos_matriculas')
+        .select('*, aluno:profissionais!cursos_matriculas_profissional_id_fkey(id, full_name, professional_title, email)')
+        .eq('curso_id', cursoId)
+        .order('atualizado_em', { ascending: false });
+
+      if (!res.error && res.data) return res.data;
+
+      const resFallback = await this.client
+        .from('cursos_matriculas')
+        .select('*, aluno:profissionais(id, full_name, professional_title, email)')
+        .eq('curso_id', cursoId)
+        .order('atualizado_em', { ascending: false });
+
+      if (!resFallback.error && resFallback.data) return resFallback.data;
+
+      // Fallback manual se join falhar
+      const { data: matriculas } = await this.client
+        .from('cursos_matriculas')
+        .select('*')
+        .eq('curso_id', cursoId)
+        .order('atualizado_em', { ascending: false });
+
+      if (!matriculas || matriculas.length === 0) return [];
+      const profIds = matriculas.map((m: any) => m.profissional_id).filter(Boolean);
+      let profsMap: Record<string, any> = {};
+      if (profIds.length > 0) {
+        const { data: profs } = await this.client
+          .from('profissionais')
+          .select('id, full_name, professional_title, email')
+          .in('id', profIds);
+        (profs || []).forEach((p: any) => { profsMap[p.id] = p; });
+      }
+
+      return matriculas.map((m: any) => ({
+        ...m,
+        aluno: profsMap[m.profissional_id] || null,
+      }));
+    } catch (e: any) {
+      console.warn('Exceção ao listar matriculados do curso:', e?.message || e);
+      return [];
+    }
+  }
+
+  // ----------------------------------------------------
   // CURSOS DO ALUNO (PROGRESSO, AVALIAÇÃO, CERTIFICADO)
   // ----------------------------------------------------
 
@@ -1113,6 +1811,463 @@ export class SupabaseService {
         .update({ certificado_emitido_em: new Date().toISOString(), avaliacao_aprovado: true })
         .eq('curso_id', cursoId)
         .eq('profissional_id', session.user.id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async contarMembrosAtivos(): Promise<number> {
+    try {
+      const { count, error } = await this.client
+        .from('profissionais')
+        .select('*', { count: 'exact', head: true });
+      if (error) {
+        console.warn('Erro ao contar membros ativos:', error.message);
+        return 0;
+      }
+      return count || 0;
+    } catch (e: any) {
+      console.warn('Exceção ao contar membros ativos:', e?.message || e);
+      return 0;
+    }
+  }
+
+  async contarPostsPublicados(): Promise<number> {
+    try {
+      const { count, error } = await this.client
+        .from('feed_posts')
+        .select('*', { count: 'exact', head: true });
+      if (error) {
+        console.warn('Erro ao contar posts publicados:', error.message);
+        return 0;
+      }
+      return count || 0;
+    } catch (e: any) {
+      console.warn('Exceção ao contar posts publicados:', e?.message || e);
+      return 0;
+    }
+  }
+
+  async contarVagasAbertas(): Promise<number> {
+    try {
+      const { count, error } = await this.client
+        .from('vagas')
+        .select('*', { count: 'exact', head: true })
+        .eq('ativa', true);
+      if (error) {
+        console.warn('Erro ao contar vagas abertas:', error.message);
+        return 0;
+      }
+      return count || 0;
+    } catch (e: any) {
+      console.warn('Exceção ao contar vagas abertas:', e?.message || e);
+      return 0;
+    }
+  }
+
+  // ----------------------------------------------------
+  // DEPOIMENTOS (BLOCO 6)
+  // ----------------------------------------------------
+
+  async listarDepoimentosAtivos(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('depoimentos')
+        .select('*')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar depoimentos:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar depoimentos:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTodosDepoimentosAdmin(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('depoimentos')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar depoimentos (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar depoimentos (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarDepoimento(depoimento: {
+    nome: string;
+    cargo_ou_papel?: string;
+    tipo: 'imagem' | 'video';
+    imagem_url?: string;
+    vimeo_id?: string;
+    ordem?: number;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const { data, error } = await this.client
+        .from('depoimentos')
+        .insert({ ...depoimento, ativo: true })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarDepoimento(
+    id: string,
+    dados: Partial<{ nome: string; cargo_ou_papel: string; tipo: 'imagem' | 'video'; imagem_url: string; vimeo_id: string; ordem: number; ativo: boolean }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('depoimentos').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirDepoimento(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('depoimentos').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // ----------------------------------------------------
+  // BLOG & NEWSLETTER (BLOCO 5)
+  // ----------------------------------------------------
+
+  async listarTodosPostsAdmin(): Promise<any[]> {
+    try {
+      const res = await this.client
+        .from('blog_posts')
+        .select('*, autor:profissionais!blog_posts_autor_id_fkey(id, full_name)')
+        .order('criado_em', { ascending: false });
+
+      if (!res.error && res.data) return res.data;
+
+      const resFallback = await this.client
+        .from('blog_posts')
+        .select('*, autor:profissionais(id, full_name)')
+        .order('criado_em', { ascending: false });
+
+      return resFallback.data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar posts (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarPostsPublicados(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('blog_posts')
+        .select('*')
+        .eq('publicado', true)
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar posts publicados:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar posts publicados:', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarPost(post: {
+    titulo: string;
+    resumo?: string;
+    conteudo: string;
+    categoria: string;
+    imagem_capa_url?: string;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const session = await this.getSession();
+      const payload = { ...post, autor_id: session?.user?.id || null, publicado: false };
+      const { data, error } = await this.client.from('blog_posts').insert(payload).select().single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarPost(
+    id: string,
+    dados: Partial<{
+      titulo: string;
+      resumo: string;
+      conteudo: string;
+      categoria: string;
+      imagem_capa_url: string;
+      publicado: boolean;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('blog_posts')
+        .update({ ...dados, atualizado_em: new Date().toISOString() })
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirPost(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('blog_posts').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async inscreverNewsletter(nome: string, email: string): Promise<{ error: Error | null; alreadySubscribed?: boolean }> {
+    try {
+      const emailLimpo = (email || '').trim().toLowerCase();
+      const { error } = await this.client.from('newsletter_assinantes').insert({ nome: (nome || '').trim() || null, email: emailLimpo });
+      if (error) {
+        // Código 23505 = Postgres unique_violation
+        if (error.code === '23505' || error.message.includes('unique') || error.message.includes('already exists')) {
+          return { error: null, alreadySubscribed: true };
+        }
+        return { error };
+      }
+      return { error: null, alreadySubscribed: false };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarAssinantesNewsletter(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('newsletter_assinantes')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar assinantes da newsletter:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar assinantes da newsletter:', e?.message || e);
+      return [];
+    }
+  }
+
+  async removerAssinanteNewsletter(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('newsletter_assinantes').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async exportarEmailsNewsletter(): Promise<string[]> {
+    try {
+      const { data } = await this.client.from('newsletter_assinantes').select('email').eq('ativo', true);
+      return (data || []).map((r: any) => r.email);
+    } catch {
+      return [];
+    }
+  }
+
+  // ----------------------------------------------------
+  // NOTIFICAÇÕES (BLOCO 6 PARTE 2)
+  // ----------------------------------------------------
+
+  async enviarNotificacao(titulo: string, mensagem: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      const { error } = await this.client
+        .from('notificacoes')
+        .insert({ titulo, mensagem, criado_por: session?.user?.id || null });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarNotificacoesEnviadas(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('notificacoes')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar notificações enviadas:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar notificações enviadas:', e?.message || e);
+      return [];
+    }
+  }
+
+  async excluirNotificacao(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('notificacoes').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarNotificacoesParaMim(): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+
+      const { data: notificacoes, error } = await this.client
+        .from('notificacoes')
+        .select('*')
+        .order('criado_em', { ascending: false })
+        .limit(30);
+      if (error) {
+        console.warn('Erro ao listar notificações para o usuário:', error.message);
+        return [];
+      }
+
+      const { data: leituras } = await this.client
+        .from('notificacoes_leituras')
+        .select('notificacao_id')
+        .eq('profissional_id', session.user.id);
+
+      const idsLidos = new Set((leituras || []).map((l: any) => l.notificacao_id));
+
+      return (notificacoes || []).map((n: any) => ({ ...n, lida: idsLidos.has(n.id) }));
+    } catch (e: any) {
+      console.warn('Exceção ao listar notificações para o usuário:', e?.message || e);
+      return [];
+    }
+  }
+
+  async marcarNotificacaoComoLida(notificacaoId: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const { error } = await this.client
+        .from('notificacoes_leituras')
+        .upsert({ notificacao_id: notificacaoId, profissional_id: session.user.id }, { onConflict: 'notificacao_id,profissional_id' });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  /* ==========================================================================
+     PORTFÓLIO DE PROJETOS (AMORIM ARQUITETURA)
+     ========================================================================== */
+
+  async listarPortfolioAtivo(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('portfolio_projetos')
+        .select('*')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar portfólio:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar portfólio:', e?.message || e);
+      return [];
+    }
+  }
+
+  async contarProjetosPortfolio(): Promise<number> {
+    try {
+      const { count, error } = await this.client
+        .from('portfolio_projetos')
+        .select('*', { count: 'exact', head: true })
+        .eq('ativo', true);
+      if (error) return 0;
+      return count || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  async listarTodoPortfolioAdmin(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('portfolio_projetos')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar portfólio (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar portfólio (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarProjetoPortfolio(projeto: {
+    titulo: string;
+    ano?: string;
+    cliente?: string;
+    local?: string;
+    imagem_url: string;
+    ordem?: number;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const { data, error } = await this.client
+        .from('portfolio_projetos')
+        .insert({ ...projeto, ativo: true })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarProjetoPortfolio(
+    id: string,
+    dados: Partial<{
+      titulo: string;
+      ano: string;
+      cliente: string;
+      local: string;
+      imagem_url: string;
+      ordem: number;
+      ativo: boolean;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('portfolio_projetos').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirProjetoPortfolio(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('portfolio_projetos').delete().eq('id', id);
       return { error };
     } catch (e: any) {
       return { error: e };

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
 
 @Component({
   selector: 'app-site-footer',
@@ -54,7 +55,7 @@ import { RouterModule } from '@angular/router';
               </li>
               <li>
                 <a
-                  href="https://predial40-app.netlify.app/"
+                  href="https://app-predial.emanoelamorim.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="hover:text-white transition-colors inline-flex items-center gap-1.5"
@@ -85,7 +86,7 @@ import { RouterModule } from '@angular/router';
               <div>
                 <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Apenas WhatsApp</span>
                 <a
-                  href="https://wa.me/5581991298803"
+                  [href]="linkWhatsappFooter"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="text-slate-300 hover:text-emerald-400 font-semibold transition-colors inline-block mt-0.5"
@@ -192,7 +193,7 @@ import { RouterModule } from '@angular/router';
             <!-- Botão WhatsApp -->
             <div>
               <a
-                href="https://wa.me/5581991298803"
+                [href]="linkWhatsappFooter"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2"
@@ -226,4 +227,6 @@ import { RouterModule } from '@angular/router';
     </footer>
   `
 })
-export class SiteFooterComponent {}
+export class SiteFooterComponent {
+  readonly linkWhatsappFooter = gerarLinkWhatsapp('footer');
+}

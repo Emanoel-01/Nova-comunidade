@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
 
-type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao' | 'solicitacao-sucesso';
+type ModoAcesso = 'login' | 'recuperar' | 'redefinir' | 'solicitacao' | 'solicitacao-sucesso';
 
 @Component({
   selector: 'app-comunidade',
@@ -45,8 +45,8 @@ type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao
               </p>
             </div>
 
-            <!-- Lista de 4 itens institucionais -->
-            <div class="space-y-4 pt-2">
+            <!-- Lista de Ferramentas Reais da Comunidade -->
+            <div class="space-y-3.5 pt-2">
               <div class="flex items-start gap-3">
                 <div class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,8 +54,8 @@ type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao
                   </svg>
                 </div>
                 <div class="text-xs leading-relaxed">
-                  <span class="font-bold text-white block sm:inline">Gestão Estratégica & Diagnóstica:</span>
-                  <span class="text-slate-300"> Soluções em laudos, eficiência e segurança predial para profissionais que buscam autoridade técnica.</span>
+                  <span class="font-bold text-white block">Fórum Técnico & Moderação:</span>
+                  <span class="text-slate-300">Discussões técnicas de patologias, normas e engenharia diagnóstica com especialistas.</span>
                 </div>
               </div>
 
@@ -66,8 +66,8 @@ type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao
                   </svg>
                 </div>
                 <div class="text-xs leading-relaxed">
-                  <span class="font-bold text-white block sm:inline">Ecossistema Digital SaaS:</span>
-                  <span class="text-slate-300"> Tecnologia inteligente para a gestão de ativos e edifícios, integrando inovação ao dia a dia da construção.</span>
+                  <span class="font-bold text-white block">Mural de Vagas & Oportunidades:</span>
+                  <span class="text-slate-300">Vagas exclusivas e parcerias em consultoria e gestão de obras em todo o Brasil.</span>
                 </div>
               </div>
 
@@ -78,8 +78,8 @@ type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao
                   </svg>
                 </div>
                 <div class="text-xs leading-relaxed">
-                  <span class="font-bold text-white block sm:inline">Liderança e Prática:</span>
-                  <span class="text-slate-300"> Networking real com os protagonistas que dominam a convergência tecnológica no setor.</span>
+                  <span class="font-bold text-white block">Acervo de Materiais & Downloads:</span>
+                  <span class="text-slate-300">Planilhas parametrizadas, checklists de campo, modelos de laudos e apresentações.</span>
                 </div>
               </div>
 
@@ -90,8 +90,20 @@ type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao
                   </svg>
                 </div>
                 <div class="text-xs leading-relaxed">
-                  <span class="font-bold text-white block sm:inline">Hub de Oportunidades:</span>
-                  <span class="text-slate-300"> Onde a engenharia consultiva encontra parcerias de alto nível e negócios reais.</span>
+                  <span class="font-bold text-white block">Cursos com Certificação & Eventos:</span>
+                  <span class="text-slate-300">Capacitações práticas em manutenção predial e agenda de masterclasses ao vivo.</span>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <div class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div class="text-xs leading-relaxed">
+                  <span class="font-bold text-white block">Agentes de IA de Engenharia:</span>
+                  <span class="text-slate-300">Automação para Reajuste de Contratos e Análise de Custos & Viabilidade de Obras.</span>
                 </div>
               </div>
             </div>
@@ -105,80 +117,38 @@ type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao
         <!-- Coluna Direita — Ações e Formulários (fundo branco) -->
         <div class="lg:col-span-7 p-6 sm:p-12 flex flex-col justify-center bg-white">
           
-          <!-- ESTADO 1: Tela Inicial Padrão -->
-          @if (modoAcesso() === 'inicial') {
-            <div class="max-w-md mx-auto w-full space-y-8 py-4">
-              <div class="space-y-2 text-center lg:text-left">
-                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                  Acessar Plataforma
-                </h2>
-                <p class="text-sm text-slate-500">
-                  Faça login para ingressar no ambiente de discussões, materiais e vagas.
-                </p>
-              </div>
-
-              <div class="space-y-4">
-                <!-- Botão Entrar com minha conta -->
-                <button
-                  type="button"
-                  id="btn-entrar-conta"
-                  (click)="abrirLogin()"
-                  class="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Entrar com minha conta</span>
-                </button>
-
-                <!-- Botão Solicitar Acesso ao Administrador -->
-                <button
-                  type="button"
-                  id="btn-solicitar-acesso"
-                  (click)="abrirSolicitacao()"
-                  class="w-full py-4 px-6 rounded-2xl bg-white hover:bg-indigo-50/50 text-indigo-700 font-bold text-base border-2 border-indigo-600 transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  <span>Solicitar Acesso ao Administrador</span>
-                </button>
-              </div>
-
-              <!-- Texto Informativo -->
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 leading-relaxed space-y-1">
-                <span class="font-bold text-slate-800">Já é membro?</span>
-                <p>
-                  Se você já teve sua solicitação aprovada e recebeu suas credenciais, basta clicar em "Entrar com minha conta" para acessar o feed, fóruns e materiais exclusivos.
-                </p>
-              </div>
-            </div>
-          }
-
-          <!-- ESTADO 2: Formulário Real de Login -->
+          <!-- ESTADO: Formulário Principal de Login -->
           @if (modoAcesso() === 'login') {
             <div class="max-w-md mx-auto w-full space-y-6 py-2">
-              <div class="flex items-center justify-between gap-4 pb-2 border-b border-slate-100">
-                <div>
-                  <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    Entrar na Comunidade
-                  </h3>
-                  <p class="text-xs text-slate-500 mt-0.5">
-                    Digite seu e-mail e senha cadastrados.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  id="btn-voltar-inicio-login"
-                  (click)="voltarInicio()"
-                  class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Voltar"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+              <div>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Entrar na Comunidade
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                  Digite seu e-mail e senha cadastrados para acessar.
+                </p>
               </div>
+
+              <!-- Notificação de Sessão Ativa -->
+              @if (usuarioLogado()) {
+                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-2">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-xs font-bold">Sessão Ativa Detectada</span>
+                  </div>
+                  <p class="text-xs text-emerald-800">
+                    Você está conectado como <strong>{{ usuarioLogado()?.email || 'Emanoel Amorim' }}</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    (click)="router.navigate(['/comunidade/preview'])"
+                    class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>Continuar para o Feed</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              }
 
               <form (submit)="executarLogin($event)" class="space-y-4" id="form-login-comunidade">
                 <!-- E-mail -->
@@ -727,11 +697,11 @@ type ModoAcesso = 'inicial' | 'login' | 'recuperar' | 'redefinir' | 'solicitacao
   `
 })
 export class ComunidadeComponent implements OnInit {
-  private readonly supabaseService = inject(SupabaseService);
-  private readonly router = inject(Router);
+  readonly supabaseService = inject(SupabaseService);
+  readonly router = inject(Router);
 
   // Modo ativo de navegação interna
-  readonly modoAcesso = signal<ModoAcesso>('inicial');
+  readonly modoAcesso = signal<ModoAcesso>('login');
 
   // Estados do Formulário de Login
   readonly loginEmail = signal('');
@@ -762,8 +732,18 @@ export class ComunidadeComponent implements OnInit {
   readonly profissao = signal('');
   readonly perfil = signal('Especialista em Engenharia Diagnóstica');
   readonly motivo = signal('');
+  readonly usuarioLogado = signal<any | null>(null);
 
   async ngOnInit(): Promise<void> {
+    try {
+      const session = await this.supabaseService.getSession();
+      if (session?.user) {
+        this.usuarioLogado.set(session.user);
+      }
+    } catch (e) {
+      console.warn('Verificação de sessão inicial:', e);
+    }
+
     // Detectar retorno de e-mail de recuperação de senha
     if (typeof window !== 'undefined') {
       const hash = window.location.hash || '';
@@ -782,8 +762,11 @@ export class ComunidadeComponent implements OnInit {
 
     // Monitorar eventos de autenticação
     this.supabaseService.onAuthStateChange((session) => {
-      if (session?.user && this.modoAcesso() === 'login') {
-        this.router.navigate(['/comunidade/preview']);
+      if (session?.user) {
+        this.usuarioLogado.set(session.user);
+        if (this.modoAcesso() === 'login') {
+          this.router.navigate(['/comunidade/preview']);
+        }
       }
     });
   }
@@ -809,7 +792,7 @@ export class ComunidadeComponent implements OnInit {
   }
 
   voltarInicio(): void {
-    this.modoAcesso.set('inicial');
+    this.modoAcesso.set('login');
     this.erroLogin.set(null);
     this.erroRecuperacao.set(null);
     this.exibirErroValidacao.set(null);
@@ -849,7 +832,13 @@ export class ComunidadeComponent implements OnInit {
     this.processandoLogin.set(false);
 
     if (error) {
-      this.erroLogin.set('E-mail ou senha incorretos.');
+      if (error.message?.toLowerCase().includes('invalid login credentials') || error.message?.toLowerCase().includes('invalid_credentials')) {
+        this.erroLogin.set('E-mail ou senha incorretos no Supabase.');
+      } else if (!this.supabaseService.isConfigurado()) {
+        this.erroLogin.set('Aviso: Chave SUPABASE_ANON_KEY não informada no ambiente. Configure no painel de segredos/variáveis do projeto.');
+      } else {
+        this.erroLogin.set(error.message || 'Erro ao conectar ao Supabase.');
+      }
       return;
     }
 

@@ -1,6 +1,20 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HallFamaComponent } from './hall-fama.component';
+import { SupabaseService } from '../../services/supabase.service';
+
+export interface BlogPost {
+  id: string;
+  titulo: string;
+  resumo?: string | null;
+  conteudo: string;
+  categoria: string;
+  imagem_capa_url?: string | null;
+  publicado: boolean;
+  criado_em: string;
+  atualizado_em?: string;
+  autor_id?: string | null;
+}
 
 @Component({
   selector: 'app-blog',
@@ -88,11 +102,19 @@ import { HallFamaComponent } from './hall-fama.component';
                     <button
                       type="submit"
                       id="btn-inscrever-newsletter"
-                      class="py-2.5 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs sm:text-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap active:scale-[0.99]"
+                      [disabled]="inscrevendo()"
+                      class="py-2.5 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs sm:text-sm transition-colors shadow-sm cursor-pointer whitespace-nowrap active:scale-[0.99] disabled:opacity-50"
                     >
-                      Inscrever-se
+                      @if (inscrevendo()) {
+                        <span>Inscrevendo...</span>
+                      } @else {
+                        <span>Inscrever-se</span>
+                      }
                     </button>
                   </form>
+                  @if (erroNewsletter()) {
+                    <p class="text-xs text-rose-300 mt-2 font-medium">{{ erroNewsletter() }}</p>
+                  }
                 </div>
               </div>
             } @else {
@@ -105,7 +127,7 @@ import { HallFamaComponent } from './hall-fama.component';
                 </div>
                 <div class="space-y-0.5">
                   <h3 class="text-lg font-bold text-white">
-                    Inscrição confirmada! 🎉
+                    {{ mensagemSucessoNewsletter() }} 🎉
                   </h3>
                   <p class="text-xs sm:text-sm text-slate-300">
                     Você receberá os próximos resumos do Blog Mundo 4.0 no seu e-mail.
@@ -141,22 +163,87 @@ import { HallFamaComponent } from './hall-fama.component';
               }
             </div>
 
-            <!-- Lista de Artigos: Estado Vazio -->
-            <div class="bg-white rounded-3xl border border-slate-200 p-12 sm:p-16 text-center space-y-4 shadow-xs">
-              <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
-                <svg class="w-8 h-8 stroke-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+            <!-- Lista de Artigos: Carregando -->
+            @if (carregando()) {
+              <div class="space-y-4">
+                @for (i of [1, 2, 3]; track i) {
+                  <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3 animate-pulse">
+                    <div class="h-5 bg-slate-200 rounded w-1/4"></div>
+                    <div class="h-6 bg-slate-200 rounded w-3/4"></div>
+                    <div class="h-4 bg-slate-100 rounded w-full"></div>
+                  </div>
+                }
               </div>
-              <div class="space-y-1">
-                <h3 class="text-lg sm:text-xl font-bold text-slate-500">
-                  Nenhum artigo encontrado.
-                </h3>
-                <p class="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
-                  Novos artigos técnicos e publicações serão disponibilizados em breve.
-                </p>
+            } @else if (postsFiltrados().length === 0) {
+              <!-- Lista de Artigos: Estado Vazio -->
+              <div class="bg-white rounded-3xl border border-slate-200 p-12 sm:p-16 text-center space-y-4 shadow-xs">
+                <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                  <svg class="w-8 h-8 stroke-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <div class="space-y-1">
+                  <h3 class="text-lg sm:text-xl font-bold text-slate-500">
+                    Nenhum artigo encontrado.
+                  </h3>
+                  <p class="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
+                    {{ termoBusca() ? 'Tente buscar por outros termos ou selecionar outra categoria.' : 'Novos artigos técnicos e publicações serão disponibilizados em breve.' }}
+                  </p>
+                </div>
               </div>
-            </div>
+            } @else {
+              <!-- Lista de Artigos Reais -->
+              <div class="space-y-6">
+                @for (post of postsFiltrados(); track post.id) {
+                  <article class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col md:flex-row group">
+                    @if (post.imagem_capa_url) {
+                      <div class="md:w-64 h-48 md:h-auto bg-slate-100 shrink-0 overflow-hidden">
+                        <img
+                          [src]="post.imagem_capa_url"
+                          [alt]="post.titulo"
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          referrerpolicy="no-referrer"
+                        />
+                      </div>
+                    }
+
+                    <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-4">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-2.5">
+                          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200/60">
+                            {{ post.categoria }}
+                          </span>
+                          <span class="text-xs text-slate-400">
+                            {{ post.criado_em | date:'dd/MM/yyyy' }}
+                          </span>
+                        </div>
+
+                        <h2 class="text-xl sm:text-2xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
+                          {{ post.titulo }}
+                        </h2>
+
+                        @if (post.resumo) {
+                          <p class="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                            {{ post.resumo }}
+                          </p>
+                        }
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-between border-t border-slate-100">
+                        <button
+                          type="button"
+                          (click)="abrirLeitura(post)"
+                          class="text-xs sm:text-sm font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <span>Ler artigo completo</span>
+                          <span class="group-hover:translate-x-0.5 transition-transform">→</span>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
 
           </div>
 
@@ -168,14 +255,92 @@ import { HallFamaComponent } from './hall-fama.component';
         </div>
       </section>
 
+      <!-- Modal de Leitura Completa do Artigo -->
+      @if (postSelecionado()) {
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col animate-scaleUp">
+            
+            @if (postSelecionado()?.imagem_capa_url) {
+              <div class="h-64 sm:h-80 w-full bg-slate-100 relative">
+                <img
+                  [src]="postSelecionado()?.imagem_capa_url"
+                  [alt]="postSelecionado()?.titulo"
+                  class="w-full h-full object-cover"
+                  referrerpolicy="no-referrer"
+                />
+                <button
+                  type="button"
+                  (click)="fecharLeitura()"
+                  class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            } @else {
+              <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
+                  {{ postSelecionado()?.categoria }}
+                </span>
+                <button
+                  type="button"
+                  (click)="fecharLeitura()"
+                  class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            }
+
+            <div class="p-6 sm:p-10 space-y-6 flex-1">
+              <div class="space-y-3">
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                  <span class="font-bold text-orange-600">{{ postSelecionado()?.categoria }}</span>
+                  <span>•</span>
+                  <span>{{ postSelecionado()?.criado_em | date:'dd \'de\' MMMM \'de\' yyyy' }}</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
+                  {{ postSelecionado()?.titulo }}
+                </h1>
+                @if (postSelecionado()?.resumo) {
+                  <p class="text-base text-slate-600 font-medium italic border-l-4 border-indigo-500 pl-4 py-1">
+                    {{ postSelecionado()?.resumo }}
+                  </p>
+                }
+              </div>
+
+              <!-- Conteúdo Formatado -->
+              <div class="text-sm sm:text-base text-slate-700 leading-relaxed space-y-4 whitespace-pre-line">
+                {{ postSelecionado()?.conteudo }}
+              </div>
+            </div>
+
+            <div class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+              <button
+                type="button"
+                (click)="fecharLeitura()"
+                class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold cursor-pointer transition-colors"
+              >
+                Fechar Artigo
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }
+
     </div>
   `
 })
-export class BlogComponent {
+export class BlogComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
   readonly termoBusca = signal('');
   readonly nomeNewsletter = signal('');
   readonly emailNewsletter = signal('');
   readonly inscricaoConfirmada = signal(false);
+  readonly mensagemSucessoNewsletter = signal('Inscrição confirmada!');
+  readonly inscrevendo = signal(false);
+  readonly erroNewsletter = signal<string | null>(null);
 
   readonly categorias: string[] = [
     'Todos',
@@ -187,9 +352,42 @@ export class BlogComponent {
   ];
 
   readonly categoriaAtiva = signal('Todos');
+  readonly posts = signal<BlogPost[]>([]);
+  readonly carregando = signal(true);
+  readonly postSelecionado = signal<BlogPost | null>(null);
 
-  // Placeholder para os posts reais do Supabase (será conectado no bloco futuro com a tabela blog_posts)
-  readonly posts = signal<any[]>([]);
+  readonly postsFiltrados = computed(() => {
+    let lista = this.posts();
+    const cat = this.categoriaAtiva();
+    if (cat !== 'Todos') {
+      lista = lista.filter(p => p.categoria === cat);
+    }
+    const busca = this.termoBusca().trim().toLowerCase();
+    if (busca) {
+      lista = lista.filter(p =>
+        p.titulo.toLowerCase().includes(busca) ||
+        (p.resumo && p.resumo.toLowerCase().includes(busca)) ||
+        p.conteudo.toLowerCase().includes(busca)
+      );
+    }
+    return lista;
+  });
+
+  async ngOnInit(): Promise<void> {
+    await this.carregarPosts();
+  }
+
+  async carregarPosts(): Promise<void> {
+    this.carregando.set(true);
+    try {
+      const data = await this.supabaseService.listarPostsPublicados();
+      this.posts.set(data || []);
+    } catch (e) {
+      console.warn('Erro ao carregar posts do blog:', e);
+    } finally {
+      this.carregando.set(false);
+    }
+  }
 
   onBuscaInput(event: Event): void {
     const target = event.target as HTMLInputElement;
@@ -210,11 +408,42 @@ export class BlogComponent {
     this.categoriaAtiva.set(categoria);
   }
 
-  inscreverNewsletter(event: Event): void {
+  abrirLeitura(post: BlogPost): void {
+    this.postSelecionado.set(post);
+  }
+
+  fecharLeitura(): void {
+    this.postSelecionado.set(null);
+  }
+
+  async inscreverNewsletter(event: Event): Promise<void> {
     event.preventDefault();
-    if (!this.emailNewsletter().trim()) {
+    const email = this.emailNewsletter().trim();
+    if (!email) {
       return;
     }
-    this.inscricaoConfirmada.set(true);
+
+    this.inscrevendo.set(true);
+    this.erroNewsletter.set(null);
+
+    try {
+      const res = await this.supabaseService.inscreverNewsletter(this.nomeNewsletter(), email);
+      if (res.error) {
+        this.erroNewsletter.set('Ocorreu um erro ao realizar sua inscrição. Tente novamente.');
+        return;
+      }
+
+      if (res.alreadySubscribed) {
+        this.mensagemSucessoNewsletter.set('Você já está inscrito na nossa newsletter!');
+      } else {
+        this.mensagemSucessoNewsletter.set('Inscrição confirmada!');
+      }
+
+      this.inscricaoConfirmada.set(true);
+    } catch (e: any) {
+      this.erroNewsletter.set('Erro ao conectar ao servidor.');
+    } finally {
+      this.inscrevendo.set(false);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
 
 @Component({
   selector: 'app-amorim-tech',
@@ -55,7 +56,7 @@ import { CommonModule } from '@angular/common';
 
             <div class="relative z-10 flex justify-center pt-2">
               <a
-                href="https://predial40-app.netlify.app/"
+                href="https://app-predial.emanoelamorim.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-200 cursor-pointer text-sm sm:text-base"
@@ -190,6 +191,140 @@ import { CommonModule } from '@angular/common';
           </div>
         </section>
 
+        <!-- Seção: Alô Síndico (Para Síndicos e Gestores Prediais) -->
+        <section class="space-y-12" id="alo-sindico">
+          <!-- Cabeçalho -->
+          <div class="text-center max-w-3xl mx-auto space-y-4">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-xs sm:text-sm font-semibold tracking-wide shadow-sm">
+              <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span>Para Síndicos e Gestores Prediais</span>
+            </div>
+
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Alô, Síndico! Sua gestão predial não precisa ser um mistério.
+            </h2>
+
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+              Sem jargão técnico. Aqui você entende o que precisa saber sobre o seu prédio e já sai com uma cotação na mão.
+            </p>
+          </div>
+
+          <!-- 3 Cards Informativos -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <!-- Card 1 -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div class="h-2 w-full bg-amber-500"></div>
+              <div class="p-8 space-y-4 flex-1 flex flex-col justify-between">
+                <div class="space-y-3">
+                  <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-xl font-bold text-slate-900 tracking-tight">
+                    Quando pedir uma inspeção predial?
+                  </h3>
+                  <p class="text-slate-600 text-sm leading-relaxed">
+                    Trincas, infiltrações, manchas na fachada ou simplesmente o prédio completando 5, 10 ou 15 anos são bons motivos para chamar um profissional. Quanto antes o diagnóstico, mais barato o reparo.
+                  </p>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-amber-700">
+                  <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Prevenção e economia real</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div class="h-2 w-full bg-blue-600"></div>
+              <div class="p-8 space-y-4 flex-1 flex flex-col justify-between">
+                <div class="space-y-3">
+                  <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-xl font-bold text-slate-900 tracking-tight">
+                    O que é essa tal de NBR 16747?
+                  </h3>
+                  <p class="text-slate-600 text-sm leading-relaxed">
+                    É a norma técnica que define como um prédio deve ser inspecionado no Brasil. Um laudo dentro dela protege você juridicamente e evita multas — e é exatamente o que a gente entrega.
+                  </p>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-blue-700">
+                  <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Segurança jurídica garantida</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div class="h-2 w-full bg-emerald-600"></div>
+              <div class="p-8 space-y-4 flex-1 flex flex-col justify-between">
+                <div class="space-y-3">
+                  <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-xl font-bold text-slate-900 tracking-tight">
+                    Quanto custa? Depende do quê?
+                  </h3>
+                  <p class="text-slate-600 text-sm leading-relaxed">
+                    O valor varia com o tamanho do prédio, a quantidade de sistemas a inspecionar e a complexidade encontrada. Sem letra miúda: você recebe uma cotação clara antes de fechar qualquer coisa.
+                  </p>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                  <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Cotação transparente e ágil</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bloco de CTA final da seção Alô Síndico -->
+          <div class="max-w-4xl mx-auto">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-8 sm:p-10 text-white text-center shadow-lg space-y-5">
+              <div class="space-y-2">
+                <h3 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  Fale agora com quem entende do assunto — sem compromisso.
+                </h3>
+                <p class="text-amber-100 text-sm sm:text-base max-w-xl mx-auto">
+                  Tire dúvidas sobre seu edifício, saiba qual laudo é necessário e receba um orçamento personalizado no seu WhatsApp.
+                </p>
+              </div>
+
+              <div class="flex justify-center pt-2">
+                <a
+                  [href]="linkWhatsappSindico"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  id="btn-whatsapp-alo-sindico"
+                  class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-200 cursor-pointer text-sm sm:text-base active:scale-[0.99]"
+                >
+                  <svg class="w-5 h-5 fill-current text-emerald-400" viewBox="0 0 24 24">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.044c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.13.332.202.043.073.043.419-.101.824z"/>
+                  </svg>
+                  <span>Pedir Cotação pelo WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Seção 4: Como Funciona -->
         <section class="space-y-12">
           <div class="text-center max-w-2xl mx-auto">
@@ -258,7 +393,7 @@ import { CommonModule } from '@angular/common';
             </p>
             <div class="flex justify-center pt-2">
               <a
-                href="https://wa.me/5581991298803"
+                [href]="linkWhatsappTech"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all duration-200 cursor-pointer text-sm sm:text-base"
@@ -275,4 +410,8 @@ import { CommonModule } from '@angular/common';
     </div>
   `
 })
-export class AmorimTechComponent {}
+export class AmorimTechComponent {
+  readonly linkWhatsappTech = gerarLinkWhatsapp('tech');
+  readonly linkWhatsappSindico = gerarLinkWhatsapp('tech-sindico');
+}
+

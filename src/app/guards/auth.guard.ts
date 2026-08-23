@@ -12,7 +12,7 @@ export const authGuard: CanActivateFn = async (_route, _state) => {
       return true;
     }
   } catch (err) {
-    console.warn('Erro ao verificar sessão no authGuard:', err);
+    console.warn('Aviso ao verificar sessão no authGuard:', err);
   }
 
   return router.createUrlTree(['/comunidade']);

@@ -5,7 +5,7 @@
 // pelo Predial 4.0 (mesmo projeto Supabase compartilhado) para validar
 // esse pré-requisito automaticamente.
 
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
@@ -219,7 +219,20 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
           </div>
 
           <!-- Ações do Rodapé da Sidebar -->
-          <div class="pt-6 border-t border-slate-200 space-y-3">
+          <div class="pt-6 border-t border-slate-200 space-y-2">
+            @if (souAdmin()) {
+              <a
+                routerLink="/admin"
+                id="btn-sidebar-admin"
+                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                <svg class="w-4 h-4 shrink-0 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Painel ADM</span>
+              </a>
+            }
+
             <button
               type="button"
               id="btn-sidebar-sair"
@@ -258,9 +271,65 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
               </h2>
             </div>
 
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Sessão Ativa</span>
+            <div class="flex items-center gap-3">
+              <!-- Sino de Notificações -->
+              <div class="relative">
+                <button
+                  type="button"
+                  (click)="toggleDropdownNotificacoes()"
+                  class="relative p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+                  aria-label="Notificações"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                  </svg>
+                  @if (totalNaoLidas() > 0) {
+                    <span class="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold">
+                      {{ totalNaoLidas() > 9 ? '9+' : totalNaoLidas() }}
+                    </span>
+                  }
+                </button>
+
+                @if (dropdownNotificacoesAberto()) {
+                  <div class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 z-50 animate-scaleUp">
+                    <div class="px-4 py-3 border-b border-slate-100 font-bold text-sm text-slate-800 flex items-center justify-between">
+                      <span>Notificações</span>
+                      @if (totalNaoLidas() > 0) {
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">
+                          {{ totalNaoLidas() }} nova{{ totalNaoLidas() > 1 ? 's' : '' }}
+                        </span>
+                      }
+                    </div>
+                    @if (notificacoes().length === 0) {
+                      <div class="px-4 py-6 text-center text-sm text-slate-400">Nenhuma notificação por aqui.</div>
+                    } @else {
+                      @for (n of notificacoes(); track n.id) {
+                        <button
+                          type="button"
+                          (click)="marcarComoLida(n.id)"
+                          class="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors flex gap-2.5 cursor-pointer"
+                        >
+                          @if (!n.lida) {
+                            <span class="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0"></span>
+                          } @else {
+                            <span class="w-2 h-2 shrink-0"></span>
+                          }
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-slate-800 truncate" [class.font-bold]="!n.lida">{{ n.titulo }}</p>
+                            <p class="text-xs text-slate-500 line-clamp-2">{{ n.mensagem }}</p>
+                          </div>
+                        </button>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Badge Sessão Ativa -->
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Sessão Ativa</span>
+              </div>
             </div>
           </div>
 
@@ -525,8 +594,13 @@ export class ComunidadePreviewComponent implements OnInit {
 
   readonly usuario = signal<any | null>(null);
   readonly profissional = signal<any | null>(null);
+  readonly souAdmin = signal<boolean>(false);
   readonly abaAtiva = signal('feed');
   readonly menuMaisAberto = signal(false);
+
+  readonly notificacoes = signal<any[]>([]);
+  readonly dropdownNotificacoesAberto = signal(false);
+  readonly totalNaoLidas = computed(() => this.notificacoes().filter(n => !n.lida).length);
 
   private readonly abasTitulo: Record<string, string> = {
     'feed': 'Feed de Publicações',
@@ -549,17 +623,53 @@ export class ComunidadePreviewComponent implements OnInit {
     }
 
     this.usuario.set(session.user);
+
+    const ehAdmin = await this.supabaseService.temPermissaoModulo('comunidade', 'admin');
+    this.souAdmin.set(ehAdmin);
+
     const prof = await this.supabaseService.getProfissional(session.user.id);
     if (prof) {
       this.profissional.set(prof);
+    } else {
+      this.profissional.set({
+        id: session.user.id,
+        full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Membro da Comunidade',
+        email: session.user.email || '',
+        nivel_atual: ehAdmin ? 'Administrador' : 'Membro Especialista',
+        professional_title: session.user.user_metadata?.professional_title || 'Especialista',
+        crea_cau: '',
+      });
     }
 
-    // Se o usuário deslogar em outra aba ou sessão expirar
     this.supabaseService.onAuthStateChange((s) => {
       if (!s?.user) {
         this.router.navigate(['/comunidade']);
       }
     });
+
+    await this.carregarNotificacoes();
+  }
+
+  async carregarNotificacoes(): Promise<void> {
+    try {
+      const lista = await this.supabaseService.listarNotificacoesParaMim();
+      this.notificacoes.set(lista || []);
+    } catch {
+      this.notificacoes.set([]);
+    }
+  }
+
+  toggleDropdownNotificacoes(): void {
+    this.dropdownNotificacoesAberto.update(v => !v);
+  }
+
+  async marcarComoLida(notificacaoId: string): Promise<void> {
+    const { error } = await this.supabaseService.marcarNotificacaoComoLida(notificacaoId);
+    if (!error) {
+      this.notificacoes.update(lista =>
+        lista.map(n => (n.id === notificacaoId ? { ...n, lida: true } : n))
+      );
+    }
   }
 
   getNomeUsuario(): string {

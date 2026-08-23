@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
 
 @Component({
   selector: 'app-contato',
@@ -29,119 +30,167 @@ import { CommonModule } from '@angular/common';
         <!-- Card Principal (2 Colunas) -->
         <div class="bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
           
-          <!-- Coluna Esquerda: Formulário (7 colunas) -->
-          <div class="lg:col-span-7 p-6 sm:p-10 space-y-6">
-            <div>
-              <h2 class="text-2xl font-bold text-slate-900 tracking-tight">
-                Envie sua mensagem
-              </h2>
-              <p class="text-sm text-slate-500 mt-1">
-                Preencha os campos abaixo para direcionarmos ao setor responsável.
-              </p>
-            </div>
-
-            <form (submit)="enviarMensagem($event)" class="space-y-5" id="form-contato">
-              <!-- Campo: Assunto Principal -->
-              <div class="space-y-1.5">
-                <label for="assunto" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Qual o assunto principal? <span class="text-rose-500">*</span>
-                </label>
-                <select
-                  id="assunto"
-                  [value]="assunto()"
-                  (change)="onAssuntoChange($event)"
-                  required
-                  class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                >
-                  <option value="Amorim Arquitetura">Amorim Arquitetura</option>
-                  <option value="Amorim Tech">Amorim Tech</option>
-                  <option value="Amorim Academy">Amorim Academy</option>
-                </select>
+          <!-- Coluna Esquerda: Formulário ou Confirmação (7 colunas) -->
+          <div class="lg:col-span-7 p-6 sm:p-10 space-y-6 flex flex-col justify-center">
+            @if (!envioConfirmado()) {
+              <div>
+                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">
+                  Envie sua mensagem
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">
+                  Preencha os campos abaixo para direcionarmos ao setor responsável.
+                </p>
               </div>
 
-              <!-- Campo: Nome -->
-              <div class="space-y-1.5">
-                <label for="nome" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Nome <span class="text-rose-500">*</span>
-                </label>
-                <input
-                  id="nome"
-                  type="text"
-                  [value]="nome()"
-                  (input)="onNomeInput($event)"
-                  placeholder="Seu nome completo"
-                  required
-                  class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
-                />
-              </div>
-
-              <!-- Campos Lado a Lado: E-mail e WhatsApp -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form (submit)="enviarMensagem($event)" class="space-y-5" id="form-contato">
+                <!-- Campo: Assunto Principal -->
                 <div class="space-y-1.5">
-                  <label for="email" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                    E-mail <span class="text-rose-500">*</span>
+                  <label for="assunto" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Qual o assunto principal? <span class="text-rose-500">*</span>
+                  </label>
+                  <select
+                    id="assunto"
+                    [value]="assunto()"
+                    (change)="onAssuntoChange($event)"
+                    required
+                    class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  >
+                    <option value="Amorim Arquitetura">Amorim Arquitetura</option>
+                    <option value="Amorim Tech">Amorim Tech</option>
+                    <option value="Amorim Academy">Amorim Academy</option>
+                  </select>
+                </div>
+
+                <!-- Campo: Nome -->
+                <div class="space-y-1.5">
+                  <label for="nome" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Nome <span class="text-rose-500">*</span>
                   </label>
                   <input
-                    id="email"
-                    type="email"
-                    [value]="email()"
-                    (input)="onEmailInput($event)"
-                    placeholder="exemplo@email.com"
+                    id="nome"
+                    type="text"
+                    [value]="nome()"
+                    (input)="onNomeInput($event)"
+                    placeholder="Seu nome completo"
                     required
                     class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
                   />
                 </div>
 
-                <div class="space-y-1.5">
-                  <label for="whatsapp" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                    WhatsApp <span class="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="whatsapp"
-                    type="tel"
-                    [value]="whatsapp()"
-                    (input)="onWhatsappInput($event)"
-                    placeholder="(81) 99999-9999"
-                    required
-                    class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
-                  />
+                <!-- Campos Lado a Lado: E-mail e WhatsApp -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1.5">
+                    <label for="email" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                      E-mail <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      [value]="email()"
+                      (input)="onEmailInput($event)"
+                      placeholder="exemplo@email.com"
+                      required
+                      class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
+                    />
+                  </div>
+
+                  <div class="space-y-1.5">
+                    <label for="whatsapp" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                      WhatsApp <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="whatsapp"
+                      type="tel"
+                      [value]="whatsapp()"
+                      (input)="onWhatsappInput($event)"
+                      placeholder="(81) 99999-9999"
+                      required
+                      class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <!-- Campo: Mensagem -->
-              <div class="space-y-1.5">
-                <label for="mensagem" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Mensagem <span class="text-rose-500">*</span>
-                </label>
-                <textarea
-                  id="mensagem"
-                  rows="4"
-                  [value]="mensagem()"
-                  (input)="onMensagemInput($event)"
-                  placeholder="Escreva sua dúvida, proposta ou solicitação..."
-                  required
-                  class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400 resize-y"
-                ></textarea>
-              </div>
+                <!-- Campo: Mensagem -->
+                <div class="space-y-1.5">
+                  <label for="mensagem" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Mensagem <span class="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    id="mensagem"
+                    rows="4"
+                    [value]="mensagem()"
+                    (input)="onMensagemInput($event)"
+                    placeholder="Escreva sua dúvida, proposta ou solicitação..."
+                    required
+                    class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder:text-slate-400 resize-y"
+                  ></textarea>
+                </div>
 
-              <!-- Botão Enviar -->
-              <div class="pt-2">
-                <button
-                  type="submit"
-                  id="btn-enviar-contato"
-                  class="w-full py-4 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
-                >
-                  <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                <!-- Mensagem de Erro Inline -->
+                @if (erroValidacao()) {
+                  <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                    <svg class="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{{ erroValidacao() }}</span>
+                  </div>
+                }
+
+                <!-- Botão Enviar -->
+                <div class="pt-2">
+                  <button
+                    type="submit"
+                    id="btn-enviar-contato"
+                    class="w-full py-4 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                  >
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    <span>Enviar Mensagem</span>
+                  </button>
+                </div>
+
+                <p class="text-xs text-center text-slate-500">
+                  Nossa equipe técnica responderá em até 24h úteis.
+                </p>
+              </form>
+            } @else {
+              <!-- Estado de Confirmação Pós-Envio -->
+              <div class="space-y-6 text-center py-6">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 mx-auto flex items-center justify-center shadow-inner">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Enviar Mensagem</span>
-                </button>
-              </div>
+                </div>
 
-              <p class="text-xs text-center text-slate-500">
-                Nossa equipe técnica responderá em até 24h úteis.
-              </p>
-            </form>
+                <div class="space-y-2">
+                  <h3 class="text-2xl font-bold text-slate-900 tracking-tight">
+                    Sua mensagem foi preparada!
+                  </h3>
+                  <p class="text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+                    Concluímos o envio pelo WhatsApp que abriu em uma nova aba. Se não abriu automaticamente, 
+                    <a
+                      [href]="urlWhatsappGerada()"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-emerald-600 font-bold hover:underline"
+                    >
+                      clique aqui para continuar no WhatsApp
+                    </a>.
+                  </p>
+                </div>
+
+                <div class="pt-4">
+                  <button
+                    type="button"
+                    (click)="resetarFormulario()"
+                    class="py-3 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition-colors cursor-pointer"
+                  >
+                    Enviar outra mensagem
+                  </button>
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Coluna Direita: Contatos Diretos (5 colunas) -->
@@ -167,7 +216,7 @@ import { CommonModule } from '@angular/common';
                 <!-- Bloco WhatsApp -->
                 <a
                   id="link-whatsapp-direto"
-                  href="https://wa.me/5581991298803"
+                  [href]="linkWhatsappDireto"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="flex items-start gap-4 p-4 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 transition-all group"
@@ -228,11 +277,17 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class ContatoComponent {
+  readonly linkWhatsappDireto = gerarLinkWhatsapp('contato');
+
   readonly assunto = signal('Amorim Arquitetura');
   readonly nome = signal('');
   readonly email = signal('');
   readonly whatsapp = signal('');
   readonly mensagem = signal('');
+
+  readonly erroValidacao = signal<string | null>(null);
+  readonly envioConfirmado = signal(false);
+  readonly urlWhatsappGerada = signal<string | null>(null);
 
   onAssuntoChange(event: Event): void {
     const target = event.target as HTMLSelectElement;
@@ -242,38 +297,62 @@ export class ContatoComponent {
   onNomeInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.nome.set(target.value);
+    if (this.erroValidacao()) this.erroValidacao.set(null);
   }
 
   onEmailInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.email.set(target.value);
+    if (this.erroValidacao()) this.erroValidacao.set(null);
   }
 
   onWhatsappInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.whatsapp.set(target.value);
+    if (this.erroValidacao()) this.erroValidacao.set(null);
   }
 
   onMensagemInput(event: Event): void {
     const target = event.target as HTMLTextAreaElement;
     this.mensagem.set(target.value);
+    if (this.erroValidacao()) this.erroValidacao.set(null);
   }
 
   enviarMensagem(event: Event): void {
     event.preventDefault();
 
     if (!this.nome().trim() || !this.email().trim() || !this.whatsapp().trim() || !this.mensagem().trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+      this.erroValidacao.set('Preencha todos os campos obrigatórios antes de enviar.');
       return;
     }
+    this.erroValidacao.set(null);
 
-    // Placeholder de envio conforme especificação
-    alert('Mensagem enviada com sucesso!');
+    const linhas = [
+      `Olá! Vim pelo site e quero falar sobre *${this.assunto()}*.`,
+      ``,
+      `Nome: ${this.nome().trim()}`,
+      `E-mail: ${this.email().trim()}`,
+      `WhatsApp: ${this.whatsapp().trim()}`,
+      ``,
+      `Mensagem: ${this.mensagem().trim()}`,
+    ];
+    const textoCodificado = encodeURIComponent(linhas.join('\n'));
+    const urlWhatsapp = `https://wa.me/5581991298803?text=${textoCodificado}`;
+
+    window.open(urlWhatsapp, '_blank', 'noopener,noreferrer');
+
+    this.urlWhatsappGerada.set(urlWhatsapp);
+    this.envioConfirmado.set(true);
+  }
+
+  resetarFormulario(): void {
     this.assunto.set('Amorim Arquitetura');
     this.nome.set('');
     this.email.set('');
     this.whatsapp.set('');
     this.mensagem.set('');
+    this.erroValidacao.set(null);
+    this.envioConfirmado.set(false);
+    this.urlWhatsappGerada.set(null);
   }
 }
-

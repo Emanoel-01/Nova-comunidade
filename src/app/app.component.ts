@@ -19,8 +19,8 @@ interface NavItem {
       @if (showChromeDoSite()) {
         <header class="sticky top-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 shrink-0 z-50">
           <!-- Logo -->
-          <a routerLink="/" class="text-[20px] font-bold text-slate-900 tracking-tight cursor-pointer">
-            Amorim Group
+          <a routerLink="/" class="flex items-center cursor-pointer shrink-0">
+            <img src="/logo-header.jpg" alt="Emanoel Amorim — Ecossistema Digital" class="h-8 sm:h-9 w-auto object-contain" />
           </a>
 
           <!-- Menu de Navegação Horizontal (Desktop) -->

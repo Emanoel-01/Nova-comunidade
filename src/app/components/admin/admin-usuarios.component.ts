@@ -254,7 +254,7 @@ interface ConfirmacaoSenhaProvisoria {
                         <span>Comunidade Nova</span>
                       </div>
                       <span class="text-[10px] font-semibold text-slate-400">
-                        {{ getLiberadosCount(user, 'comunidade') }}/6 módulos
+                        {{ getLiberadosCount(user, 'comunidade') }}/{{ modulosComunidade.length }} módulos
                       </span>
                     </div>
 
@@ -822,6 +822,7 @@ export class AdminUsuariosComponent implements OnInit {
     { key: 'materiais', nome: 'Materiais', descricao: 'Downloads de planilhas, modelos e e-books.', produto: 'comunidade' },
     { key: 'eventos', nome: 'Eventos', descricao: 'Workshops, masterclasses e encontros online.', produto: 'comunidade' },
     { key: 'cursos', nome: 'Cursos', descricao: 'Aulas gravadas e capacitações da plataforma.', produto: 'comunidade' },
+    { key: 'custos-viabilidade', nome: 'Agente: Custos & Viabilidade', descricao: 'Estudo de viabilidade NBR 12.721, CUB e VGV.', produto: 'comunidade' },
     { key: 'admin_comunidade', nome: 'Admin Comunidade', descricao: 'Permissões administrativas na comunidade.', produto: 'comunidade' },
   ];
 

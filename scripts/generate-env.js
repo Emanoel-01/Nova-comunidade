@@ -25,7 +25,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const apiBaseUrl = process.env.API_BASE_URL || envVars.API_BASE_URL || '';
-const supabaseUrl = process.env.SUPABASE_URL || envVars.SUPABASE_URL || '';
+const supabaseUrl = process.env.SUPABASE_URL || envVars.SUPABASE_URL || 'https://qtrypzzcjebvfcihiynt.supabase.co';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || envVars.SUPABASE_ANON_KEY || '';
 
 const fileContent = `export const environment = {

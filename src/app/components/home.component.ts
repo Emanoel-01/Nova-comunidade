@@ -1,13 +1,17 @@
-import { Component, ElementRef, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TrajetoriaPortfolioComponent } from './trajetoria-portfolio.component';
 import { HallFamaComponent } from './hall-fama.component';
+import { SupabaseService } from '../../services/supabase.service';
 
 export interface Depoimento {
   name: string;
   role: string;
-  img: string;
+  tipo?: 'imagem' | 'video';
+  img?: string;
+  vimeoId?: string;
 }
 
 interface Institution {
@@ -22,44 +26,88 @@ interface Institution {
   imports: [CommonModule, RouterLink, TrajetoriaPortfolioComponent, HallFamaComponent],
   template: `
     <!-- Seção 1: Hero -->
-    <section class="relative bg-indigo-900 text-white overflow-hidden py-24 lg:py-32 px-4 sm:px-6 lg:px-8">
+    <section class="relative bg-indigo-950 text-white overflow-hidden py-20 lg:py-28 px-4 sm:px-6 lg:px-8">
       <div
         class="absolute inset-0 opacity-10 bg-cover bg-center mix-blend-overlay pointer-events-none"
         style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop');"
       ></div>
 
-      <div class="relative max-w-5xl mx-auto text-center z-10">
-        <span class="inline-block text-xs md:text-sm font-semibold tracking-widest text-indigo-200 uppercase mb-4">
-          EMANOEL AMORIM
-        </span>
-        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight mb-6">
-          Transformando a Construção Civil com Tecnologia.
+      <div class="relative max-w-5xl mx-auto text-center z-10 space-y-8">
+        <!-- Eyebrow / Badge -->
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-900/80 border border-indigo-700/60 text-indigo-200 text-xs sm:text-sm font-semibold tracking-wide shadow-sm">
+          <span>Engenharia Diagnóstica · Gestão Predial · Tecnologia 4.0</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight max-w-4xl mx-auto">
+          Diagnósticos e gestão predial que evitam multa, retrabalho e risco no seu edifício.
         </h1>
-        <p class="text-base sm:text-xl text-indigo-100 max-w-3xl mx-auto font-normal leading-relaxed mb-10">
-          Arquiteto, Mestre em Engenharia, Founder da AmorimTech e Coordenador Acadêmico.
+
+        <!-- Sub-headline -->
+        <p class="text-base sm:text-xl text-indigo-100 max-w-3xl mx-auto font-normal leading-relaxed">
+          Laudos técnicos, engenharia diagnóstica e ferramentas digitais para síndicos, gestores de facilities e órgãos públicos.
         </p>
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <!-- CTAs -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+          <!-- CTA Primário -->
           <a
-            routerLink="/comunidade"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 cursor-pointer text-base"
+            routerLink="/contato"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-200 cursor-pointer text-base active:scale-[0.99]"
           >
+            <span>Solicitar Diagnóstico</span>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
             </svg>
-            <span>Entrar na Comunidade</span>
           </a>
 
+          <!-- CTA Secundário -->
           <button
             type="button"
             (click)="scrollToEcosystem()"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 backdrop-blur-sm transition-all duration-200 cursor-pointer text-base"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 backdrop-blur-sm transition-all duration-200 cursor-pointer text-base"
           >
-            <span>Conhecer o Ecossistema</span>
+            <span>Ver o Ecossistema</span>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
             </svg>
           </button>
+        </div>
+
+        <!-- Link Terciário para a Comunidade -->
+        <div>
+          <a
+            routerLink="/comunidade"
+            class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-indigo-300 hover:text-white transition-colors py-1 px-3 rounded-full hover:bg-white/5"
+          >
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Área de Membros: Conhecer a Comunidade Business 4.0</span>
+            <span class="text-emerald-400">→</span>
+          </a>
+        </div>
+
+        <!-- Prova Social na Dobra -->
+        <div class="pt-6 border-t border-indigo-800/60 max-w-3xl mx-auto">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-2xl sm:text-3xl font-extrabold text-white">+15 anos</span>
+              <span class="text-xs text-indigo-200 font-medium">de atuação na construção civil</span>
+            </div>
+            <div class="flex flex-col items-center justify-center sm:border-x sm:border-indigo-800/60 sm:px-4">
+              <span class="text-2xl sm:text-3xl font-extrabold text-emerald-400">
+                @if (totalProjetosPortfolio() >= 5) {
+                  +{{ totalProjetosPortfolio() }}
+                } @else {
+                  +100
+                }
+              </span>
+              <span class="text-xs text-indigo-200 font-medium">projetos e laudos executados</span>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-2xl sm:text-3xl font-extrabold text-white">+200.000m²</span>
+              <span class="text-xs text-indigo-200 font-medium">de empreendimentos gerenciados</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -286,7 +334,7 @@ interface Institution {
             <div>
               <div class="h-20 flex items-center mb-6">
                 <img
-                  src="https://drive.google.com/uc?export=view&id=1GzJ8IxQKiNZcYR3j2Gilyc9imLcikY-x"
+                  src="https://drive.google.com/thumbnail?id=1GzJ8IxQKiNZcYR3j2Gilyc9imLcikY-x&sz=w1000"
                   alt="Amorim Academy"
                   class="max-h-16 w-auto object-contain"
                   referrerpolicy="no-referrer"
@@ -396,7 +444,7 @@ interface Institution {
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
-                <span>Entrar na Comunidade</span>
+                <span>Conhecer a Comunidade</span>
               </a>
             </div>
           </div>
@@ -569,9 +617,21 @@ interface Institution {
       <div class="max-w-7xl mx-auto">
         <h2 class="text-3xl font-extrabold text-slate-900 mb-8 text-center">Depoimentos</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          @for (depoimento of depoimentos; track depoimento.name) {
+          @for (depoimento of depoimentos(); track depoimento.name || depoimento.img || depoimento.vimeoId) {
             <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-white hover:shadow-md transition-shadow">
-              <img [src]="depoimento.img" [alt]="depoimento.name" class="w-full h-auto object-cover" referrerpolicy="no-referrer" />
+              @if (depoimento.tipo === 'video' && depoimento.vimeoId) {
+                <div class="aspect-video w-full bg-black">
+                  <iframe
+                    [src]="getVimeoUrl(depoimento.vimeoId)"
+                    class="w-full h-full"
+                    frameborder="0"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+              } @else {
+                <img [src]="depoimento.img" [alt]="depoimento.name" class="w-full h-auto object-cover" referrerpolicy="no-referrer" />
+              }
             </div>
           }
         </div>
@@ -579,7 +639,10 @@ interface Institution {
     </div>
   `
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+  private readonly sanitizer = inject(DomSanitizer);
+
   readonly ecossistemaSection = viewChild<ElementRef<HTMLElement>>('ecossistemaSection');
   readonly showTrajetoriaModal = signal<boolean>(false);
 
@@ -602,11 +665,55 @@ export class HomeComponent {
     { name: 'URB Recife', logo: 'https://static.wixstatic.com/media/152459_b99ea89715c744c19f29d704cbebe484~mv2.jpg', url: 'https://www2.recife.pe.gov.br/' }
   ];
 
-  depoimentos: Depoimento[] = [
-    { name: 'Amanda Aires Vieira', role: 'Depoimento Institucional', img: 'https://drive.google.com/uc?export=view&id=1VN4tH_kxzjI7mSu9tnMfs6ivzPyMwyNL' },
-    { name: 'Jose Goncalves Campos Filho', role: 'Depoimento Institucional', img: 'https://drive.google.com/uc?export=view&id=1ZmWee2WCuNpwTx9J9mLjzBo-1QsF7bW-' },
-    { name: 'Clodomir Barros', role: 'Depoimento Institucional', img: 'https://drive.google.com/uc?export=view&id=1KmCvUpdQL8DzCEnhi9I8mDokerAS8yrT' },
-  ];
+  // Fallback estático com URLs atualizadas do Google Drive
+  readonly depoimentos = signal<Depoimento[]>([
+    { name: 'Amanda Aires Vieira', role: 'Depoimento Institucional', tipo: 'imagem', img: 'https://drive.google.com/thumbnail?id=1VN4tH_kxzjI7mSu9tnMfs6ivzPyMwyNL&sz=w1000' },
+    { name: 'Jose Goncalves Campos Filho', role: 'Depoimento Institucional', tipo: 'imagem', img: 'https://drive.google.com/thumbnail?id=1ZmWee2WCuNpwTx9J9mLjzBo-1QsF7bW-&sz=w1000' },
+    { name: 'Clodomir Barros', role: 'Depoimento Institucional', tipo: 'imagem', img: 'https://drive.google.com/thumbnail?id=1KmCvUpdQL8DzCEnhi9I8mDokerAS8yrT&sz=w1000' },
+  ]);
+
+  readonly totalProjetosPortfolio = signal<number>(0);
+
+  async ngOnInit(): Promise<void> {
+    await Promise.all([
+      this.carregarDepoimentos(),
+      this.carregarTotalProjetos()
+    ]);
+  }
+
+  async carregarTotalProjetos(): Promise<void> {
+    try {
+      const total = await this.supabaseService.contarProjetosPortfolio();
+      this.totalProjetosPortfolio.set(total);
+    } catch {
+      this.totalProjetosPortfolio.set(0);
+    }
+  }
+
+  getVimeoUrl(vimeoId?: string | null): SafeResourceUrl {
+    const id = vimeoId?.trim() || '';
+    const url = id ? `https://player.vimeo.com/video/${id}?title=0&byline=0&portrait=0` : '';
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  async carregarDepoimentos(): Promise<void> {
+    try {
+      const data = await this.supabaseService.listarDepoimentosAtivos();
+      if (data && data.length > 0) {
+        this.depoimentos.set(
+          data.map((d: any) => ({
+            name: d.nome || 'Depoimento',
+            role: d.cargo_ou_papel || 'Depoimento Institucional',
+            tipo: d.tipo || 'imagem',
+            img: d.imagem_url,
+            vimeoId: d.vimeo_id,
+          }))
+        );
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar depoimentos do Supabase:', e);
+    }
+  }
 
   scrollToEcosystem(): void {
     const el = this.ecossistemaSection()?.nativeElement || document.getElementById('ecossistema');

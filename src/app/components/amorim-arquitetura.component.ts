@@ -1,6 +1,8 @@
-import { Component, OnDestroy, OnInit, input, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, input, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { OrigemWhatsapp, gerarLinkWhatsapp } from '../utils/whatsapp.util';
+import { SupabaseService } from '../../services/supabase.service';
 
 export interface PortfolioProject {
   img: string;
@@ -53,7 +55,7 @@ export interface ServiceCard {
       <!-- Botão Centralizado WhatsApp -->
       <div class="flex justify-center pt-2">
         <a
-          href="https://wa.me/5581991298803"
+          [href]="linkWhatsapp()"
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all duration-200 cursor-pointer text-sm sm:text-base"
@@ -70,6 +72,8 @@ export interface ServiceCard {
 export class ServiceGridComponent {
   readonly services = input<ServiceCard[]>([]);
   readonly buttonText = input<string>('Solicitar Proposta');
+  readonly origem = input<OrigemWhatsapp>('arquitetura');
+  readonly linkWhatsapp = computed(() => gerarLinkWhatsapp(this.origem()));
 }
 
 @Component({
@@ -299,7 +303,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
                 </p>
               </div>
 
-              <app-portfolio-carousel [projects]="gestaoManutencao"></app-portfolio-carousel>
+              <app-portfolio-carousel [projects]="gestaoManutencao()"></app-portfolio-carousel>
             </div>
           </div>
         </section>
@@ -380,7 +384,32 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
     </div>
   `
 })
-export class AmorimArquiteturaComponent {
+export class AmorimArquiteturaComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly gestaoManutencao = signal<PortfolioProject[]>([]);
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const data = await this.supabaseService.listarPortfolioAtivo();
+      if (data && data.length > 0) {
+        this.gestaoManutencao.set(
+          data.map((item: any) => ({
+            img: item.imagem_url,
+            title: item.titulo,
+            year: item.ano || '',
+            client: item.cliente || '',
+            location: item.local || ''
+          }))
+        );
+      } else {
+        this.gestaoManutencao.set([]);
+      }
+    } catch {
+      this.gestaoManutencao.set([]);
+    }
+  }
+
   readonly gestaoProjetos: PortfolioProject[] = [
     {
       img: 'https://static.wixstatic.com/media/152459_306189bdcd0d41e583a79b549afcba9c~mv2.jpg/v1/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/CRC-PE%20-%20VISTA%2001.jpg',
@@ -489,16 +518,6 @@ export class AmorimArquiteturaComponent {
       year: '2026',
       client: 'ALEPE',
       location: 'Recife/PE'
-    }
-  ];
-
-  readonly gestaoManutencao: PortfolioProject[] = [
-    {
-      img: 'https://static.wixstatic.com/media/152459_c74871c783f44018b3dd0af7f80dd576~mv2.jpg/v1/crop/x_161,y_0,w_373,h_464/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Artesanato%20Itapissuma.jpg',
-      title: 'Reforma do Mercado de Itapissuma',
-      year: '2013',
-      client: 'SETUR',
-      location: 'Itapissuma/PE'
     }
   ];
 

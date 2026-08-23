@@ -17,8 +17,8 @@ export const adminGuard: CanActivateFn = async (_route, _state) => {
       return true;
     }
   } catch (err) {
-    console.warn('Erro ao verificar permissão de admin:', err);
+    console.warn('Aviso ao verificar permissão de admin:', err);
   }
 
-  return router.createUrlTree(['/comunidade/preview']);
+  return router.createUrlTree(['/comunidade/feed']);
 };

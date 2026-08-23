@@ -1,0 +1,767 @@
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { SupabaseService } from '../../../services/supabase.service';
+
+export type CategoriaMaterialAdmin = 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books';
+
+interface MaterialAdminItem {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  categoria: string;
+  formato?: string;
+  tamanho?: string;
+  url_arquivo?: string;
+  ativo: boolean;
+  criado_em?: string;
+  downloads_count?: number;
+}
+
+@Component({
+  selector: 'app-admin-materiais',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div class="space-y-6">
+
+      <!-- Cabeçalho da Seção -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-xl font-bold text-slate-900">
+            Gestão do Acervo de Materiais & Downloads
+          </h3>
+          <p class="text-xs sm:text-sm text-slate-500">
+            Cadastre novos arquivos técnicos, edite recursos existentes e controle disponibilidade para membros.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            type="button"
+            (click)="carregarMateriais()"
+            [disabled]="carregando()"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+            title="Atualizar lista"
+          >
+            <svg class="w-3.5 h-3.5" [class.animate-spin]="carregando()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Atualizar</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="abrirModalNovo()"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Novo Material</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Alertas de Feedback -->
+      @if (mensagemSucesso()) {
+        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm flex items-start justify-between gap-3 shadow-xs">
+          <div class="flex items-start gap-3">
+            <div class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p class="font-bold text-emerald-950">Sucesso!</p>
+              <p class="text-emerald-800 leading-relaxed">{{ mensagemSucesso() }}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="mensagemSucesso.set(null)"
+            class="text-emerald-600 hover:text-emerald-900 p-1 rounded-lg hover:bg-emerald-100/50 transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      }
+
+      @if (mensagemErro()) {
+        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm flex items-start justify-between gap-3 shadow-xs">
+          <div class="flex items-center gap-3">
+            <div class="w-6 h-6 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="text-rose-800 leading-relaxed">{{ mensagemErro() }}</p>
+          </div>
+          <button
+            type="button"
+            (click)="mensagemErro.set(null)"
+            class="text-rose-600 hover:text-rose-900 p-1 rounded-lg hover:bg-rose-100/50 transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      }
+
+      <!-- Barra de Filtros e Busca -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+        <!-- Filtro de Status -->
+        <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-fit">
+          <button
+            type="button"
+            (click)="filtroStatus.set('todos')"
+            [class]="filtroStatus() === 'todos'
+              ? 'px-3 py-1.5 rounded-lg bg-white text-slate-900 font-bold text-xs shadow-xs transition-all'
+              : 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-semibold text-xs transition-all'"
+          >
+            Todos ({{ materiais().length }})
+          </button>
+          <button
+            type="button"
+            (click)="filtroStatus.set('ativos')"
+            [class]="filtroStatus() === 'ativos'
+              ? 'px-3 py-1.5 rounded-lg bg-white text-emerald-700 font-bold text-xs shadow-xs transition-all'
+              : 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-semibold text-xs transition-all'"
+          >
+            Ativos ({{ totalAtivos() }})
+          </button>
+          <button
+            type="button"
+            (click)="filtroStatus.set('inativos')"
+            [class]="filtroStatus() === 'inativos'
+              ? 'px-3 py-1.5 rounded-lg bg-white text-slate-700 font-bold text-xs shadow-xs transition-all'
+              : 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-semibold text-xs transition-all'"
+          >
+            Inativos ({{ totalInativos() }})
+          </button>
+        </div>
+
+        <!-- Filtro por Categoria + Busca -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <select
+            [value]="filtroCategoria()"
+            (change)="onCategoriaFilterChange($event)"
+            class="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="todas">Todas as categorias</option>
+            @for (cat of categoriasDisponiveis; track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+
+          <div class="relative min-w-[200px]">
+            <input
+              type="text"
+              [value]="termoBusca()"
+              (input)="onBuscaInput($event)"
+              placeholder="Buscar por título ou descrição..."
+              class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            />
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela / Lista de Materiais -->
+      @if (carregando()) {
+        <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs">
+          <div class="inline-flex items-center gap-2 text-slate-500 text-xs font-semibold">
+            <svg class="w-4 h-4 animate-spin text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Carregando materiais do Supabase...</span>
+          </div>
+        </div>
+      } @else if (materiaisFiltrados().length === 0) {
+        <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3 shadow-xs">
+          <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <p class="text-sm font-bold text-slate-900">Nenhum material encontrado</p>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto">
+            Não há materiais correspondentes aos filtros selecionados. Clique em "Novo Material" para cadastrar o primeiro recurso.
+          </p>
+        </div>
+      } @else {
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                  <th class="py-3.5 px-4">Material / Recurso</th>
+                  <th class="py-3.5 px-4">Categoria</th>
+                  <th class="py-3.5 px-4">Formato / Tamanho</th>
+                  <th class="py-3.5 px-4 text-center">Downloads</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of materiaisFiltrados(); track item.id) {
+                  <tr class="hover:bg-slate-50/60 transition-colors">
+                    
+                    <!-- Coluna 1: Título & Descrição -->
+                    <td class="py-4 px-4 max-w-md">
+                      <div class="space-y-1">
+                        <div class="font-bold text-slate-900 text-sm">
+                          {{ item.titulo }}
+                        </div>
+                        @if (item.descricao) {
+                          <p class="text-slate-500 text-xs line-clamp-2 leading-relaxed">
+                            {{ item.descricao }}
+                          </p>
+                        }
+                        @if (item.url_arquivo) {
+                          <a
+                            [href]="item.url_arquivo"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-800 transition-colors pt-0.5"
+                          >
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span>Link do arquivo</span>
+                          </a>
+                        } @else {
+                          <span class="text-[11px] text-amber-600 font-medium">⚠️ Sem URL direta (solicitação manual)</span>
+                        }
+                      </div>
+                    </td>
+
+                    <!-- Coluna 2: Categoria -->
+                    <td class="py-4 px-4 whitespace-nowrap">
+                      <span
+                        [class]="getBadgeEstilo(item.categoria)"
+                        class="px-2.5 py-1 rounded-full font-bold text-[11px] border inline-block"
+                      >
+                        {{ item.categoria }}
+                      </span>
+                    </td>
+
+                    <!-- Coluna 3: Formato e Tamanho -->
+                    <td class="py-4 px-4 whitespace-nowrap">
+                      <div class="space-y-0.5">
+                        <div class="font-bold text-slate-800 uppercase text-xs">
+                          {{ item.formato || 'PDF' }}
+                        </div>
+                        <div class="text-slate-400 text-[11px]">
+                          {{ item.tamanho || '—' }}
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Coluna 4: Downloads -->
+                    <td class="py-4 px-4 text-center whitespace-nowrap">
+                      <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>{{ item.downloads_count ?? 0 }}</span>
+                      </div>
+                    </td>
+
+                    <!-- Coluna 5: Status (Toggle Ativo/Inativo) -->
+                    <td class="py-4 px-4 text-center whitespace-nowrap">
+                      <button
+                        type="button"
+                        (click)="alternarStatusMaterial(item)"
+                        [disabled]="processandoStatus() === item.id"
+                        [class]="item.ativo
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'"
+                        class="px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                        title="Clique para alternar status"
+                      >
+                        <span class="w-1.5 h-1.5 rounded-full" [class.bg-emerald-500]="item.ativo" [class.bg-slate-400]="!item.ativo"></span>
+                        <span>{{ item.ativo ? 'Ativo' : 'Inativo' }}</span>
+                      </button>
+                    </td>
+
+                    <!-- Coluna 6: Ações (Editar / Excluir com 2 cliques) -->
+                    <td class="py-4 px-4 text-right whitespace-nowrap">
+                      <div class="flex items-center justify-end gap-1.5">
+                        
+                        <!-- Botão Editar -->
+                        <button
+                          type="button"
+                          (click)="abrirModalEdicao(item)"
+                          class="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                          title="Editar Material"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+
+                        <!-- Botão Excluir (Padrão 2 cliques) -->
+                        @if (confirmarExclusaoId() === item.id) {
+                          <div class="inline-flex items-center gap-1 animate-fadeIn">
+                            <button
+                              type="button"
+                              (click)="executarExclusao(item.id)"
+                              [disabled]="processandoExclusao() === item.id"
+                              class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                            >
+                              @if (processandoExclusao() === item.id) {
+                                <span>...</span>
+                              } @else {
+                                <span>Confirmar?</span>
+                              }
+                            </button>
+                            <button
+                              type="button"
+                              (click)="confirmarExclusaoId.set(null)"
+                              class="p-1 rounded-lg text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+                              title="Cancelar"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        } @else {
+                          <button
+                            type="button"
+                            (click)="confirmarExclusaoId.set(item.id)"
+                            class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Excluir Material"
+                          >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        }
+
+                      </div>
+                    </td>
+
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL DE CADASTRO / EDIÇÃO DE MATERIAL -->
+      @if (modalAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 space-y-6 my-8 animate-scaleUp">
+            
+            <!-- Topo do Modal -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div class="space-y-1">
+                <h4 class="text-lg sm:text-xl font-black text-slate-900">
+                  {{ materialEmEdicao() ? 'Editar Material' : 'Cadastrar Novo Material' }}
+                </h4>
+                <p class="text-xs text-slate-500">
+                  Preencha os dados técnicos do arquivo para disponibilizar aos membros.
+                </p>
+              </div>
+              <button
+                type="button"
+                (click)="fecharModal()"
+                class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Formulário -->
+            <form (submit)="salvarMaterial($event)" class="space-y-4">
+              
+              <!-- Título -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700">
+                  Título do Material <span class="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  [value]="formTitulo()"
+                  (input)="formTitulo.set($any($event.target).value)"
+                  placeholder="Ex: Planilha Automatizada de Laudo Cautelar de Vizinhança"
+                  required
+                  class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                />
+              </div>
+
+              <!-- Categoria & Formato -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">
+                    Categoria <span class="text-rose-500">*</span>
+                  </label>
+                  <select
+                    [value]="formCategoria()"
+                    (change)="formCategoria.set($any($event.target).value)"
+                    required
+                    class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    @for (cat of categoriasDisponiveis; track cat) {
+                      <option [value]="cat">{{ cat }}</option>
+                    }
+                  </select>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">
+                    Formato do Arquivo
+                  </label>
+                  <input
+                    type="text"
+                    [value]="formFormato()"
+                    (input)="formFormato.set($any($event.target).value)"
+                    placeholder="Ex: XLSX, PDF, DOCX, ZIP"
+                    class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium uppercase"
+                  />
+                </div>
+              </div>
+
+              <!-- Tamanho & URL do Arquivo -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">
+                    Tamanho Estimado
+                  </label>
+                  <input
+                    type="text"
+                    [value]="formTamanho()"
+                    (input)="formTamanho.set($any($event.target).value)"
+                    placeholder="Ex: 3.2 MB, 850 KB"
+                    class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">
+                    Status de Publicação
+                  </label>
+                  <label class="flex items-center gap-2.5 py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
+                    <input
+                      type="checkbox"
+                      [checked]="formAtivo()"
+                      (change)="formAtivo.set($any($event.target).checked)"
+                      class="rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span class="text-xs font-bold text-slate-700">Material Ativo (Visível aos membros)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- URL do Arquivo -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700">
+                  URL Direta do Arquivo (Google Drive, Supabase Storage, CDN, etc.)
+                </label>
+                <input
+                  type="url"
+                  [value]="formUrlArquivo()"
+                  (input)="formUrlArquivo.set($any($event.target).value)"
+                  placeholder="https://drive.google.com/... ou https://..."
+                  class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
+                />
+                <p class="text-[11px] text-slate-400">
+                  Caso deixe em branco, o membro poderá clicar em "Solicitar", e o arquivo será liberado manualmente.
+                </p>
+              </div>
+
+              <!-- Descrição -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700">
+                  Descrição / Instruções de Uso
+                </label>
+                <textarea
+                  rows="3"
+                  [value]="formDescricao()"
+                  (input)="formDescricao.set($any($event.target).value)"
+                  placeholder="Descreva o conteúdo técnico do material, normas associadas e recomendações de aplicação..."
+                  class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium resize-none leading-relaxed"
+                ></textarea>
+              </div>
+
+              <!-- Rodapé do Modal com Botões -->
+              <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  (click)="fecharModal()"
+                  class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  [disabled]="salvando()"
+                  class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  @if (salvando()) {
+                    <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>Salvando...</span>
+                  } @else {
+                    <span>{{ materialEmEdicao() ? 'Salvar Alterações' : 'Cadastrar Material' }}</span>
+                  }
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      }
+
+    </div>
+  `
+})
+export class AdminMateriaisComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
+  readonly materiais = signal<MaterialAdminItem[]>([]);
+  readonly carregando = signal<boolean>(true);
+  readonly salvando = signal<boolean>(false);
+  readonly processandoStatus = signal<string | null>(null);
+  readonly processandoExclusao = signal<string | null>(null);
+  readonly confirmarExclusaoId = signal<string | null>(null);
+
+  readonly mensagemSucesso = signal<string | null>(null);
+  readonly mensagemErro = signal<string | null>(null);
+
+  // Filtros
+  readonly filtroStatus = signal<'todos' | 'ativos' | 'inativos'>('todos');
+  readonly filtroCategoria = signal<string>('todas');
+  readonly termoBusca = signal<string>('');
+
+  // Categorias Reais
+  readonly categoriasDisponiveis: CategoriaMaterialAdmin[] = [
+    'Planilhas',
+    'Modelos de Laudo',
+    'Checklists',
+    'E-books'
+  ];
+
+  // Modal e Formulário
+  readonly modalAberto = signal<boolean>(false);
+  readonly materialEmEdicao = signal<MaterialAdminItem | null>(null);
+
+  readonly formTitulo = signal<string>('');
+  readonly formDescricao = signal<string>('');
+  readonly formCategoria = signal<string>('Planilhas');
+  readonly formFormato = signal<string>('XLSX');
+  readonly formTamanho = signal<string>('');
+  readonly formUrlArquivo = signal<string>('');
+  readonly formAtivo = signal<boolean>(true);
+
+  // Computed
+  readonly totalAtivos = computed(() => this.materiais().filter(m => m.ativo).length);
+  readonly totalInativos = computed(() => this.materiais().filter(m => !m.ativo).length);
+
+  readonly materiaisFiltrados = computed(() => {
+    let lista = this.materiais();
+
+    // Filtro por status
+    if (this.filtroStatus() === 'ativos') {
+      lista = lista.filter(m => m.ativo);
+    } else if (this.filtroStatus() === 'inativos') {
+      lista = lista.filter(m => !m.ativo);
+    }
+
+    // Filtro por categoria
+    if (this.filtroCategoria() !== 'todas') {
+      lista = lista.filter(m => m.categoria === this.filtroCategoria());
+    }
+
+    // Busca textual
+    const termo = this.termoBusca().toLowerCase().trim();
+    if (termo) {
+      lista = lista.filter(m =>
+        m.titulo.toLowerCase().includes(termo) ||
+        (m.descricao && m.descricao.toLowerCase().includes(termo))
+      );
+    }
+
+    return lista;
+  });
+
+  async ngOnInit(): Promise<void> {
+    await this.carregarMateriais();
+  }
+
+  async carregarMateriais(): Promise<void> {
+    this.carregando.set(true);
+    this.mensagemErro.set(null);
+    try {
+      const lista = await this.supabaseService.listarTodosMateriais();
+      
+      // Carrega contagem de downloads para cada material
+      const comContagem = await Promise.all(
+        lista.map(async (m: any) => {
+          const downloads = await this.supabaseService.contarDownloadsDoMaterial(m.id);
+          return {
+            ...m,
+            downloads_count: downloads,
+          };
+        })
+      );
+
+      this.materiais.set(comContagem);
+    } catch (e: any) {
+      this.mensagemErro.set('Erro ao carregar materiais: ' + (e?.message || e));
+    } finally {
+      this.carregando.set(false);
+    }
+  }
+
+  onCategoriaFilterChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.filtroCategoria.set(val);
+  }
+
+  onBuscaInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.termoBusca.set(val);
+  }
+
+  getBadgeEstilo(cat: string): string {
+    switch (cat) {
+      case 'Planilhas':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Modelos de Laudo':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Checklists':
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'E-books':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  }
+
+  abrirModalNovo(): void {
+    this.materialEmEdicao.set(null);
+    this.formTitulo.set('');
+    this.formDescricao.set('');
+    this.formCategoria.set('Planilhas');
+    this.formFormato.set('XLSX');
+    this.formTamanho.set('');
+    this.formUrlArquivo.set('');
+    this.formAtivo.set(true);
+    this.modalAberto.set(true);
+  }
+
+  abrirModalEdicao(material: MaterialAdminItem): void {
+    this.materialEmEdicao.set(material);
+    this.formTitulo.set(material.titulo);
+    this.formDescricao.set(material.descricao || '');
+    this.formCategoria.set(material.categoria || 'Planilhas');
+    this.formFormato.set(material.formato || 'PDF');
+    this.formTamanho.set(material.tamanho || '');
+    this.formUrlArquivo.set(material.url_arquivo || '');
+    this.formAtivo.set(material.ativo);
+    this.modalAberto.set(true);
+  }
+
+  fecharModal(): void {
+    this.modalAberto.set(false);
+    this.materialEmEdicao.set(null);
+  }
+
+  async salvarMaterial(event: Event): Promise<void> {
+    event.preventDefault();
+    const titulo = this.formTitulo().trim();
+    if (!titulo) return;
+
+    this.salvando.set(true);
+    this.mensagemErro.set(null);
+    this.mensagemSucesso.set(null);
+
+    const dados = {
+      titulo,
+      descricao: this.formDescricao().trim(),
+      categoria: this.formCategoria(),
+      formato: this.formFormato().trim().toUpperCase() || 'PDF',
+      tamanho: this.formTamanho().trim() || 'Arquivo',
+      url_arquivo: this.formUrlArquivo().trim(),
+      ativo: this.formAtivo(),
+    };
+
+    const edicao = this.materialEmEdicao();
+
+    if (edicao) {
+      // Atualizar
+      const { error } = await this.supabaseService.atualizarMaterial(edicao.id, dados);
+      this.salvando.set(false);
+
+      if (error) {
+        this.mensagemErro.set('Erro ao atualizar material: ' + error.message);
+        return;
+      }
+
+      this.materiais.update(lista =>
+        lista.map(m => (m.id === edicao.id ? { ...m, ...dados } : m))
+      );
+      this.mensagemSucesso.set(`Material "${titulo}" atualizado com sucesso!`);
+      this.fecharModal();
+    } else {
+      // Criar
+      const { error, data } = await this.supabaseService.criarMaterial(dados);
+      this.salvando.set(false);
+
+      if (error) {
+        this.mensagemErro.set('Erro ao criar material: ' + error.message);
+        return;
+      }
+
+      const novoMaterial: MaterialAdminItem = data || {
+        id: 'tmp_' + Date.now(),
+        ...dados,
+        downloads_count: 0,
+      };
+
+      this.materiais.update(lista => [novoMaterial, ...lista]);
+      this.mensagemSucesso.set(`Material "${titulo}" cadastrado com sucesso!`);
+      this.fecharModal();
+    }
+  }
+
+  async alternarStatusMaterial(material: MaterialAdminItem): Promise<void> {
+    if (this.processandoStatus()) return;
+
+    this.processandoStatus.set(material.id);
+    const novoStatus = !material.ativo;
+
+    const { error } = await this.supabaseService.atualizarMaterial(material.id, { ativo: novoStatus });
+    this.processandoStatus.set(null);
+
+    if (error) {
+      this.mensagemErro.set('Erro ao alterar status: ' + error.message);
+      return;
+    }
+
+    this.materiais.update(lista =>
+      lista.map(m => (m.id === material.id ? { ...m, ativo: novoStatus } : m))
+    );
+    this.mensagemSucesso.set(`Material "${material.titulo}" agora está ${novoStatus ? 'ativo' : 'inativo'}.`);
+  }
+
+  async executarExclusao(id: string): Promise<void> {
+    this.processandoExclusao.set(id);
+    this.mensagemErro.set(null);
+
+    const { error } = await this.supabaseService.excluirMaterial(id);
+    this.processandoExclusao.set(null);
+    this.confirmarExclusaoId.set(null);
+
+    if (error) {
+      this.mensagemErro.set('Erro ao excluir material: ' + error.message);
+      return;
+    }
+
+    this.materiais.update(lista => lista.filter(m => m.id !== id));
+    this.mensagemSucesso.set('Material e registros de download vinculados excluídos com sucesso.');
+  }
+}

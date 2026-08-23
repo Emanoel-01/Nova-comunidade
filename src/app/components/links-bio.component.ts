@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
 
 @Component({
   selector: 'app-links-bio',
@@ -134,7 +135,7 @@ import { RouterModule } from '@angular/router';
             >
               <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 border border-[#4a8251]/20 overflow-hidden p-1">
                 <img
-                  src="https://drive.google.com/uc?export=view&id=1GzJ8IxQKiNZcYR3j2Gilyc9imLcikY-x"
+                  src="https://drive.google.com/thumbnail?id=1GzJ8IxQKiNZcYR3j2Gilyc9imLcikY-x&sz=w1000"
                   alt="Amorim Academy"
                   class="w-full h-full object-contain"
                   referrerpolicy="no-referrer"
@@ -206,7 +207,7 @@ import { RouterModule } from '@angular/router';
 
             <!-- 7. Falar direto no WhatsApp (externo) -->
             <a
-              href="https://wa.me/5581991298803"
+              [href]="linkWhatsapp"
               target="_blank"
               rel="noopener noreferrer"
               id="link-whatsapp"
@@ -248,6 +249,8 @@ import { RouterModule } from '@angular/router';
   `
 })
 export class LinksBioComponent {
+  readonly linkWhatsapp = gerarLinkWhatsapp('links-bio');
+
   readonly avatarUrl = signal(
     'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69b4f78756902b494e56bda9/82107f70e_EmanoelAmorim.jpg'
   );
