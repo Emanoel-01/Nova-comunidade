@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
+import { SeoService } from '../services/seo.service';
 
 @Component({
   selector: 'app-amorim-tech',
@@ -410,8 +411,18 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
     </div>
   `
 })
-export class AmorimTechComponent {
+export class AmorimTechComponent implements OnInit {
+  private readonly seoService = inject(SeoService);
+
   readonly linkWhatsappTech = gerarLinkWhatsapp('tech');
   readonly linkWhatsappSindico = gerarLinkWhatsapp('tech-sindico');
+
+  ngOnInit(): void {
+    this.seoService.atualizar({
+      title: 'Amorim Tech | Predial 4.0 — SaaS de Inspeção Predial com IA',
+      description: 'Plataforma de gestão e inteligência predial avançada. Laudos técnicos, vistoria cautelar e diagnóstico por inteligência artificial para engenheiros, arquitetos e síndicos.',
+      canonicalPath: '/amorim-tech',
+    });
+  }
 }
 

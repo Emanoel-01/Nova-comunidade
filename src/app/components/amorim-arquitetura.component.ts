@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { OrigemWhatsapp, gerarLinkWhatsapp } from '../utils/whatsapp.util';
 import { SupabaseService } from '../../services/supabase.service';
+import { SeoService } from '../services/seo.service';
 
 export interface PortfolioProject {
   img: string;
@@ -386,10 +387,17 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
 })
 export class AmorimArquiteturaComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly seoService = inject(SeoService);
 
   readonly gestaoManutencao = signal<PortfolioProject[]>([]);
 
   async ngOnInit(): Promise<void> {
+    this.seoService.atualizar({
+      title: 'Amorim Arquitetura | Engenharia Diagnóstica e Consultiva em Pernambuco',
+      description: 'Excelência técnica para proteger o seu patrimônio. Engenharia condominial e diagnóstica em Pernambuco, unindo o rigor técnico das normas ABNT com a Construção 4.0.',
+      canonicalPath: '/amorim-arquitetura',
+    });
+
     try {
       const data = await this.supabaseService.listarPortfolioAtivo();
       if (data && data.length > 0) {

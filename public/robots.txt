@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /comunidade
+Disallow: /comunidade/preview
+Disallow: /redefinir-senha
+Disallow: /admin
+
+Sitemap: https://emanoelamorim.com/sitemap.xml

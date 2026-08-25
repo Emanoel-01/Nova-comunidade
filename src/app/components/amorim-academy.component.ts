@@ -1,7 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
+import { SeoService } from '../services/seo.service';
 
 @Component({
   selector: 'app-amorim-academy',
@@ -580,9 +581,19 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
     </div>
   `
 })
-export class AmorimAcademyComponent {
+export class AmorimAcademyComponent implements OnInit {
+  private readonly seoService = inject(SeoService);
+
   readonly mostrarObjetivos = signal(false);
   readonly linkWhatsapp = gerarLinkWhatsapp('academy');
+
+  ngOnInit(): void {
+    this.seoService.atualizar({
+      title: 'Amorim Academy | Formação, Mercado e Mentoria em Engenharia Diagnóstica',
+      description: 'Curso Predial 4.0, Incubadora Profissional e Mentor Anjo — formação técnica com corresponsabilidade, inserção no mercado e mentoria individualizada.',
+      canonicalPath: '/amorim-academy',
+    });
+  }
 
   toggleObjetivos(): void {
     this.mostrarObjetivos.update(v => !v);

@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HallFamaComponent } from './hall-fama.component';
 import { SupabaseService } from '../../services/supabase.service';
+import { SeoService } from '../services/seo.service';
 
 export interface BlogPost {
   id: string;
@@ -333,6 +334,7 @@ export interface BlogPost {
 })
 export class BlogComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly seoService = inject(SeoService);
 
   readonly termoBusca = signal('');
   readonly nomeNewsletter = signal('');
@@ -374,6 +376,12 @@ export class BlogComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    this.seoService.atualizar({
+      title: 'Blog | AmorimTech',
+      description: 'Artigos técnicos sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.',
+      canonicalPath: '/blog',
+    });
+
     await this.carregarPosts();
   }
 

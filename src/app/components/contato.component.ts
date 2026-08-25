@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
+import { SeoService } from '../services/seo.service';
 
 @Component({
   selector: 'app-contato',
@@ -276,7 +277,9 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
     </div>
   `
 })
-export class ContatoComponent {
+export class ContatoComponent implements OnInit {
+  private readonly seoService = inject(SeoService);
+
   readonly linkWhatsappDireto = gerarLinkWhatsapp('contato');
 
   readonly assunto = signal('Amorim Arquitetura');
@@ -288,6 +291,14 @@ export class ContatoComponent {
   readonly erroValidacao = signal<string | null>(null);
   readonly envioConfirmado = signal(false);
   readonly urlWhatsappGerada = signal<string | null>(null);
+
+  ngOnInit(): void {
+    this.seoService.atualizar({
+      title: 'Contato | AmorimTech',
+      description: 'Fale com a AmorimTech — consultoria, laudos técnicos e formação em engenharia diagnóstica.',
+      canonicalPath: '/contato',
+    });
+  }
 
   onAssuntoChange(event: Event): void {
     const target = event.target as HTMLSelectElement;

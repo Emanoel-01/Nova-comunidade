@@ -5,6 +5,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TrajetoriaPortfolioComponent } from './trajetoria-portfolio.component';
 import { HallFamaComponent } from './hall-fama.component';
 import { SupabaseService } from '../../services/supabase.service';
+import { SeoService } from '../services/seo.service';
 
 export interface Depoimento {
   name: string;
@@ -642,6 +643,7 @@ interface Institution {
 export class HomeComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly seoService = inject(SeoService);
 
   readonly ecossistemaSection = viewChild<ElementRef<HTMLElement>>('ecossistemaSection');
   readonly showTrajetoriaModal = signal<boolean>(false);
@@ -675,6 +677,12 @@ export class HomeComponent implements OnInit {
   readonly totalProjetosPortfolio = signal<number>(0);
 
   async ngOnInit(): Promise<void> {
+    this.seoService.atualizar({
+      title: 'AmorimTech | Engenharia Diagnóstica, Tecnologia e Formação',
+      description: 'Consultoria em engenharia diagnóstica, o SaaS Predial 4.0 para laudos de vistoria predial, e a Amorim Academy — formação em engenharia diagnóstica com mentoria e comunidade.',
+      canonicalPath: '/',
+    });
+
     await Promise.all([
       this.carregarDepoimentos(),
       this.carregarTotalProjetos()
