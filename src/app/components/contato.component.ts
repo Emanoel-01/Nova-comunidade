@@ -30,7 +30,7 @@ interface ChatMensagem {
             Como podemos ajudar hoje?
           </h1>
 
-          <p class="text-slate-600 text-base sm:text-lg leading-relaxed">
+          <p class="text-slate-600 text-base sm:text-lg leading-relaxed text-justify sm:text-center">
             Fale diretamente com os especialistas das verticais Amorim Arquitetura, Amorim Tech e Amorim Academy.
           </p>
         </div>
@@ -469,9 +469,9 @@ interface ChatMensagem {
                 <div class="max-w-3xl mx-auto space-y-4">
                   
                   <!-- Info Bar do Atendimento Ativo -->
-                  <div class="flex items-center justify-between px-4 py-3 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-xs">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-xs gap-2">
                     <div class="flex items-center gap-2">
-                      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
                       <span class="text-slate-300">Atendimento ativo para: <strong class="text-white">{{ sindicoNome() }}</strong></span>
                       @if (sindicoCondominio()) {
                         <span class="text-slate-500 hidden sm:inline">· {{ sindicoCondominio() }}</span>
@@ -482,9 +482,9 @@ interface ChatMensagem {
                       [href]="linkWhatsappSindico"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+                      class="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold transition-colors shrink-0"
                     >
-                      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <svg class="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
                         <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.044c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.13.332.202.043.073.043.419-.101.824z"/>
                       </svg>
                       <span>Falar no WhatsApp</span>
@@ -599,7 +599,7 @@ interface ChatMensagem {
                     </button>
                   </form>
 
-                  <div class="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-500 px-1 gap-1 text-center sm:text-left">
                     <span>Pressione Enter para enviar</span>
                     <span>Respostas embasadas nas normas ABNT (NBR 16747)</span>
                   </div>
@@ -769,13 +769,13 @@ export class ContatoComponent implements OnInit {
         condominio: this.sindicoCondominio(),
       });
 
-      if (error) {
-        console.warn('Aviso ao registrar lead no Supabase:', error.message || error);
-        // Mesmo se houver aviso de banco, permite o usuário prosseguir para a experiência de chat com um id fallback local
+      if (error || !data?.id) {
+        console.warn('Erro ao registrar lead no Supabase:', error?.message || error);
+        this.erroLead.set('Não foi possível iniciar o atendimento no momento. Tente novamente em instantes ou fale direto pelo WhatsApp.');
+        return;
       }
 
-      const idGerado = data?.id || `lead_${Date.now()}`;
-      this.leadId.set(idGerado);
+      this.leadId.set(data.id);
 
       // Mensagem inicial de boas-vindas da IA
       const horarioAtual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -812,6 +812,12 @@ Pode me contar o que está acontecendo no seu condomínio/edifício (como trinca
     const textoUsuario = this.inputMensagemChat().trim();
     if (!textoUsuario || this.enviandoMensagemChat()) return;
 
+    const idLead = this.leadId();
+    if (!idLead) {
+      this.erroChat.set('Sessão de atendimento não identificada. Recarregue a página e preencha o formulário novamente.');
+      return;
+    }
+
     const horarioAtual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     // 1. Adiciona a mensagem do usuário no histórico local
@@ -832,7 +838,6 @@ Pode me contar o que está acontecendo no seu condomínio/edifício (como trinca
     }));
 
     try {
-      const idLead = this.leadId() || 'lead_anon';
       const { data, error } = await this.supabaseService.enviarMensagemAloSindico(idLead, historicoFormatado);
 
       if (error) {

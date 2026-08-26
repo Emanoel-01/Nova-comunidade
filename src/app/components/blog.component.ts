@@ -224,7 +224,7 @@ export interface BlogPost {
                         </h2>
 
                         @if (post.resumo) {
-                          <p class="text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                          <p class="text-sm text-slate-600 line-clamp-2 leading-relaxed text-justify">
                             {{ post.resumo }}
                           </p>
                         }
@@ -303,14 +303,14 @@ export interface BlogPost {
                   {{ postSelecionado()?.titulo }}
                 </h1>
                 @if (postSelecionado()?.resumo) {
-                  <p class="text-base text-slate-600 font-medium italic border-l-4 border-indigo-500 pl-4 py-1">
+                  <p class="text-base text-slate-600 font-medium italic border-l-4 border-indigo-500 pl-4 py-1 text-justify">
                     {{ postSelecionado()?.resumo }}
                   </p>
                 }
               </div>
 
               <!-- Conteúdo Formatado -->
-              <div class="text-sm sm:text-base text-slate-700 leading-relaxed space-y-4 whitespace-pre-line">
+              <div class="text-sm sm:text-base text-slate-700 leading-relaxed space-y-4 whitespace-pre-line text-justify">
                 {{ postSelecionado()?.conteudo }}
               </div>
             </div>

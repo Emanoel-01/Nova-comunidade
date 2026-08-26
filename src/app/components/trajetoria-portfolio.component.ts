@@ -14,59 +14,59 @@ interface TimelineItem {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-slate-50 py-16 px-4">
+    <div class="bg-slate-50 py-12 sm:py-16 px-3 sm:px-4">
       <div class="w-full max-w-7xl mx-auto">
-        <div class="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6 px-2 sm:px-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 sm:mb-10 gap-4 sm:gap-6 px-1 sm:px-4">
           <div>
-            <h2 class="text-3xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-3 tracking-tight">
               Trajetória & Portfólio
             </h2>
-            <p class="text-slate-500 mt-2 font-medium">Deslize para ver o histórico profissional e acadêmico completo.</p>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1 sm:mt-2 font-medium">Deslize para ver o histórico profissional e acadêmico completo.</p>
           </div>
-          <div class="flex items-center gap-3 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200">
-            <button (click)="scrollTimeline('left')" class="p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors" aria-label="Rolar para a esquerda">←</button>
-            <button (click)="toggleAutoScroll()" [class]="isAutoScroll() ? 'px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 bg-indigo-600 text-white shadow-md hover:bg-indigo-700' : 'px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 bg-slate-50 text-slate-700 hover:bg-slate-100'">
+          <div class="flex items-center gap-2 sm:gap-3 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200 w-full sm:w-auto justify-between sm:justify-start">
+            <button (click)="scrollTimeline('left')" class="p-2 sm:p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors" aria-label="Rolar para a esquerda">←</button>
+            <button (click)="toggleAutoScroll()" [class]="isAutoScroll() ? 'flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all duration-300 bg-indigo-600 text-white shadow-md hover:bg-indigo-700' : 'flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all duration-300 bg-slate-50 text-slate-700 hover:bg-slate-100'">
               {{ isAutoScroll() ? 'Pausar Reprodução' : 'Reprodução Automática' }}
             </button>
-            <button (click)="scrollTimeline('right')" class="p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors" aria-label="Rolar para a direita">→</button>
+            <button (click)="scrollTimeline('right')" class="p-2 sm:p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors" aria-label="Rolar para a direita">→</button>
           </div>
         </div>
 
-        <div class="relative px-2 sm:px-4" (mouseenter)="isHovering.set(true)" (mouseleave)="isHovering.set(false)" (touchstart)="isHovering.set(true)" (touchend)="isHovering.set(false)">
-          <div class="absolute top-0 left-0 w-8 sm:w-16 h-full bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
-          <div class="absolute top-0 right-0 w-8 sm:w-16 h-full bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
+        <div class="relative px-1 sm:px-4" (mouseenter)="isHovering.set(true)" (mouseleave)="isHovering.set(false)" (touchstart)="isHovering.set(true)" (touchend)="isHovering.set(false)">
+          <div class="hidden sm:block absolute top-0 left-0 w-8 sm:w-16 h-full bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
+          <div class="hidden sm:block absolute top-0 right-0 w-8 sm:w-16 h-full bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
 
-          <div #timelineEl class="overflow-x-auto flex gap-6 pb-12 pt-4" style="scrollbar-width: none;">
+          <div #timelineEl class="overflow-x-auto flex gap-4 sm:gap-6 pb-8 sm:pb-12 pt-2 sm:pt-4 scroll-smooth snap-x snap-mandatory" style="scrollbar-width: none; -webkit-overflow-scrolling: touch;">
             @for (item of timeline; track item.title) {
-              <div class="flex-shrink-0 w-[320px] h-[440px] rounded-3xl shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative group overflow-hidden bg-white snap-center border border-slate-200">
+              <div class="flex-shrink-0 w-[270px] sm:w-[320px] max-w-[85vw] h-[400px] sm:h-[440px] rounded-3xl shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative group overflow-hidden bg-white snap-center border border-slate-200">
                 @if (item.imageUrl) {
-                  <div class="absolute top-5 left-5 z-20">
-                    <div class="bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-lg border border-white/30 shadow-sm">
-                      <span class="text-xs font-black text-white tracking-widest uppercase">{{ item.year }}</span>
+                  <div class="absolute top-4 sm:top-5 left-4 sm:left-5 z-20">
+                    <div class="bg-white/20 backdrop-blur-md px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-white/30 shadow-sm">
+                      <span class="text-[10px] sm:text-xs font-black text-white tracking-widest uppercase">{{ item.year }}</span>
                     </div>
                   </div>
                   <div class="absolute inset-0 w-full h-full bg-slate-900 z-0">
                     <img [src]="item.imageUrl" [alt]="item.title" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700 ease-out">
                   </div>
                   <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/80 to-transparent z-10 opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div class="absolute bottom-0 left-0 w-full p-6 z-20">
-                    <h4 class="font-bold text-lg text-white mb-3 leading-snug">{{ item.title }}</h4>
-                    <div class="w-10 h-1 bg-indigo-500 mb-4 rounded-full opacity-90"></div>
-                    <p class="text-sm text-slate-200 leading-relaxed font-light line-clamp-4 text-justify">{{ item.description }}</p>
+                  <div class="absolute bottom-0 left-0 w-full p-4 sm:p-6 z-20">
+                    <h4 class="font-bold text-base sm:text-lg text-white mb-2 sm:mb-3 leading-snug">{{ item.title }}</h4>
+                    <div class="w-8 sm:w-10 h-1 bg-indigo-500 mb-3 sm:mb-4 rounded-full opacity-90"></div>
+                    <p class="text-xs sm:text-sm text-slate-200 leading-relaxed font-light line-clamp-4 text-justify">{{ item.description }}</p>
                   </div>
                 } @else {
-                  <div class="w-full h-full flex flex-col p-6 bg-gradient-to-br from-white to-slate-50 relative z-10">
-                    <div class="flex justify-between items-start mb-8 relative z-10">
-                      <div [class]="iconBg(item.icon) + ' w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border'">
-                        <span [class]="iconColor(item.icon) + ' text-xl font-bold'">{{ iconLabel(item.icon) }}</span>
+                  <div class="w-full h-full flex flex-col p-4 sm:p-6 bg-gradient-to-br from-white to-slate-50 relative z-10">
+                    <div class="flex justify-between items-start mb-6 sm:mb-8 relative z-10">
+                      <div [class]="iconBg(item.icon) + ' w-12 sm:w-14 h-12 sm:h-14 rounded-2xl flex items-center justify-center shadow-sm border'">
+                        <span [class]="iconColor(item.icon) + ' text-lg sm:text-xl font-bold'">{{ iconLabel(item.icon) }}</span>
                       </div>
-                      <div class="bg-white px-3.5 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                        <span class="text-xs font-black text-slate-700 tracking-widest uppercase">{{ item.year }}</span>
+                      <div class="bg-white px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                        <span class="text-[10px] sm:text-xs font-black text-slate-700 tracking-widest uppercase">{{ item.year }}</span>
                       </div>
                     </div>
                     <div class="relative z-10 flex-grow">
-                      <h4 class="font-bold text-lg text-slate-900 mb-3 leading-snug">{{ item.title }}</h4>
-                      <p class="text-sm text-slate-600 leading-relaxed text-justify">{{ item.description }}</p>
+                      <h4 class="font-bold text-base sm:text-lg text-slate-900 mb-2 sm:mb-3 leading-snug">{{ item.title }}</h4>
+                      <p class="text-xs sm:text-sm text-slate-600 leading-relaxed text-justify">{{ item.description }}</p>
                     </div>
                   </div>
                 }

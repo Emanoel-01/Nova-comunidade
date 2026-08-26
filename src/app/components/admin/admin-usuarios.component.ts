@@ -27,6 +27,8 @@ export interface ProfissionalComPermissoes {
   email: string;
   avatar_url?: string | null;
   nivel_atual?: string;
+  licenca_tipo?: '6_meses' | '1_ano' | 'vitalicia' | 'personalizada' | string | null;
+  licenca_validade?: string | null;
   created_at?: string;
   permissoes?: PermissaoAcesso[];
 }
@@ -185,6 +187,25 @@ interface ConfirmacaoSenhaProvisoria {
                         >
                           <span class="w-1.5 h-1.5 rounded-full" [class]="getNivelDotClass(user.nivel_atual)"></span>
                           {{ user.nivel_atual || 'Membro Trainee' }}
+                        </span>
+
+                        <!-- Badge de Licença Global -->
+                        @let licenca = getLicencaStatus(user);
+                        <span [class]="'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ' + licenca.badgeClass">
+                          @if (licenca.tipo === 'vitalicia') {
+                            <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                          } @else if (licenca.tipo === 'expirada') {
+                            <svg class="w-3 h-3 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          } @else if (licenca.tipo === 'valida') {
+                            <svg class="w-3 h-3 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          }
+                          <span>{{ licenca.rotulo }}</span>
                         </span>
                       </div>
                       <p class="text-xs text-slate-500 mt-0.5">
@@ -397,6 +418,108 @@ interface ConfirmacaoSenhaProvisoria {
               </div>
             </div>
 
+            <!-- SEÇÃO DE LICENÇA GLOBAL -->
+            <div class="bg-indigo-50/50 p-4 sm:p-5 rounded-2xl border border-indigo-100 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span>Licença Global do Usuário</span>
+                  </h5>
+                  <p class="text-slate-500 text-[11px]">
+                    Define o período de vigência e duração da conta na plataforma.
+                  </p>
+                </div>
+
+                <!-- Referência: Data de entrada do membro -->
+                @if (u.created_at) {
+                  <div class="text-[11px] text-slate-500 bg-white px-3 py-1 rounded-lg border border-slate-200 self-start sm:self-auto shadow-2xs">
+                    <span class="text-slate-400">Membro desde:</span>
+                    <strong class="text-slate-700 ml-1">{{ formatarDataSimples(u.created_at) }}</strong>
+                  </div>
+                }
+              </div>
+
+              <!-- Seleção Rápida de Licença -->
+              <div class="space-y-2">
+                <label class="block font-semibold text-slate-700 text-xs">
+                  Duração da Licença:
+                </label>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <!-- 6 Meses -->
+                  <button
+                    type="button"
+                    (click)="selecionarLicencaRapida('6_meses')"
+                    [class]="licencaTipoEdicao() === '6_meses'
+                      ? 'px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs border border-indigo-600 shadow-xs cursor-pointer text-center'
+                      : 'px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 cursor-pointer text-center'"
+                  >
+                    6 Meses
+                  </button>
+
+                  <!-- 1 Ano -->
+                  <button
+                    type="button"
+                    (click)="selecionarLicencaRapida('1_ano')"
+                    [class]="licencaTipoEdicao() === '1_ano'
+                      ? 'px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs border border-indigo-600 shadow-xs cursor-pointer text-center'
+                      : 'px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 cursor-pointer text-center'"
+                  >
+                    1 Ano
+                  </button>
+
+                  <!-- Vitalícia -->
+                  <button
+                    type="button"
+                    (click)="selecionarLicencaRapida('vitalicia')"
+                    [class]="licencaTipoEdicao() === 'vitalicia'
+                      ? 'px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs border border-emerald-600 shadow-xs cursor-pointer text-center'
+                      : 'px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 cursor-pointer text-center'"
+                  >
+                    Vitalícia (Sem expiração)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Expiração da Licença / Data Personalizada -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label for="licenca-validade-input" class="block font-semibold text-slate-700 mb-1">
+                    Data de Expiração da Licença:
+                  </label>
+                  @if (licencaTipoEdicao() === 'vitalicia') {
+                    <div class="px-3.5 py-2 rounded-xl bg-emerald-100/70 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                      <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Acesso Vitalício — Sem data limite</span>
+                    </div>
+                  } @else {
+                    <input
+                      id="licenca-validade-input"
+                      type="date"
+                      [value]="licencaValidadeEdicao()"
+                      (input)="onLicencaDataManualChange($event)"
+                      class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs cursor-pointer"
+                    />
+                  }
+                </div>
+
+                <div class="flex items-center text-[11px] text-slate-500 sm:pt-4">
+                  @if (licencaTipoEdicao() === 'vitalicia') {
+                    <span>O membro possui acesso contínuo aos módulos liberados sem prazo de expiração geral.</span>
+                  } @else if (licencaValidadeEdicao()) {
+                    <span>Vigência calculada até <strong>{{ formatarDataSimples(licencaValidadeEdicao()) }}</strong>.</span>
+                  } @else {
+                    <span>Selecione uma das opções de vigência ou preencha uma data de término.</span>
+                  }
+                </div>
+              </div>
+            </div>
+
             <!-- SEÇÃO 2: Módulos do Predial 4.0 -->
             <div class="space-y-3">
               <div class="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -470,14 +593,14 @@ interface ConfirmacaoSenhaProvisoria {
             </div>
 
             <!-- SEÇÃO 3: Módulos da Comunidade -->
-            <div class="space-y-3">
+            <div class="space-y-4">
               <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                 <div class="flex items-center gap-2">
                   <div class="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
                     C
                   </div>
                   <h5 class="text-sm font-bold text-slate-900">
-                    Módulos da Comunidade
+                    Módulos da Comunidade Nova
                   </h5>
                 </div>
                 <div class="flex items-center gap-2">
@@ -499,45 +622,119 @@ interface ConfirmacaoSenhaProvisoria {
                 </div>
               </div>
 
-              <div class="space-y-2.5">
-                @for (mod of modulosComunidade; track mod.key) {
-                  <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                    <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
-                      <input
-                        type="checkbox"
-                        [checked]="isModuloLiberadoEdicao('comunidade', mod.key)"
-                        (change)="toggleModuloEdicao('comunidade', mod.key)"
-                        class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 mt-0.5 cursor-pointer"
-                      />
-                      <div>
-                        <div class="flex items-center gap-2">
-                          <span class="font-bold text-slate-900">{{ mod.nome }}</span>
-                          @if (isModuloLiberadoEdicao('comunidade', mod.key)) {
-                            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Liberado</span>
-                          } @else {
-                            <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
-                          }
-                        </div>
-                        <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
-                      </div>
-                    </label>
-
-                    <!-- Campo Válido até -->
-                    <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
-                      <label [for]="'validade-comunidade-' + mod.key" class="text-slate-500 text-[11px] whitespace-nowrap">
-                        Válido até:
-                      </label>
-                      <input
-                        [id]="'validade-comunidade-' + mod.key"
-                        type="date"
-                        [value]="getValidadeEdicao('comunidade', mod.key)"
-                        (input)="onValidadeChange('comunidade', mod.key, $event)"
-                        placeholder="Sem vencimento"
-                        class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                      />
-                    </div>
+              <!-- Grupo 1: Acesso Base (Automático ao aprovar solicitação) -->
+              <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white uppercase tracking-wider">
+                      Acesso Base
+                    </span>
+                    <span class="font-bold text-slate-800 text-xs">Liberado Automaticamente ao Aprovar</span>
                   </div>
-                }
+                  <span class="text-[11px] text-slate-500">Módulos padrão da Comunidade</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  Estes 4 módulos são liberados imediatamente para todo membro aprovado. Você pode revogá-los individualmente abaixo se necessário.
+                </p>
+
+                <div class="space-y-2">
+                  @for (mod of modulosComunidadeBase; track mod.key) {
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                      <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
+                        <input
+                          type="checkbox"
+                          [checked]="isModuloLiberadoEdicao('comunidade', mod.key)"
+                          (change)="toggleModuloEdicao('comunidade', mod.key)"
+                          class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 mt-0.5 cursor-pointer"
+                        />
+                        <div>
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold text-slate-900">{{ mod.nome }}</span>
+                            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Base</span>
+                            @if (isModuloLiberadoEdicao('comunidade', mod.key)) {
+                              <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-600 text-white">Ativo</span>
+                            } @else {
+                              <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-100 text-rose-700">Revogado</span>
+                            }
+                          </div>
+                          <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
+                        </div>
+                      </label>
+
+                      <!-- Campo Válido até -->
+                      <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
+                        <label [for]="'validade-comunidade-' + mod.key" class="text-slate-500 text-[11px] whitespace-nowrap">
+                          Válido até:
+                        </label>
+                        <input
+                          [id]="'validade-comunidade-' + mod.key"
+                          type="date"
+                          [value]="getValidadeEdicao('comunidade', mod.key)"
+                          (input)="onValidadeChange('comunidade', mod.key, $event)"
+                          placeholder="Sem vencimento"
+                          class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Grupo 2: Módulos Adicionais (Liberação Manual) -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
+                      Adicionais
+                    </span>
+                    <span class="font-bold text-slate-800 text-xs">Liberação Manual</span>
+                  </div>
+                  <span class="text-[11px] text-slate-500">Exige concessão individual pelo administrador</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  Módulos de cursos avançados, agentes de inteligência artificial e permissões administrativas.
+                </p>
+
+                <div class="space-y-2">
+                  @for (mod of modulosComunidadeAdicionais; track mod.key) {
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                      <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
+                        <input
+                          type="checkbox"
+                          [checked]="isModuloLiberadoEdicao('comunidade', mod.key)"
+                          (change)="toggleModuloEdicao('comunidade', mod.key)"
+                          class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
+                        />
+                        <div>
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold text-slate-900">{{ mod.nome }}</span>
+                            @if (isModuloLiberadoEdicao('comunidade', mod.key)) {
+                              <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">Liberado</span>
+                            } @else {
+                              <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
+                            }
+                          </div>
+                          <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
+                        </div>
+                      </label>
+
+                      <!-- Campo Válido até -->
+                      <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
+                        <label [for]="'validade-comunidade-' + mod.key" class="text-slate-500 text-[11px] whitespace-nowrap">
+                          Válido até:
+                        </label>
+                        <input
+                          [id]="'validade-comunidade-' + mod.key"
+                          type="date"
+                          [value]="getValidadeEdicao('comunidade', mod.key)"
+                          (input)="onValidadeChange('comunidade', mod.key, $event)"
+                          placeholder="Sem vencimento"
+                          class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  }
+                </div>
               </div>
             </div>
 
@@ -816,15 +1013,22 @@ export class AdminUsuariosComponent implements OnInit {
     { key: 'admin_predial', nome: 'Admin Predial', descricao: 'Configurações avançadas do sistema predial.', produto: 'predial4' },
   ];
 
-  readonly modulosComunidade: ModuloConfig[] = [
+  readonly modulosComunidadeBase: ModuloConfig[] = [
     { key: 'forum', nome: 'Fórum', descricao: 'Acesso a tópicos técnicos, dúvidas e discussões.', produto: 'comunidade' },
     { key: 'vagas', nome: 'Vagas', descricao: 'Mural de oportunidades de trabalho e parcerias.', produto: 'comunidade' },
     { key: 'materiais', nome: 'Materiais', descricao: 'Downloads de planilhas, modelos e e-books.', produto: 'comunidade' },
     { key: 'eventos', nome: 'Eventos', descricao: 'Workshops, masterclasses e encontros online.', produto: 'comunidade' },
+  ];
+
+  readonly modulosComunidadeAdicionais: ModuloConfig[] = [
     { key: 'cursos', nome: 'Cursos', descricao: 'Aulas gravadas e capacitações da plataforma.', produto: 'comunidade' },
     { key: 'custos-viabilidade', nome: 'Agente: Custos & Viabilidade', descricao: 'Estudo de viabilidade NBR 12.721, CUB e VGV.', produto: 'comunidade' },
     { key: 'admin_comunidade', nome: 'Admin Comunidade', descricao: 'Permissões administrativas na comunidade.', produto: 'comunidade' },
   ];
+
+  get modulosComunidade(): ModuloConfig[] {
+    return [...this.modulosComunidadeBase, ...this.modulosComunidadeAdicionais];
+  }
 
   readonly usuarios = signal<ProfissionalComPermissoes[]>([]);
   readonly termoBusca = signal('');
@@ -835,6 +1039,8 @@ export class AdminUsuariosComponent implements OnInit {
   // Estados de Edição
   readonly usuarioEmEdicao = signal<ProfissionalComPermissoes | null>(null);
   readonly nivelEdicao = signal<string>('Membro Trainee');
+  readonly licencaTipoEdicao = signal<'6_meses' | '1_ano' | 'vitalicia' | 'personalizada' | ''>('');
+  readonly licencaValidadeEdicao = signal<string>('');
   readonly permissoesEdicao = signal<Map<string, { liberado: boolean; validade: string | null }>>(new Map());
   readonly salvando = signal(false);
   readonly erroEdicao = signal<string | null>(null);
@@ -931,6 +1137,58 @@ export class AdminUsuariosComponent implements OnInit {
     }
   }
 
+  formatarDataSimples(valStr?: string | null): string {
+    if (!valStr) return '';
+    try {
+      const d = new Date(valStr);
+      if (isNaN(d.getTime())) return valStr;
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return valStr;
+    }
+  }
+
+  getLicencaStatus(user: ProfissionalComPermissoes): {
+    tipo: 'vitalicia' | 'valida' | 'expirada' | 'indefinida';
+    rotulo: string;
+    badgeClass: string;
+  } {
+    if (user.licenca_tipo === 'vitalicia') {
+      return {
+        tipo: 'vitalicia',
+        rotulo: 'Licença Vitalícia',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      };
+    }
+
+    if (user.licenca_validade) {
+      const dataVal = new Date(user.licenca_validade);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      const dataFormatada = this.formatarDataSimples(user.licenca_validade);
+      if (!isNaN(dataVal.getTime()) && dataVal < hoje) {
+        return {
+          tipo: 'expirada',
+          rotulo: `Expirada (${dataFormatada})`,
+          badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 font-bold',
+        };
+      }
+
+      return {
+        tipo: 'valida',
+        rotulo: `Expira em ${dataFormatada}`,
+        badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      };
+    }
+
+    return {
+      tipo: 'indefinida',
+      rotulo: 'Licença Padrão',
+      badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+    };
+  }
+
   getModuloStatus(user: ProfissionalComPermissoes, produto: 'predial4' | 'comunidade', moduloKey: string): { liberado: boolean; validade: string | null } {
     if (!user.permissoes) return { liberado: false, validade: null };
     const perm = user.permissoes.find(p => p.produto === produto && p.modulo === moduloKey);
@@ -956,10 +1214,46 @@ export class AdminUsuariosComponent implements OnInit {
     }
   }
 
+  // --- CONTROLE DE LICENÇA GLOBAL ---
+  calcularDataMeses(meses: number): string {
+    const d = new Date();
+    d.setMonth(d.getMonth() + meses);
+    return d.toISOString().split('T')[0];
+  }
+
+  calcularDataAnos(anos: number): string {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + anos);
+    return d.toISOString().split('T')[0];
+  }
+
+  selecionarLicencaRapida(tipo: '6_meses' | '1_ano' | 'vitalicia'): void {
+    this.licencaTipoEdicao.set(tipo);
+    if (tipo === '6_meses') {
+      this.licencaValidadeEdicao.set(this.calcularDataMeses(6));
+    } else if (tipo === '1_ano') {
+      this.licencaValidadeEdicao.set(this.calcularDataAnos(1));
+    } else if (tipo === 'vitalicia') {
+      this.licencaValidadeEdicao.set('');
+    }
+  }
+
+  onLicencaDataManualChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.licencaValidadeEdicao.set(val);
+    if (val) {
+      this.licencaTipoEdicao.set('personalizada');
+    } else {
+      this.licencaTipoEdicao.set('');
+    }
+  }
+
   // --- EDITOR DE USUÁRIO ---
   abrirEditorUsuario(user: ProfissionalComPermissoes): void {
     this.usuarioEmEdicao.set(user);
     this.nivelEdicao.set(user.nivel_atual || 'Membro Trainee');
+    this.licencaTipoEdicao.set((user.licenca_tipo as any) || (user.licenca_validade ? 'personalizada' : ''));
+    this.licencaValidadeEdicao.set(user.licenca_validade ? user.licenca_validade.split('T')[0] : '');
     this.erroEdicao.set(null);
 
     const mapa = new Map<string, { liberado: boolean; validade: string | null }>();
@@ -1038,10 +1332,18 @@ export class AdminUsuariosComponent implements OnInit {
 
     try {
       const nivel = this.nivelEdicao();
-      // Atualizar nível na tabela profissionais
-      const { error: erroNivel } = await this.supabaseService.atualizarNivelProfissional(u.id, nivel);
-      if (erroNivel) {
-        console.warn('Aviso ao atualizar nível na tabela profissionais:', erroNivel.message);
+      const tipoLicenca = this.licencaTipoEdicao() || null;
+      const validadeLicenca = this.licencaValidadeEdicao() || null;
+
+      // Atualizar nível e licença global na tabela profissionais
+      const { error: erroProf } = await this.supabaseService.atualizarProfissionalAdmin(u.id, {
+        nivel_atual: nivel,
+        licenca_tipo: tipoLicenca,
+        licenca_validade: tipoLicenca === 'vitalicia' ? null : validadeLicenca,
+      });
+
+      if (erroProf) {
+        console.warn('Aviso ao atualizar dados do profissional:', erroProf.message);
       }
 
       // Upsert das permissões para cada módulo
@@ -1070,7 +1372,7 @@ export class AdminUsuariosComponent implements OnInit {
         return;
       }
 
-      this.alertaSucesso.set(`Permissões de ${this.getNome(u)} salvas com sucesso!`);
+      this.alertaSucesso.set(`Permissões e licença de ${this.getNome(u)} salvas com sucesso!`);
       this.fecharEditor();
       await this.carregarUsuarios();
     } catch (e: any) {

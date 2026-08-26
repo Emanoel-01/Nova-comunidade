@@ -1,8 +1,10 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
+import { extrairVimeoId, montarUrlPlayerVimeo } from '../../utils/vimeo.util';
 
-export type CategoriaMaterialAdmin = 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books';
+export type CategoriaMaterialAdmin = 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books' | 'Vídeos';
 
 interface MaterialAdminItem {
   id: string;
@@ -218,7 +220,23 @@ interface MaterialAdminItem {
                             {{ item.descricao }}
                           </p>
                         }
-                        @if (item.url_arquivo) {
+                        @if (item.categoria === 'Vídeos') {
+                          @if (item.url_arquivo) {
+                            <a
+                              [href]="item.url_arquivo"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors pt-0.5"
+                            >
+                              <svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
+                              </svg>
+                              <span>Vídeo Vimeo</span>
+                            </a>
+                          } @else {
+                            <span class="text-[11px] text-amber-600 font-medium">⚠️ Sem ID do Vimeo</span>
+                          }
+                        } @else if (item.url_arquivo) {
                           <a
                             [href]="item.url_arquivo"
                             target="_blank"
@@ -399,7 +417,7 @@ interface MaterialAdminItem {
                   </label>
                   <select
                     [value]="formCategoria()"
-                    (change)="formCategoria.set($any($event.target).value)"
+                    (change)="onFormCategoriaChange($any($event.target).value)"
                     required
                     class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                   >
@@ -411,29 +429,29 @@ interface MaterialAdminItem {
 
                 <div class="space-y-1.5">
                   <label class="block text-xs font-bold text-slate-700">
-                    Formato do Arquivo
+                    Formato do Recurso
                   </label>
                   <input
                     type="text"
                     [value]="formFormato()"
                     (input)="formFormato.set($any($event.target).value)"
-                    placeholder="Ex: XLSX, PDF, DOCX, ZIP"
+                    [placeholder]="formCategoria() === 'Vídeos' ? 'Ex: VÍDEO, MP4' : 'Ex: XLSX, PDF, DOCX, ZIP'"
                     class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium uppercase"
                   />
                 </div>
               </div>
 
-              <!-- Tamanho & URL do Arquivo -->
+              <!-- Tamanho & Status -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                   <label class="block text-xs font-bold text-slate-700">
-                    Tamanho Estimado
+                    {{ formCategoria() === 'Vídeos' ? 'Duração / Resolução' : 'Tamanho Estimado' }}
                   </label>
                   <input
                     type="text"
                     [value]="formTamanho()"
                     (input)="formTamanho.set($any($event.target).value)"
-                    placeholder="Ex: 3.2 MB, 850 KB"
+                    [placeholder]="formCategoria() === 'Vídeos' ? 'Ex: 15 min, 1080p' : 'Ex: 3.2 MB, 850 KB'"
                     class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                   />
                 </div>
@@ -454,21 +472,65 @@ interface MaterialAdminItem {
                 </div>
               </div>
 
-              <!-- URL do Arquivo -->
-              <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700">
-                  URL Direta do Arquivo (Google Drive, Supabase Storage, CDN, etc.)
-                </label>
-                <input
-                  type="url"
-                  [value]="formUrlArquivo()"
-                  (input)="formUrlArquivo.set($any($event.target).value)"
-                  placeholder="https://drive.google.com/... ou https://..."
-                  class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
-                />
-                <p class="text-[11px] text-slate-400">
-                  Caso deixe em branco, o membro poderá clicar em "Solicitar", e o arquivo será liberado manualmente.
-                </p>
+              <!-- URL do Arquivo ou ID do Vimeo -->
+              <div class="space-y-2">
+                @if (formCategoria() === 'Vídeos') {
+                  <label class="block text-xs font-bold text-slate-700">
+                    ID ou Link do Vídeo no Vimeo <span class="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    [value]="formUrlArquivo()"
+                    (input)="formUrlArquivo.set($any($event.target).value)"
+                    placeholder="Ex: 892019283 ou https://vimeo.com/892019283"
+                    required
+                    class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
+                  />
+                  <p class="text-[11px] text-slate-400">
+                    Cole o ID numérico ou o link direto do Vimeo. O player será incorporado no card do material.
+                  </p>
+
+                  <!-- Prévia ao vivo do player Vimeo -->
+                  @if (formUrlArquivo().trim()) {
+                    @let vimeoPreviewUrl = getVimeoUrl(formUrlArquivo());
+                    <div class="space-y-1.5 pt-1">
+                      <label class="block text-xs font-bold text-slate-700">Prévia do Player Vimeo</label>
+                      @if (vimeoPreviewUrl) {
+                        <div class="aspect-video max-w-md w-full bg-black rounded-2xl overflow-hidden shadow-xs border border-slate-300">
+                          <iframe
+                            [src]="vimeoPreviewUrl"
+                            class="w-full h-full"
+                            frameborder="0"
+                            allow="autoplay; fullscreen; picture-in-picture"
+                            allowfullscreen
+                            title="Prévia do vídeo"
+                          ></iframe>
+                        </div>
+                      } @else {
+                        <div class="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2">
+                          <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Link ou ID do Vimeo não reconhecido. Use o número (ex: <code>892019283</code>) ou link <code>vimeo.com/ID</code>.</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                } @else {
+                  <label class="block text-xs font-bold text-slate-700">
+                    URL Direta do Arquivo (Google Drive, Supabase Storage, CDN, etc.)
+                  </label>
+                  <input
+                    type="url"
+                    [value]="formUrlArquivo()"
+                    (input)="formUrlArquivo.set($any($event.target).value)"
+                    placeholder="https://drive.google.com/... ou https://..."
+                    class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
+                  />
+                  <p class="text-[11px] text-slate-400">
+                    Caso deixe em branco, o membro poderá clicar em "Solicitar", e o arquivo será liberado manualmente.
+                  </p>
+                }
               </div>
 
               <!-- Descrição -->
@@ -520,6 +582,7 @@ interface MaterialAdminItem {
 })
 export class AdminMateriaisComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly materiais = signal<MaterialAdminItem[]>([]);
   readonly carregando = signal<boolean>(true);
@@ -541,7 +604,8 @@ export class AdminMateriaisComponent implements OnInit {
     'Planilhas',
     'Modelos de Laudo',
     'Checklists',
-    'E-books'
+    'E-books',
+    'Vídeos'
   ];
 
   // Modal e Formulário
@@ -626,6 +690,12 @@ export class AdminMateriaisComponent implements OnInit {
     this.termoBusca.set(val);
   }
 
+  getVimeoUrl(urlOuId?: string | null): SafeResourceUrl | null {
+    const url = montarUrlPlayerVimeo(urlOuId);
+    if (!url) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
   getBadgeEstilo(cat: string): string {
     switch (cat) {
       case 'Planilhas':
@@ -636,8 +706,22 @@ export class AdminMateriaisComponent implements OnInit {
         return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'E-books':
         return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Vídeos':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  }
+
+  onFormCategoriaChange(novaCategoria: string): void {
+    this.formCategoria.set(novaCategoria);
+    if (novaCategoria === 'Vídeos') {
+      if (!this.formFormato() || this.formFormato() === 'XLSX' || this.formFormato() === 'PDF') {
+        this.formFormato.set('VÍDEO');
+      }
+      if (!this.formTamanho()) {
+        this.formTamanho.set('Vimeo Streaming');
+      }
     }
   }
 
@@ -679,13 +763,31 @@ export class AdminMateriaisComponent implements OnInit {
     this.mensagemErro.set(null);
     this.mensagemSucesso.set(null);
 
+    let urlArquivoFinal = this.formUrlArquivo().trim();
+
+    // Validação específica para a categoria Vídeos
+    if (this.formCategoria() === 'Vídeos') {
+      if (!urlArquivoFinal) {
+        this.mensagemErro.set('Por favor, informe o link ou o ID numérico do vídeo no Vimeo.');
+        this.salvando.set(false);
+        return;
+      }
+      const vimeoId = extrairVimeoId(urlArquivoFinal);
+      if (!vimeoId) {
+        this.mensagemErro.set('Link ou ID do Vimeo não reconhecido. Use o número (ex: 892019283) ou o link direto vimeo.com/ID.');
+        this.salvando.set(false);
+        return;
+      }
+      urlArquivoFinal = `https://vimeo.com/${vimeoId}`;
+    }
+
     const dados = {
       titulo,
       descricao: this.formDescricao().trim(),
       categoria: this.formCategoria(),
-      formato: this.formFormato().trim().toUpperCase() || 'PDF',
-      tamanho: this.formTamanho().trim() || 'Arquivo',
-      url_arquivo: this.formUrlArquivo().trim(),
+      formato: this.formFormato().trim().toUpperCase() || (this.formCategoria() === 'Vídeos' ? 'VÍDEO' : 'PDF'),
+      tamanho: this.formTamanho().trim() || (this.formCategoria() === 'Vídeos' ? 'Vimeo Streaming' : 'Arquivo'),
+      url_arquivo: urlArquivoFinal,
       ativo: this.formAtivo(),
     };
 

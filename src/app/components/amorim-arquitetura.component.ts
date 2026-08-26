@@ -24,15 +24,15 @@ export interface ServiceCard {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="space-y-10">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+    <div class="space-y-6 sm:space-y-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
         @for (card of services(); track card.title) {
-          <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-6">
-            <div class="space-y-3">
-              <h4 class="text-xl font-bold text-slate-900 tracking-tight">
+          <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between space-y-5">
+            <div class="space-y-2.5">
+              <h4 class="text-base sm:text-xl font-bold text-slate-900 tracking-tight">
                 {{ card.title }}
               </h4>
-              <p class="text-slate-600 text-sm leading-relaxed">
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
                 {{ card.description }}
               </p>
             </div>
@@ -59,9 +59,9 @@ export interface ServiceCard {
           [href]="linkWhatsapp()"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all duration-200 cursor-pointer text-sm sm:text-base"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all duration-200 cursor-pointer text-xs sm:text-base min-h-[44px]"
         >
-          <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 fill-current" viewBox="0 0 24 24">
             <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
           </svg>
           <span>{{ buttonText() }}</span>
@@ -227,51 +227,51 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
   standalone: true,
   imports: [CommonModule, RouterLink, PortfolioCarouselComponent, ServiceGridComponent],
   template: `
-    <div class="w-full bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 space-y-20">
-      <div class="max-w-7xl mx-auto space-y-20">
+    <div class="w-full bg-slate-50 py-6 sm:py-10 lg:py-16 px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-14 lg:space-y-16">
+      <div class="max-w-7xl mx-auto space-y-10 sm:space-y-14 lg:space-y-16">
         <!-- Seção 1: Hero -->
-        <section class="relative bg-slate-900 text-white rounded-3xl overflow-hidden shadow-2xl py-16 sm:py-24 px-6 sm:px-12 lg:px-16 border border-slate-800">
+        <section class="relative bg-slate-900 text-white rounded-3xl overflow-hidden shadow-2xl py-10 sm:py-16 lg:py-20 px-5 sm:px-10 lg:px-14 border border-slate-800">
           <div
             class="absolute inset-0 opacity-15 bg-cover bg-center mix-blend-overlay pointer-events-none"
             style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop');"
           ></div>
 
           <div class="relative z-10 max-w-3xl">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-400/30 rounded-full text-blue-400 text-xs font-semibold uppercase tracking-wider mb-6">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-400/30 rounded-full text-blue-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-3 sm:mb-5">
               <span>🏢</span>
               <span>Especialistas em Engenharia Consultiva</span>
             </div>
 
-            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight mb-6">
+            <h1 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight mb-3 sm:mb-5">
               Excelência técnica para proteger o seu patrimônio.
             </h1>
 
-            <p class="text-slate-300 text-base sm:text-lg leading-relaxed font-normal">
+            <p class="text-slate-300 text-xs sm:text-base leading-relaxed font-normal text-justify">
               A Amorim Arquitetura é pioneira em Engenharia Condominial e Diagnóstica em Pernambuco. Unimos o rigor técnico das normas da ABNT com a inovação da Construção 4.0 para garantir a conformidade legal e otimizar os custos do seu empreendimento.
             </p>
           </div>
         </section>
 
         <!-- Seção 2: Portfólio -->
-        <section class="space-y-10">
+        <section class="space-y-6 sm:space-y-8 lg:space-y-10">
           <div class="text-center max-w-3xl mx-auto">
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
+            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-3">
               Portfólio
             </h2>
-            <p class="text-slate-600 text-base sm:text-lg">
+            <p class="text-slate-600 text-xs sm:text-base">
               Mais de 15 anos de serviços executados para órgãos públicos, instituições e empreendimentos privados em Pernambuco e no Brasil.
             </p>
           </div>
 
           <!-- Grid de 3 Colunas com Carrosséis -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
             <!-- Coluna 1: Gestão de Projetos -->
-            <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm flex flex-col justify-between space-y-6">
-              <div class="space-y-2">
-                <h3 class="text-xl font-bold text-slate-900">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+              <div class="space-y-1.5">
+                <h3 class="text-base sm:text-xl font-bold text-slate-900">
                   Gestão de Projetos
                 </h3>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed min-h-[40px]">
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify min-h-[36px]">
                   Coordenação técnica completa de projetos arquitetônicos e de engenharia, do conceito à entrega.
                 </p>
               </div>
@@ -280,12 +280,12 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
             </div>
 
             <!-- Coluna 2: Gestão e Fiscalização de Obras -->
-            <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm flex flex-col justify-between space-y-6">
-              <div class="space-y-2">
-                <h3 class="text-xl font-bold text-slate-900">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+              <div class="space-y-1.5">
+                <h3 class="text-base sm:text-xl font-bold text-slate-900">
                   Gestão e Fiscalização de Obras
                 </h3>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed min-h-[40px]">
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify min-h-[36px]">
                   Acompanhamento técnico rigoroso garantindo qualidade, prazo e custo nas obras.
                 </p>
               </div>
@@ -294,12 +294,12 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
             </div>
 
             <!-- Coluna 3: Gestão da Manutenção -->
-            <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm flex flex-col justify-between space-y-6">
-              <div class="space-y-2">
-                <h3 class="text-xl font-bold text-slate-900">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+              <div class="space-y-1.5">
+                <h3 class="text-base sm:text-xl font-bold text-slate-900">
                   Gestão da Manutenção
                 </h3>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed min-h-[40px]">
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify min-h-[36px]">
                   Planejamento e controle da manutenção predial para preservar e valorizar patrimônios.
                 </p>
               </div>
@@ -310,12 +310,12 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         </section>
 
         <!-- Seção 3: Engenharia Diagnóstica e Legal -->
-        <section class="space-y-10 pt-4">
+        <section class="space-y-6 sm:space-y-8 lg:space-y-10 pt-1 sm:pt-2">
           <div class="text-center max-w-3xl mx-auto">
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
+            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-3">
               Engenharia Diagnóstica e Legal
             </h2>
-            <p class="text-slate-600 text-base sm:text-lg">
+            <p class="text-slate-600 text-xs sm:text-base">
               Diagnósticos precisos e laudos técnicos para garantir segurança jurídica e estrutural.
             </p>
           </div>
@@ -327,12 +327,12 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         </section>
 
         <!-- Seção 4: Gestão Condominial e Operação -->
-        <section class="space-y-10 pt-4">
+        <section class="space-y-6 sm:space-y-8 lg:space-y-10 pt-1 sm:pt-2">
           <div class="text-center max-w-3xl mx-auto">
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
+            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-3">
               Gestão Condominial e Operação
             </h2>
-            <p class="text-slate-600 text-base sm:text-lg">
+            <p class="text-slate-600 text-xs sm:text-base">
               Ferramentas e processos para aumentar a vida útil e reduzir custos emergenciais do seu prédio.
             </p>
           </div>
@@ -344,12 +344,12 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         </section>
 
         <!-- Seção 5: Projetos e Inovação 4.0 -->
-        <section class="space-y-10 pt-4">
+        <section class="space-y-6 sm:space-y-8 lg:space-y-10 pt-1 sm:pt-2">
           <div class="text-center max-w-3xl mx-auto">
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
+            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-3">
               Projetos e Inovação 4.0
             </h2>
-            <p class="text-slate-600 text-base sm:text-lg">
+            <p class="text-slate-600 text-xs sm:text-base">
               A união da arquitetura moderna com as soluções tecnológicas do amanhã.
             </p>
           </div>
@@ -361,17 +361,17 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         </section>
 
         <!-- Seção 6: Atendimento para Síndicos (Alô Síndico) -->
-        <section class="pt-2">
-          <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-8 sm:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 max-w-5xl mx-auto">
+        <section class="pt-1 sm:pt-2">
+          <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6 max-w-5xl mx-auto">
             <div class="space-y-2 text-center md:text-left">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-xs font-bold uppercase tracking-wider">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                 <span>⚡</span>
                 <span>Canal Direto do Síndico</span>
               </div>
-              <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              <h3 class="text-lg sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
                 Precisa de vistoria ou laudo para seu condomínio?
               </h3>
-              <p class="text-amber-100 text-sm sm:text-base max-w-xl">
+              <p class="text-amber-100 text-xs sm:text-sm max-w-xl text-justify md:text-left">
                 Consulte nosso assistente técnico inteligente Alô Síndico com IA ou receba uma proposta técnica direta e sem burocracia.
               </p>
             </div>
@@ -380,7 +380,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
               <a
                 routerLink="/contato"
                 fragment="alo-sindico"
-                class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all duration-200 text-xs sm:text-sm cursor-pointer whitespace-nowrap"
+                class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all duration-200 text-xs sm:text-sm cursor-pointer whitespace-nowrap min-h-[44px]"
               >
                 <span>Acessar Alô Síndico</span>
                 <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,19 +392,19 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         </section>
 
         <!-- Seção 7: CTA Final -->
-        <section class="pt-2">
-          <div class="bg-blue-50 border border-blue-100 rounded-3xl p-8 sm:p-12 text-center max-w-4xl mx-auto shadow-sm">
-            <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4 tracking-tight">
+        <section class="pt-1 sm:pt-2">
+          <div class="bg-blue-50 border border-blue-100 rounded-3xl p-6 sm:p-10 lg:p-12 text-center max-w-4xl mx-auto shadow-sm">
+            <h3 class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 mb-3 sm:mb-4 tracking-tight">
               Mais de 100 projetos e laudos executados com sucesso
             </h3>
-            <p class="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
+            <p class="text-slate-600 text-xs sm:text-base max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed text-justify sm:text-center">
               A Amorim Arquitetura é a escolha de grandes instituições públicas, privadas e condomínios que não abrem mão de segurança, rigor normativo e tecnologia de ponta.
             </p>
             <div class="flex justify-center">
               <a
                 routerLink="/"
                 fragment="clientes"
-                class="inline-flex items-center justify-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-sm sm:text-base"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3.5 sm:py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer text-xs sm:text-base min-h-[44px]"
               >
                 <span>Ver Órgãos que Confiam no Nosso Trabalho</span>
                 <span>→</span>

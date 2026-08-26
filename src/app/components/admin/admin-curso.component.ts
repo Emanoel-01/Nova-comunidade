@@ -1,6 +1,8 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
+import { extrairVimeoId, montarUrlPlayerVimeo } from '../../utils/vimeo.util';
 
 export interface ModuloCursoAdmin {
   id: string;
@@ -491,17 +493,17 @@ export interface CursoAdmin {
                     </div>
 
                     <div class="space-y-1.5 sm:col-span-2">
-                      <label class="block text-xs font-bold text-slate-700">ID do Vídeo no Vimeo *</label>
+                      <label class="block text-xs font-bold text-slate-700">ID ou Link do Vídeo no Vimeo *</label>
                       <input
                         type="text"
                         #formModVimeoInput
                         [value]="moduloFormDados.vimeo_id"
                         (input)="moduloFormDados.vimeo_id = formModVimeoInput.value"
-                        placeholder="Ex: 892019283 (apenas o número/ID do Vimeo)"
+                        placeholder="Ex: 892019283 ou https://vimeo.com/892019283"
                         class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                       />
                       <p class="text-[11px] text-slate-500">
-                        Insira apenas o <strong>ID numérico</strong> do vídeo (ex: se o link for <code class="bg-slate-100 px-1 py-0.5 rounded">vimeo.com/892019283</code>, insira <strong>892019283</strong>). O player monta a URL de transmissão automaticamente.
+                        Cole o <strong>ID numérico</strong> (ex: <code class="bg-slate-100 px-1 py-0.5 rounded">892019283</code>) ou o <strong>link completo</strong> do Vimeo (ex: <code class="bg-slate-100 px-1 py-0.5 rounded">https://vimeo.com/892019283</code>). O sistema identifica e normaliza o ID automaticamente.
                       </p>
                     </div>
 
@@ -528,6 +530,33 @@ export interface CursoAdmin {
                         class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       ></textarea>
                     </div>
+
+                    <!-- Prévia do Player do Vimeo em Tempo Real -->
+                    @if (moduloFormDados.vimeo_id?.trim()) {
+                      @let vimeoPreviewUrl = getVimeoUrl(moduloFormDados.vimeo_id);
+                      <div class="space-y-1.5 sm:col-span-3 pt-1">
+                        <label class="block text-xs font-bold text-slate-700">Prévia do Player do Vimeo</label>
+                        @if (vimeoPreviewUrl) {
+                          <div class="aspect-video max-w-md w-full bg-black rounded-2xl overflow-hidden shadow-xs border border-slate-300">
+                            <iframe
+                              [src]="vimeoPreviewUrl"
+                              class="w-full h-full"
+                              frameborder="0"
+                              allow="autoplay; fullscreen; picture-in-picture"
+                              allowfullscreen
+                              title="Prévia do vídeo"
+                            ></iframe>
+                          </div>
+                        } @else {
+                          <div class="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2">
+                            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Formato de link ou ID do Vimeo não reconhecido. Cole apenas o número ou o link <code>vimeo.com/ID</code>.</span>
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
 
                   <div class="flex items-center justify-end gap-3 pt-2">
@@ -907,6 +936,7 @@ export interface CursoAdmin {
 })
 export class AdminCursoComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly Math = Math;
 
@@ -1099,6 +1129,12 @@ export class AdminCursoComponent implements OnInit {
     this.moduloExcluirId.set(null);
   }
 
+  getVimeoUrl(vimeoId?: string | null): SafeResourceUrl | null {
+    const url = montarUrlPlayerVimeo(vimeoId);
+    if (!url) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
   async salvarModulo(): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
@@ -1106,6 +1142,15 @@ export class AdminCursoComponent implements OnInit {
     if (!this.moduloFormDados.titulo.trim()) {
       this.exibirErro('Por favor, informe o título da aula.');
       return;
+    }
+
+    let vimeoIdFinal: string | null = null;
+    if (this.moduloFormDados.vimeo_id && this.moduloFormDados.vimeo_id.trim()) {
+      vimeoIdFinal = extrairVimeoId(this.moduloFormDados.vimeo_id);
+      if (!vimeoIdFinal) {
+        this.exibirErro('Não foi possível identificar o ID do vídeo. Cole apenas o número (ex: 892019283) ou o link completo do Vimeo.');
+        return;
+      }
     }
 
     this.salvando.set(true);
@@ -1117,7 +1162,7 @@ export class AdminCursoComponent implements OnInit {
           titulo: this.moduloFormDados.titulo.trim(),
           descricao: this.moduloFormDados.descricao.trim() || '',
           duracao: this.moduloFormDados.duracao.trim() || '',
-          vimeo_id: this.moduloFormDados.vimeo_id.trim() || '',
+          vimeo_id: vimeoIdFinal || '',
           ordem: this.moduloFormDados.ordem || 1,
         });
 
@@ -1134,7 +1179,7 @@ export class AdminCursoComponent implements OnInit {
           titulo: this.moduloFormDados.titulo.trim(),
           descricao: this.moduloFormDados.descricao.trim() || undefined,
           duracao: this.moduloFormDados.duracao.trim() || undefined,
-          vimeo_id: this.moduloFormDados.vimeo_id.trim() || undefined,
+          vimeo_id: vimeoIdFinal || undefined,
           ordem: this.moduloFormDados.ordem || 1,
         });
 

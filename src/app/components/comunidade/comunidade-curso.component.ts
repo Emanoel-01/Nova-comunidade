@@ -1,6 +1,8 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
+import { montarUrlPlayerVimeo } from '../../utils/vimeo.util';
 
 export interface CursoModuloAluno {
   id: string;
@@ -512,16 +514,26 @@ export interface CursoAluno {
                             <span class="text-[11px] text-slate-500 font-normal">Ambiente Seguro de Capacitação</span>
                           </div>
 
-                          <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-inner border border-slate-800">
-                            <iframe
-                              [src]="getVimeoUrl(mod.vimeo_id)"
-                              class="w-full h-full"
-                              frameborder="0"
-                              allow="autoplay; fullscreen; picture-in-picture"
-                              allowfullscreen
-                              title="Vídeo da aula"
-                            ></iframe>
-                          </div>
+                          @let videoUrl = getVimeoUrl(mod.vimeo_id);
+                          @if (videoUrl) {
+                            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-inner border border-slate-800">
+                              <iframe
+                                [src]="videoUrl"
+                                class="w-full h-full"
+                                frameborder="0"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowfullscreen
+                                title="Vídeo da aula"
+                              ></iframe>
+                            </div>
+                          } @else {
+                            <div class="p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-center gap-3">
+                              <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <span>Vídeo não configurado corretamente para este módulo — contate o suporte.</span>
+                            </div>
+                          }
                         </div>
 
                         <!-- Botão de Marcar como Concluído -->
@@ -715,6 +727,7 @@ export interface CursoAluno {
 })
 export class ComunidadeCursoComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly cursos = signal<CursoAluno[]>([]);
   readonly carregando = signal<boolean>(true);
@@ -909,9 +922,10 @@ export class ComunidadeCursoComponent implements OnInit {
     return `${min}min de conteúdo`;
   }
 
-  getVimeoUrl(vimeoId?: string | null): string {
-    const id = vimeoId?.trim() || '76979871';
-    return `https://player.vimeo.com/video/${id}?title=0&byline=0&portrait=0`;
+  getVimeoUrl(vimeoId?: string | null): SafeResourceUrl | null {
+    const url = montarUrlPlayerVimeo(vimeoId);
+    if (!url) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 
   formatarData(dataStr: string | null | undefined): string {

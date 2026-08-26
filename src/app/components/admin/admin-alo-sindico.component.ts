@@ -7,6 +7,7 @@ export interface AloSindicoLead {
   nome: string;
   telefone: string;
   email: string;
+  nome_condominio?: string | null;
   condominio?: string | null;
   status: 'novo' | 'em_atendimento' | 'concluido' | 'descartado';
   criado_em?: string;
@@ -172,12 +173,12 @@ export interface AloSindicoMensagem {
                       <h4 class="text-sm font-bold text-slate-900 leading-tight">
                         {{ lead.nome }}
                       </h4>
-                      @if (lead.condominio) {
+                      @if (lead.nome_condominio || lead.condominio) {
                         <p class="text-xs text-amber-700 font-medium flex items-center gap-1">
                           <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                           </svg>
-                          <span>{{ lead.condominio }}</span>
+                          <span>{{ lead.nome_condominio || lead.condominio }}</span>
                         </p>
                       }
                     </div>
@@ -224,12 +225,12 @@ export interface AloSindicoMensagem {
                     <p class="text-xs text-slate-500 mt-0.5">
                       {{ lead.email }} · {{ lead.telefone }}
                     </p>
-                    @if (lead.condominio) {
+                    @if (lead.nome_condominio || lead.condominio) {
                       <div class="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-200/60">
                         <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
-                        <span>Condomínio: {{ lead.condominio }}</span>
+                        <span>Condomínio: {{ lead.nome_condominio || lead.condominio }}</span>
                       </div>
                     }
                   </div>
@@ -403,6 +404,7 @@ export class AdminAloSindicoComponent implements OnInit {
         (l.nome && l.nome.toLowerCase().includes(busca)) ||
         (l.email && l.email.toLowerCase().includes(busca)) ||
         (l.telefone && l.telefone.includes(busca)) ||
+        (l.nome_condominio && l.nome_condominio.toLowerCase().includes(busca)) ||
         (l.condominio && l.condominio.toLowerCase().includes(busca))
       );
     }
@@ -468,7 +470,8 @@ export class AdminAloSindicoComponent implements OnInit {
   gerarLinkWhatsappLead(lead: AloSindicoLead): string {
     const digitos = lead.telefone.replace(/\D/g, '');
     const primeiroNome = lead.nome.trim().split(' ')[0] || 'Síndico(a)';
-    const mensagem = `Olá, ${primeiroNome}! Aqui é da equipe técnica da Amorim Tech. Vimos seu contato pelo Alô Síndico sobre o condomínio ${lead.condominio || 'seu edifício'} e estamos à disposição para auxiliar com sua cotação e inspeção predial.`;
+    const nomeCondo = lead.nome_condominio || lead.condominio || 'seu edifício';
+    const mensagem = `Olá, ${primeiroNome}! Aqui é da equipe técnica da Amorim Tech. Vimos seu contato pelo Alô Síndico sobre o condomínio ${nomeCondo} e estamos à disposição para auxiliar com sua cotação e inspeção predial.`;
     return `https://wa.me/55${digitos}?text=${encodeURIComponent(mensagem)}`;
   }
 

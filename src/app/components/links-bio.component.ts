@@ -77,7 +77,7 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
             <a
               routerLink="/amorim-arquitetura"
               id="link-amorim-arquitetura"
-              class="group flex items-center gap-3.5 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 border-l-4 border-l-[#3b4b6b] transition-all duration-200 active:scale-[0.99]"
+              class="group flex items-center gap-3.5 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 hover:border-[#3b4b6b]/40 transition-all duration-200 active:scale-[0.99]"
             >
               <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 p-1 border border-slate-200">
                 <img
@@ -104,7 +104,7 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
             <a
               routerLink="/amorim-tech"
               id="link-amorim-tech"
-              class="group flex items-center gap-3.5 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 border-l-4 border-l-[#e87722] transition-all duration-200 active:scale-[0.99]"
+              class="group flex items-center gap-3.5 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 hover:border-[#e87722]/40 transition-all duration-200 active:scale-[0.99]"
             >
               <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 p-1 border border-slate-200">
                 <img
@@ -131,7 +131,7 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
             <a
               routerLink="/amorim-academy"
               id="link-amorim-academy"
-              class="group flex items-center gap-3.5 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 border-l-4 border-l-[#4a8251] transition-all duration-200 active:scale-[0.99]"
+              class="group flex items-center gap-3.5 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-md border border-slate-200 hover:border-[#4a8251]/40 transition-all duration-200 active:scale-[0.99]"
             >
               <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 border border-[#4a8251]/20 overflow-hidden p-1">
                 <img

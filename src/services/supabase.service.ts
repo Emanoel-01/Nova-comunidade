@@ -241,6 +241,8 @@ export class SupabaseService {
     full_name: string;
     email: string;
     nivel_atual?: string;
+    licenca_tipo?: string | null;
+    licenca_validade?: string | null;
   }): Promise<{ data?: any; error: Error | null }> {
     try {
       const { data, error } = await this.client
@@ -249,10 +251,58 @@ export class SupabaseService {
           full_name: dados.full_name,
           email: dados.email,
           nivel_atual: dados.nivel_atual || 'Membro Trainee',
+          ...(dados.licenca_tipo ? { licenca_tipo: dados.licenca_tipo } : {}),
+          ...(dados.licenca_validade ? { licenca_validade: dados.licenca_validade } : {}),
         })
         .select()
         .single();
-      return { data, error };
+
+      if (error || !data) return { data, error };
+
+      // Base automática: todo membro aprovado já recebe estes 4 módulos da Comunidade
+      const MODULOS_BASE = ['forum', 'vagas', 'materiais', 'eventos'];
+      const permissoesBase = MODULOS_BASE.map(modulo => ({
+        profissional_id: data.id,
+        produto: 'comunidade' as const,
+        modulo,
+        liberado: true,
+      }));
+
+      const { error: erroPermissoes } = await this.client
+        .from('permissoes_acesso')
+        .insert(permissoesBase);
+
+      if (erroPermissoes) {
+        console.warn('Profissional criado, mas houve erro ao liberar a base de módulos automática:', erroPermissoes.message);
+        // Não falhar o cadastro inteiro por causa disso — o profissional já existe e aparece
+        // em Gestão de Usuários; o admin pode liberar manualmente se a base automática falhar.
+      }
+
+      return { data, error: null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarProfissionalAdmin(
+    id: string,
+    dados: {
+      nivel_atual?: string;
+      licenca_tipo?: string | null;
+      licenca_validade?: string | null;
+    }
+  ): Promise<{ error: Error | null }> {
+    try {
+      const updatePayload: Record<string, any> = {};
+      if (dados.nivel_atual !== undefined) updatePayload.nivel_atual = dados.nivel_atual;
+      if (dados.licenca_tipo !== undefined) updatePayload.licenca_tipo = dados.licenca_tipo;
+      if (dados.licenca_validade !== undefined) updatePayload.licenca_validade = dados.licenca_validade;
+
+      const { error } = await this.client
+        .from('profissionais')
+        .update(updatePayload)
+        .eq('id', id);
+      return { error };
     } catch (e: any) {
       return { error: e };
     }
@@ -262,15 +312,7 @@ export class SupabaseService {
     id: string,
     nivelAtual: string
   ): Promise<{ error: Error | null }> {
-    try {
-      const { error } = await this.client
-        .from('profissionais')
-        .update({ nivel_atual: nivelAtual })
-        .eq('id', id);
-      return { error };
-    } catch (e: any) {
-      return { error: e };
-    }
+    return this.atualizarProfissionalAdmin(id, { nivel_atual: nivelAtual });
   }
 
   // ----------------------------------------------------
@@ -532,15 +574,17 @@ export class SupabaseService {
     telefone: string;
     email: string;
     condominio?: string;
+    nome_condominio?: string;
   }): Promise<{ data?: any; error: Error | null }> {
     try {
+      const valorCondominio = dados.nome_condominio?.trim() || dados.condominio?.trim() || null;
       const { data, error } = await this.client
         .from('alo_sindico_leads')
         .insert({
           nome: dados.nome.trim(),
           telefone: dados.telefone.trim(),
           email: dados.email.trim().toLowerCase(),
-          condominio: dados.condominio?.trim() || null,
+          nome_condominio: valorCondominio,
           status: 'novo',
         })
         .select('*')

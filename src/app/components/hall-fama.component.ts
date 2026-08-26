@@ -56,7 +56,7 @@ export interface GamificacaoPerfil {
       </div>
 
       <!-- Conteúdo do Ranking -->
-      <div class="p-6">
+      <div class="p-3.5 sm:p-6">
         @if (loading()) {
           <!-- Estado de Carregamento (3 blocos pulse) -->
           <div class="space-y-3">

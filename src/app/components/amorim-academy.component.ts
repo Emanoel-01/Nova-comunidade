@@ -41,7 +41,7 @@ import { SeoService } from '../services/seo.service';
               Curso Predial 4.0
             </h2>
 
-            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-justify">
               Formação em Inspeção Predial com IA. Domine a Engenharia Diagnóstica e emita laudos técnicos com muito mais velocidade, aplicando a NBR 16747 na prática, com apoio do ecossistema Predial 4.0.
             </p>
           </div>
@@ -79,7 +79,7 @@ import { SeoService } from '../services/seo.service';
                 <h3 class="text-xl font-bold text-slate-900 tracking-tight">
                   Presencial em Recife
                 </h3>
-                <p class="text-slate-600 text-sm leading-relaxed">
+                <p class="text-slate-600 text-sm leading-relaxed text-justify">
                   Três dias intensivos: fundamentos de patologia das construções, leitura de manifestações, checklist técnico, prática de campo guiada e Skills Claude aplicadas a orçamento de obras.
                 </p>
               </div>
@@ -96,7 +96,7 @@ import { SeoService } from '../services/seo.service';
                 <h3 class="text-xl font-bold text-slate-900 tracking-tight">
                   Acesso à plataforma
                 </h3>
-                <p class="text-slate-600 text-sm leading-relaxed">
+                <p class="text-slate-600 text-sm leading-relaxed text-justify">
                   Acesso à plataforma Predial 4.0 para emitir laudos profissionais na prática — registro de fotos, diagnóstico sugerido por IA e montagem automática do documento técnico.
                 </p>
               </div>
@@ -113,7 +113,7 @@ import { SeoService } from '../services/seo.service';
                 <h3 class="text-xl font-bold text-slate-900 tracking-tight">
                   Mentoria em grupo
                 </h3>
-                <p class="text-slate-600 text-sm leading-relaxed">
+                <p class="text-slate-600 text-sm leading-relaxed text-justify">
                   Rodadas de acompanhamento ao vivo com o grupo da turma, para tirar dúvidas sobre os laudos reais em produção.
                 </p>
               </div>
@@ -126,7 +126,7 @@ import { SeoService } from '../services/seo.service';
               <h3 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 Vagas limitadas — acesso antecipado
               </h3>
-              <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed text-justify sm:text-center">
                 As condições de lançamento serão reveladas exclusivamente para os profissionais na Lista de Interessados.
               </p>
               <div class="flex justify-center pt-2">
@@ -163,7 +163,7 @@ import { SeoService } from '../services/seo.service';
               Comunidade Business 4.0
             </h2>
 
-            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-justify">
               O curso ensina a técnica. A Comunidade mantém você conectado ao mercado — com ferramentas reais, oportunidades de trabalho e um espaço de troca entre profissionais que emitem laudos todos os dias.
             </p>
           </div>
@@ -176,7 +176,7 @@ import { SeoService } from '../services/seo.service';
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
               </div>
               <h3 class="text-lg font-bold text-slate-900">Fórum Técnico</h3>
-              <p class="text-slate-600 text-sm leading-relaxed">Tire dúvidas e troque experiências com outros profissionais que já emitem laudos no dia a dia.</p>
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">Tire dúvidas e troque experiências com outros profissionais que já emitem laudos no dia a dia.</p>
             </div>
 
             <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
@@ -184,7 +184,7 @@ import { SeoService } from '../services/seo.service';
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
               </div>
               <h3 class="text-lg font-bold text-slate-900">Mural de Vagas</h3>
-              <p class="text-slate-600 text-sm leading-relaxed">Oportunidades reais de trabalho publicadas para a rede — freelas, vagas fixas e projetos.</p>
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">Oportunidades reais de trabalho publicadas para a rede — freelas, vagas fixas e projetos.</p>
             </div>
 
             <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
@@ -192,7 +192,7 @@ import { SeoService } from '../services/seo.service';
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
               </div>
               <h3 class="text-lg font-bold text-slate-900">Biblioteca de Materiais</h3>
-              <p class="text-slate-600 text-sm leading-relaxed">Modelos, referências técnicas e materiais de apoio prontos para uso na sua rotina de laudos.</p>
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">Modelos, referências técnicas e materiais de apoio prontos para uso na sua rotina de laudos.</p>
             </div>
 
             <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
@@ -200,7 +200,7 @@ import { SeoService } from '../services/seo.service';
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
               </div>
               <h3 class="text-lg font-bold text-slate-900">Agenda de Eventos</h3>
-              <p class="text-slate-600 text-sm leading-relaxed">Encontros, lives e capacitações continuadas para quem quer se manter atualizado.</p>
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">Encontros, lives e capacitações continuadas para quem quer se manter atualizado.</p>
             </div>
 
             <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
@@ -208,7 +208,7 @@ import { SeoService } from '../services/seo.service';
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
               </div>
               <h3 class="text-lg font-bold text-slate-900">Agentes de IA</h3>
-              <p class="text-slate-600 text-sm leading-relaxed">Ferramentas de automação para reajuste de contratos e análise de custos e viabilidade de obras.</p>
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">Ferramentas de automação para reajuste de contratos e análise de custos e viabilidade de obras.</p>
             </div>
 
             <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition-shadow">
@@ -216,7 +216,7 @@ import { SeoService } from '../services/seo.service';
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5" /></svg>
               </div>
               <h3 class="text-lg font-bold text-slate-900">Incluída no Curso</h3>
-              <p class="text-slate-600 text-sm leading-relaxed">O acesso completo à Comunidade já está incluído para todos os matriculados no Curso Predial 4.0 — sem custo adicional.</p>
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">O acesso completo à Comunidade já está incluído para todos os matriculados no Curso Predial 4.0 — sem custo adicional.</p>
             </div>
 
           </div>
@@ -250,7 +250,7 @@ import { SeoService } from '../services/seo.service';
               Incubadora Profissional
             </h2>
 
-            <p class="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+            <p class="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-justify">
               Não basta ter o diploma se não tem a oportunidade. Nossos profissionais são inseridos ativamente no mercado, fecham contratos reais e publicam artigos durante a formação.
             </p>
 
@@ -284,7 +284,7 @@ import { SeoService } from '../services/seo.service';
                   <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">
                     Objetivo Geral
                   </h4>
-                  <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                  <p class="text-slate-300 text-sm sm:text-base leading-relaxed text-justify">
                     Capacitar profissionais a integrarem os conhecimentos teóricos com a prática do mercado de trabalho, complementando a formação técnica com vivência profissional real.
                   </p>
                 </div>
@@ -422,10 +422,10 @@ import { SeoService } from '../services/seo.service';
                 </h3>
               </div>
 
-              <!-- Lista dos 4 cartões com borda esquerda âmbar -->
+          <!-- Lista dos 4 cartões -->
               <div class="space-y-3.5">
                 <!-- Cartão 1 -->
-                <div class="bg-slate-800/80 rounded-r-2xl border border-slate-700/60 border-l-4 border-l-amber-500 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 transition-colors">
+                <div class="bg-slate-800/80 rounded-2xl border border-slate-700/60 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 hover:border-amber-500/40 transition-colors">
                   <div class="space-y-1">
                     <h4 class="text-base font-bold text-white leading-snug">
                       Paulo Ewerton Ribeiro da Silva
@@ -440,7 +440,7 @@ import { SeoService } from '../services/seo.service';
                 </div>
 
                 <!-- Cartão 2 -->
-                <div class="bg-slate-800/80 rounded-r-2xl border border-slate-700/60 border-l-4 border-l-amber-500 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 transition-colors">
+                <div class="bg-slate-800/80 rounded-2xl border border-slate-700/60 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 hover:border-amber-500/40 transition-colors">
                   <div class="space-y-1">
                     <h4 class="text-base font-bold text-white leading-snug">
                       Hugo Ewerton Pereira Silva
@@ -455,7 +455,7 @@ import { SeoService } from '../services/seo.service';
                 </div>
 
                 <!-- Cartão 3 -->
-                <div class="bg-slate-800/80 rounded-r-2xl border border-slate-700/60 border-l-4 border-l-amber-500 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 transition-colors">
+                <div class="bg-slate-800/80 rounded-2xl border border-slate-700/60 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 hover:border-amber-500/40 transition-colors">
                   <div class="space-y-1">
                     <h4 class="text-base font-bold text-white leading-snug">
                       Adriana Gonçalves Araujo
@@ -470,7 +470,7 @@ import { SeoService } from '../services/seo.service';
                 </div>
 
                 <!-- Cartão 4 -->
-                <div class="bg-slate-800/80 rounded-r-2xl border border-slate-700/60 border-l-4 border-l-amber-500 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 transition-colors">
+                <div class="bg-slate-800/80 rounded-2xl border border-slate-700/60 p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-800 hover:border-amber-500/40 transition-colors">
                   <div class="space-y-1">
                     <h4 class="text-base font-bold text-white leading-snug">
                       Vinícius de Assis Souto Maior Arruda
@@ -508,7 +508,7 @@ import { SeoService } from '../services/seo.service';
               Mentor Anjo
             </h2>
 
-            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-justify">
               Um programa de mentoria e corresponsabilidade técnica para profissionais que estão dando os primeiros passos na emissão de laudos — com acompanhamento próximo e revisão técnica individual de cada trabalho produzido.
             </p>
           </div>
@@ -525,7 +525,7 @@ import { SeoService } from '../services/seo.service';
               <h3 class="text-xl font-bold text-slate-900 tracking-tight">
                 Corresponsabilidade Técnica
               </h3>
-              <p class="text-slate-600 text-sm leading-relaxed">
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">
                 Cada laudo produzido é revisado individualmente por um corresponsável técnico experiente.
               </p>
             </div>
@@ -540,7 +540,7 @@ import { SeoService } from '../services/seo.service';
               <h3 class="text-xl font-bold text-slate-900 tracking-tight">
                 Acompanhamento Próximo
               </h3>
-              <p class="text-slate-600 text-sm leading-relaxed">
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">
                 Mentoria direta para profissionais em início de trajetória na área.
               </p>
             </div>
@@ -555,7 +555,7 @@ import { SeoService } from '../services/seo.service';
               <h3 class="text-xl font-bold text-slate-900 tracking-tight">
                 Prática Guiada
               </h3>
-              <p class="text-slate-600 text-sm leading-relaxed">
+              <p class="text-slate-600 text-sm leading-relaxed text-justify">
                 Aprenda emitindo laudos reais, com suporte técnico em cada etapa.
               </p>
             </div>
