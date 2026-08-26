@@ -297,7 +297,7 @@ export interface BlogPost {
                 <div class="flex items-center gap-2 text-xs text-slate-400">
                   <span class="font-bold text-orange-600">{{ postSelecionado()?.categoria }}</span>
                   <span>•</span>
-                  <span>{{ postSelecionado()?.criado_em | date:'dd \'de\' MMMM \'de\' yyyy' }}</span>
+                  <span>{{ postSelecionado()?.criado_em | date:'dd/MM/yyyy' }}</span>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
                   {{ postSelecionado()?.titulo }}

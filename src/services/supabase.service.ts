@@ -108,6 +108,26 @@ export class SupabaseService {
     }
   }
 
+  async buscarProfissionalPorEmail(email: string): Promise<any | null> {
+    try {
+      const emailNormalizado = (email || '').trim().toLowerCase();
+      if (!emailNormalizado) return null;
+      const { data, error } = await this.client
+        .from('profissionais')
+        .select('*')
+        .ilike('email', emailNormalizado)
+        .maybeSingle();
+      if (error) {
+        console.warn('Aviso ao buscar profissional por e-mail no Supabase:', error.message || error);
+        return null;
+      }
+      return data;
+    } catch (e: any) {
+      console.warn('Exceção ao buscar profissional por e-mail:', e?.message || e);
+      return null;
+    }
+  }
+
   async criarSolicitacaoAcesso(dados: {
     nome: string;
     email: string;

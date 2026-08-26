@@ -243,7 +243,7 @@ import { SeoService } from '../services/seo.service';
                 <!-- Bloco E-mail -->
                 <a
                   id="link-email-direto"
-                  href="mailto:emanoel@amorimarquitetura.com.br"
+                  href="mailto:contato@emanoelamorim.com"
                   class="flex items-start gap-4 p-4 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 transition-all group"
                 >
                   <div class="w-11 h-11 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -256,7 +256,7 @@ import { SeoService } from '../services/seo.service';
                       E-mail
                     </span>
                     <span class="text-sm sm:text-base font-bold text-white group-hover:text-indigo-300 transition-colors break-all">
-                      emanoel&#64;amorimarquitetura.com.br
+                      contato&#64;emanoelamorim.com
                     </span>
                     <span class="text-xs text-slate-400 block">
                       Para propostas formais e parcerias

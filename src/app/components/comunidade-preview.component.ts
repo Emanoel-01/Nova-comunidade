@@ -291,7 +291,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
                 </button>
 
                 @if (dropdownNotificacoesAberto()) {
-                  <div class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 z-50 animate-scaleUp">
+                  <div class="absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] max-h-96 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 z-50 animate-scaleUp">
                     <div class="px-4 py-3 border-b border-slate-100 font-bold text-sm text-slate-800 flex items-center justify-between">
                       <span>Notificações</span>
                       @if (totalNaoLidas() > 0) {

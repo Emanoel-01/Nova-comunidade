@@ -354,16 +354,59 @@ export class AdminAcessosComponent implements OnInit {
       const session = await this.supabaseService.getSession();
       const adminId = session?.user?.id ?? null;
 
-      const { error } = await this.supabaseService.atualizarStatusSolicitacao(item.id, 'aprovado', adminId);
+      // 1. Atualiza o status da solicitação para aprovado
+      const { error: erroStatus } = await this.supabaseService.atualizarStatusSolicitacao(item.id, 'aprovado', adminId);
 
-      if (error) {
-        this.mensagemErro.set(`Não foi possível aprovar a solicitação: ${error.message || 'erro no servidor'}`);
+      if (erroStatus) {
+        this.mensagemErro.set(`Não foi possível aprovar a solicitação: ${erroStatus.message || 'erro no servidor'}`);
         return;
       }
 
-      this.mensagemSucesso.set(
-        'Solicitação aprovada. Para conceder o acesso, crie/vincule a conta e defina as permissões em Gestão de Usuários (em breve).'
-      );
+      // 2. Normaliza o e-mail e verifica se já existe na tabela de profissionais
+      const emailNormalizado = (item.email || '').trim().toLowerCase();
+      let jaExistia = false;
+
+      try {
+        const profissionalExistente = await this.supabaseService.buscarProfissionalPorEmail(emailNormalizado);
+
+        if (!profissionalExistente) {
+          // Cria o registro na tabela profissionais para aparecer em Gestão de Usuários
+          const { error: erroCadastro } = await this.supabaseService.cadastrarProfissional({
+            full_name: item.nome,
+            email: emailNormalizado,
+          });
+
+          if (erroCadastro) {
+            console.warn('Aviso ao registrar profissional após aprovação:', erroCadastro.message);
+            this.mensagemSucesso.set(
+              `Solicitação aprovada, porém houve um aviso ao vincular em Gestão de Usuários (${erroCadastro.message}). Verifique a aba Gestão de Usuários.`
+            );
+            await this.carregarSolicitacoes();
+            return;
+          }
+        } else {
+          jaExistia = true;
+        }
+      } catch (errProf: any) {
+        console.warn('Erro ao verificar/cadastrar profissional em Gestão de Usuários:', errProf);
+        this.mensagemSucesso.set(
+          `Solicitação aprovada. Ocorreu um erro ao verificar o cadastro em Gestão de Usuários (${errProf?.message || errProf}).`
+        );
+        await this.carregarSolicitacoes();
+        return;
+      }
+
+      // 3. Define a mensagem de sucesso refletindo o estado real
+      if (jaExistia) {
+        this.mensagemSucesso.set(
+          `Solicitação aprovada. ${item.nome} já possui registro em Gestão de Usuários (${item.email}). Para acessar a Comunidade, basta a pessoa acessar ou criar seu login com este mesmo e-mail.`
+        );
+      } else {
+        this.mensagemSucesso.set(
+          `Solicitação aprovada. ${item.nome} já aparece em Gestão de Usuários. Para acessar a Comunidade, a pessoa precisa criar login com o e-mail ${item.email} na tela de cadastro do site.`
+        );
+      }
+
       await this.carregarSolicitacoes();
     } catch (e: any) {
       this.mensagemErro.set('Ocorreu uma falha inesperada ao aprovar a solicitação.');

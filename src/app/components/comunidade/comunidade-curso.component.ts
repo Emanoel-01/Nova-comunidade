@@ -609,7 +609,7 @@ export interface CursoAluno {
                   </button>
 
                   @if (curso.progresso < 100) {
-                    <div class="absolute right-0 bottom-full mb-2 hidden group-hover:block w-64 p-2.5 bg-slate-900 text-white text-[11px] font-medium rounded-xl shadow-xl z-10 text-center">
+                    <div class="absolute right-0 bottom-full mb-2 hidden group-hover:block w-[min(16rem,calc(100vw-2rem))] p-2.5 bg-slate-900 text-white text-[11px] font-medium rounded-xl shadow-xl z-10 text-center">
                       Conclua todas as aulas (100%) para liberar a avaliação e o certificado
                     </div>
                   }
