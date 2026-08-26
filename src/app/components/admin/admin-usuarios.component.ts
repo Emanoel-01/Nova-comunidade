@@ -298,6 +298,13 @@ interface ConfirmacaoSenhaProvisoria {
                           }
                         </span>
                       }
+                      @let totalCursosLib = getCursosLiberadosCount(user);
+                      @if (totalCursosLib > 0) {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs">
+                          <span>🎓</span>
+                          <span>{{ totalCursosLib }} curso{{ totalCursosLib > 1 ? 's' : '' }} liberado{{ totalCursosLib > 1 ? 's' : '' }}</span>
+                        </span>
+                      }
                     </div>
                   </div>
 
@@ -692,7 +699,7 @@ interface ConfirmacaoSenhaProvisoria {
                   <span class="text-[11px] text-slate-500">Exige concessão individual pelo administrador</span>
                 </div>
                 <p class="text-[11px] text-slate-600 leading-relaxed">
-                  Módulos de cursos avançados, agentes de inteligência artificial e permissões administrativas.
+                  Módulos de agentes de inteligência artificial e permissões administrativas.
                 </p>
 
                 <div class="space-y-2">
@@ -735,6 +742,87 @@ interface ConfirmacaoSenhaProvisoria {
                     </div>
                   }
                 </div>
+              </div>
+
+              <!-- Grupo 3: Cursos de Capacitação (Acesso Granular por Curso) -->
+              <div class="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-200/80 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
+                      Cursos Liberados
+                    </span>
+                    <span class="font-bold text-slate-800 text-xs">Acesso Granular por Curso</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      (click)="marcarTodosCursos(true)"
+                      class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                    >
+                      Liberar Todos
+                    </button>
+                    <span class="text-slate-300">·</span>
+                    <button
+                      type="button"
+                      (click)="marcarTodosCursos(false)"
+                      class="text-[11px] text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
+                    >
+                      Bloquear Todos
+                    </button>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  Conceda acesso a cursos e videoaulas técnicas individualmente. O membro terá acesso imediato e sua matrícula oficial é gerada automaticamente.
+                </p>
+
+                @if (cursosCadastrados().length === 0) {
+                  <div class="p-3.5 rounded-xl bg-white border border-slate-200 text-center text-xs text-slate-500">
+                    Nenhum curso ativo cadastrado no sistema. Crie novos cursos na aba Gestão de Cursos.
+                  </div>
+                } @else {
+                  <div class="space-y-2">
+                    @for (curso of cursosCadastrados(); track curso.id) {
+                      <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-200 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                        <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
+                          <input
+                            type="checkbox"
+                            [checked]="isModuloLiberadoEdicao('comunidade', curso.id)"
+                            (change)="toggleModuloEdicao('comunidade', curso.id)"
+                            class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
+                          />
+                          <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                              <span class="font-bold text-slate-900">{{ curso.titulo }}</span>
+                              @if (curso.categoria) {
+                                <span class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">{{ curso.categoria }}</span>
+                              }
+                              @if (isModuloLiberadoEdicao('comunidade', curso.id)) {
+                                <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Liberado</span>
+                              } @else {
+                                <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
+                              }
+                            </div>
+                          </div>
+                        </label>
+
+                        <!-- Campo Válido até -->
+                        <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
+                          <label [for]="'validade-curso-' + curso.id" class="text-slate-500 text-[11px] whitespace-nowrap">
+                            Válido até:
+                          </label>
+                          <input
+                            [id]="'validade-curso-' + curso.id"
+                            type="date"
+                            [value]="getValidadeEdicao('comunidade', curso.id)"
+                            (input)="onValidadeChange('comunidade', curso.id, $event)"
+                            placeholder="Sem vencimento"
+                            class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             </div>
 
@@ -1021,7 +1109,6 @@ export class AdminUsuariosComponent implements OnInit {
   ];
 
   readonly modulosComunidadeAdicionais: ModuloConfig[] = [
-    { key: 'cursos', nome: 'Cursos', descricao: 'Aulas gravadas e capacitações da plataforma.', produto: 'comunidade' },
     { key: 'custos-viabilidade', nome: 'Agente: Custos & Viabilidade', descricao: 'Estudo de viabilidade NBR 12.721, CUB e VGV.', produto: 'comunidade' },
     { key: 'admin_comunidade', nome: 'Admin Comunidade', descricao: 'Permissões administrativas na comunidade.', produto: 'comunidade' },
   ];
@@ -1030,6 +1117,7 @@ export class AdminUsuariosComponent implements OnInit {
     return [...this.modulosComunidadeBase, ...this.modulosComunidadeAdicionais];
   }
 
+  readonly cursosCadastrados = signal<{ id: string; titulo: string; categoria?: string; ativo?: boolean }[]>([]);
   readonly usuarios = signal<ProfissionalComPermissoes[]>([]);
   readonly termoBusca = signal('');
   readonly carregando = signal(false);
@@ -1076,10 +1164,14 @@ export class AdminUsuariosComponent implements OnInit {
     this.alertaErro.set(null);
 
     try {
-      const dados = await this.supabaseService.listarProfissionaisComPermissoes();
+      const [dados, cursos] = await Promise.all([
+        this.supabaseService.listarProfissionaisComPermissoes(),
+        this.supabaseService.listarCursosAtivos(),
+      ]);
       this.usuarios.set(dados);
+      this.cursosCadastrados.set(cursos);
     } catch (e: any) {
-      this.alertaErro.set('Erro ao buscar lista de profissionais.');
+      this.alertaErro.set('Erro ao buscar lista de profissionais e cursos.');
     } finally {
       this.carregando.set(false);
     }
@@ -1203,6 +1295,12 @@ export class AdminUsuariosComponent implements OnInit {
     return user.permissoes.filter(p => p.produto === produto && p.liberado).length;
   }
 
+  getCursosLiberadosCount(user: ProfissionalComPermissoes): number {
+    if (!user.permissoes) return 0;
+    const cursoIds = new Set(this.cursosCadastrados().map(c => c.id));
+    return user.permissoes.filter(p => p.produto === 'comunidade' && cursoIds.has(p.modulo) && p.liberado).length;
+  }
+
   formatarValidadeCurta(valStr?: string | null): string {
     if (!valStr) return '';
     try {
@@ -1272,6 +1370,13 @@ export class AdminUsuariosComponent implements OnInit {
       mapa.set(chave, { liberado: status.liberado, validade: status.validade ? status.validade.split('T')[0] : null });
     }
 
+    // Carregar cursos individuais da Comunidade
+    for (const c of this.cursosCadastrados()) {
+      const chave = `comunidade:${c.id}`;
+      const status = this.getModuloStatus(user, 'comunidade', c.id);
+      mapa.set(chave, { liberado: status.liberado, validade: status.validade ? status.validade.split('T')[0] : null });
+    }
+
     this.permissoesEdicao.set(mapa);
   }
 
@@ -1317,6 +1422,16 @@ export class AdminUsuariosComponent implements OnInit {
     const lista = produto === 'predial4' ? this.modulosPredial : this.modulosComunidade;
     for (const mod of lista) {
       const chave = `${produto}:${mod.key}`;
+      const atual = mapa.get(chave) || { liberado: false, validade: null };
+      mapa.set(chave, { ...atual, liberado });
+    }
+    this.permissoesEdicao.set(mapa);
+  }
+
+  marcarTodosCursos(liberado: boolean): void {
+    const mapa = new Map(this.permissoesEdicao());
+    for (const curso of this.cursosCadastrados()) {
+      const chave = `comunidade:${curso.id}`;
       const atual = mapa.get(chave) || { liberado: false, validade: null };
       mapa.set(chave, { ...atual, liberado });
     }

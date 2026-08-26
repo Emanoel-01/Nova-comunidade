@@ -284,6 +284,53 @@ export class SupabaseService {
     }
   }
 
+  async criarUsuarioAdminViaFunction(dados: {
+    email: string;
+    full_name: string;
+    password?: string;
+    nivel_atual?: string;
+  }): Promise<{ data?: any; error: Error | null; senhaProvisoria?: string }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('criar-usuario-admin', {
+        body: {
+          email: dados.email,
+          full_name: dados.full_name,
+          ...(dados.password ? { password: dados.password } : {}),
+          ...(dados.nivel_atual ? { nivel_atual: dados.nivel_atual } : {}),
+        },
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro ao invocar função criar-usuario-admin';
+        if (data?.error) {
+          msg = data.error;
+        }
+        return { error: new Error(msg) };
+      }
+
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+
+      return {
+        data: data?.profissional || data?.user,
+        senhaProvisoria: data?.senhaProvisoria,
+        error: null,
+      };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async criarContaViaEdgeFunction(dados: {
+    email: string;
+    full_name: string;
+    password?: string;
+    nivel_atual?: string;
+  }): Promise<{ data?: any; error: Error | null; senhaProvisoria?: string }> {
+    return this.criarUsuarioAdminViaFunction(dados);
+  }
+
   async atualizarProfissionalAdmin(
     id: string,
     dados: {
@@ -690,31 +737,9 @@ export class SupabaseService {
     }
   }
 
-  async criarUsuarioAdminViaFunction(dados: {
-    email: string;
-    full_name: string;
-    password?: string;
-    nivel_atual?: string;
-  }): Promise<{ data?: any; error: Error | null; senhaProvisoria?: string }> {
-    try {
-      const { data, error } = await this.client.functions.invoke('criar-usuario-admin', {
-        body: dados,
-      });
-      if (error) {
-        return { error };
-      }
-      if (data?.error) {
-        return { error: new Error(data.error) };
-      }
-      return {
-        data: data?.profissional || data?.user,
-        senhaProvisoria: data?.senhaProvisoria,
-        error: null,
-      };
-    } catch (e: any) {
-      return { error: e };
-    }
-  }
+  // ----------------------------------------------------
+  // EVENTOS & WEBINARS (BLOCO 3)
+  // ----------------------------------------------------
 
   // ----------------------------------------------------
   // PERMISSÕES DE ACESSO (MÓDULOS)
@@ -1892,6 +1917,85 @@ export class SupabaseService {
     }
   }
 
+  async listarCursosAtivos(): Promise<{ id: string; titulo: string; categoria?: string; ativo?: boolean }[]> {
+    try {
+      const { data, error } = await this.client
+        .from('cursos')
+        .select('id, titulo, categoria, ativo')
+        .eq('ativo', true)
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao listar cursos ativos:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar cursos ativos:', e?.message || e);
+      return [];
+    }
+  }
+
+  async liberarAcessoCurso(
+    profissionalId: string,
+    cursoId: string,
+    liberado: boolean,
+    validade?: string | null
+  ): Promise<{ error: Error | null }> {
+    try {
+      const payload: any = {
+        profissional_id: profissionalId,
+        produto: 'comunidade',
+        modulo: cursoId,
+        liberado,
+        atualizado_em: new Date().toISOString(),
+      };
+      if (validade !== undefined) {
+        payload.validade = validade || null;
+      }
+      const { error } = await this.client
+        .from('permissoes_acesso')
+        .upsert(payload, { onConflict: 'profissional_id,produto,modulo' });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarAcessosEMatriculasDoCurso(cursoId: string): Promise<any[]> {
+    try {
+      const [profsRes, permsRes, matsRes] = await Promise.all([
+        this.client.from('profissionais').select('id, full_name, professional_title, email, nivel_atual').order('full_name', { ascending: true }),
+        this.client.from('permissoes_acesso').select('*').eq('produto', 'comunidade').eq('modulo', cursoId),
+        this.listarMatriculadosDoCurso(cursoId),
+      ]);
+
+      const profs = profsRes.data || [];
+      const perms = permsRes.data || [];
+      const mats = matsRes || [];
+
+      const permsMap = new Map<string, any>();
+      perms.forEach((p: any) => permsMap.set(p.profissional_id, p));
+
+      const matsMap = new Map<string, any>();
+      mats.forEach((m: any) => matsMap.set(m.profissional_id, m));
+
+      return profs.map((prof: any) => {
+        const perm = permsMap.get(prof.id);
+        const mat = matsMap.get(prof.id);
+        return {
+          profissional: prof,
+          liberado: perm ? !!perm.liberado : false,
+          validade: perm?.validade || null,
+          matriculado: !!mat,
+          matricula: mat || null,
+        };
+      });
+    } catch (e: any) {
+      console.warn('Exceção ao listar acessos e matrículas do curso:', e?.message || e);
+      return [];
+    }
+  }
+
   // ----------------------------------------------------
   // CURSOS DO ALUNO (PROGRESSO, AVALIAÇÃO, CERTIFICADO)
   // ----------------------------------------------------
@@ -1922,6 +2026,7 @@ export class SupabaseService {
         ? await this.client.from('cursos_matriculas').select('*').eq('profissional_id', meuId).in('curso_id', cursoIds)
         : { data: [] };
 
+      // Verifica a permissão específica por curso (id do curso como chave do módulo na comunidade)
       const permissoesPorCurso = await Promise.all(
         cursoIds.map(async (id: string) => [id, await this.temPermissaoModulo('comunidade', id)] as const)
       );

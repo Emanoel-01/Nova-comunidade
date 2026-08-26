@@ -31,5 +31,5 @@ export function extrairVimeoId(valor: string | null | undefined): string | null 
 export function montarUrlPlayerVimeo(valor: string | null | undefined): string | null {
   const id = extrairVimeoId(valor);
   if (!id) return null;
-  return `https://player.vimeo.com/video/${id}?title=0&byline=0&portrait=0`;
+  return `https://player.vimeo.com/video/${id}?title=0&byline=0&portrait=0&dnt=1`;
 }

@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
 import { SeoService } from '../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -506,8 +507,7 @@ interface ChatMensagem {
                             </svg>
                           </div>
                           <div class="space-y-1">
-                            <div class="p-4 rounded-2xl rounded-tl-sm bg-slate-800 text-slate-100 text-sm leading-relaxed border border-slate-700/70 whitespace-pre-line shadow-sm">
-                              {{ msg.texto }}
+                            <div class="p-4 rounded-2xl rounded-tl-sm bg-slate-800 text-slate-100 text-sm leading-relaxed border border-slate-700/70 whitespace-pre-line shadow-sm" [innerHTML]="mensagemFormatada(msg.texto)">
                             </div>
                             <span class="text-[10px] text-slate-500 block px-1">
                               Assistente Amorim Tech · {{ msg.horario }}
@@ -619,6 +619,7 @@ interface ChatMensagem {
 export class ContatoComponent implements OnInit {
   private readonly seoService = inject(SeoService);
   private readonly supabaseService = inject(SupabaseService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly linkWhatsappDireto = gerarLinkWhatsapp('contato');
   readonly linkWhatsappSindico = gerarLinkWhatsapp('tech-sindico');
@@ -866,6 +867,22 @@ Pode me contar o que está acontecendo no seu condomínio/edifício (como trinca
       this.enviandoMensagemChat.set(false);
       this.scrollChatParaBaixo();
     }
+  }
+
+  formatarMensagemChat(texto: string): string {
+    if (!texto) return '';
+    return texto
+      // Remove marcadores de título Markdown que a IA possa gerar (### Título -> Título)
+      .replace(/^#{1,6}\s+/gm, '')
+      // Converte **negrito** em <strong>negrito</strong>
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Remove marcadores de lista Markdown soltos (* item -> — item), mantendo legibilidade
+      .replace(/^\*\s+/gm, '— ');
+  }
+
+  mensagemFormatada(texto: string): SafeHtml {
+    const formatado = this.formatarMensagemChat(texto);
+    return this.sanitizer.bypassSecurityTrustHtml(formatado);
   }
 
   private scrollChatParaBaixo(): void {

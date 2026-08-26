@@ -307,6 +307,101 @@ interface SolicitacaoAcessoItem {
       }
 
     </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE SENHA PROVISÓRIA GERADA -->
+    @if (confirmacaoSenha()) {
+      @let conf = confirmacaoSenha()!;
+      <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          
+          <div class="px-6 py-5 border-b border-emerald-100 bg-emerald-50/70 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-slate-900 leading-tight">
+                  Solicitação Aprovada & Conta Criada!
+                </h4>
+                <p class="text-xs text-emerald-800 font-medium">
+                  {{ conf.nome }} ({{ conf.email }})
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              (click)="fecharModalSenha()"
+              class="text-slate-400 hover:text-slate-600 font-bold p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="p-6 space-y-5 text-xs">
+            
+            <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
+              <div class="flex items-center gap-2 text-amber-900 font-bold">
+                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Atenção: Senha Provisória</span>
+              </div>
+              
+              <p class="text-amber-800 leading-relaxed text-[11px]">
+                Copie e envie para a pessoa por um canal seguro. <strong>Esta senha não será mostrada novamente.</strong>
+              </p>
+
+              <!-- Bloco da Senha com Botão Copiar -->
+              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-amber-300/80 shadow-2xs">
+                <div class="font-mono text-sm sm:text-base font-black tracking-wider text-slate-900 select-all">
+                  {{ conf.senha }}
+                </div>
+
+                <button
+                  type="button"
+                  (click)="copiarSenhaProvisoria(conf.senha)"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  [class]="senhaCopiada()
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white'"
+                >
+                  @if (senhaCopiada()) {
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Copiado!</span>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    <span>Copiar Senha</span>
+                  }
+                </button>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
+              O usuário já pode fazer login na plataforma utilizando o e-mail <strong>{{ conf.email }}</strong> e esta senha provisória.
+            </div>
+
+            <div class="pt-2 flex items-center justify-end">
+              <button
+                type="button"
+                (click)="fecharModalSenha()"
+                class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Concluir</span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    }
+
   `
 })
 export class AdminAcessosComponent implements OnInit {
@@ -318,6 +413,9 @@ export class AdminAcessosComponent implements OnInit {
   readonly processandoId = signal<string | null>(null);
   readonly mensagemSucesso = signal<string | null>(null);
   readonly mensagemErro = signal<string | null>(null);
+
+  readonly confirmacaoSenha = signal<{ nome: string; email: string; senha: string } | null>(null);
+  readonly senhaCopiada = signal<boolean>(false);
 
   ngOnInit(): void {
     this.carregarSolicitacoes();
@@ -353,58 +451,58 @@ export class AdminAcessosComponent implements OnInit {
     try {
       const session = await this.supabaseService.getSession();
       const adminId = session?.user?.id ?? null;
-
-      // 1. Atualiza o status da solicitação para aprovado
-      const { error: erroStatus } = await this.supabaseService.atualizarStatusSolicitacao(item.id, 'aprovado', adminId);
-
-      if (erroStatus) {
-        this.mensagemErro.set(`Não foi possível aprovar a solicitação: ${erroStatus.message || 'erro no servidor'}`);
-        return;
-      }
-
-      // 2. Normaliza o e-mail e verifica se já existe na tabela de profissionais
       const emailNormalizado = (item.email || '').trim().toLowerCase();
-      let jaExistia = false;
+      const nomeCompleto = (item.nome || '').trim();
 
-      try {
-        const profissionalExistente = await this.supabaseService.buscarProfissionalPorEmail(emailNormalizado);
+      // 1. Invoca a Edge Function criar-usuario-admin (sem password para gerar senha provisória aleatória)
+      const { error: erroCriacao, senhaProvisoria } = await this.supabaseService.criarContaViaEdgeFunction({
+        email: emailNormalizado,
+        full_name: nomeCompleto,
+      });
 
-        if (!profissionalExistente) {
-          // Cria o registro na tabela profissionais para aparecer em Gestão de Usuários
-          const { error: erroCadastro } = await this.supabaseService.cadastrarProfissional({
-            full_name: item.nome,
-            email: emailNormalizado,
-          });
+      // 2. Tratar se a Edge Function retornou erro
+      if (erroCriacao) {
+        const msgErro = (erroCriacao.message || '').toLowerCase();
+        const jaExiste = msgErro.includes('already') ||
+          msgErro.includes('registered') ||
+          msgErro.includes('exists') ||
+          msgErro.includes('já cadastrado') ||
+          msgErro.includes('já existe') ||
+          msgErro.includes('email_exists');
 
-          if (erroCadastro) {
-            console.warn('Aviso ao registrar profissional após aprovação:', erroCadastro.message);
-            this.mensagemSucesso.set(
-              `Solicitação aprovada, porém houve um aviso ao vincular em Gestão de Usuários (${erroCadastro.message}). Verifique a aba Gestão de Usuários.`
-            );
-            await this.carregarSolicitacoes();
+        if (jaExiste) {
+          // Marca a solicitação como aprovada no banco mesmo assim
+          const { error: erroStatus } = await this.supabaseService.atualizarStatusSolicitacao(item.id, 'aprovado', adminId);
+          if (erroStatus) {
+            this.mensagemErro.set(`Não foi possível atualizar o status da solicitação: ${erroStatus.message}`);
             return;
           }
+
+          this.mensagemSucesso.set(
+            `Solicitação aprovada! ${nomeCompleto} já possui conta cadastrada no sistema (${emailNormalizado}). O acesso foi liberado e a pessoa pode entrar diretamente com suas credenciais existentes.`
+          );
+          await this.carregarSolicitacoes();
+          return;
         } else {
-          jaExistia = true;
+          this.mensagemErro.set(`Não foi possível criar a conta do usuário: ${erroCriacao.message || 'Erro no servidor'}`);
+          return;
         }
-      } catch (errProf: any) {
-        console.warn('Erro ao verificar/cadastrar profissional em Gestão de Usuários:', errProf);
-        this.mensagemSucesso.set(
-          `Solicitação aprovada. Ocorreu um erro ao verificar o cadastro em Gestão de Usuários (${errProf?.message || errProf}).`
-        );
-        await this.carregarSolicitacoes();
-        return;
       }
 
-      // 3. Define a mensagem de sucesso refletindo o estado real
-      if (jaExistia) {
-        this.mensagemSucesso.set(
-          `Solicitação aprovada. ${item.nome} já possui registro em Gestão de Usuários (${item.email}). Para acessar a Comunidade, basta a pessoa acessar ou criar seu login com este mesmo e-mail.`
-        );
+      // 3. Sucesso na criação da conta com senha provisória
+      const { error: erroStatus } = await this.supabaseService.atualizarStatusSolicitacao(item.id, 'aprovado', adminId);
+      if (erroStatus) {
+        console.warn('Conta criada, mas houve aviso ao atualizar status da solicitação:', erroStatus.message);
+      }
+
+      if (senhaProvisoria) {
+        this.confirmacaoSenha.set({
+          nome: nomeCompleto,
+          email: emailNormalizado,
+          senha: senhaProvisoria,
+        });
       } else {
-        this.mensagemSucesso.set(
-          `Solicitação aprovada. ${item.nome} já aparece em Gestão de Usuários. Para acessar a Comunidade, a pessoa precisa criar login com o e-mail ${item.email} na tela de cadastro do site.`
-        );
+        this.mensagemSucesso.set(`Solicitação aprovada e conta criada com sucesso para ${nomeCompleto}!`);
       }
 
       await this.carregarSolicitacoes();
@@ -413,6 +511,22 @@ export class AdminAcessosComponent implements OnInit {
     } finally {
       this.processandoId.set(null);
     }
+  }
+
+  async copiarSenhaProvisoria(senha: string): Promise<void> {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(senha);
+        this.senhaCopiada.set(true);
+        setTimeout(() => this.senhaCopiada.set(false), 3000);
+      }
+    } catch (err) {
+      console.warn('Falha ao copiar senha para a área de transferência:', err);
+    }
+  }
+
+  fecharModalSenha(): void {
+    this.confirmacaoSenha.set(null);
   }
 
   async recusarSolicitacao(item: SolicitacaoAcessoItem): Promise<void> {

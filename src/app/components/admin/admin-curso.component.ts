@@ -409,7 +409,7 @@ export interface CursoAdmin {
                 ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-sm cursor-pointer'
                 : 'px-4 py-2 rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer'"
             >
-              3. Alunos Matriculados ({{ cursoAtivo()?.totalMatriculados || 0 }})
+              3. Alunos & Acessos ({{ totalAcessosLiberados() }})
             </button>
 
             <button
@@ -744,17 +744,17 @@ export interface CursoAdmin {
           }
 
           <!-- ========================================================= -->
-          <!-- SEÇÃO 3: ALUNOS MATRICULADOS & PROGRESSO                  -->
+          <!-- SEÇÃO 3: LIBERAR ACESSO & ALUNOS MATRICULADOS            -->
           <!-- ========================================================= -->
           @if (secaoAtiva() === 'alunos') {
             <div class="space-y-6">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h4 class="text-lg font-bold text-slate-900">
-                    Alunos Matriculados & Progresso
+                    Acessos & Alunos Matriculados
                   </h4>
                   <p class="text-xs sm:text-sm text-slate-500">
-                    Acompanhe em tempo real o avanço das aulas e os certificados emitidos para os membros.
+                    Libere o acesso individual para membros da comunidade e acompanhe o progresso e certificados emitidos.
                   </p>
                 </div>
 
@@ -766,80 +766,241 @@ export interface CursoAdmin {
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <span>Recarregar Lista</span>
+                  <span>Recarregar</span>
                 </button>
               </div>
 
-              @if (carregandoAlunos()) {
-                <div class="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3 shadow-xs">
-                  <div class="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p class="text-xs text-slate-500 font-medium">Carregando matrículas dos membros...</p>
+              <!-- Sub-abas dentro de Alunos/Acessos -->
+              <div class="flex items-center gap-4 border-b border-slate-200">
+                <button
+                  type="button"
+                  (click)="subAbaAlunos.set('acessos')"
+                  [class]="subAbaAlunos() === 'acessos'
+                    ? 'pb-3 font-bold text-xs sm:text-sm text-indigo-600 border-b-2 border-indigo-600 cursor-pointer flex items-center gap-1.5'
+                    : 'pb-3 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1.5'"
+                >
+                  <span>Liberar Acesso aos Membros</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [class]="subAbaAlunos() === 'acessos' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'">
+                    {{ totalAcessosLiberados() }}/{{ acessosMembros().length }}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="subAbaAlunos.set('progresso')"
+                  [class]="subAbaAlunos() === 'progresso'
+                    ? 'pb-3 font-bold text-xs sm:text-sm text-indigo-600 border-b-2 border-indigo-600 cursor-pointer flex items-center gap-1.5'
+                    : 'pb-3 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1.5'"
+                >
+                  <span>Matrículas & Progresso</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [class]="subAbaAlunos() === 'progresso' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'">
+                    {{ alunosMatriculados().length }}
+                  </span>
+                </button>
+              </div>
+
+              <!-- Sub-aba 1: Liberar Acesso -->
+              @if (subAbaAlunos() === 'acessos') {
+                <div class="space-y-4">
+                  <!-- Barra de busca e ações em massa -->
+                  <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="relative flex-1 max-w-md">
+                      <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        [value]="termoBuscaMembro()"
+                        (input)="termoBuscaMembro.set($any($event.target).value)"
+                        placeholder="Buscar membro por nome ou e-mail..."
+                        class="w-full pl-9 pr-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="liberarAcessoParaTodos(true)"
+                        class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
+                      >
+                        Liberar Todos
+                      </button>
+                      <button
+                        type="button"
+                        (click)="liberarAcessoParaTodos(false)"
+                        class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 font-bold text-xs shadow-2xs transition-colors cursor-pointer"
+                      >
+                        Bloquear Todos
+                      </button>
+                    </div>
+                  </div>
+
+                  @if (carregandoAlunos()) {
+                    <div class="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3 shadow-xs">
+                      <div class="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                      <p class="text-xs text-slate-500 font-medium">Carregando permissões dos membros...</p>
+                    </div>
+                  } @else if (membrosFiltrados().length === 0) {
+                    <div class="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-2 shadow-xs">
+                      <p class="text-sm font-bold text-slate-800">Nenhum membro encontrado</p>
+                      <p class="text-xs text-slate-500">Tente ajustar o termo de busca ou aprove novos cadastros.</p>
+                    </div>
+                  } @else {
+                    <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                      <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[10px]">
+                            <tr>
+                              <th class="py-3.5 px-4 sm:px-6">Membro</th>
+                              <th class="py-3.5 px-4">Status de Acesso</th>
+                              <th class="py-3.5 px-4">Validade do Acesso</th>
+                              <th class="py-3.5 px-4 text-right">Matrícula</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-slate-100">
+                            @for (item of membrosFiltrados(); track item.profissional.id) {
+                              <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="py-3.5 px-4 sm:px-6">
+                                  <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                                      {{ getIniciais(item.profissional.full_name) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                      <div class="font-bold text-slate-900 truncate">{{ item.profissional.full_name || 'Profissional' }}</div>
+                                      <div class="text-[11px] text-slate-500 truncate">{{ item.profissional.email || item.profissional.professional_title || 'Sem e-mail' }}</div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td class="py-3.5 px-4">
+                                  <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      [checked]="item.liberado"
+                                      [disabled]="salvandoAcessoId() === item.profissional.id"
+                                      (change)="toggleAcessoMembro(item)"
+                                      class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                                    />
+                                    @if (item.liberado) {
+                                      <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        Liberado
+                                      </span>
+                                    } @else {
+                                      <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500">
+                                        Bloqueado
+                                      </span>
+                                    }
+                                  </label>
+                                </td>
+
+                                <td class="py-3.5 px-4">
+                                  <div class="flex items-center gap-1.5">
+                                    <input
+                                      type="date"
+                                      [value]="item.validade ? item.validade.split('T')[0] : ''"
+                                      (input)="alterarValidadeAcesso(item, $event)"
+                                      placeholder="Sem vencimento"
+                                      class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  </div>
+                                </td>
+
+                                <td class="py-3.5 px-4 text-right">
+                                  @if (item.matriculado) {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
+                                      <span>✓ Matriculado</span>
+                                    </span>
+                                  } @else {
+                                    <span class="text-[11px] text-slate-400">
+                                      Ainda não iniciou
+                                    </span>
+                                  }
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  }
                 </div>
-              } @else if (alunosMatriculados().length === 0) {
-                <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
-                  <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                  <div class="space-y-1 max-w-md mx-auto">
-                    <h5 class="text-base font-bold text-slate-900">Nenhum aluno matriculado ainda</h5>
-                    <p class="text-xs text-slate-500">Assim que os membros acessarem e iniciarem as videoaulas deste curso, seus registros de progresso e certificados constarão aqui.</p>
-                  </div>
-                </div>
-              } @else {
-                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
-                      <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[10px]">
-                        <tr>
-                          <th class="py-3.5 px-4 sm:px-6">Aluno</th>
-                          <th class="py-3.5 px-4">Progresso nas Aulas</th>
-                          <th class="py-3.5 px-4">Status Certificado</th>
-                          <th class="py-3.5 px-4 text-right">Última Atividade</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-slate-100">
-                        @for (mat of alunosMatriculados(); track mat.id || mat.profissional_id) {
-                          <tr class="hover:bg-slate-50/60 transition-colors">
-                            <td class="py-4 px-4 sm:px-6">
-                              <div class="font-bold text-slate-900">{{ mat.aluno?.full_name || 'Membro da Comunidade' }}</div>
-                              <div class="text-[11px] text-slate-500">{{ mat.aluno?.email || mat.aluno?.professional_title || 'Sem email cadastrado' }}</div>
-                            </td>
-                            <td class="py-4 px-4 min-w-[180px]">
-                              @let totalAulas = cursoAtivo()?.modulos?.length || 0;
-                              @let aulasConcluidas = mat.modulos_concluidos?.length || 0;
-                              @let pct = totalAulas > 0 ? Math.round((aulasConcluidas / totalAulas) * 100) : 0;
-                              <div class="space-y-1">
-                                <div class="flex items-center justify-between text-[11px] font-semibold text-slate-600">
-                                  <span>{{ aulasConcluidas }} de {{ totalAulas }} aulas</span>
-                                  <span class="text-indigo-600 font-bold">{{ pct }}%</span>
-                                </div>
-                                <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                  <div class="h-full rounded-full bg-indigo-600" [style.width.%]="pct"></div>
-                                </div>
-                              </div>
-                            </td>
-                            <td class="py-4 px-4">
-                              @if (mat.certificado_emitido_em) {
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200">
-                                  <span>🎓</span>
-                                  <span>Emitido ({{ formatarData(mat.certificado_emitido_em) }})</span>
-                                </span>
-                              } @else {
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">
-                                  <span>Em andamento</span>
-                                </span>
-                              }
-                            </td>
-                            <td class="py-4 px-4 text-right text-[11px] text-slate-500">
-                              {{ formatarData(mat.atualizado_em || mat.criado_em) }}
-                            </td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
+              }
+
+              <!-- Sub-aba 2: Matrículas & Progresso -->
+              @if (subAbaAlunos() === 'progresso') {
+                <div class="space-y-4">
+                  @if (carregandoAlunos()) {
+                    <div class="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3 shadow-xs">
+                      <div class="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                      <p class="text-xs text-slate-500 font-medium">Carregando matrículas dos membros...</p>
+                    </div>
+                  } @else if (alunosMatriculados().length === 0) {
+                    <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
+                      <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      </div>
+                      <div class="space-y-1 max-w-md mx-auto">
+                        <h5 class="text-base font-bold text-slate-900">Nenhum aluno matriculado ainda</h5>
+                        <p class="text-xs text-slate-500">Assim que os membros com acesso liberado assistirem à primeira aula, o registro de matrícula e o progresso aparecerão aqui automaticamente.</p>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                      <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[10px]">
+                            <tr>
+                              <th class="py-3.5 px-4 sm:px-6">Aluno</th>
+                              <th class="py-3.5 px-4">Progresso nas Aulas</th>
+                              <th class="py-3.5 px-4">Status Certificado</th>
+                              <th class="py-3.5 px-4 text-right">Última Atividade</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-slate-100">
+                            @for (mat of alunosMatriculados(); track mat.id || mat.profissional_id) {
+                              <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="py-4 px-4 sm:px-6">
+                                  <div class="font-bold text-slate-900">{{ mat.aluno?.full_name || 'Membro da Comunidade' }}</div>
+                                  <div class="text-[11px] text-slate-500">{{ mat.aluno?.email || mat.aluno?.professional_title || 'Sem email cadastrado' }}</div>
+                                </td>
+                                <td class="py-4 px-4 min-w-[180px]">
+                                  @let totalAulas = cursoAtivo()?.modulos?.length || 0;
+                                  @let aulasConcluidas = mat.modulos_concluidos?.length || 0;
+                                  @let pct = totalAulas > 0 ? Math.round((aulasConcluidas / totalAulas) * 100) : 0;
+                                  <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                                      <span>{{ aulasConcluidas }} de {{ totalAulas }} aulas</span>
+                                      <span class="text-indigo-600 font-bold">{{ pct }}%</span>
+                                    </div>
+                                    <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                      <div class="h-full rounded-full bg-indigo-600" [style.width.%]="pct"></div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td class="py-4 px-4">
+                                  @if (mat.certificado_emitido_em) {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200">
+                                      <span>🎓</span>
+                                      <span>Emitido ({{ formatarData(mat.certificado_emitido_em) }})</span>
+                                    </span>
+                                  } @else {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">
+                                      <span>Em andamento</span>
+                                    </span>
+                                  }
+                                </td>
+                                <td class="py-4 px-4 text-right text-[11px] text-slate-500">
+                                  {{ formatarData(mat.atualizado_em || mat.criado_em) }}
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -961,9 +1122,27 @@ export class AdminCursoComponent implements OnInit {
     ordem: 1,
   };
 
-  // Alunos matriculados
+  // Alunos matriculados e liberação de acessos
+  readonly subAbaAlunos = signal<'acessos' | 'progresso'>('acessos');
+  readonly acessosMembros = signal<any[]>([]);
+  readonly termoBuscaMembro = signal<string>('');
+  readonly salvandoAcessoId = signal<string | null>(null);
   readonly alunosMatriculados = signal<any[]>([]);
   readonly carregandoAlunos = signal<boolean>(false);
+
+  readonly membrosFiltrados = computed(() => {
+    const termo = this.termoBuscaMembro().toLowerCase().trim();
+    if (!termo) return this.acessosMembros();
+    return this.acessosMembros().filter(m => {
+      const nome = (m.profissional?.full_name || '').toLowerCase();
+      const email = (m.profissional?.email || '').toLowerCase();
+      return nome.includes(termo) || email.includes(termo);
+    });
+  });
+
+  readonly totalAcessosLiberados = computed(() =>
+    this.acessosMembros().filter(m => m.liberado).length
+  );
 
   // Feedbacks
   readonly mensagemSucesso = signal<string | null>(null);
@@ -1282,7 +1461,7 @@ export class AdminCursoComponent implements OnInit {
   }
 
   // ==========================================
-  // ALUNOS MATRICULADOS
+  // ALUNOS & ACESSOS AO CURSO
   // ==========================================
 
   async carregarAlunosMatriculados(): Promise<void> {
@@ -1291,14 +1470,127 @@ export class AdminCursoComponent implements OnInit {
 
     this.carregandoAlunos.set(true);
     try {
-      const dados = await this.supabaseService.listarMatriculadosDoCurso(cId);
-      this.alunosMatriculados.set(dados);
+      const [matriculados, acessos] = await Promise.all([
+        this.supabaseService.listarMatriculadosDoCurso(cId),
+        this.supabaseService.listarAcessosEMatriculasDoCurso(cId),
+      ]);
+      this.alunosMatriculados.set(matriculados);
+      this.acessosMembros.set(acessos);
     } catch (e: any) {
-      console.warn('Erro ao carregar matriculados:', e);
+      console.warn('Erro ao carregar dados de alunos e acessos:', e);
       this.alunosMatriculados.set([]);
+      this.acessosMembros.set([]);
     } finally {
       this.carregandoAlunos.set(false);
     }
+  }
+
+  async toggleAcessoMembro(membro: any): Promise<void> {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    const novoStatus = !membro.liberado;
+    this.salvandoAcessoId.set(membro.profissional.id);
+
+    // Optimistic update
+    this.acessosMembros.update(list =>
+      list.map(item =>
+        item.profissional.id === membro.profissional.id
+          ? { ...item, liberado: novoStatus }
+          : item
+      )
+    );
+
+    try {
+      const res = await this.supabaseService.liberarAcessoCurso(
+        membro.profissional.id,
+        cId,
+        novoStatus,
+        membro.validade
+      );
+
+      if (res.error) {
+        // Revert on error
+        this.acessosMembros.update(list =>
+          list.map(item =>
+            item.profissional.id === membro.profissional.id
+              ? { ...item, liberado: !novoStatus }
+              : item
+          )
+        );
+        this.exibirErro('Erro ao atualizar permissão: ' + res.error.message);
+      } else {
+        this.exibirSucesso(
+          `Acesso ao curso ${novoStatus ? 'liberado' : 'bloqueado'} para ${membro.profissional.full_name || 'o membro'}.`
+        );
+      }
+    } catch (e: any) {
+      this.exibirErro('Erro ao salvar permissão de acesso.');
+    } finally {
+      this.salvandoAcessoId.set(null);
+    }
+  }
+
+  async alterarValidadeAcesso(membro: any, event: Event): Promise<void> {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    const novaValidade = (event.target as HTMLInputElement).value || null;
+    this.acessosMembros.update(list =>
+      list.map(item =>
+        item.profissional.id === membro.profissional.id
+          ? { ...item, validade: novaValidade }
+          : item
+      )
+    );
+
+    try {
+      await this.supabaseService.liberarAcessoCurso(
+        membro.profissional.id,
+        cId,
+        membro.liberado,
+        novaValidade
+      );
+    } catch (e) {
+      console.warn('Erro ao atualizar validade:', e);
+    }
+  }
+
+  async liberarAcessoParaTodos(liberar: boolean): Promise<void> {
+    const cId = this.cursoSelecionadoId();
+    if (!cId) return;
+
+    this.carregandoAlunos.set(true);
+    try {
+      const membros = this.acessosMembros();
+      await Promise.all(
+        membros.map(m =>
+          this.supabaseService.liberarAcessoCurso(
+            m.profissional.id,
+            cId,
+            liberar,
+            m.validade
+          )
+        )
+      );
+      this.acessosMembros.update(list =>
+        list.map(item => ({ ...item, liberado: liberar }))
+      );
+      this.exibirSucesso(
+        `Acesso ao curso ${liberar ? 'liberado para todos' : 'bloqueado para todos'} os membros com sucesso!`
+      );
+    } catch (e: any) {
+      this.exibirErro('Erro ao atualizar acessos em massa.');
+    } finally {
+      this.carregandoAlunos.set(false);
+    }
+  }
+
+  getIniciais(nome?: string): string {
+    if (!nome) return 'MB';
+    const partes = nome.trim().split(/\s+/);
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
   }
 
   formatarData(dataStr?: string | null): string {
