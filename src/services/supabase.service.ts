@@ -527,6 +527,125 @@ export class SupabaseService {
     }
   }
 
+  async criarLeadSindico(dados: {
+    nome: string;
+    telefone: string;
+    email: string;
+    condominio?: string;
+  }): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const { data, error } = await this.client
+        .from('alo_sindico_leads')
+        .insert({
+          nome: dados.nome.trim(),
+          telefone: dados.telefone.trim(),
+          email: dados.email.trim().toLowerCase(),
+          condominio: dados.condominio?.trim() || null,
+          status: 'novo',
+        })
+        .select('*')
+        .single();
+      if (error) return { error };
+      return { data, error: null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async enviarMensagemAloSindico(
+    leadId: string,
+    historico: Array<{ role: string; parts: { text: string }[] }>
+  ): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('diagnostico-ia', {
+        body: { operation: 'chat-sindico', historico, leadId },
+      });
+      if (error) return { error };
+      return { data, error: null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarLeadsSindico(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('alo_sindico_leads')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) {
+        // Tenta fallback com created_at caso o banco use nomenclatura padrão
+        const { data: dataFallback, error: errorFallback } = await this.client
+          .from('alo_sindico_leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (errorFallback) {
+          console.warn('Aviso ao listar leads Alô Síndico:', error.message || error);
+          return [];
+        }
+        return dataFallback || [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar leads Alô Síndico:', e?.message || e);
+      return [];
+    }
+  }
+
+  async obterMensagensLeadSindico(leadId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('alo_sindico_mensagens')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('criado_em', { ascending: true });
+      if (error) {
+        const { data: dataFallback, error: errorFallback } = await this.client
+          .from('alo_sindico_mensagens')
+          .select('*')
+          .eq('lead_id', leadId)
+          .order('created_at', { ascending: true });
+        if (errorFallback) {
+          console.warn('Aviso ao obter mensagens do lead:', error.message || error);
+          return [];
+        }
+        return dataFallback || [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao obter mensagens do lead:', e?.message || e);
+      return [];
+    }
+  }
+
+  async atualizarStatusLeadSindico(
+    leadId: string,
+    status: 'novo' | 'em_atendimento' | 'concluido' | 'descartado'
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('alo_sindico_leads')
+        .update({ status })
+        .eq('id', leadId);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async contarLeadsSindicoNovos(): Promise<number> {
+    try {
+      const { count, error } = await this.client
+        .from('alo_sindico_leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'novo');
+      if (error) return 0;
+      return count || 0;
+    } catch {
+      return 0;
+    }
+  }
+
   async criarUsuarioAdminViaFunction(dados: {
     email: string;
     full_name: string;

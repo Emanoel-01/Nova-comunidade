@@ -355,6 +355,35 @@ interface Institution {
             </a>
           </div>
         </div>
+
+        <!-- Banner Alô Síndico -->
+        <div class="mt-12 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 rounded-3xl p-8 sm:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="space-y-2 text-center md:text-left">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-xs font-bold uppercase tracking-wider">
+              <span>⚡</span>
+              <span>Canal Especial</span>
+            </div>
+            <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              É Síndico ou Gestor Predial? Conheça o Alô Síndico
+            </h3>
+            <p class="text-amber-100 text-sm sm:text-base max-w-2xl">
+              Tire dúvidas sobre inspeções, NBR 16747 e laudos com nossa IA especializada e solicite orçamentos rápidos para seu edifício.
+            </p>
+          </div>
+
+          <div class="shrink-0">
+            <a
+              routerLink="/contato"
+              fragment="alo-sindico"
+              class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all duration-200 text-xs sm:text-sm cursor-pointer whitespace-nowrap"
+            >
+              <span>Falar com o Alô Síndico</span>
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </a>
+          </div>
+        </div>
       </div>
     </section>
 

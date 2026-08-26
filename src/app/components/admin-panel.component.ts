@@ -12,6 +12,7 @@ import { AdminDepoimentosComponent } from './admin/admin-depoimentos.component';
 import { AdminBlogComponent } from './admin/admin-blog.component';
 import { AdminNotificacoesComponent } from './admin/admin-notificacoes.component';
 import { AdminPortfolioComponent } from './admin/admin-portfolio.component';
+import { AdminAloSindicoComponent } from './admin/admin-alo-sindico.component';
 import { SupabaseService } from '../../services/supabase.service';
 
 interface NavSectionItem {
@@ -37,7 +38,8 @@ interface NavSectionItem {
     AdminDepoimentosComponent,
     AdminBlogComponent,
     AdminNotificacoesComponent,
-    AdminPortfolioComponent
+    AdminPortfolioComponent,
+    AdminAloSindicoComponent
   ],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col md:flex-row">
@@ -276,6 +278,27 @@ interface NavSectionItem {
                 </svg>
                 <span>Gestão de Usuários</span>
               </button>
+
+              <!-- Alô Síndico (Atendimento e Leads) -->
+              <button
+                type="button"
+                (click)="selecionarAba('alo-sindico')"
+                [class]="abaAtiva() === 'alo-sindico'
+                  ? 'w-full flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold shadow-sm cursor-pointer'
+                  : 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-amber-300 hover:bg-slate-800 hover:text-amber-200 font-medium transition-colors cursor-pointer'"
+              >
+                <div class="flex items-center gap-3">
+                  <svg class="w-4 h-4 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span>Alô Síndico</span>
+                </div>
+                @if (totalLeadsNovos() > 0) {
+                  <span class="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
+                    {{ totalLeadsNovos() }}
+                  </span>
+                }
+              </button>
             </div>
 
           </nav>
@@ -482,6 +505,11 @@ interface NavSectionItem {
               <app-admin-notificacoes></app-admin-notificacoes>
             }
 
+            <!-- CASO 12: Alô Síndico (Leads e Chat) -->
+            @case ('alo-sindico') {
+              <app-admin-alo-sindico></app-admin-alo-sindico>
+            }
+
             <!-- DEMAIS ABAS: Card de "Conector Pendente / Em Construção" -->
             @default {
               <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-16 text-center space-y-5 shadow-xs max-w-2xl mx-auto">
@@ -524,6 +552,7 @@ export class AdminPanelComponent implements OnInit {
   readonly totalMembrosAtivos = signal<number | string>('—');
   readonly totalPostsFeed = signal<number | string>('—');
   readonly totalVagasAbertas = signal<number | string>('—');
+  readonly totalLeadsNovos = signal<number>(0);
 
   private readonly abasInfo: Record<string, { titulo: string; tabela?: string }> = {
     'visao-geral': { titulo: 'Visão Geral' },
@@ -541,6 +570,7 @@ export class AdminPanelComponent implements OnInit {
     'newsletter': { titulo: 'Assinantes da Newsletter' },
     'convites-acessos': { titulo: 'Convites e Acessos' },
     'gestao-usuarios': { titulo: 'Gestão de Usuários & Licenças' },
+    'alo-sindico': { titulo: 'Alô Síndico — Atendimento & Leads com IA' },
   };
 
   async ngOnInit(): Promise<void> {
@@ -571,6 +601,12 @@ export class AdminPanelComponent implements OnInit {
       this.totalVagasAbertas.set(await this.supabaseService.contarVagasAbertas());
     } catch {
       this.totalVagasAbertas.set('0');
+    }
+
+    try {
+      this.totalLeadsNovos.set(await this.supabaseService.contarLeadsSindicoNovos());
+    } catch {
+      this.totalLeadsNovos.set(0);
     }
   }
 

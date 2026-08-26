@@ -1,12 +1,13 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
 import { SeoService } from '../services/seo.service';
 
 @Component({
   selector: 'app-amorim-tech',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <div class="w-full bg-slate-50 py-12 sm:py-16 px-4 sm:px-6 lg:px-8 space-y-20 sm:space-y-24">
       <div class="max-w-7xl mx-auto space-y-20 sm:space-y-24">
@@ -298,29 +299,172 @@ import { SeoService } from '../services/seo.service';
 
           <!-- Bloco de CTA final da seção Alô Síndico -->
           <div class="max-w-4xl mx-auto">
-            <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-8 sm:p-10 text-white text-center shadow-lg space-y-5">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-8 sm:p-10 text-white text-center shadow-lg space-y-6">
               <div class="space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 backdrop-blur-xs text-white text-xs font-bold uppercase tracking-wider">
+                  <span>⚡</span>
+                  <span>Atendimento Especial para Síndicos</span>
+                </div>
                 <h3 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   Fale agora com quem entende do assunto — sem compromisso.
                 </h3>
                 <p class="text-amber-100 text-sm sm:text-base max-w-xl mx-auto">
-                  Tire dúvidas sobre seu edifício, saiba qual laudo é necessário e receba um orçamento personalizado no seu WhatsApp.
+                  Tire dúvidas sobre seu edifício com nossa inteligência artificial ou receba um orçamento personalizado no seu WhatsApp.
                 </p>
               </div>
 
-              <div class="flex justify-center pt-2">
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+                <a
+                  routerLink="/contato"
+                  fragment="alo-sindico"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-xl transition-all duration-200 text-xs sm:text-sm cursor-pointer"
+                >
+                  <span>Conversar no Alô Síndico</span>
+                  <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
+
                 <a
                   [href]="linkWhatsappSindico"
                   target="_blank"
                   rel="noopener noreferrer"
                   id="btn-whatsapp-alo-sindico"
-                  class="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-200 cursor-pointer text-sm sm:text-base active:scale-[0.99]"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-xl transition-all duration-200 text-xs sm:text-sm cursor-pointer"
                 >
-                  <svg class="w-5 h-5 fill-current text-emerald-400" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
                     <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.044c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.13.332.202.043.073.043.419-.101.824z"/>
                   </svg>
-                  <span>Pedir Cotação pelo WhatsApp</span>
+                  <span>Pedir Cotação no WhatsApp</span>
                 </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção 5: O Futuro da Amorim Tech (Roadmap Visionário de Inovação) -->
+        <section class="space-y-12">
+          <div class="text-center max-w-3xl mx-auto space-y-3">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-xs sm:text-sm font-semibold tracking-wide shadow-sm">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Roadmap de Inovação Contínua</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              O Futuro da Amorim Tech
+            </h2>
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed">
+              Estamos expandindo as fronteiras da tecnologia predial. Conheça as próximas soluções que transformarão a gestão de edifícios, condomínios e empreendimentos.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <!-- Futuro 1: Plano de Manutenção Digital 4.0 -->
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-6 group">
+              <div class="space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-600 block mb-1">
+                    GESTÃO PREDITIVA
+                  </span>
+                  <h3 class="text-lg font-bold text-slate-900">
+                    Plano de Manutenção 4.0
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  Cronogramas preventivos automatizados, alertas de periodicidade e controle orçamentário para síndicos e gestores prediais.
+                </p>
+              </div>
+
+              <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-bold">
+                <span>Em Desenvolvimento</span>
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              </div>
+            </div>
+
+            <!-- Futuro 2: Entrega e Recebimento de Áreas Comuns -->
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-6 group">
+              <div class="space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
+                    CONSTRUTORAS & CONDOMÍNIOS
+                  </span>
+                  <h3 class="text-lg font-bold text-slate-900">
+                    Recebimento de Obras
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  Checklist digital para vistoria de entrega de chaves e recebimento de áreas comuns, garantindo conformidade entre projeto e obra.
+                </p>
+              </div>
+
+              <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-emerald-600 font-bold">
+                <span>Planejado</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              </div>
+            </div>
+
+            <!-- Futuro 3: Due Diligence e Auditoria Técnica -->
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-6 group">
+              <div class="space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-widest text-purple-600 block mb-1">
+                    INVESTIMENTOS & AUDITORIA
+                  </span>
+                  <h3 class="text-lg font-bold text-slate-900">
+                    Due Diligence Imobiliária
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  Auditoria técnica e documental profunda de ativos imobiliários, mitigando riscos para fundos, investidores e proprietários.
+                </p>
+              </div>
+
+              <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-purple-600 font-bold">
+                <span>Planejado</span>
+                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+              </div>
+            </div>
+
+            <!-- Futuro 4: Alô Síndico AI Assistant -->
+            <div class="bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-6 group">
+              <div class="space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[10px] font-extrabold uppercase tracking-widest text-amber-600 block mb-1">
+                    IA EM TEMPO REAL
+                  </span>
+                  <h3 class="text-lg font-bold text-slate-900">
+                    Alô Síndico AI
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  Assistente virtual 24/7 treinado com normas ABNT e práticas de engenharia para orientar gestores e conectar a engenheiros credenciados.
+                </p>
+              </div>
+
+              <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-amber-600 font-bold">
+                <span>Versão Beta Ativa</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
               </div>
             </div>
           </div>

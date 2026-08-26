@@ -360,8 +360,39 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
           ></app-service-grid>
         </section>
 
-        <!-- Seção 6: CTA Final -->
-        <section class="pt-6">
+        <!-- Seção 6: Atendimento para Síndicos (Alô Síndico) -->
+        <section class="pt-2">
+          <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-8 sm:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 max-w-5xl mx-auto">
+            <div class="space-y-2 text-center md:text-left">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-xs font-bold uppercase tracking-wider">
+                <span>⚡</span>
+                <span>Canal Direto do Síndico</span>
+              </div>
+              <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                Precisa de vistoria ou laudo para seu condomínio?
+              </h3>
+              <p class="text-amber-100 text-sm sm:text-base max-w-xl">
+                Consulte nosso assistente técnico inteligente Alô Síndico com IA ou receba uma proposta técnica direta e sem burocracia.
+              </p>
+            </div>
+
+            <div class="shrink-0 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <a
+                routerLink="/contato"
+                fragment="alo-sindico"
+                class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all duration-200 text-xs sm:text-sm cursor-pointer whitespace-nowrap"
+              >
+                <span>Acessar Alô Síndico</span>
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção 7: CTA Final -->
+        <section class="pt-2">
           <div class="bg-blue-50 border border-blue-100 rounded-3xl p-8 sm:p-12 text-center max-w-4xl mx-auto shadow-sm">
             <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-4 tracking-tight">
               Mais de 100 projetos e laudos executados com sucesso
