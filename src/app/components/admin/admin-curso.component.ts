@@ -241,7 +241,7 @@ export interface CursoAdmin {
 
                         <span
                           [class]="curso.ativo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'"
-                          class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                          class="px-2 py-0.5 rounded-full text-[11px] font-bold border"
                         >
                           {{ curso.ativo ? 'Ativo' : 'Inativo' }}
                         </span>
@@ -364,7 +364,7 @@ export interface CursoAdmin {
                     {{ cursoAtivo()?.titulo }}
                   </h3>
                   @if (cursoAtivo()?.modulo_predial_vinculado) {
-                    <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
+                    <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
                       Vinculado: {{ cursoAtivo()?.modulo_predial_vinculado }}
                     </span>
                   }
@@ -612,12 +612,12 @@ export interface CursoAdmin {
                               {{ mod.titulo }}
                             </h5>
                             @if (mod.duracao) {
-                              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-semibold">
                                 ⏱ {{ mod.duracao }}
                               </span>
                             }
                             @if (mod.vimeo_id) {
-                              <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold border border-indigo-100 flex items-center gap-1">
+                              <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-mono font-bold border border-indigo-100 flex items-center gap-1">
                                 <svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
                                 </svg>
@@ -780,7 +780,7 @@ export interface CursoAdmin {
                     : 'pb-3 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1.5'"
                 >
                   <span>Liberar Acesso aos Membros</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [class]="subAbaAlunos() === 'acessos' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'">
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-bold" [class]="subAbaAlunos() === 'acessos' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'">
                     {{ totalAcessosLiberados() }}/{{ acessosMembros().length }}
                   </span>
                 </button>
@@ -793,7 +793,7 @@ export interface CursoAdmin {
                     : 'pb-3 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-700 cursor-pointer flex items-center gap-1.5'"
                 >
                   <span>Matrículas & Progresso</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [class]="subAbaAlunos() === 'progresso' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'">
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-bold" [class]="subAbaAlunos() === 'progresso' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'">
                     {{ alunosMatriculados().length }}
                   </span>
                 </button>
@@ -849,7 +849,7 @@ export interface CursoAdmin {
                     <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
                       <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
-                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[10px]">
+                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[11px]">
                             <tr>
                               <th class="py-3.5 px-4 sm:px-6">Membro</th>
                               <th class="py-3.5 px-4">Status de Acesso</th>
@@ -882,11 +882,11 @@ export interface CursoAdmin {
                                       class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
                                     />
                                     @if (item.liberado) {
-                                      <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                      <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                                         Liberado
                                       </span>
                                     } @else {
-                                      <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500">
+                                      <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-500">
                                         Bloqueado
                                       </span>
                                     }
@@ -950,7 +950,7 @@ export interface CursoAdmin {
                     <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
                       <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
-                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[10px]">
+                          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[11px]">
                             <tr>
                               <th class="py-3.5 px-4 sm:px-6">Aluno</th>
                               <th class="py-3.5 px-4">Progresso nas Aulas</th>

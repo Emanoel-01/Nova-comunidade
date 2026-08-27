@@ -119,7 +119,7 @@ export interface MonthFlowItem {
         <!-- Banner de KPIs Rápidos Resumidos -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 mt-6 border-t border-slate-100">
           <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">VGV Estimado</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">VGV Estimado</span>
             <div class="text-base sm:text-lg font-black text-slate-900 mt-0.5 truncate">
               {{ kpis().scenarioVgvTotal | currency:'BRL':'symbol':'1.0-0' }}
             </div>
@@ -127,7 +127,7 @@ export interface MonthFlowItem {
           </div>
 
           <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Custo Total Global</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Custo Total Global</span>
             <div class="text-base sm:text-lg font-black text-rose-700 mt-0.5 truncate">
               {{ kpis().scenarioCustoTotalEmpreendimento | currency:'BRL':'symbol':'1.0-0' }}
             </div>
@@ -135,7 +135,7 @@ export interface MonthFlowItem {
           </div>
 
           <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/60">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Lucro Líquido Real</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Lucro Líquido Real</span>
             <div class="text-base sm:text-lg font-black text-emerald-900 mt-0.5 truncate">
               {{ kpis().scenarioLucroLiquido | currency:'BRL':'symbol':'1.0-0' }}
             </div>
@@ -143,7 +143,7 @@ export interface MonthFlowItem {
           </div>
 
           <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/60">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-800">Retorno Financeiro</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-800">Retorno Financeiro</span>
             <div class="text-base sm:text-lg font-black text-indigo-950 mt-0.5 truncate">
               TIR: {{ (financialMetrics().tir * 100).toFixed(1) }}% a.a.
             </div>
@@ -447,7 +447,7 @@ export interface MonthFlowItem {
                     placeholder="Ex: 3200"
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs"
                   />
-                  <span class="text-[10px] text-slate-400 mt-1 block">Somatório das áreas privativas dos apartamentos/salas</span>
+                  <span class="text-[11px] text-slate-400 mt-1 block">Somatório das áreas privativas dos apartamentos/salas</span>
                 </div>
 
                 <!-- Preço Médio de Venda -->
@@ -484,7 +484,7 @@ export interface MonthFlowItem {
 
                 <!-- Card de VGV Total Calculado -->
                 <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5 mt-2">
-                  <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                  <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
                     Valor Geral de Vendas (VGV) Total
                   </div>
                   <div class="text-xl font-black text-emerald-950">
@@ -1019,7 +1019,7 @@ export interface MonthFlowItem {
                     <tr>
                       <td class="p-3 text-left font-bold bg-slate-100 border-r border-slate-200 whitespace-nowrap">
                         <div class="text-slate-900">{{ row.precoM2 | currency:'BRL':'symbol':'1.0-0' }}/m²</div>
-                        <div class="text-[10px] text-slate-500 font-normal">
+                        <div class="text-[11px] text-slate-500 font-normal">
                           ({{ row.varPreco > 0 ? '+' : '' }}{{ (row.varPreco * 100).toFixed(0) }}% no Preço)
                         </div>
                       </td>
@@ -1031,7 +1031,7 @@ export interface MonthFlowItem {
                           <div class="font-black text-xs">
                             {{ (cell.margemLiquida * 100).toFixed(1) }}%
                           </div>
-                          <div class="text-[10px] opacity-80">
+                          <div class="text-[11px] opacity-80">
                             {{ cell.lucroLiquido | currency:'BRL':'symbol':'1.0-0' }}
                           </div>
                         </td>
@@ -1105,7 +1105,7 @@ export interface MonthFlowItem {
           <!-- Indicadores de Retorno Financeiro -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-1">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Taxa Interna de Retorno (TIR)</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Taxa Interna de Retorno (TIR)</span>
               <div class="text-2xl font-black text-indigo-900">
                 {{ (financialMetrics().tir * 100).toFixed(1) }}% a.a.
               </div>
@@ -1113,7 +1113,7 @@ export interface MonthFlowItem {
             </div>
 
             <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-1">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Valor Presente Líquido (VPL)</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Valor Presente Líquido (VPL)</span>
               <div class="text-2xl font-black text-emerald-800">
                 {{ financialMetrics().vpl | currency:'BRL':'symbol':'1.0-0' }}
               </div>
@@ -1121,7 +1121,7 @@ export interface MonthFlowItem {
             </div>
 
             <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-1">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Exposição Máxima de Caixa</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Exposição Máxima de Caixa</span>
               <div class="text-2xl font-black text-rose-700">
                 {{ financialMetrics().exposicaoMaxima | currency:'BRL':'symbol':'1.0-0' }}
               </div>
@@ -1196,7 +1196,7 @@ export interface MonthFlowItem {
                 <div class="flex items-center justify-between">
                   <span class="font-bold text-sm text-slate-900">{{ item.estado }}</span>
                   <span
-                    class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    class="text-[11px] font-bold px-2 py-0.5 rounded-full"
                     [class]="item.diferenca <= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
                   >
                     {{ item.diferenca <= 0 ? '' : '+' }}{{ (item.percentual * 100).toFixed(1) }}%
@@ -1374,15 +1374,15 @@ export interface MonthFlowItem {
             <!-- Síntese das Áreas -->
             <div class="grid grid-cols-3 gap-4 text-center">
               <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50">
-                <span class="text-slate-500 text-[10px] font-bold uppercase">Área Bruta Total</span>
+                <span class="text-slate-500 text-[11px] font-bold uppercase">Área Bruta Total</span>
                 <div class="text-base font-black text-slate-900">{{ areaTotals().totalAreaBruta.toFixed(2) }} m²</div>
               </div>
               <div class="p-3.5 rounded-2xl border border-indigo-200 bg-indigo-50/50">
-                <span class="text-indigo-800 text-[10px] font-bold uppercase">Área Equivalente NBR 12.721</span>
+                <span class="text-indigo-800 text-[11px] font-bold uppercase">Área Equivalente NBR 12.721</span>
                 <div class="text-base font-black text-indigo-950">{{ areaTotals().totalAreaEquivalente.toFixed(2) }} m²</div>
               </div>
               <div class="p-3.5 rounded-2xl border border-emerald-200 bg-emerald-50/50">
-                <span class="text-emerald-800 text-[10px] font-bold uppercase">Área Vendável Privativa</span>
+                <span class="text-emerald-800 text-[11px] font-bold uppercase">Área Vendável Privativa</span>
                 <div class="text-base font-black text-emerald-950">{{ areaVendavel() }} m²</div>
               </div>
             </div>

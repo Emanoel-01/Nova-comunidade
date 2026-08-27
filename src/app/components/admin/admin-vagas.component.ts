@@ -585,14 +585,14 @@ interface CandidaturaAdminItem {
                           }
                         </p>
                       </div>
-                      <span class="text-[10px] text-slate-400 font-medium shrink-0">
+                      <span class="text-[11px] text-slate-400 font-medium shrink-0">
                         {{ formatarData(cand.criado_em) }}
                       </span>
                     </div>
 
                     @if (cand.mensagem) {
                       <div class="bg-white p-3 rounded-xl border border-slate-200/60 text-xs text-slate-700 leading-relaxed whitespace-pre-line">
-                        <strong class="text-slate-900 block text-[10px] uppercase tracking-wider mb-1">Apresentação:</strong>
+                        <strong class="text-slate-900 block text-[11px] uppercase tracking-wider mb-1">Apresentação:</strong>
                         {{ cand.mensagem }}
                       </div>
                     }

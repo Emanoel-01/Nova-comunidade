@@ -283,7 +283,7 @@ interface ForumTopicoAdmin {
                               @if (resposta.autor?.professional_title) {
                                 <span class="text-slate-400 text-[11px]">• {{ resposta.autor?.professional_title }}</span>
                               }
-                              <span class="text-slate-400 text-[10px]">
+                              <span class="text-slate-400 text-[11px]">
                                 {{ formatarData(resposta.criado_em) }}
                               </span>
                             </div>

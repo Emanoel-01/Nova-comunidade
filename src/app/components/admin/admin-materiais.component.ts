@@ -517,19 +517,95 @@ interface MaterialAdminItem {
                     </div>
                   }
                 } @else {
-                  <label class="block text-xs font-bold text-slate-700">
-                    URL Direta do Arquivo (Google Drive, Supabase Storage, CDN, etc.)
-                  </label>
-                  <input
-                    type="url"
-                    [value]="formUrlArquivo()"
-                    (input)="formUrlArquivo.set($any($event.target).value)"
-                    placeholder="https://drive.google.com/... ou https://..."
-                    class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
-                  />
-                  <p class="text-[11px] text-slate-400">
-                    Caso deixe em branco, o membro poderá clicar em "Solicitar", e o arquivo será liberado manualmente.
-                  </p>
+                  <!-- Opção 1: Upload Direto para o Bucket materiais-comunidade -->
+                  <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">
+                      Upload Direto de Arquivo (Storage Supabase)
+                    </label>
+
+                    <div class="p-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors">
+                      <div class="flex flex-col items-center justify-center text-center gap-2">
+                        @if (uploadandoArquivo()) {
+                          <div class="flex items-center gap-2 text-indigo-600 text-xs font-bold py-2">
+                            <span class="w-4 h-4 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></span>
+                            <span>Enviando arquivo para o bucket (materiais-comunidade)...</span>
+                          </div>
+                        } @else if (nomeArquivoEnviado()) {
+                          <div class="flex items-center justify-between w-full p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+                            <div class="flex items-center gap-2 truncate">
+                              <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span class="truncate">{{ nomeArquivoEnviado() }}</span>
+                              @if (formTamanho()) {
+                                <span class="text-emerald-600 text-[11px]">({{ formTamanho() }})</span>
+                              }
+                            </div>
+                            <label class="ml-2 px-2.5 py-1 rounded-lg bg-white border border-emerald-300 text-emerald-800 text-[11px] font-bold hover:bg-emerald-100 cursor-pointer shrink-0">
+                              <span>Trocar</span>
+                              <input
+                                type="file"
+                                (change)="onFileSelected($event)"
+                                accept=".pdf,.xlsx,.xls,.docx,.doc,.csv,.png,.jpg,.jpeg,.zip"
+                                class="hidden"
+                              />
+                            </label>
+                          </div>
+                        } @else {
+                          <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                          </div>
+                          <div>
+                            <label class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs">
+                              <span>Escolher Arquivo do Computador</span>
+                              <input
+                                type="file"
+                                (change)="onFileSelected($event)"
+                                accept=".pdf,.xlsx,.xls,.docx,.doc,.csv,.png,.jpg,.jpeg,.zip"
+                                class="hidden"
+                              />
+                            </label>
+                            <p class="text-[11px] text-slate-400 mt-1.5">
+                              Formatos aceitos: PDF, XLSX, XLS, DOCX, CSV, Imagens (máx. 20 MB)
+                            </p>
+                          </div>
+                        }
+                      </div>
+
+                      @if (erroUpload()) {
+                        <div class="mt-2.5 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                          <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>{{ erroUpload() }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Opção 2: URL Direta / Externa -->
+                  <div class="space-y-1.5 pt-1">
+                    <div class="flex items-center justify-between">
+                      <label class="block text-xs font-bold text-slate-700">
+                        URL do Arquivo (Preenchida via upload ou link externo)
+                      </label>
+                      @if (formUrlArquivo()) {
+                        <span class="text-[11px] text-emerald-600 font-bold">✓ URL vinculada</span>
+                      }
+                    </div>
+                    <input
+                      type="url"
+                      [value]="formUrlArquivo()"
+                      (input)="formUrlArquivo.set($any($event.target).value)"
+                      placeholder="https://drive.google.com/... ou URL gerada no upload"
+                      class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
+                    />
+                    <p class="text-[11px] text-slate-400">
+                      Preenchido automaticamente ao enviar arquivo, ou cole um link externo (ex: Google Drive, OneDrive).
+                    </p>
+                  </div>
                 }
               </div>
 
@@ -619,6 +695,11 @@ export class AdminMateriaisComponent implements OnInit {
   readonly formTamanho = signal<string>('');
   readonly formUrlArquivo = signal<string>('');
   readonly formAtivo = signal<boolean>(true);
+
+  // Upload Direto para Bucket Storage
+  readonly uploadandoArquivo = signal<boolean>(false);
+  readonly nomeArquivoEnviado = signal<string | null>(null);
+  readonly erroUpload = signal<string | null>(null);
 
   // Computed
   readonly totalAtivos = computed(() => this.materiais().filter(m => m.ativo).length);
@@ -725,6 +806,46 @@ export class AdminMateriaisComponent implements OnInit {
     }
   }
 
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    this.erroUpload.set(null);
+    this.uploadandoArquivo.set(true);
+
+    try {
+      const res = await this.supabaseService.uploadArquivoMaterial(file, this.formCategoria());
+      if (res.error) {
+        this.erroUpload.set(res.error.message || 'Falha no upload do arquivo.');
+        return;
+      }
+
+      if (res.signedUrl) {
+        this.formUrlArquivo.set(res.signedUrl);
+        this.nomeArquivoEnviado.set(file.name);
+
+        if (res.formato) {
+          this.formFormato.set(res.formato);
+        }
+        if (res.tamanho) {
+          this.formTamanho.set(res.tamanho);
+        }
+
+        // Sugerir título amigável caso esteja em branco
+        if (!this.formTitulo().trim()) {
+          const nomeSemExt = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+          this.formTitulo.set(nomeSemExt.charAt(0).toUpperCase() + nomeSemExt.slice(1));
+        }
+      }
+    } catch (err: any) {
+      this.erroUpload.set(err?.message || 'Erro inesperado durante o upload.');
+    } finally {
+      this.uploadandoArquivo.set(false);
+      input.value = '';
+    }
+  }
+
   abrirModalNovo(): void {
     this.materialEmEdicao.set(null);
     this.formTitulo.set('');
@@ -734,6 +855,9 @@ export class AdminMateriaisComponent implements OnInit {
     this.formTamanho.set('');
     this.formUrlArquivo.set('');
     this.formAtivo.set(true);
+    this.nomeArquivoEnviado.set(null);
+    this.uploadandoArquivo.set(false);
+    this.erroUpload.set(null);
     this.modalAberto.set(true);
   }
 
@@ -746,12 +870,18 @@ export class AdminMateriaisComponent implements OnInit {
     this.formTamanho.set(material.tamanho || '');
     this.formUrlArquivo.set(material.url_arquivo || '');
     this.formAtivo.set(material.ativo);
+    this.nomeArquivoEnviado.set(null);
+    this.uploadandoArquivo.set(false);
+    this.erroUpload.set(null);
     this.modalAberto.set(true);
   }
 
   fecharModal(): void {
     this.modalAberto.set(false);
     this.materialEmEdicao.set(null);
+    this.nomeArquivoEnviado.set(null);
+    this.uploadandoArquivo.set(false);
+    this.erroUpload.set(null);
   }
 
   async salvarMaterial(event: Event): Promise<void> {

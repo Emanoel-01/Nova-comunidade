@@ -447,15 +447,15 @@ export interface CursoAluno {
                           </h5>
                           
                           @if (mod.status === 'concluido') {
-                            <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/60">
+                            <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200/60">
                               Concluído
                             </span>
                           } @else if (mod.status === 'em_andamento') {
-                            <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200/60">
+                            <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-200/60">
                               Disponível
                             </span>
                           } @else {
-                            <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[11px] font-bold">
                               Bloqueado
                             </span>
                           }
@@ -583,7 +583,7 @@ export interface CursoAluno {
                     Avaliação & Conclusão Técnica
                   </h4>
                   @if (curso.progresso === 100) {
-                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
+                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black">
                       Liberada
                     </span>
                   }

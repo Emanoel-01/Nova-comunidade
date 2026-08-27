@@ -42,7 +42,7 @@ interface TimelineItem {
                 @if (item.imageUrl) {
                   <div class="absolute top-4 sm:top-5 left-4 sm:left-5 z-20">
                     <div class="bg-white/20 backdrop-blur-md px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-white/30 shadow-sm">
-                      <span class="text-[10px] sm:text-xs font-black text-white tracking-widest uppercase">{{ item.year }}</span>
+                      <span class="text-[11px] sm:text-xs font-black text-white tracking-widest uppercase">{{ item.year }}</span>
                     </div>
                   </div>
                   <div class="absolute inset-0 w-full h-full bg-slate-900 z-0">
@@ -61,7 +61,7 @@ interface TimelineItem {
                         <span [class]="iconColor(item.icon) + ' text-lg sm:text-xl font-bold'">{{ iconLabel(item.icon) }}</span>
                       </div>
                       <div class="bg-white px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                        <span class="text-[10px] sm:text-xs font-black text-slate-700 tracking-widest uppercase">{{ item.year }}</span>
+                        <span class="text-[11px] sm:text-xs font-black text-slate-700 tracking-widest uppercase">{{ item.year }}</span>
                       </div>
                     </div>
                     <div class="relative z-10 flex-grow">

@@ -1,6 +1,6 @@
 {
-  "name": "Comunidade Nova",
-  "description": "Portal da Comunidade Amorim Group em Angular com Feed, Perfil profissional, Mural de Vagas, Biblioteca de Materiais, Calendário de Eventos, Fórum Técnico, Mensagens Privadas (Chat), Cursos, Hall da Fama, Agentes (Reajuste de Contratos FGV/SINAENCO, Custos & Viabilidade NBR 12.721) e módulo administrativo.",
+  "name": "AmorimTech",
+  "description": "Plataforma e ecossistema AmorimTech em Angular: Engenharia Diagnóstica, SaaS Predial 4.0, Amorim Academy, Blog técnico, Comunidade profissional e agentes inteligentes.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -191,7 +191,7 @@ interface NotificacaoItem {
                 
                 <div class="space-y-1.5 flex-1 min-w-0">
                   <div class="flex items-center gap-2.5 flex-wrap">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-wider">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold uppercase tracking-wider">
                       Broadcast
                     </span>
                     <h5 class="text-sm sm:text-base font-bold text-slate-900 truncate">

@@ -85,7 +85,7 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              <span>Agente de Automação Técnica • Amorim Group</span>
+              <span>Agente de Automação Técnica • AmorimTech</span>
             </div>
 
             <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
@@ -109,7 +109,7 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
               </svg>
               <span>Preencher Exemplo de Referência</span>
             </button>
-            <span class="text-[10px] text-slate-400">Edital 001/2018 • Medição 22</span>
+            <span class="text-[11px] text-slate-400">Edital 001/2018 • Medição 22</span>
           </div>
         </div>
       </div>
@@ -500,7 +500,7 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
                 <span class="text-xs font-black text-[#E59866] uppercase tracking-wider">
                   Resumo do Cálculo
                 </span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-white">
                   Fórmula R = (Ii - Io)/Io × V
                 </span>
               </div>
@@ -734,7 +734,7 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
                   <h4 class="font-black text-slate-900 text-base group-hover:text-[#B5642A] transition-colors">
                     Relatório Estruturado
                   </h4>
-                  <span class="px-2 py-0.5 rounded-full bg-[#B5642A]/10 text-[#B5642A] text-[10px] font-bold">Tabelas</span>
+                  <span class="px-2 py-0.5 rounded-full bg-[#B5642A]/10 text-[#B5642A] text-[11px] font-bold">Tabelas</span>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
                   Relatório técnico clássico diagramado em tabelas com identificação, quadro de reajustamento, memória da fórmula e retenções.
@@ -1285,7 +1285,7 @@ Impacto orçamentário: acréscimo de R$ ${vReaj} sobre a rubrica orçamentária
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(7.5);
     doc.setTextColor(148, 163, 184);
-    doc.text('Amorim Group • Agente Técnico de Reajuste de Contratos', margin, pageHeight - 12);
+    doc.text('AmorimTech • Agente Técnico de Reajuste de Contratos', margin, pageHeight - 12);
     doc.text(`Página ${doc.getNumberOfPages()}`, pageWidth - margin, pageHeight - 12, { align: 'right' });
 
     // Salvar PDF

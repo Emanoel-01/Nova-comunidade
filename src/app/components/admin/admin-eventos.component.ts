@@ -209,7 +209,7 @@ interface InscritoEventoItem {
                     class="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-xs shrink-0"
                   >
                     <span class="text-lg font-black leading-none">{{ badge.dia }}</span>
-                    <span class="text-[10px] font-bold uppercase tracking-wider" [class]="isFuturo ? 'text-indigo-200' : 'text-slate-500'">{{ badge.mes }}</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider" [class]="isFuturo ? 'text-indigo-200' : 'text-slate-500'">{{ badge.mes }}</span>
                   </div>
 
                   <div>
@@ -227,7 +227,7 @@ interface InscritoEventoItem {
                       </span>
                       <span
                         [class]="isFuturo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-200 text-slate-600 border-slate-300'"
-                        class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                        class="px-2 py-0.5 rounded-full text-[11px] font-bold border"
                       >
                         {{ isFuturo ? 'Agendado' : 'Encerrado' }}
                       </span>
@@ -325,7 +325,7 @@ interface InscritoEventoItem {
                 
                 @if (evento.palestrante) {
                   <div class="flex items-center gap-2 text-slate-700">
-                    <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-[10px]">
+                    <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-[11px]">
                       👨‍🏫
                     </span>
                     <div>

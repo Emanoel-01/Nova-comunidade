@@ -86,7 +86,7 @@ interface NavSectionItem {
 
             <!-- Separador: BLOG -->
             <div class="space-y-1.5">
-              <span class="px-3 text-[10px] uppercase tracking-wider font-bold text-slate-500 block">
+              <span class="px-3 text-[11px] uppercase tracking-wider font-bold text-slate-500 block">
                 BLOG
               </span>
               
@@ -132,7 +132,7 @@ interface NavSectionItem {
 
             <!-- Separador: COMUNIDADE -->
             <div class="space-y-1.5">
-              <span class="px-3 text-[10px] uppercase tracking-wider font-bold text-slate-500 block">
+              <span class="px-3 text-[11px] uppercase tracking-wider font-bold text-slate-500 block">
                 COMUNIDADE
               </span>
 
@@ -294,7 +294,7 @@ interface NavSectionItem {
                   <span>Alô Síndico</span>
                 </div>
                 @if (totalLeadsNovos() > 0) {
-                  <span class="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
+                  <span class="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black">
                     {{ totalLeadsNovos() }}
                   </span>
                 }

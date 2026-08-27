@@ -84,7 +84,7 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
             </h4>
             <div class="space-y-3 text-xs">
               <div>
-                <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Apenas WhatsApp</span>
+                <span class="block text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Apenas WhatsApp</span>
                 <a
                   [href]="linkWhatsappFooter"
                   target="_blank"
@@ -96,7 +96,7 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
               </div>
 
               <div>
-                <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Apenas Ligações</span>
+                <span class="block text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Apenas Ligações</span>
                 <a
                   href="tel:5581999284160"
                   class="text-slate-300 hover:text-white font-semibold transition-colors inline-block mt-0.5"
@@ -106,7 +106,7 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
               </div>
 
               <div>
-                <span class="block text-[10px] uppercase tracking-wider text-slate-500 font-semibold">E-mail</span>
+                <span class="block text-[11px] uppercase tracking-wider text-slate-500 font-semibold">E-mail</span>
                 <a
                   href="mailto:emanoel.s.amorim@gmail.com"
                   class="text-slate-300 hover:text-white transition-colors inline-flex items-center gap-1 mt-0.5"

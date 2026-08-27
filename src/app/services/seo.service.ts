@@ -6,6 +6,7 @@ export interface SeoData {
   description: string;
   ogImage?: string;
   canonicalPath: string;
+  schema?: object | object[] | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -13,6 +14,7 @@ export class SeoService {
   private readonly titleService = inject(Title);
   private readonly metaService = inject(Meta);
   private readonly baseUrl = 'https://emanoelamorim.com';
+  private readonly dynamicSchemaId = 'dynamic-jsonld';
 
   atualizar(dados: SeoData): void {
     this.titleService.setTitle(dados.title);
@@ -36,6 +38,30 @@ export class SeoService {
         document.head.appendChild(link);
       }
       link.setAttribute('href', `${this.baseUrl}${dados.canonicalPath}`);
+    }
+
+    this.injetarSchema(dados.schema || null);
+  }
+
+  injetarSchema(schema: object | object[] | null): void {
+    if (typeof document === 'undefined') return;
+
+    const existingScript = document.getElementById(this.dynamicSchemaId);
+
+    if (!schema) {
+      if (existingScript) {
+        existingScript.remove();
+      }
+      return;
+    }
+
+    const script = existingScript || document.createElement('script');
+    script.id = this.dynamicSchemaId;
+    script.setAttribute('type', 'application/ld+json');
+    script.textContent = JSON.stringify(schema, null, 2);
+
+    if (!existingScript) {
+      document.head.appendChild(script);
     }
   }
 }

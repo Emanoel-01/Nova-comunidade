@@ -1,0 +1,25 @@
+# AmorimTech
+
+> Ecossistema de engenharia diagnóstica, consultoria técnica, tecnologia aplicada à construção civil (SaaS Predial 4.0) e formação profissional (Amorim Academy) sediado em Recife/PE.
+
+AmorimTech é uma plataforma técnica e consultoria especializada em engenharia diagnóstica, inspeção predial, vistorias de entrega e recebimento de obras, patologia das construções e soluções digitais para o setor da construção civil e gestão condominial.
+
+## Verticais e Soluções
+
+- [Amorim Arquitetura](https://emanoelamorim.com/amorim-arquitetura): Consultoria em engenharia diagnóstica e laudos periciais em conformidade com as normas ABNT (NBR 16.747, NBR 5674, NBR 15.575) para condomínios, construtoras e proprietários em Recife/PE e região metropolitana.
+- [Predial 4.0 / Amorim Tech](https://emanoelamorim.com/amorim-tech): Plataforma SaaS para vistoria e inspeção predial com inteligência artificial, geração automatizada de laudos técnicos e checklist interativo para engenheiros, arquitetos e síndicos.
+- [Amorim Academy](https://emanoelamorim.com/amorim-academy): Formação e mentoria profissional em engenharia diagnóstica, Programa Mentor Anjo, Incubadora de Profissionais e cursos práticos de capacitação com corresponsabilidade técnica.
+- [Blog AmorimTech](https://emanoelamorim.com/blog): Artigos técnicos, guias sobre manutenção predial, normas ABNT e estudos de caso em patologia das edificações.
+- [Contato & Atendimento](https://emanoelamorim.com/contato): Contratação de consultoria, orçamentos para laudos técnicos e canal Alô Síndico.
+
+## Links e Plataformas
+
+- [Website Oficial](https://emanoelamorim.com/): Portal principal do ecossistema AmorimTech.
+- [App Predial 4.0](https://app-predial.emanoelamorim.com/): Aplicação web do sistema de vistoria predial inteligente.
+- [Central de Links](https://emanoelamorim.com/links): Acesso direto aos canais de comunicação, redes e ferramentas.
+
+## Localização e Atuação
+
+- **Sede**: Recife, Pernambuco, Brasil.
+- **Área de Atuação**: Recife, Região Metropolitana, Estado de Pernambuco e suporte digital nacional para os serviços SaaS e educacionais.
+- **Especialidades Técnicas**: Inspeção Predial (NBR 16.747), Vistoria Cautelar de Vizinhança, Vistoria de Entrega/Recebimento de Obras, Pareceres Técnicos de Patologias, Gestão de Manutenção (NBR 5674).

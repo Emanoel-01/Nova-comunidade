@@ -375,7 +375,7 @@ export interface PerfilVisual {
                 in
               </div>
               <div class="min-w-0">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">LinkedIn</span>
+                <span class="text-[11px] font-bold text-slate-400 uppercase">LinkedIn</span>
                 <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().linkedin || '—' }}</p>
               </div>
             </div>
@@ -385,7 +385,7 @@ export interface PerfilVisual {
                 ig
               </div>
               <div class="min-w-0">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Instagram</span>
+                <span class="text-[11px] font-bold text-slate-400 uppercase">Instagram</span>
                 <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().instagram || '—' }}</p>
               </div>
             </div>
@@ -395,7 +395,7 @@ export interface PerfilVisual {
                 wa
               </div>
               <div class="min-w-0">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">WhatsApp</span>
+                <span class="text-[11px] font-bold text-slate-400 uppercase">WhatsApp</span>
                 <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().whatsapp || '—' }}</p>
               </div>
             </div>
@@ -405,7 +405,7 @@ export interface PerfilVisual {
                 web
               </div>
               <div class="min-w-0">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Website Profissional</span>
+                <span class="text-[11px] font-bold text-slate-400 uppercase">Website Profissional</span>
                 <p class="text-xs font-semibold text-slate-800 truncate">{{ perfil().website || '—' }}</p>
               </div>
             </div>

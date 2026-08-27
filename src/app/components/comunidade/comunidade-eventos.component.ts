@@ -122,7 +122,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                     @let badge = getDataBadge(evento.data_hora || evento.dataHora);
                     <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex flex-col items-center justify-center shadow-md shrink-0">
                       <span class="text-lg font-black leading-none">{{ badge.dia }}</span>
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-200">{{ badge.mes }}</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-200">{{ badge.mes }}</span>
                     </div>
 
                     <div>
@@ -231,7 +231,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                     @let badge = getDataBadge(evento.data_hora || evento.dataHora);
                     <div class="w-12 h-12 rounded-2xl bg-slate-300 text-slate-700 flex flex-col items-center justify-center shrink-0">
                       <span class="text-base font-black leading-none">{{ badge.dia }}</span>
-                      <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500">{{ badge.mes }}</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">{{ badge.mes }}</span>
                     </div>
 
                     <div>

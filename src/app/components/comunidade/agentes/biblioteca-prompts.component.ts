@@ -40,7 +40,7 @@ export interface PromptComCategoria extends PromptItem {
             <!-- Totalizador Rápido -->
             <div class="px-4 py-2.5 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start lg:self-auto flex items-center gap-3">
               <div class="text-right">
-                <div class="text-[10px] uppercase font-bold tracking-wider text-indigo-200">Total no Catálogo</div>
+                <div class="text-[11px] uppercase font-bold tracking-wider text-indigo-200">Total no Catálogo</div>
                 <div class="text-xl font-black text-white">{{ totalPromptsGeral }} prompts</div>
               </div>
             </div>
@@ -99,7 +99,7 @@ export interface PromptComCategoria extends PromptItem {
             <span>Todas</span>
             <span
               [class]="categoriaSelecionada() === 'todas' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
-              class="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
+              class="px-1.5 py-0.5 rounded-md text-[11px] font-bold"
             >
               {{ totalPromptsGeral }}
             </span>
@@ -116,7 +116,7 @@ export interface PromptComCategoria extends PromptItem {
               <span>{{ cat.nome }}</span>
               <span
                 [class]="obterEstiloBadgeContador(cat.nome, cat.cor)"
-                class="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
+                class="px-1.5 py-0.5 rounded-md text-[11px] font-bold"
               >
                 {{ cat.prompts.length }}
               </span>
@@ -144,12 +144,12 @@ export interface PromptComCategoria extends PromptItem {
                 <div class="space-y-1.5 min-w-0 flex-1">
                   <div class="flex items-center gap-2 flex-wrap">
                     <!-- Badge da Categoria -->
-                    <span [class]="obterBadgeCategoria(item.categoriaCor)" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border">
+                    <span [class]="obterBadgeCategoria(item.categoriaCor)" class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border">
                       {{ item.categoriaNome }}
                     </span>
                     <span class="text-[11px] font-mono font-bold text-slate-400">#{{ item.id }}</span>
                     @if (item.quandoUsar) {
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#B5642A]/10 text-[#B5642A] border border-[#B5642A]/20">
+                      <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#B5642A]/10 text-[#B5642A] border border-[#B5642A]/20">
                         Contexto Especializado
                       </span>
                     }

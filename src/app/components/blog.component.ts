@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HallFamaComponent } from './hall-fama.component';
 import { SupabaseService } from '../../services/supabase.service';
 import { SeoService } from '../services/seo.service';
@@ -333,6 +334,8 @@ export interface BlogPost {
   `
 })
 export class BlogComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly supabaseService = inject(SupabaseService);
   private readonly seoService = inject(SeoService);
 
@@ -376,13 +379,59 @@ export class BlogComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    this.restaurarSeoPadrao();
+    await this.carregarPosts();
+
+    // Sincronizar leitura com o queryParam "post" na URL
+    this.route.queryParamMap.subscribe(params => {
+      const postId = params.get('post');
+      if (postId) {
+        const post = this.posts().find(p => p.id === postId);
+        if (post) {
+          if (this.postSelecionado()?.id !== post.id) {
+            this.postSelecionado.set(post);
+            this.atualizarSeoPost(post);
+          }
+        }
+      } else {
+        if (this.postSelecionado()) {
+          this.postSelecionado.set(null);
+          this.restaurarSeoPadrao();
+        }
+      }
+    });
+  }
+
+  restaurarSeoPadrao(): void {
     this.seoService.atualizar({
       title: 'Blog | AmorimTech',
       description: 'Artigos técnicos sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.',
       canonicalPath: '/blog',
     });
+  }
 
-    await this.carregarPosts();
+  atualizarSeoPost(post: BlogPost): void {
+    this.seoService.atualizar({
+      title: `${post.titulo} | Blog AmorimTech`,
+      description: post.resumo || 'Artigo técnico sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.',
+      ogImage: post.imagem_capa_url || undefined,
+      canonicalPath: `/blog?post=${encodeURIComponent(post.id)}`,
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: post.titulo,
+        description: post.resumo || undefined,
+        image: post.imagem_capa_url || undefined,
+        datePublished: post.criado_em,
+        dateModified: post.atualizado_em || post.criado_em,
+        url: `https://emanoelamorim.com/blog?post=${encodeURIComponent(post.id)}`,
+        publisher: {
+          '@type': 'Organization',
+          '@id': 'https://emanoelamorim.com/#organization',
+          name: 'AmorimTech',
+        },
+      },
+    });
   }
 
   async carregarPosts(): Promise<void> {
@@ -418,10 +467,22 @@ export class BlogComponent implements OnInit {
 
   abrirLeitura(post: BlogPost): void {
     this.postSelecionado.set(post);
+    this.atualizarSeoPost(post);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { post: post.id },
+      queryParamsHandling: 'merge',
+    });
   }
 
   fecharLeitura(): void {
     this.postSelecionado.set(null);
+    this.restaurarSeoPadrao();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { post: null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   async inscreverNewsletter(event: Event): Promise<void> {

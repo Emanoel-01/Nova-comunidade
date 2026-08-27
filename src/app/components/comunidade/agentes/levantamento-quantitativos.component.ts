@@ -147,7 +147,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Fundações</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ fundacoes().length }}
           </span>
         </button>
@@ -159,7 +159,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Estrutura</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ estrutura().length }}
           </span>
         </button>
@@ -171,7 +171,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Arquitetônico</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ arquitetonico().length }}
           </span>
         </button>
@@ -183,7 +183,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Esquadrias</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ esquadrias().length }}
           </span>
         </button>
@@ -195,7 +195,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Cobertura</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ cobertura().length }}
           </span>
         </button>
@@ -207,7 +207,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Pergolados</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ pergolados().length }}
           </span>
         </button>
@@ -219,7 +219,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Instalações</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ instalacoes().length }}
           </span>
         </button>
@@ -231,7 +231,7 @@ type AbaDisciplina =
           class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
         >
           <span>Paisagismo</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
             {{ paisagismo().length }}
           </span>
         </button>
@@ -279,7 +279,7 @@ type AbaDisciplina =
                     max="100"
                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
                   />
-                  <span class="text-[10px] text-slate-400">Faixa usual: 60% a 80% conforme o solo.</span>
+                  <span class="text-[11px] text-slate-400">Faixa usual: 60% a 80% conforme o solo.</span>
                 </div>
                 <div>
                   <label class="block text-slate-600 font-bold mb-1">Índice de aço (kg por m³ de concreto)</label>
@@ -290,7 +290,7 @@ type AbaDisciplina =
                     min="0"
                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
                   />
-                  <span class="text-[10px] text-slate-400">Referência de mercado: 60 a 90 kg/m³.</span>
+                  <span class="text-[11px] text-slate-400">Referência de mercado: 60 a 90 kg/m³.</span>
                 </div>
               </div>
             </details>
@@ -412,7 +412,7 @@ type AbaDisciplina =
                     min="0"
                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
                   />
-                  <span class="text-[10px] text-slate-400">Padrão: 100 kg/m³. Faixa de mercado: 80 a 130 kg/m³.</span>
+                  <span class="text-[11px] text-slate-400">Padrão: 100 kg/m³. Faixa de mercado: 80 a 130 kg/m³.</span>
                 </div>
                 <div>
                   <label class="block text-slate-600 font-bold mb-1">Tempo de solda/amarração (h por kg de aço)</label>
@@ -424,7 +424,7 @@ type AbaDisciplina =
                     min="0"
                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
                   />
-                  <span class="text-[10px] text-slate-400">Padrão de referência: 0.05 h/kg.</span>
+                  <span class="text-[11px] text-slate-400">Padrão de referência: 0.05 h/kg.</span>
                 </div>
               </div>
             </details>
@@ -1060,7 +1060,7 @@ type AbaDisciplina =
                 </div>
 
                 <div class="flex items-center gap-1.5">
-                  <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+                  <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 text-[11px] font-bold">
                     {{ regrasAuditoria().length }} Regras Avaliadas
                   </span>
                 </div>

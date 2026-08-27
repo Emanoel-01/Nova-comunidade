@@ -1058,7 +1058,7 @@ export class SupabaseService {
     }
   }
 
-  async solicitarDownloadMaterial(materialId: string): Promise<{ error: Error | null; urlArquivo?: string | null }> {
+  async registrarDownloadMaterial(materialId: string): Promise<{ error: Error | null; urlArquivo?: string | null }> {
     try {
       const session = await this.getSession();
       if (!session?.user) return { error: new Error('Não autenticado.') };
@@ -1078,6 +1078,82 @@ export class SupabaseService {
     } catch (e: any) {
       return { error: e };
     }
+  }
+
+  async uploadArquivoMaterial(
+    file: File,
+    categoria: string = 'Geral'
+  ): Promise<{ error: Error | null; signedUrl?: string | null; path?: string; formato?: string; tamanho?: string }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+
+      // Limite de 20 MB (20 * 1024 * 1024)
+      const maxBytes = 20 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        return { error: new Error('O arquivo excede o limite máximo permitido de 20 MB.') };
+      }
+
+      // Sanitiza slug da categoria e nome do arquivo
+      const catSlug = (categoria || 'geral')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '-');
+
+      const cleanName = file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_');
+
+      const path = `${catSlug}/${Date.now()}_${cleanName}`;
+
+      // Upload para o bucket materiais-comunidade
+      const { error: uploadError } = await this.client.storage
+        .from('materiais-comunidade')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        return { error: uploadError };
+      }
+
+      // Gera signed URL de longa duração (10 anos = 315360000s)
+      const { data: signedData, error: signedError } = await this.client.storage
+        .from('materiais-comunidade')
+        .createSignedUrl(path, 315360000);
+
+      if (signedError) {
+        return { error: signedError, path };
+      }
+
+      // Detecta formato a partir da extensão
+      const ext = file.name.split('.').pop()?.toUpperCase() || 'ARQUIVO';
+
+      // Formata tamanho em KB ou MB
+      let tamanhoStr = '';
+      if (file.size >= 1024 * 1024) {
+        tamanhoStr = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+      } else {
+        tamanhoStr = Math.round(file.size / 1024) + ' KB';
+      }
+
+      return {
+        error: null,
+        signedUrl: signedData?.signedUrl || null,
+        path,
+        formato: ext,
+        tamanho: tamanhoStr
+      };
+    } catch (err: any) {
+      return { error: err };
+    }
+  }
+
+  async solicitarDownloadMaterial(materialId: string): Promise<{ error: Error | null; urlArquivo?: string | null }> {
+    return this.registrarDownloadMaterial(materialId);
   }
 
   // ----------------------------------------------------

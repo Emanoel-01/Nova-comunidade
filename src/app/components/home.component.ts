@@ -93,7 +93,7 @@ interface Institution {
           <div class="grid grid-cols-3 gap-2 sm:gap-6 text-center">
             <div class="flex flex-col items-center justify-center">
               <span class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white">+15 anos</span>
-              <span class="text-[10px] sm:text-xs text-indigo-200 font-medium">de atuação na construção civil</span>
+              <span class="text-[11px] sm:text-xs text-indigo-200 font-medium">de atuação na construção civil</span>
             </div>
             <div class="flex flex-col items-center justify-center border-x border-indigo-800/60 px-1 sm:px-4">
               <span class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-emerald-400">
@@ -103,11 +103,11 @@ interface Institution {
                   +100
                 }
               </span>
-              <span class="text-[10px] sm:text-xs text-indigo-200 font-medium">projetos e laudos executados</span>
+              <span class="text-[11px] sm:text-xs text-indigo-200 font-medium">projetos e laudos executados</span>
             </div>
             <div class="flex flex-col items-center justify-center">
               <span class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white">+200.000m²</span>
-              <span class="text-[10px] sm:text-xs text-indigo-200 font-medium">de empreendimentos gerenciados</span>
+              <span class="text-[11px] sm:text-xs text-indigo-200 font-medium">de empreendimentos gerenciados</span>
             </div>
           </div>
         </div>
@@ -360,7 +360,7 @@ interface Institution {
         <!-- Banner Alô Síndico -->
         <div class="mt-8 sm:mt-12 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6">
           <div class="space-y-2 text-center md:text-left">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider">
               <span>⚡</span>
               <span>Canal Especial</span>
             </div>
@@ -399,7 +399,7 @@ interface Institution {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           <!-- Coluna Esquerda: Informações e Benefícios -->
           <div class="lg:col-span-7 space-y-5 sm:space-y-6">
-            <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               Acesso Restrito
             </div>
@@ -629,11 +629,11 @@ interface Institution {
                   <img [src]="post.imageUrl" [alt]="post.title" class="w-full h-48 object-cover" referrerpolicy="no-referrer" />
                 }
                 <div class="p-5 sm:p-6 flex flex-col flex-1">
-                  <span class="text-[10px] sm:text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-2">{{ post.category || 'Artigo' }}</span>
+                  <span class="text-[11px] sm:text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-2">{{ post.category || 'Artigo' }}</span>
                   <h3 class="text-base sm:text-xl font-bold text-slate-900 mb-2">{{ post.title }}</h3>
                   <p class="text-slate-600 text-xs sm:text-sm mb-4 line-clamp-3 text-justify">{{ post.excerpt || post.description }}</p>
                   <div class="mt-auto">
-                    <a [routerLink]="['/blog', post.slug || post.id]" class="text-indigo-600 font-semibold text-xs sm:text-sm hover:underline">Ler artigo →</a>
+                    <a routerLink="/blog" [queryParams]="{ post: post.id }" class="text-indigo-600 font-semibold text-xs sm:text-sm hover:underline">Ler artigo →</a>
                   </div>
                 </div>
               </article>
@@ -717,6 +717,26 @@ export class HomeComponent implements OnInit {
       title: 'AmorimTech | Engenharia Diagnóstica, Tecnologia e Formação',
       description: 'Consultoria em engenharia diagnóstica, o SaaS Predial 4.0 para laudos de vistoria predial, e a Amorim Academy — formação em engenharia diagnóstica com mentoria e comunidade.',
       canonicalPath: '/',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        '@id': 'https://emanoelamorim.com/#emanoel-amorim',
+        name: 'Emanoel Silva de Amorim',
+        jobTitle: 'Arquiteto e Urbanista, Especialista em Engenharia Diagnóstica',
+        url: 'https://emanoelamorim.com',
+        sameAs: [
+          'https://www.instagram.com/oemanoelamorim/',
+          'http://linkedin.com/in/emanoel-amorim-43025b65',
+          'https://www.youtube.com/@emaamo',
+          'https://www.researchgate.net/profile/Emanoel-Amorim',
+          'http://lattes.cnpq.br/8865037855941412',
+        ],
+        worksFor: {
+          '@type': 'Organization',
+          '@id': 'https://emanoelamorim.com/#organization',
+          name: 'AmorimTech',
+        },
+      },
     });
 
     await Promise.all([

@@ -179,7 +179,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                         {{ getAutorNome(post) }}
                       </h4>
                       @if (isMeuPost(post)) {
-                        <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
+                        <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
                           Você
                         </span>
                       }
@@ -268,10 +268,10 @@ import { SupabaseService } from '../../../services/supabase.service';
                               <div class="flex items-center gap-1.5">
                                 <span class="font-bold text-slate-900">{{ getComentarioAutorNome(com) }}</span>
                                 @if (com.autor_id === usuarioAtual()?.id) {
-                                  <span class="text-[10px] text-indigo-600 font-semibold">(você)</span>
+                                  <span class="text-[11px] text-indigo-600 font-semibold">(você)</span>
                                 }
                               </div>
-                              <span class="text-[10px] text-slate-400">{{ formatarTempo(com.criado_em) }}</span>
+                              <span class="text-[11px] text-slate-400">{{ formatarTempo(com.criado_em) }}</span>
                             </div>
                             <p class="text-slate-600 leading-normal">{{ com.texto }}</p>
                           </div>

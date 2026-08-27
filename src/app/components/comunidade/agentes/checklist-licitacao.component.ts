@@ -71,7 +71,7 @@ type CategoriaLicitacao = ItemChecklistLicitacao['categoria'];
               </svg>
               <span>Edital em Análise (Sessão Atual)</span>
             </h4>
-            <span class="text-[10px] font-bold text-slate-400">Armazenado em memória</span>
+            <span class="text-[11px] font-bold text-slate-400">Armazenado em memória</span>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -148,14 +148,14 @@ type CategoriaLicitacao = ItemChecklistLicitacao['categoria'];
           <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
             <span class="text-xs text-slate-500 font-medium">Status de Habilitação:</span>
             @if (todosObrigatoriosConcluidos()) {
-              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200 flex items-center gap-1">
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200 flex items-center gap-1">
                 <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                 </svg>
                 100% Obrigatórios Prontos
               </span>
             } @else {
-              <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider border border-amber-200">
+              <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-black uppercase tracking-wider border border-amber-200">
                 {{ totalObrigatorios() - obrigatoriosMarcados() }} pendente(s)
               </span>
             }
@@ -229,11 +229,11 @@ type CategoriaLicitacao = ItemChecklistLicitacao['categoria'];
                   <!-- Badge de Obrigatoriedade -->
                   <div class="shrink-0">
                     @if (item.obrigatorio) {
-                      <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[10px] font-black uppercase tracking-wider border border-rose-200/80">
+                      <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[11px] font-black uppercase tracking-wider border border-rose-200/80">
                         Obrigatório
                       </span>
                     } @else {
-                      <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold tracking-wider border border-slate-200/60">
+                      <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold tracking-wider border border-slate-200/60">
                         Se aplicável
                       </span>
                     }

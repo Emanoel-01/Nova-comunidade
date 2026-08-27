@@ -16,6 +16,9 @@ export type CategoriaMaterial =
   selector: 'app-comunidade-materiais',
   standalone: true,
   imports: [CommonModule],
+  host: {
+    '(window:keydown.escape)': 'onEscape()'
+  },
   template: `
     <div class="space-y-8">
 
@@ -112,7 +115,7 @@ export type CategoriaMaterial =
             <span>{{ cat }}</span>
             <span
               [class]="categoriaSelecionada() === cat ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
-              class="text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1"
+              class="text-[11px] px-1.5 py-0.5 rounded-full font-bold ml-1"
             >
               {{ contarPorCategoria(cat) }}
             </span>
@@ -267,30 +270,39 @@ export type CategoriaMaterial =
                     }
                   } @else {
                     @if (temAcesso()) {
-                      <button
-                        type="button"
-                        (click)="baixarOuSolicitar(item)"
-                        [disabled]="processandoDownload() === item.id"
-                        [class]="isSolicitado(item.id)
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                          : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs'"
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border border-transparent cursor-pointer disabled:opacity-50"
-                      >
-                        @if (processandoDownload() === item.id) {
-                          <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          <span>Baixando...</span>
-                        } @else if (isSolicitado(item.id)) {
-                          <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                          </svg>
-                          <span>✓ Solicitado</span>
-                        } @else {
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          <span>Baixar Arquivo</span>
+                      <div class="flex items-center gap-2">
+                        @if (isPdf(item)) {
+                          <button
+                            type="button"
+                            (click)="abrirVisualizador(item)"
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 cursor-pointer shadow-2xs"
+                            title="Visualizar documento embutido"
+                          >
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>Visualizar</span>
+                          </button>
                         }
-                      </button>
+
+                        <button
+                          type="button"
+                          (click)="baixarMaterial(item)"
+                          [disabled]="processandoDownload() === item.id"
+                          class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs border border-transparent cursor-pointer disabled:opacity-50"
+                        >
+                          @if (processandoDownload() === item.id) {
+                            <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                            <span>Baixando...</span>
+                          } @else {
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span>Baixar Arquivo</span>
+                          }
+                        </button>
+                      </div>
                     } @else {
                       <button
                         type="button"
@@ -303,18 +315,71 @@ export type CategoriaMaterial =
                     }
                   }
                 </div>
-
-                <!-- Nota explicativa quando solicitado e sem url -->
-                @if (isSolicitado(item.id) && !item.url_arquivo && item.categoria !== 'Vídeos') {
-                  <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 flex items-center gap-1.5 animate-fadeIn">
-                    <span class="text-indigo-600 font-bold">ℹ</span>
-                    <span>✓ Solicitado — o link será disponibilizado em breve pelo Admin.</span>
-                  </div>
-                }
               </div>
 
             </div>
           }
+        </div>
+      }
+
+      <!-- MODAL VISUALIZADOR DE PDF EMBUTIDO -->
+      @if (materialVisualizando() && urlVisualizacaoSegura()) {
+        <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn">
+          <div class="bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-scaleUp">
+            
+            <!-- Barra Superior do Visualizador -->
+            <div class="px-5 py-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-4 shrink-0 text-white">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center font-black text-xs shrink-0">
+                  PDF
+                </div>
+                <div class="truncate">
+                  <h4 class="text-sm font-bold text-white truncate">
+                    {{ materialVisualizando()?.titulo }}
+                  </h4>
+                  <p class="text-[11px] text-slate-400 truncate">
+                    {{ materialVisualizando()?.categoria }} • {{ materialVisualizando()?.tamanho || 'Documento Técnico' }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  (click)="baixarMaterial(materialVisualizando())"
+                  [disabled]="processandoDownload() === materialVisualizando()?.id"
+                  class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                  title="Baixar cópia do arquivo"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span class="hidden sm:inline">Baixar Arquivo</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="fecharVisualizador()"
+                  class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  title="Fechar visualizador"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Corpo do Visualizador com iFrame -->
+            <div class="flex-1 bg-slate-950 relative w-full h-full">
+              <iframe
+                [src]="urlVisualizacaoSegura()"
+                class="w-full h-full border-0 bg-slate-900"
+                title="Visualizador de PDF"
+              ></iframe>
+            </div>
+
+          </div>
         </div>
       }
 
@@ -330,8 +395,9 @@ export class ComunidadeMateriaisComponent implements OnInit {
   readonly carregando = signal<boolean>(true);
   readonly processandoDownload = signal<string | null>(null);
 
-  readonly materiaisSolicitados = signal<string[]>([]);
   readonly materialBloqueadoAberto = signal<string | null>(null);
+  readonly materialVisualizando = signal<any | null>(null);
+  readonly urlVisualizacaoSegura = signal<SafeResourceUrl | null>(null);
 
   readonly mensagemFeedback = signal<string | null>(null);
   readonly tipoFeedback = signal<'sucesso' | 'erro' | 'alerta'>('sucesso');
@@ -386,6 +452,33 @@ export class ComunidadeMateriaisComponent implements OnInit {
     return this.materiais().filter(m => m.categoria === cat).length;
   }
 
+  isPdf(material: any): boolean {
+    if (!material?.url_arquivo) return false;
+    const formato = (material.formato || '').toUpperCase();
+    if (formato.includes('PDF')) return true;
+    const urlSemParams = material.url_arquivo.split('?')[0].toLowerCase();
+    return urlSemParams.endsWith('.pdf');
+  }
+
+  abrirVisualizador(material: any): void {
+    if (!this.temAcesso() || !material?.url_arquivo) return;
+    this.materialVisualizando.set(material);
+    this.urlVisualizacaoSegura.set(
+      this.sanitizer.bypassSecurityTrustResourceUrl(material.url_arquivo)
+    );
+  }
+
+  fecharVisualizador(): void {
+    this.materialVisualizando.set(null);
+    this.urlVisualizacaoSegura.set(null);
+  }
+
+  onEscape(): void {
+    if (this.materialVisualizando()) {
+      this.fecharVisualizador();
+    }
+  }
+
   getBadgeEstilo(cat: string): string {
     switch (cat) {
       case 'Planilhas':
@@ -403,10 +496,6 @@ export class ComunidadeMateriaisComponent implements OnInit {
     }
   }
 
-  isSolicitado(materialId: string): boolean {
-    return this.materiaisSolicitados().includes(materialId);
-  }
-
   toggleAcessoBloqueado(materialId: string): void {
     if (this.materialBloqueadoAberto() === materialId) {
       this.materialBloqueadoAberto.set(null);
@@ -419,13 +508,13 @@ export class ComunidadeMateriaisComponent implements OnInit {
     }
   }
 
-  async baixarOuSolicitar(material: any): Promise<void> {
+  async baixarMaterial(material: any): Promise<void> {
     if (!this.temAcesso() || this.processandoDownload()) return;
 
     this.processandoDownload.set(material.id);
     this.mensagemFeedback.set(null);
 
-    const { error, urlArquivo } = await this.supabaseService.solicitarDownloadMaterial(material.id);
+    const { error, urlArquivo } = await this.supabaseService.registrarDownloadMaterial(material.id);
 
     this.processandoDownload.set(null);
 
@@ -433,11 +522,6 @@ export class ComunidadeMateriaisComponent implements OnInit {
       this.tipoFeedback.set('erro');
       this.mensagemFeedback.set('Erro ao processar download: ' + (error.message || 'Tente novamente.'));
       return;
-    }
-
-    // Marca como solicitado localmente
-    if (!this.materiaisSolicitados().includes(material.id)) {
-      this.materiaisSolicitados.update(lista => [...lista, material.id]);
     }
 
     // Atualiza contagem local de downloads
@@ -460,10 +544,8 @@ export class ComunidadeMateriaisComponent implements OnInit {
       this.tipoFeedback.set('sucesso');
       this.mensagemFeedback.set(`Download de "${material.titulo}" iniciado com sucesso!`);
     } else {
-      this.tipoFeedback.set('sucesso');
-      this.mensagemFeedback.set(
-        `✓ Solicitado com sucesso — o arquivo "${material.titulo}" será disponibilizado em breve pelo Admin!`
-      );
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Arquivo ainda não disponível, contate o suporte.');
     }
   }
 }

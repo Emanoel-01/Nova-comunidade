@@ -509,7 +509,7 @@ interface ChatMensagem {
                           <div class="space-y-1">
                             <div class="p-4 rounded-2xl rounded-tl-sm bg-slate-800 text-slate-100 text-sm leading-relaxed border border-slate-700/70 whitespace-pre-line shadow-sm" [innerHTML]="mensagemFormatada(msg.texto)">
                             </div>
-                            <span class="text-[10px] text-slate-500 block px-1">
+                            <span class="text-[11px] text-slate-500 block px-1">
                               Assistente Amorim Tech · {{ msg.horario }}
                             </span>
                           </div>
@@ -521,7 +521,7 @@ interface ChatMensagem {
                             <div class="p-4 rounded-2xl rounded-tr-sm bg-amber-500 text-slate-950 font-medium text-sm leading-relaxed whitespace-pre-line shadow-md text-left">
                               {{ msg.texto }}
                             </div>
-                            <span class="text-[10px] text-slate-500 block px-1">
+                            <span class="text-[11px] text-slate-500 block px-1">
                               Você · {{ msg.horario }}
                             </span>
                           </div>

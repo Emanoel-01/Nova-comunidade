@@ -76,7 +76,7 @@ type AmbienteInstalacao = 'claude-code' | 'claude-cowork' | 'claude-chat';
         >
           <span>Todas as Categorias</span>
           <span
-            class="px-1.5 py-0.5 rounded-full text-[10px]"
+            class="px-1.5 py-0.5 rounded-full text-[11px]"
             [class.bg-white/20]="categoriaSelecionada() === 'todas'"
             [class.text-white]="categoriaSelecionada() === 'todas'"
             [class.bg-slate-100]="categoriaSelecionada() !== 'todas'"
@@ -103,7 +103,7 @@ type AmbienteInstalacao = 'claude-code' | 'claude-cowork' | 'claude-chat';
           >
             <span>{{ cat }}</span>
             <span
-              class="px-1.5 py-0.5 rounded-full text-[10px]"
+              class="px-1.5 py-0.5 rounded-full text-[11px]"
               [class.bg-white/20]="categoriaSelecionada() === cat"
               [class.text-white]="categoriaSelecionada() === cat"
               [class.bg-slate-100]="categoriaSelecionada() !== cat"
@@ -156,7 +156,7 @@ type AmbienteInstalacao = 'claude-code' | 'claude-cowork' | 'claude-chat';
                   <!-- Badges de Compatibilidade -->
                   <div class="flex flex-wrap gap-1.5">
                     @for (comp of skill.compativelCom; track comp) {
-                      <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                      <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                         {{ formatarNomeAmbiente(comp) }}
                       </span>
                     }
@@ -302,7 +302,7 @@ type AmbienteInstalacao = 'claude-code' | 'claude-cowork' | 'claude-chat';
                             <h4 class="text-xs font-black text-slate-900 flex items-center gap-2">
                               <span>Instalação no Claude Code (Terminal / CLI)</span>
                             </h4>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                               CLI & Repositórios
                             </span>
                           </div>
@@ -331,7 +331,7 @@ type AmbienteInstalacao = 'claude-code' | 'claude-cowork' | 'claude-chat';
                             <h4 class="text-xs font-black text-slate-900 flex items-center gap-2">
                               <span>Instalação no Claude Cowork (Espaço de Trabalho)</span>
                             </h4>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                               Equipes & Coworking
                             </span>
                           </div>
@@ -352,7 +352,7 @@ type AmbienteInstalacao = 'claude-code' | 'claude-cowork' | 'claude-chat';
                             <h4 class="text-xs font-black text-slate-900 flex items-center gap-2">
                               <span>Instalação no Claude (Projetos do claude.ai)</span>
                             </h4>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
                               Projetos claude.ai
                             </span>
                           </div>

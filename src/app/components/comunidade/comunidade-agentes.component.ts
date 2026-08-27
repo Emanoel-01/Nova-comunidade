@@ -137,11 +137,11 @@ export type FerramentaAtiva =
                 </div>
 
                 @if (temPermissao('reajuste-contrato')) {
-                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
                     Disponível
                   </span>
                 } @else {
-                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Acesso Restrito</span>
                   </span>
@@ -160,9 +160,9 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">FGV Coluna 35 & 39</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Exportação PDF</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Retenções Fiscais</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">FGV Coluna 35 & 39</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Exportação PDF</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Retenções Fiscais</span>
               </div>
             </div>
 
@@ -195,11 +195,11 @@ export type FerramentaAtiva =
                 </div>
 
                 @if (temPermissao('biblioteca-prompts')) {
-                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
                     Disponível
                   </span>
                 } @else {
-                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Acesso Restrito</span>
                   </span>
@@ -218,9 +218,9 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">369 Prompts</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">7 Categorias</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Copiar c/ 1 Clique</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">369 Prompts</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">7 Categorias</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Copiar c/ 1 Clique</span>
               </div>
             </div>
 
@@ -253,11 +253,11 @@ export type FerramentaAtiva =
                 </div>
 
                 @if (temPermissao('skills-catalogo')) {
-                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
                     Disponível
                   </span>
                 } @else {
-                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Acesso Restrito</span>
                   </span>
@@ -276,9 +276,9 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#B5642A] border border-amber-200/60">Claude Code / CLI</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Claude Cowork</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Guia Passo a Passo</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#B5642A] border border-amber-200/60">Claude Code / CLI</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Claude Cowork</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Guia Passo a Passo</span>
               </div>
             </div>
 
@@ -311,11 +311,11 @@ export type FerramentaAtiva =
                 </div>
 
                 @if (temPermissao('checklist-licitacao')) {
-                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
                     Disponível
                   </span>
                 } @else {
-                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Acesso Restrito</span>
                   </span>
@@ -334,9 +334,9 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Lei 14.133/2021</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">4 Categorias</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Barra de Progresso</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Lei 14.133/2021</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">4 Categorias</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Barra de Progresso</span>
               </div>
             </div>
 
@@ -369,11 +369,11 @@ export type FerramentaAtiva =
                 </div>
 
                 @if (temPermissao('levantamento-quantitativos')) {
-                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
                     Disponível
                   </span>
                 } @else {
-                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Acesso Restrito</span>
                   </span>
@@ -392,9 +392,9 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">8 Disciplinas</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Autoauditoria</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Exportação CSV</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">8 Disciplinas</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Autoauditoria</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Exportação CSV</span>
               </div>
             </div>
 
@@ -427,11 +427,11 @@ export type FerramentaAtiva =
                 </div>
 
                 @if (temPermissao('custos-viabilidade')) {
-                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider border border-emerald-200">
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
                     Disponível
                   </span>
                 } @else {
-                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
                     <span>🔒</span>
                     <span>Acesso Restrito</span>
                   </span>
@@ -450,10 +450,10 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">NBR 12.721</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">CUB Sinduscon</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">TIR / VPL</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Sensibilidade</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">NBR 12.721</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">CUB Sinduscon</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">TIR / VPL</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Sensibilidade</span>
               </div>
             </div>
 

@@ -182,7 +182,7 @@ import { CategoriaForum } from './comunidade-state.service';
           <span>Todas as Categorias</span>
           <span
             [class]="categoriaFiltro() === 'Todos' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
-            class="text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1"
+            class="text-[11px] px-1.5 py-0.5 rounded-full font-bold ml-1"
           >
             {{ topicos().length }}
           </span>
@@ -200,7 +200,7 @@ import { CategoriaForum } from './comunidade-state.service';
             <span>{{ cat }}</span>
             <span
               [class]="categoriaFiltro() === cat ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'"
-              class="text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1"
+              class="text-[11px] px-1.5 py-0.5 rounded-full font-bold ml-1"
             >
               {{ contarTopicosPorCategoria(cat) }}
             </span>
@@ -276,7 +276,7 @@ import { CategoriaForum } from './comunidade-state.service';
                 </h4>
 
                 <div class="flex items-center gap-2 text-xs text-slate-500">
-                  <div class="w-5 h-5 rounded-full bg-slate-700 text-white text-[10px] font-bold flex items-center justify-center">
+                  <div class="w-5 h-5 rounded-full bg-slate-700 text-white text-[11px] font-bold flex items-center justify-center">
                     {{ getIniciais(getAutorNome(topico.autor)) }}
                   </div>
                   <span class="font-bold text-slate-800">{{ getAutorNome(topico.autor) }}</span>
@@ -373,7 +373,7 @@ import { CategoriaForum } from './comunidade-state.service';
                         <div class="p-4 bg-white rounded-xl border border-slate-200/80 shadow-2xs space-y-2">
                           <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2">
-                              <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                              <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white font-black text-[11px] flex items-center justify-center shrink-0">
                                 {{ getIniciais(getAutorNome(resp.autor)) }}
                               </div>
                               <div>
@@ -381,7 +381,7 @@ import { CategoriaForum } from './comunidade-state.service';
                                 <span class="text-[11px] text-slate-400 ml-1.5">• {{ getAutorCargo(resp.autor) }}</span>
                               </div>
                             </div>
-                            <span class="text-[10px] text-slate-400">{{ formatarTempo(resp.criado_em || resp.tempo) }}</span>
+                            <span class="text-[11px] text-slate-400">{{ formatarTempo(resp.criado_em || resp.tempo) }}</span>
                           </div>
 
                           <p class="text-xs text-slate-700 leading-relaxed pl-8 whitespace-pre-line">

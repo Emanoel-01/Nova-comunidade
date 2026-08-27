@@ -202,7 +202,7 @@ import { SupabaseService } from '../../../services/supabase.service';
               </div>
               <div>
                 <div class="text-[11px] sm:text-xs font-bold text-white uppercase tracking-wider">Pendentes</div>
-                <div class="text-[10px] sm:text-[11px] text-indigo-200">
+                <div class="text-[11px] sm:text-[11px] text-indigo-200">
                   {{ conversas().length }} conversas
                 </div>
               </div>
@@ -333,7 +333,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                       <h5 class="text-xs font-black text-slate-900 truncate">
                         {{ conv.nome }}
                       </h5>
-                      <span class="text-[10px] text-slate-400 shrink-0 font-medium">
+                      <span class="text-[11px] text-slate-400 shrink-0 font-medium">
                         {{ formatarTempo(conv.ultimaMensagemEm || conv.criado_em) }}
                       </span>
                     </div>
@@ -353,7 +353,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                   <!-- Badge de Não Lidas -->
                   @if (conv.naoLidas > 0) {
                     <div class="shrink-0 self-center">
-                      <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs">
+                      <span class="w-5 h-5 rounded-full bg-indigo-600 text-white font-black text-[11px] flex items-center justify-center shadow-xs">
                         {{ conv.naoLidas }}
                       </span>
                     </div>
@@ -422,7 +422,7 @@ import { SupabaseService } from '../../../services/supabase.service';
               
               <!-- Divisor de Início da Conversa -->
               <div class="flex items-center justify-center my-2">
-                <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
                   Início da Conversa
                 </span>
               </div>
@@ -448,7 +448,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                           {{ msg.texto }}
                         </p>
                         
-                        <div class="flex items-center justify-end gap-1 text-[10px] text-indigo-200">
+                        <div class="flex items-center justify-end gap-1 text-[11px] text-indigo-200">
                           <span>{{ formatarHora(msg.criado_em) }}</span>
                           <span [title]="msg.lida ? 'Lida' : 'Enviada'">{{ msg.lida ? '✓✓' : '✓' }}</span>
                         </div>
@@ -457,7 +457,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                   } @else {
                     <!-- MENSAGEM DO OUTRO PARTICIPANTE (ESQUERDA) -->
                     <div class="flex justify-start items-end gap-2.5 animate-fadeIn">
-                      <div class="w-7 h-7 rounded-xl bg-slate-700 text-white text-[10px] font-black flex items-center justify-center shrink-0 mb-1">
+                      <div class="w-7 h-7 rounded-xl bg-slate-700 text-white text-[11px] font-black flex items-center justify-center shrink-0 mb-1">
                         {{ getIniciais(conv.nome) }}
                       </div>
 
@@ -466,7 +466,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                           {{ msg.texto }}
                         </p>
                         
-                        <div class="text-[10px] text-slate-400">
+                        <div class="text-[11px] text-slate-400">
                           {{ formatarHora(msg.criado_em) }}
                         </div>
                       </div>

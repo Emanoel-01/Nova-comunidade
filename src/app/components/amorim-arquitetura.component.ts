@@ -237,7 +237,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
           ></div>
 
           <div class="relative z-10 max-w-3xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-400/30 rounded-full text-blue-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-3 sm:mb-5">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-400/30 rounded-full text-blue-400 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-3 sm:mb-5">
               <span>🏢</span>
               <span>Especialistas em Engenharia Consultiva</span>
             </div>
@@ -364,7 +364,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         <section class="pt-1 sm:pt-2">
           <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6 max-w-5xl mx-auto">
             <div class="space-y-2 text-center md:text-left">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider">
                 <span>⚡</span>
                 <span>Canal Direto do Síndico</span>
               </div>
@@ -427,6 +427,23 @@ export class AmorimArquiteturaComponent implements OnInit {
       title: 'Amorim Arquitetura | Engenharia Diagnóstica e Consultiva em Pernambuco',
       description: 'Excelência técnica para proteger o seu patrimônio. Engenharia condominial e diagnóstica em Pernambuco, unindo o rigor técnico das normas ABNT com a Construção 4.0.',
       canonicalPath: '/amorim-arquitetura',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'Service',
+        name: 'Amorim Arquitetura — Engenharia Diagnóstica e Consultiva',
+        description: 'Excelência técnica para proteger o seu patrimônio. Engenharia condominial e diagnóstica em Pernambuco, unindo o rigor técnico das normas ABNT com a Construção 4.0.',
+        url: 'https://emanoelamorim.com/amorim-arquitetura',
+        serviceType: 'Engenharia Diagnóstica, Inspeção Predial e Vistoria Cautelar',
+        areaServed: {
+          '@type': 'AdministrativeArea',
+          name: 'Pernambuco',
+        },
+        provider: {
+          '@type': 'Organization',
+          '@id': 'https://emanoelamorim.com/#organization',
+          name: 'AmorimTech',
+        },
+      },
     });
 
     try {

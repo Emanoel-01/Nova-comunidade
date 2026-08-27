@@ -284,7 +284,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                   </svg>
                   @if (totalNaoLidas() > 0) {
-                    <span class="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold">
+                    <span class="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold">
                       {{ totalNaoLidas() > 9 ? '9+' : totalNaoLidas() }}
                     </span>
                   }
@@ -295,7 +295,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
                     <div class="px-4 py-3 border-b border-slate-100 font-bold text-sm text-slate-800 flex items-center justify-between">
                       <span>Notificações</span>
                       @if (totalNaoLidas() > 0) {
-                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">
                           {{ totalNaoLidas() }} nova{{ totalNaoLidas() > 1 ? 's' : '' }}
                         </span>
                       }
@@ -399,7 +399,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
         @if (menuMaisAberto()) {
           <div class="absolute bottom-full left-0 right-0 bg-white border-t border-slate-200 shadow-xl rounded-t-2xl flex flex-col max-h-[70vh]">
             <div class="flex items-center justify-between px-4 pt-3 pb-1 border-b border-slate-100">
-              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Outras Áreas
               </div>
               <div class="text-xs text-slate-600 font-semibold truncate max-w-[150px]">
@@ -522,7 +522,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             type="button"
             (click)="selecionarAbaMobile('feed')"
             [class]="abaAtiva() === 'feed' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center py-1 gap-1 text-[10px] cursor-pointer"
+            class="flex flex-col items-center justify-center py-1 gap-1 text-[11px] cursor-pointer"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
@@ -535,7 +535,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             type="button"
             (click)="selecionarAbaMobile('curso')"
             [class]="abaAtiva() === 'curso' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center py-1 gap-1 text-[10px] cursor-pointer"
+            class="flex flex-col items-center justify-center py-1 gap-1 text-[11px] cursor-pointer"
           >
             <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -548,7 +548,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             type="button"
             (click)="selecionarAbaMobile('agentes')"
             [class]="abaAtiva() === 'agentes' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center py-1 gap-1 text-[10px] cursor-pointer"
+            class="flex flex-col items-center justify-center py-1 gap-1 text-[11px] cursor-pointer"
           >
             <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -561,7 +561,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             type="button"
             (click)="selecionarAbaMobile('perfil')"
             [class]="abaAtiva() === 'perfil' ? 'text-indigo-600 font-bold' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center py-1 gap-1 text-[10px] cursor-pointer"
+            class="flex flex-col items-center justify-center py-1 gap-1 text-[11px] cursor-pointer"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -574,7 +574,7 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             type="button"
             (click)="toggleMenuMais()"
             [class]="menuMaisAberto() || ['vagas', 'materiais', 'eventos', 'forum', 'hall-fama', 'mensagens'].includes(abaAtiva()) ? 'text-indigo-600 font-bold' : 'text-slate-500'"
-            class="flex flex-col items-center justify-center py-1 gap-1 text-[10px] cursor-pointer"
+            class="flex flex-col items-center justify-center py-1 gap-1 text-[11px] cursor-pointer"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />

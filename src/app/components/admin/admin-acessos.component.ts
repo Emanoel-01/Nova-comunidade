@@ -215,7 +215,7 @@ interface SolicitacaoAcessoItem {
                 <!-- Motivo / Justificativa (se houver) -->
                 @if (item.motivo) {
                   <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs text-slate-700 space-y-1">
-                    <span class="font-semibold text-slate-500 uppercase tracking-wider text-[10px] block">Motivo / Interesse:</span>
+                    <span class="font-semibold text-slate-500 uppercase tracking-wider text-[11px] block">Motivo / Interesse:</span>
                     <p class="italic leading-relaxed whitespace-pre-line text-slate-800">{{ item.motivo }}</p>
                   </div>
                 }

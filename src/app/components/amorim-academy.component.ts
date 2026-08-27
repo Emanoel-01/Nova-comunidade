@@ -374,7 +374,7 @@ import { SeoService } from '../services/seo.service';
                     </svg>
                   </div>
                   <div class="text-lg font-black text-white">4</div>
-                  <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Contratações</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Contratações</div>
                 </div>
 
                 <div class="bg-slate-900/50 rounded-xl p-3 border border-slate-800 text-center space-y-1">
@@ -384,7 +384,7 @@ import { SeoService } from '../services/seo.service';
                     </svg>
                   </div>
                   <div class="text-lg font-black text-white">1</div>
-                  <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Inovações</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Inovações</div>
                 </div>
 
                 <div class="bg-slate-900/50 rounded-xl p-3 border border-slate-800 text-center space-y-1">
@@ -394,7 +394,7 @@ import { SeoService } from '../services/seo.service';
                     </svg>
                   </div>
                   <div class="text-lg font-black text-white">2</div>
-                  <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Artigos</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Artigos</div>
                 </div>
 
                 <div class="bg-slate-900/50 rounded-xl p-3 border border-slate-800 text-center space-y-1">
@@ -404,7 +404,7 @@ import { SeoService } from '../services/seo.service';
                     </svg>
                   </div>
                   <div class="text-lg font-black text-white">1</div>
-                  <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Relatórios</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Relatórios</div>
                 </div>
               </div>
             </div>
@@ -592,6 +592,19 @@ export class AmorimAcademyComponent implements OnInit {
       title: 'Amorim Academy | Formação, Mercado e Mentoria em Engenharia Diagnóstica',
       description: 'Curso Predial 4.0, Incubadora Profissional e Mentor Anjo — formação técnica com corresponsabilidade, inserção no mercado e mentoria individualizada.',
       canonicalPath: '/amorim-academy',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'Service',
+        name: 'Amorim Academy — Formação e Mentoria em Engenharia Diagnóstica',
+        description: 'Curso Predial 4.0, Incubadora Profissional e Mentor Anjo — formação técnica com corresponsabilidade, inserção no mercado e mentoria individualizada.',
+        url: 'https://emanoelamorim.com/amorim-academy',
+        serviceType: 'Formação e Mentoria Profissional em Engenharia Diagnóstica',
+        provider: {
+          '@type': 'Organization',
+          '@id': 'https://emanoelamorim.com/#organization',
+          name: 'AmorimTech',
+        },
+      },
     });
   }
 

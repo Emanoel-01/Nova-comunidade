@@ -238,7 +238,7 @@ interface ConfirmacaoSenhaProvisoria {
                         </svg>
                         <span>Predial 4.0</span>
                       </div>
-                      <span class="text-[10px] font-semibold text-slate-400">
+                      <span class="text-[11px] font-semibold text-slate-400">
                         {{ getLiberadosCount(user, 'predial4') }}/3 módulos
                       </span>
                     </div>
@@ -248,8 +248,8 @@ interface ConfirmacaoSenhaProvisoria {
                         @let status = getModuloStatus(user, 'predial4', mod.key);
                         <span 
                           [class]="status.liberado 
-                            ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200'
-                            : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-200/60 text-slate-500'"
+                            ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200'
+                            : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-200/60 text-slate-500'"
                         >
                           <span>{{ mod.nome }}</span>
                           @if (status.liberado) {
@@ -258,7 +258,7 @@ interface ConfirmacaoSenhaProvisoria {
                             <span class="text-slate-400">✗</span>
                           }
                           @if (status.validade) {
-                            <span class="text-[9px] text-emerald-700/80 font-normal">({{ formatarValidadeCurta(status.validade) }})</span>
+                            <span class="text-[11px] text-emerald-700/80 font-normal">({{ formatarValidadeCurta(status.validade) }})</span>
                           }
                         </span>
                       }
@@ -274,7 +274,7 @@ interface ConfirmacaoSenhaProvisoria {
                         </svg>
                         <span>Comunidade Nova</span>
                       </div>
-                      <span class="text-[10px] font-semibold text-slate-400">
+                      <span class="text-[11px] font-semibold text-slate-400">
                         {{ getLiberadosCount(user, 'comunidade') }}/{{ modulosComunidade.length }} módulos
                       </span>
                     </div>
@@ -284,8 +284,8 @@ interface ConfirmacaoSenhaProvisoria {
                         @let status = getModuloStatus(user, 'comunidade', mod.key);
                         <span 
                           [class]="status.liberado 
-                            ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200'
-                            : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-200/60 text-slate-500'"
+                            ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200'
+                            : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-200/60 text-slate-500'"
                         >
                           <span>{{ mod.nome }}</span>
                           @if (status.liberado) {
@@ -294,13 +294,13 @@ interface ConfirmacaoSenhaProvisoria {
                             <span class="text-slate-400">✗</span>
                           }
                           @if (status.validade) {
-                            <span class="text-[9px] text-emerald-700/80 font-normal">({{ formatarValidadeCurta(status.validade) }})</span>
+                            <span class="text-[11px] text-emerald-700/80 font-normal">({{ formatarValidadeCurta(status.validade) }})</span>
                           }
                         </span>
                       }
                       @let totalCursosLib = getCursosLiberadosCount(user);
                       @if (totalCursosLib > 0) {
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs">
                           <span>🎓</span>
                           <span>{{ totalCursosLib }} curso{{ totalCursosLib > 1 ? 's' : '' }} liberado{{ totalCursosLib > 1 ? 's' : '' }}</span>
                         </span>
@@ -571,9 +571,9 @@ interface ConfirmacaoSenhaProvisoria {
                         <div class="flex items-center gap-2">
                           <span class="font-bold text-slate-900">{{ mod.nome }}</span>
                           @if (isModuloLiberadoEdicao('predial4', mod.key)) {
-                            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Liberado</span>
+                            <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Liberado</span>
                           } @else {
-                            <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
+                            <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
                           }
                         </div>
                         <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
@@ -633,7 +633,7 @@ interface ConfirmacaoSenhaProvisoria {
               <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white uppercase tracking-wider">
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-600 text-white uppercase tracking-wider">
                       Acesso Base
                     </span>
                     <span class="font-bold text-slate-800 text-xs">Liberado Automaticamente ao Aprovar</span>
@@ -657,11 +657,11 @@ interface ConfirmacaoSenhaProvisoria {
                         <div>
                           <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-bold text-slate-900">{{ mod.nome }}</span>
-                            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Base</span>
+                            <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Base</span>
                             @if (isModuloLiberadoEdicao('comunidade', mod.key)) {
-                              <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-600 text-white">Ativo</span>
+                              <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-600 text-white">Ativo</span>
                             } @else {
-                              <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-100 text-rose-700">Revogado</span>
+                              <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-rose-100 text-rose-700">Revogado</span>
                             }
                           </div>
                           <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
@@ -691,7 +691,7 @@ interface ConfirmacaoSenhaProvisoria {
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
                       Adicionais
                     </span>
                     <span class="font-bold text-slate-800 text-xs">Liberação Manual</span>
@@ -716,9 +716,9 @@ interface ConfirmacaoSenhaProvisoria {
                           <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-bold text-slate-900">{{ mod.nome }}</span>
                             @if (isModuloLiberadoEdicao('comunidade', mod.key)) {
-                              <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">Liberado</span>
+                              <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-indigo-100 text-indigo-800">Liberado</span>
                             } @else {
-                              <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
+                              <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
                             }
                           </div>
                           <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
@@ -748,7 +748,7 @@ interface ConfirmacaoSenhaProvisoria {
               <div class="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-200/80 space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
                       Cursos Liberados
                     </span>
                     <span class="font-bold text-slate-800 text-xs">Acesso Granular por Curso</span>
@@ -794,12 +794,12 @@ interface ConfirmacaoSenhaProvisoria {
                             <div class="flex items-center gap-2 flex-wrap">
                               <span class="font-bold text-slate-900">{{ curso.titulo }}</span>
                               @if (curso.categoria) {
-                                <span class="px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">{{ curso.categoria }}</span>
+                                <span class="px-1.5 py-0.2 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">{{ curso.categoria }}</span>
                               }
                               @if (isModuloLiberadoEdicao('comunidade', curso.id)) {
-                                <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Liberado</span>
+                                <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Liberado</span>
                               } @else {
-                                <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
+                                <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
                               }
                             </div>
                           </div>

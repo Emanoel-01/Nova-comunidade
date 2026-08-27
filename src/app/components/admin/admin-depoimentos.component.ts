@@ -299,7 +299,7 @@ export interface DepoimentoAdmin {
                       </svg>
                     </div>
                     <span class="text-[11px] font-bold text-slate-300 mt-2">Vídeo Vimeo (ID: {{ dep.vimeo_id }})</span>
-                    <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-bold shadow-xs">
+                    <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-bold shadow-xs">
                       Vídeo
                     </span>
                   </div>
@@ -311,7 +311,7 @@ export interface DepoimentoAdmin {
                       class="w-full h-full object-cover"
                       referrerpolicy="no-referrer"
                     />
-                    <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-800/80 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
+                    <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-800/80 backdrop-blur-xs text-white text-[11px] font-bold shadow-xs">
                       Imagem
                     </span>
                   </div>
@@ -323,7 +323,7 @@ export interface DepoimentoAdmin {
                     <h5 class="text-sm font-bold text-slate-900 truncate">
                       {{ dep.nome }}
                     </h5>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0"
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0"
                           [class]="dep.ativo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'">
                       {{ dep.ativo ? 'Ativo' : 'Inativo' }}
                     </span>

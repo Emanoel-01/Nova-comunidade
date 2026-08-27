@@ -115,7 +115,7 @@ export interface AloSindicoMensagem {
           >
             <span>Novos</span>
             @if (totalNovos() > 0) {
-              <span class="w-4 h-4 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold">{{ totalNovos() }}</span>
+              <span class="w-4 h-4 rounded-full bg-slate-900 text-white text-[11px] flex items-center justify-center font-bold">{{ totalNovos() }}</span>
             }
           </button>
           <button
@@ -186,7 +186,7 @@ export interface AloSindicoMensagem {
                     <!-- Status Badge -->
                     <span
                       [class]="obterEstiloStatus(lead.status)"
-                      class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide shrink-0"
+                      class="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide shrink-0"
                     >
                       {{ formatarStatus(lead.status) }}
                     </span>
@@ -327,7 +327,7 @@ export interface AloSindicoMensagem {
                             <div class="p-3.5 rounded-xl rounded-tl-xs bg-slate-800 text-slate-100 text-xs leading-relaxed border border-slate-700 whitespace-pre-line">
                               {{ msg.texto || msg.conteudo }}
                             </div>
-                            <span class="text-[10px] text-slate-500 block px-1">
+                            <span class="text-[11px] text-slate-500 block px-1">
                               Assistente IA · {{ formatarData(msg.criado_em || msg.created_at) }}
                             </span>
                           </div>
@@ -339,7 +339,7 @@ export interface AloSindicoMensagem {
                             <div class="p-3.5 rounded-xl rounded-tr-xs bg-amber-500 text-slate-950 font-medium text-xs leading-relaxed whitespace-pre-line text-left">
                               {{ msg.texto || msg.conteudo }}
                             </div>
-                            <span class="text-[10px] text-slate-500 block px-1">
+                            <span class="text-[11px] text-slate-500 block px-1">
                               {{ lead.nome }} · {{ formatarData(msg.criado_em || msg.created_at) }}
                             </span>
                           </div>
