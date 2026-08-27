@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HallFamaComponent } from './hall-fama.component';
 import { SupabaseService } from '../../services/supabase.service';
 import { SeoService } from '../services/seo.service';
@@ -310,10 +311,11 @@ export interface BlogPost {
                 }
               </div>
 
-              <!-- Conteúdo Formatado -->
-              <div class="text-sm sm:text-base text-slate-700 leading-relaxed space-y-4 whitespace-pre-line text-justify">
-                {{ postSelecionado()?.conteudo }}
-              </div>
+              <!-- Conteúdo Formatado com Suporte a Rich HTML -->
+              <div
+                class="blog-content leading-relaxed text-justify space-y-4"
+                [innerHTML]="conteudoFormatado(postSelecionado()?.conteudo)"
+              ></div>
             </div>
 
             <div class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
@@ -338,6 +340,20 @@ export class BlogComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly supabaseService = inject(SupabaseService);
   private readonly seoService = inject(SeoService);
+  private readonly sanitizer = inject(DomSanitizer);
+
+  conteudoFormatado(conteudo: string | null | undefined): SafeHtml {
+    if (!conteudo) return '';
+    let html = conteudo.trim();
+    // Suporte retrocompatível: se for texto puro legado sem tags HTML, formata quebras de linha em parágrafos
+    if (!/<[a-z][\s\S]*>/i.test(html)) {
+      html = html
+        .split(/\n{2,}/)
+        .map(paragrafo => `<p>${paragrafo.replace(/\n/g, '<br/>')}</p>`)
+        .join('');
+    }
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
 
   readonly termoBusca = signal('');
   readonly nomeNewsletter = signal('');
@@ -391,6 +407,8 @@ export class BlogComponent implements OnInit {
           if (this.postSelecionado()?.id !== post.id) {
             this.postSelecionado.set(post);
             this.atualizarSeoPost(post);
+            // Registra visualização não-bloqueante via URL direta
+            this.supabaseService.registrarVisualizacaoPost(post.id);
           }
         }
       } else {
@@ -468,6 +486,8 @@ export class BlogComponent implements OnInit {
   abrirLeitura(post: BlogPost): void {
     this.postSelecionado.set(post);
     this.atualizarSeoPost(post);
+    // Registra visualização não-bloqueante no clique do post
+    this.supabaseService.registrarVisualizacaoPost(post.id);
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { post: post.id },

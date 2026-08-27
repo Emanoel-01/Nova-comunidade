@@ -55,6 +55,14 @@ import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
               </li>
               <li>
                 <a
+                  routerLink="/verificar-certificado"
+                  class="text-amber-400 font-semibold hover:text-amber-300 transition-colors inline-flex items-center gap-1.5"
+                >
+                  <span>Verificar Certificado</span>
+                </a>
+              </li>
+              <li>
+                <a
                   href="https://app-predial.emanoelamorim.com/"
                   target="_blank"
                   rel="noopener noreferrer"

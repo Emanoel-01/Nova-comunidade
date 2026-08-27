@@ -16,7 +16,6 @@
     "allowJs": true,
     "strict": true,
     "sourceMap": true,
-    "inlineSources": true,
     "paths": {
       "@/*": [
         "./*"

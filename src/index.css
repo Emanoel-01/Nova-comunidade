@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "quill/dist/quill.snow.css";
 
 @theme {
   --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -42,4 +43,163 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ==========================================================================
+   Quill Editor Custom Theme Integration (Admin Blog)
+   ========================================================================== */
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+  border-color: #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  padding: 0.5rem 0.75rem !important;
+  font-family: inherit !important;
+}
+
+.ql-container.ql-snow {
+  border-bottom-left-radius: 0.75rem !important;
+  border-bottom-right-radius: 0.75rem !important;
+  border-color: #cbd5e1 !important;
+  background-color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+  min-height: 240px !important;
+}
+
+.ql-editor {
+  min-height: 240px !important;
+  line-height: 1.7 !important;
+  font-family: inherit !important;
+  color: #1e293b !important;
+  padding: 1rem 1.25rem !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: #94a3b8 !important;
+  font-style: normal !important;
+  left: 1.25rem !important;
+}
+
+.ql-snow .ql-stroke {
+  stroke: #475569 !important;
+}
+
+.ql-snow .ql-fill {
+  fill: #475569 !important;
+}
+
+.ql-snow .ql-picker {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   Blog Content Rich Typography & Prose Styling (Leitura Pública)
+   ========================================================================== */
+.blog-content {
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+@media (min-width: 640px) {
+  .blog-content {
+    font-size: 1.05rem;
+  }
+}
+
+.blog-content h2 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.blog-content h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.35;
+}
+
+.blog-content p {
+  margin-bottom: 1.15rem;
+  line-height: 1.75;
+}
+
+.blog-content ul {
+  list-style-type: disc;
+  padding-left: 1.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.blog-content ol {
+  list-style-type: decimal;
+  padding-left: 1.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.blog-content li {
+  margin-bottom: 0.4rem;
+  line-height: 1.65;
+}
+
+.blog-content blockquote {
+  border-left: 4px solid #ea580c;
+  background-color: #fff7ed;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0 0.85rem 0.85rem 0;
+  color: #9a3412;
+  font-style: italic;
+  margin: 1.5rem 0;
+}
+
+.blog-content a {
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  word-break: break-word;
+  transition: color 0.15s ease;
+}
+
+.blog-content a:hover {
+  color: #3730a3;
+}
+
+.blog-content img {
+  border-radius: 1rem;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08);
+  border: 1px solid #e2e8f0;
+  display: block;
+}
+
+.blog-content strong, .blog-content b {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.blog-content em, .blog-content i {
+  font-style: italic;
+}
+
+.blog-content s, .blog-content strike {
+  text-decoration: line-through;
+}
+
+.blog-content u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 

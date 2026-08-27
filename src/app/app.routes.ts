@@ -10,6 +10,7 @@ import { ComunidadeComponent } from './components/comunidade.component';
 import { ComunidadePreviewComponent } from './components/comunidade-preview.component';
 import { BlogComponent } from './components/blog.component';
 import { AdminPanelComponent } from './components/admin-panel.component';
+import { VerificarCertificadoComponent } from './components/verificar-certificado.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 
@@ -29,6 +30,10 @@ export const routes: Routes = [
   {
     path: 'amorim-academy',
     component: AmorimAcademyComponent,
+  },
+  {
+    path: 'verificar-certificado',
+    component: VerificarCertificadoComponent,
   },
   {
     path: 'blog',

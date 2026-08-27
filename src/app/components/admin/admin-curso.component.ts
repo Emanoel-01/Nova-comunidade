@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { extrairVimeoId, montarUrlPlayerVimeo } from '../../utils/vimeo.util';
+import { CertificadoPdfService } from '../../services/certificado-pdf.service';
 
 export interface ModuloCursoAdmin {
   id: string;
@@ -22,6 +23,7 @@ export interface CursoAdmin {
   ativo: boolean;
   modulo_predial_vinculado?: string | null;
   texto_certificado?: string | null;
+  carga_horaria_certificado?: string | null;
   criado_em?: string;
   modulos?: ModuloCursoAdmin[];
   totalMatriculados?: number;
@@ -143,28 +145,36 @@ export interface CursoAdmin {
                   <label class="block text-xs font-bold text-slate-700">
                     Vínculo com Módulo do Predial 4.0 (Opcional)
                   </label>
-                  <select
-                    #novoVinculoSelect
+                  <input
+                    type="text"
+                    #novoVinculoInput
+                    placeholder="Ex: 01, 02 ou 1.1 (deixe em branco se avulso)"
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="nenhum">Nenhum (curso avulso / sem vínculo)</option>
-                    <option value="Inspeção Predial">Inspeção Predial</option>
-                    <option value="Vistoria Cautelar de Vizinhança">Vistoria Cautelar de Vizinhança</option>
-                    <option value="Perícia Judicial">Perícia Judicial</option>
-                    <option value="Recebimento de Obras">Recebimento de Obras</option>
-                  </select>
+                  />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">
+                    Carga Horária do Certificado (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    #novaCargaHorariaInput
+                    placeholder="Ex: 40 (quarenta) horas"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
 
                 <div class="space-y-1.5 sm:col-span-2">
                   <label class="block text-xs font-bold text-slate-700">
-                    Texto do Certificado (Opcional)
+                    Texto Normativo do Certificado (Opcional)
                   </label>
-                  <input
-                    type="text"
-                    #novoTextoCertificadoInput
-                    placeholder="Ex: Certificado de Capacitação Profissional conforme ABNT NBR 5674 e NBR 16747"
+                  <textarea
+                    #novoTextoNormativoInput
+                    rows="2"
+                    placeholder="Ex: em conformidade com as diretrizes da ABNT NBR 16747:2020 e IBAPE-SP"
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  ></textarea>
                 </div>
               </div>
 
@@ -180,7 +190,7 @@ export interface CursoAdmin {
                 <button
                   type="button"
                   [disabled]="salvando()"
-                  (click)="salvarNovoCurso(novoTituloInput.value, novaDescricaoInput.value, novaCategoriaInput.value, novoVinculoSelect.value, novoTextoCertificadoInput.value)"
+                  (click)="salvarNovoCurso(novoTituloInput.value, novaDescricaoInput.value, novaCategoriaInput.value, novoVinculoInput.value, novoTextoNormativoInput.value, novaCargaHorariaInput.value)"
                   class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
                 >
                   @if (salvando()) {
@@ -686,35 +696,53 @@ export interface CursoAdmin {
             <div class="space-y-6">
               <div>
                 <h4 class="text-lg font-bold text-slate-900">
-                  Modelo & Validade do Certificado
+                  Configuração & Validade do Certificado
                 </h4>
                 <p class="text-xs sm:text-sm text-slate-500">
-                  Configure os termos legais, diretrizes normativas e carga horária que constarão no certificado emitido automaticamente aos alunos ao concluírem todas as aulas.
+                  Configure as diretrizes normativas e a carga horária que constarão no certificado emitido aos alunos ao concluírem o curso.
                 </p>
               </div>
 
               <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-                <div class="space-y-2">
-                  <label class="block text-xs font-bold text-slate-700">
-                    Texto de Validade Normativa e Carga Horária do Certificado
-                  </label>
-                  <textarea
-                    #textoCertificadoInput
-                    rows="4"
-                    [value]="cursoAtivo()?.texto_certificado || ''"
-                    placeholder="Ex: Certificado de capacitação técnica profissional em conformidade com as diretrizes da ABNT NBR 5674 e NBR 16747. Carga horária estimada: 20 horas."
-                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  ></textarea>
-                  <p class="text-[11px] text-slate-400">
-                    Este texto será exibido na área do aluno e no selo oficial de conclusão técnica.
-                  </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-2 sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700">
+                      Texto Normativo / Diretrizes Técnicas
+                    </label>
+                    <textarea
+                      #textoNormativoInput
+                      rows="3"
+                      [value]="cursoAtivo()?.texto_certificado || ''"
+                      placeholder="Ex: em conformidade com as diretrizes da ABNT NBR 16747:2020 e IBAPE-SP"
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    ></textarea>
+                    <p class="text-[11px] text-slate-400">
+                      Descreva as normas, ABNTs ou conselhos técnicos associados à validação deste curso.
+                    </p>
+                  </div>
+
+                  <div class="space-y-2 sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700">
+                      Carga Horária do Certificado
+                    </label>
+                    <input
+                      type="text"
+                      #cargaHorariaInput
+                      [value]="cursoAtivo()?.carga_horaria_certificado || ''"
+                      placeholder="Ex: 40 (quarenta) horas"
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p class="text-[11px] text-slate-400">
+                      Carga horária expressa por extenso ou em horas (ex: 40 horas, 40h).
+                    </p>
+                  </div>
                 </div>
 
                 <div class="flex items-center justify-end">
                   <button
                     type="button"
                     [disabled]="salvando()"
-                    (click)="salvarTextoCertificado(textoCertificadoInput.value)"
+                    (click)="salvarConfiguracaoCertificado(textoNormativoInput.value, cargaHorariaInput.value)"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
                     @if (salvando()) {
@@ -726,16 +754,64 @@ export interface CursoAdmin {
                   </button>
                 </div>
 
-                <!-- Prévia Visual do Certificado -->
-                <div class="p-6 rounded-2xl bg-gradient-to-br from-amber-50/50 via-slate-50 to-amber-50/30 border border-amber-200/80 space-y-4">
-                  <span class="text-xs font-bold uppercase tracking-wider text-amber-800">Prévia Visual do Certificado</span>
-                  <div class="p-6 rounded-2xl bg-white border border-amber-200 text-center space-y-3 max-w-lg mx-auto shadow-xs">
-                    <div class="w-12 h-12 rounded-2xl bg-amber-400 text-white mx-auto flex items-center justify-center text-xl shadow-md">🎓</div>
-                    <div class="text-indigo-600 font-black text-xs tracking-widest uppercase">Certificado de Capacitação Técnica</div>
-                    <div class="text-slate-900 font-extrabold text-base sm:text-lg">{{ cursoAtivo()?.titulo }}</div>
-                    <div class="text-xs text-slate-500">Certificamos que o membro concluiu com êxito todas as etapas de capacitação técnica.</div>
-                    <div class="text-[11px] text-slate-600 border-t border-slate-100 pt-2 italic">
-                      {{ textoCertificadoInput.value || cursoAtivo()?.texto_certificado || 'Texto de validade normativa padrão...' }}
+                <!-- Prévia Visual do Certificado Oficial -->
+                <div class="p-6 rounded-3xl bg-slate-50 border border-slate-200/80 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#132A41]">Prévia Visual do Certificado Oficial (Amorim Academy)</span>
+                    <span class="text-[11px] font-bold text-[#B5642A]">Design Oficial 4.0</span>
+                  </div>
+                  
+                  <div class="p-8 sm:p-10 rounded-2xl bg-[#FEFCF8] border-2 border-[#132A41] relative overflow-hidden text-center space-y-4 max-w-xl mx-auto shadow-md">
+                    <!-- Borda interna em cobre -->
+                    <div class="absolute inset-1.5 border border-[#B5642A] pointer-events-none"></div>
+                    
+                    <!-- Kicker Atualizado: ECOSSISTEMA DE FORMAÇÃO 4.0 -->
+                    <div class="text-[#B5642A] font-bold text-[9px] tracking-widest uppercase">
+                      AMORIM ACADEMY · ECOSSISTEMA DE FORMAÇÃO 4.0
+                    </div>
+
+                    <div class="text-[#132A41] font-serif font-bold text-2xl tracking-tight">
+                      Certificado de Conclusão
+                    </div>
+
+                    <div class="text-[10px] text-slate-500 font-semibold tracking-wider uppercase">
+                      PROFICIÊNCIA TÉCNICA CONTINUADA
+                    </div>
+
+                    <div class="pt-2 text-xs text-slate-600">
+                      Certificamos, para os devidos fins de comprovação técnica e curricular, que
+                    </div>
+
+                    <div class="text-xl sm:text-2xl font-serif font-bold text-[#B5642A]">
+                      [NOME DO ALUNO]
+                    </div>
+                    <div class="w-48 h-px bg-[#132A41]/30 mx-auto"></div>
+
+                    <div class="text-xs text-slate-600">
+                      concluiu com êxito todas as etapas, módulos didáticos e avaliações do curso
+                    </div>
+
+                    <div class="text-base font-extrabold text-[#132A41]">
+                      “{{ cursoAtivo()?.titulo || 'Título do Curso' }}”
+                    </div>
+
+                    <div class="text-xs text-slate-500 leading-relaxed max-w-md mx-auto italic">
+                      {{ formatarPreviaTexto(textoNormativoInput.value, cargaHorariaInput.value) }}
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200/80 grid grid-cols-2 gap-4 text-left text-[9px] text-slate-500">
+                      <div>
+                        <div class="font-bold text-[#132A41]">DADOS DE EMISSÃO & AUTENTICIDADE</div>
+                        <div>Local e Data: Recife – PE, [Data de Emissão]</div>
+                        <div>Código: <span class="font-mono font-bold text-[#132A41]">AMTECH-XXXXXXXX</span></div>
+                        <div class="pt-1 text-[8px] text-slate-400">Amorim Arquitetura, Tech & Academy · CNPJ 35.673.731/0001-82</div>
+                      </div>
+                      <div class="text-right">
+                        <div class="font-serif italic font-semibold text-xs text-[#132A41]">Emanoel S. de Amorim</div>
+                        <div class="font-bold text-[#132A41]">Emanoel Silva de Amorim</div>
+                        <div class="font-bold text-[#B5642A]">CAU A133593-6 · Arquiteto e Urbanista</div>
+                        <div>Responsável Técnico · AmorimTech</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -981,10 +1057,18 @@ export interface CursoAdmin {
                                 </td>
                                 <td class="py-4 px-4">
                                   @if (mat.certificado_emitido_em) {
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200">
+                                    <button
+                                      type="button"
+                                      (click)="baixarCertificadoAluno(mat)"
+                                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
+                                      title="Baixar Certificado Oficial em PDF deste aluno"
+                                    >
                                       <span>🎓</span>
-                                      <span>Emitido ({{ formatarData(mat.certificado_emitido_em) }})</span>
-                                    </span>
+                                      <span>Emitido</span>
+                                      <svg class="w-3.5 h-3.5 text-amber-700 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                      </svg>
+                                    </button>
                                   } @else {
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">
                                       <span>Em andamento</span>
@@ -1055,17 +1139,13 @@ export interface CursoAdmin {
 
                   <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-slate-700">Vínculo com Módulo Predial 4.0</label>
-                    <select
-                      #editVinculoSelect
-                      [value]="cursoAtivo()?.modulo_predial_vinculado || 'nenhum'"
+                    <input
+                      type="text"
+                      #editVinculoInput
+                      [value]="cursoAtivo()?.modulo_predial_vinculado || ''"
+                      placeholder="Ex: 01, 02 ou 1.1 (deixe em branco se avulso)"
                       class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="nenhum">Nenhum (curso avulso)</option>
-                      <option value="Inspeção Predial">Inspeção Predial</option>
-                      <option value="Vistoria Cautelar de Vizinhança">Vistoria Cautelar de Vizinhança</option>
-                      <option value="Perícia Judicial">Perícia Judicial</option>
-                      <option value="Recebimento de Obras">Recebimento de Obras</option>
-                    </select>
+                    />
                   </div>
                 </div>
 
@@ -1073,7 +1153,7 @@ export interface CursoAdmin {
                   <button
                     type="button"
                     [disabled]="salvando()"
-                    (click)="salvarDadosGeraisCurso(editTituloInput.value, editDescricaoInput.value, editCategoriaInput.value, editVinculoSelect.value)"
+                    (click)="salvarDadosGeraisCurso(editTituloInput.value, editDescricaoInput.value, editCategoriaInput.value, editVinculoInput.value)"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
                     @if (salvando()) {
@@ -1097,6 +1177,7 @@ export interface CursoAdmin {
 })
 export class AdminCursoComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly certificadoPdfService = inject(CertificadoPdfService);
   private readonly sanitizer = inject(DomSanitizer);
 
   readonly Math = Math;
@@ -1107,6 +1188,7 @@ export class AdminCursoComponent implements OnInit {
   readonly secaoAtiva = signal<'modulos' | 'certificado' | 'alunos' | 'dados'>('modulos');
   readonly criandoNovoCurso = signal<boolean>(false);
   readonly salvando = signal<boolean>(false);
+  readonly gerandoPdfAlunoId = signal<string | null>(null);
 
   readonly cursoExcluirId = signal<string | null>(null);
   readonly moduloExcluirId = signal<string | null>(null);
@@ -1183,7 +1265,8 @@ export class AdminCursoComponent implements OnInit {
     descricao: string,
     categoria: string,
     vinculo: string,
-    textoCertificado: string
+    textoNormativo: string,
+    cargaHoraria: string
   ): Promise<void> {
     if (!titulo.trim()) {
       this.exibirErro('Por favor, informe o título do curso.');
@@ -1192,13 +1275,14 @@ export class AdminCursoComponent implements OnInit {
 
     this.salvando.set(true);
     try {
-      const vinculoVal = vinculo === 'nenhum' ? null : vinculo.trim();
+      const vinculoVal = vinculo?.trim() ? vinculo.trim() : null;
       const res = await this.supabaseService.criarCurso({
         titulo: titulo.trim(),
         descricao: descricao.trim() || undefined,
         categoria: categoria.trim() || undefined,
         modulo_predial_vinculado: vinculoVal,
-        texto_certificado: textoCertificado.trim() || undefined,
+        texto_certificado: textoNormativo.trim() || undefined,
+        carga_horaria_certificado: cargaHoraria.trim() || undefined,
       });
 
       if (res.error) {
@@ -1398,14 +1482,21 @@ export class AdminCursoComponent implements OnInit {
   // CONFIGURAÇÃO DO CERTIFICADO & DADOS GERAIS
   // ==========================================
 
-  async salvarTextoCertificado(texto: string): Promise<void> {
+  formatarPreviaTexto(textoNormativo?: string | null, cargaHoraria?: string | null): string {
+    const ch = cargaHoraria?.trim() || '40 (quarenta) horas';
+    const norm = textoNormativo?.trim() || 'em conformidade com as diretrizes da ABNT NBR 16747:2020 e IBAPE-SP';
+    return `com carga horária total de ${ch}, ${norm}, cumprindo integralmente o conteúdo programático e obtendo aprovação nas avaliações de proficiência técnica dos módulos.`;
+  }
+
+  async salvarConfiguracaoCertificado(textoNormativo: string, cargaHoraria: string): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
 
     this.salvando.set(true);
     try {
       const res = await this.supabaseService.atualizarCurso(cId, {
-        texto_certificado: texto.trim() || null,
+        texto_certificado: textoNormativo.trim() || null,
+        carga_horaria_certificado: cargaHoraria.trim() || null,
       });
 
       if (res.error) {
@@ -1419,6 +1510,49 @@ export class AdminCursoComponent implements OnInit {
       this.exibirErro('Erro ao salvar certificado: ' + (e?.message || e));
     } finally {
       this.salvando.set(false);
+    }
+  }
+
+  async salvarTextoCertificado(texto: string): Promise<void> {
+    await this.salvarConfiguracaoCertificado(texto, this.cursoAtivo()?.carga_horaria_certificado || '');
+  }
+
+  async baixarCertificadoAluno(matricula: any): Promise<void> {
+    const curso = this.cursoAtivo();
+    if (!curso) {
+      this.exibirErro('Nenhum curso ativo selecionado.');
+      return;
+    }
+
+    const alunoNome = matricula.aluno?.full_name?.trim() || 'Membro da Comunidade';
+    const matriculaId = matricula.id;
+
+    this.gerandoPdfAlunoId.set(matriculaId || 'temp');
+    try {
+      // Garante que a matrícula possui um código de verificação persistido
+      let codigoVerificacao = matricula.codigo_verificacao;
+      if (!codigoVerificacao && matriculaId) {
+        codigoVerificacao = await this.supabaseService.garantirCodigoVerificacaoMatricula(matriculaId);
+      }
+
+      const res = await this.certificadoPdfService.gerarEBaixarCertificadoPDF({
+        nomeAluno: alunoNome,
+        tituloCurso: curso.titulo,
+        textoNormativo: curso.texto_certificado || undefined,
+        cargaHoraria: curso.carga_horaria_certificado || undefined,
+        dataEmissaoIso: matricula.certificado_emitido_em || matricula.atualizado_em || matricula.criado_em,
+        codigoVerificacao: codigoVerificacao || undefined,
+      });
+
+      if (res.sucesso) {
+        this.exibirSucesso(`Certificado de ${alunoNome} gerado com sucesso!`);
+      } else {
+        this.exibirErro(res.mensagemErro || 'Erro ao gerar arquivo PDF.');
+      }
+    } catch (e: any) {
+      this.exibirErro('Erro inesperado ao gerar PDF: ' + (e?.message || e));
+    } finally {
+      this.gerandoPdfAlunoId.set(null);
     }
   }
 
@@ -1438,7 +1572,7 @@ export class AdminCursoComponent implements OnInit {
 
     this.salvando.set(true);
     try {
-      const vinculoVal = vinculo === 'nenhum' ? null : vinculo.trim();
+      const vinculoVal = vinculo?.trim() ? vinculo.trim() : null;
       const res = await this.supabaseService.atualizarCurso(cId, {
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,

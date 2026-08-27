@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { montarUrlPlayerVimeo } from '../../utils/vimeo.util';
+import { CertificadoPdfService } from '../../services/certificado-pdf.service';
 
 export interface CursoModuloAluno {
   id: string;
@@ -24,9 +25,14 @@ export interface CursoAluno {
   moduloPredialVinculado?: string | null;
   texto_certificado?: string | null;
   textoCertificado?: string | null;
+  carga_horaria_certificado?: string | null;
+  cargaHorariaCertificado?: string | null;
+  codigo_verificacao?: string | null;
+  codigoVerificacao?: string | null;
   modulos: CursoModuloAluno[];
   temAcesso: boolean;
   matriculado: boolean;
+  matriculaId?: string | null;
   modulosConcluidos: string[];
   progresso: number;
   avaliacaoAprovado: boolean;
@@ -596,10 +602,29 @@ export interface CursoAluno {
               <!-- Ação de Avaliação / Emissão -->
               <div class="relative group self-start sm:self-auto">
                 @if (curso.certificadoEmitidoEm) {
-                  <span class="px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-black text-xs sm:text-sm flex items-center gap-2">
-                    <span>✓</span>
-                    <span>Aprovado & Certificado</span>
-                  </span>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 shadow-2xs">
+                      <span>✓</span>
+                      <span>Aprovado & Certificado</span>
+                    </span>
+
+                    <button
+                      type="button"
+                      [disabled]="gerandoPDF()"
+                      (click)="baixarCertificadoPDF(curso)"
+                      class="px-4 py-2 rounded-xl bg-[#132A41] hover:bg-[#1E3A5F] text-white font-bold text-xs shadow-xs cursor-pointer inline-flex items-center gap-1.5 border border-[#B5642A]/40 transition-all"
+                    >
+                      @if (gerandoPDF()) {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Gerando...</span>
+                      } @else {
+                        <svg class="w-3.5 h-3.5 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Baixar Certificado (PDF)</span>
+                      }
+                    </button>
+                  </div>
                 } @else {
                   <button
                     type="button"
@@ -634,29 +659,51 @@ export interface CursoAluno {
           @if (curso.certificadoEmitidoEm) {
             
             <!-- SELO / BADGE DE CERTIFICADO EMITIDO COM SUCESSO -->
-            <div class="bg-gradient-to-br from-amber-50 via-white to-amber-50/40 rounded-3xl border-2 border-amber-300 p-8 sm:p-10 text-center space-y-5 shadow-md relative overflow-hidden animate-scaleUp">
-              <div class="w-20 h-20 rounded-3xl bg-amber-400 text-white mx-auto flex items-center justify-center font-black text-3xl shadow-lg shadow-amber-300/50">
+            <div class="bg-gradient-to-br from-amber-50/70 via-white to-amber-50/40 rounded-3xl border-2 border-amber-300/80 p-8 sm:p-10 text-center space-y-6 shadow-md relative overflow-hidden animate-scaleUp">
+              <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-[#B5642A] text-white mx-auto flex items-center justify-center font-black text-3xl shadow-lg shadow-amber-300/50">
                 🎓
               </div>
 
-              <div class="space-y-2 max-w-xl mx-auto">
-                <div class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider border border-amber-300/60">
-                  <span>{{ curso.texto_certificado || curso.textoCertificado || 'Certificado de Conclusão Técnica' }}</span>
+              <div class="space-y-3 max-w-xl mx-auto">
+                <div class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-100 text-[#B5642A] text-xs font-black uppercase tracking-wider border border-[#B5642A]/30">
+                  <span>{{ getTextoCertificadoExibicao(curso) }}</span>
                 </div>
 
-                <h4 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                <h4 class="text-xl sm:text-2xl font-black text-[#132A41] tracking-tight">
                   Certificado Emitido com Sucesso!
                 </h4>
 
                 <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Parabéns! Você completou com sucesso todos os módulos e avaliações de proficiência do curso <strong>"{{ curso.titulo }}"</strong>.
+                  Parabéns! Você completou com sucesso todos os módulos e avaliações de proficiência do curso <strong>"{{ curso.titulo }}"</strong>. O documento oficial em PDF com assinatura técnica e código de autenticidade está liberado para download e inclusão curricular.
                 </p>
 
-                <div class="pt-2 flex items-center justify-center gap-4 text-xs font-bold text-amber-900/80">
+                <div class="pt-1 flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#132A41]">
                   <span>📅 Emitido em: {{ formatarData(curso.certificadoEmitidoEm) }}</span>
-                  <span>•</span>
-                  <span>Autenticidade Verificada ✓</span>
+                  <span class="text-slate-300">•</span>
+                  <span>⏱ {{ getCargaHorariaTotal(curso) }}</span>
+                  <span class="text-slate-300">•</span>
+                  <span class="text-emerald-700">Autenticidade Verificada ✓</span>
                 </div>
+              </div>
+
+              <!-- Botão de Download do PDF Oficial -->
+              <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+                <button
+                  type="button"
+                  [disabled]="gerandoPDF()"
+                  (click)="baixarCertificadoPDF(curso)"
+                  class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#132A41] hover:bg-[#1E3A5F] text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer inline-flex items-center justify-center gap-2.5 border border-[#B5642A]/40"
+                >
+                  @if (gerandoPDF()) {
+                    <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Gerando Documento PDF...</span>
+                  } @else {
+                    <svg class="w-4 h-4 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Baixar Certificado Oficial (PDF)</span>
+                  }
+                </button>
               </div>
             </div>
 
@@ -728,6 +775,7 @@ export interface CursoAluno {
 export class ComunidadeCursoComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly certificadoPdfService = inject(CertificadoPdfService);
 
   readonly cursos = signal<CursoAluno[]>([]);
   readonly carregando = signal<boolean>(true);
@@ -738,6 +786,8 @@ export class ComunidadeCursoComponent implements OnInit {
 
   readonly mensagemFeedback = signal<string | null>(null);
   readonly tipoFeedback = signal<'sucesso' | 'erro' | 'alerta'>('sucesso');
+  readonly gerandoPDF = signal<boolean>(false);
+  readonly perfilAluno = signal<any | null>(null);
 
   readonly cursoAtivo = computed(() => {
     const id = this.cursoSelecionadoId();
@@ -936,6 +986,79 @@ export class ComunidadeCursoComponent implements OnInit {
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     } catch {
       return dataStr;
+    }
+  }
+
+  formatarDataExtenso(dataStr: string | null | undefined): string {
+    if (!dataStr) return 'data não informada';
+    try {
+      const d = new Date(dataStr);
+      if (isNaN(d.getTime())) return dataStr;
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    } catch {
+      return dataStr;
+    }
+  }
+
+  getTextoCertificadoExibicao(curso: CursoAluno): string {
+    const texto = (curso.texto_certificado || curso.textoCertificado || '').trim();
+    if (!texto) {
+      return 'Certificado de Conclusão Técnica';
+    }
+    return texto;
+  }
+
+  async baixarCertificadoPDF(curso: CursoAluno): Promise<void> {
+    if (this.gerandoPDF()) return;
+    this.gerandoPDF.set(true);
+    this.mensagemFeedback.set(null);
+
+    try {
+      // 1. Obtém dados do perfil do aluno
+      let perfil = this.perfilAluno();
+      if (!perfil) {
+        perfil = await this.supabaseService.obterMeuPerfilCompleto();
+        if (perfil) {
+          this.perfilAluno.set(perfil);
+        }
+      }
+
+      const session = await this.supabaseService.getSession();
+      const nomeAluno = (
+        perfil?.full_name ||
+        session?.user?.user_metadata?.full_name ||
+        session?.user?.email?.split('@')[0] ||
+        'Membro da Comunidade'
+      ).trim();
+
+      // Garante código de verificação
+      let codigoVerificacao = curso.codigo_verificacao || curso.codigoVerificacao;
+      if (!codigoVerificacao && curso.matriculaId) {
+        codigoVerificacao = await this.supabaseService.garantirCodigoVerificacaoMatricula(curso.matriculaId);
+      }
+
+      const res = await this.certificadoPdfService.gerarEBaixarCertificadoPDF({
+        nomeAluno,
+        tituloCurso: curso.titulo,
+        textoNormativo: curso.texto_certificado || curso.textoCertificado || undefined,
+        cargaHoraria: curso.carga_horaria_certificado || curso.cargaHorariaCertificado || undefined,
+        dataEmissaoIso: curso.certificadoEmitidoEm || undefined,
+        codigoVerificacao: codigoVerificacao || undefined,
+      });
+
+      if (res.sucesso) {
+        this.tipoFeedback.set('sucesso');
+        this.mensagemFeedback.set('Certificado em PDF gerado e baixado com sucesso!');
+      } else {
+        this.tipoFeedback.set('erro');
+        this.mensagemFeedback.set(res.mensagemErro || 'Erro ao gerar certificado em PDF.');
+      }
+    } catch (err: any) {
+      console.error('Erro ao gerar certificado em PDF:', err);
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Não foi possível gerar o certificado em PDF: ' + (err?.message || err));
+    } finally {
+      this.gerandoPDF.set(false);
     }
   }
 }

@@ -10,6 +10,7 @@ import { AdminMateriaisComponent } from './admin/admin-materiais.component';
 import { AdminEventosComponent } from './admin/admin-eventos.component';
 import { AdminDepoimentosComponent } from './admin/admin-depoimentos.component';
 import { AdminBlogComponent } from './admin/admin-blog.component';
+import { AdminBlogAnalyticsComponent } from './admin/admin-blog-analytics.component';
 import { AdminNotificacoesComponent } from './admin/admin-notificacoes.component';
 import { AdminPortfolioComponent } from './admin/admin-portfolio.component';
 import { AdminAloSindicoComponent } from './admin/admin-alo-sindico.component';
@@ -37,6 +38,7 @@ interface NavSectionItem {
     AdminEventosComponent,
     AdminDepoimentosComponent,
     AdminBlogComponent,
+    AdminBlogAnalyticsComponent,
     AdminNotificacoesComponent,
     AdminPortfolioComponent,
     AdminAloSindicoComponent
@@ -496,6 +498,9 @@ interface NavSectionItem {
             @case ('novo-artigo') {
               <app-admin-blog></app-admin-blog>
             }
+            @case ('analytics-blog') {
+              <app-admin-blog-analytics></app-admin-blog-analytics>
+            }
             @case ('newsletter') {
               <app-admin-blog></app-admin-blog>
             }
@@ -558,7 +563,7 @@ export class AdminPanelComponent implements OnInit {
     'visao-geral': { titulo: 'Visão Geral' },
     'posts-publicados': { titulo: 'Blog Mundo 4.0 — Posts' },
     'novo-artigo': { titulo: 'Novo Artigo do Blog' },
-    'analytics-blog': { titulo: 'Analytics do Blog', tabela: 'tabela blog_analytics' },
+    'analytics-blog': { titulo: 'Analytics do Blog Mundo 4.0' },
     'forum': { titulo: 'Fórum Técnico & Moderação' },
     'vagas': { titulo: 'Vagas & Oportunidades' },
     'materiais': { titulo: 'Materiais & Downloads' },

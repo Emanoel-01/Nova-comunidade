@@ -1,5 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import Quill from 'quill';
 import { SupabaseService } from '../../../services/supabase.service';
 
 export interface AdminBlogPost {
@@ -195,15 +196,24 @@ export interface AdminNewsletterAssinante {
               </div>
 
               <div class="space-y-1.5 sm:col-span-3">
-                <label class="block text-xs font-bold text-slate-700">Conteúdo do Artigo *</label>
-                <textarea
-                  #conteudoInput
-                  [value]="formPost.conteudo"
-                  (input)="formPost.conteudo = conteudoInput.value"
-                  rows="10"
-                  placeholder="Escreva o conteúdo completo do artigo técnico aqui..."
-                  class="w-full px-3.5 py-3 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 leading-relaxed font-sans"
-                ></textarea>
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-bold text-slate-700">Conteúdo do Artigo (Editor Rico) *</label>
+                  @if (enviandoImagemEditor()) {
+                    <span class="text-xs font-bold text-orange-600 animate-pulse flex items-center gap-1">
+                      <span class="w-3 h-3 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></span>
+                      Enviando imagem...
+                    </span>
+                  }
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-xs border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500">
+                  <div #quillContainer id="editor-blog-quill" class="min-h-[260px] bg-white"></div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 px-1 pt-1 gap-1">
+                  <span>💡 Formate títulos (H2/H3), listas, citações, links e insira fotos diretamente no texto.</span>
+                  <span class="font-medium text-slate-500">{{ contagemPalavras() }} palavras</span>
+                </div>
               </div>
             </div>
 
@@ -486,6 +496,11 @@ export class AdminBlogComponent implements OnInit {
     'Carreira'
   ];
 
+  @ViewChild('quillContainer') quillContainerRef?: ElementRef<HTMLDivElement>;
+
+  quillInstance: Quill | null = null;
+  readonly enviandoImagemEditor = signal(false);
+
   formPost = {
     titulo: '',
     resumo: '',
@@ -538,6 +553,7 @@ export class AdminBlogComponent implements OnInit {
     };
     this.editandoId.set(null);
     this.formularioAberto.set(true);
+    this.inicializarQuill('');
   }
 
   iniciarEdicao(post: AdminBlogPost): void {
@@ -550,15 +566,132 @@ export class AdminBlogComponent implements OnInit {
     };
     this.editandoId.set(post.id);
     this.formularioAberto.set(true);
+    this.inicializarQuill(post.conteudo);
   }
 
   fecharFormulario(): void {
     this.formularioAberto.set(false);
     this.editandoId.set(null);
     this.excluirPostId.set(null);
+    this.quillInstance = null;
+  }
+
+  inicializarQuill(conteudoInicial: string = ''): void {
+    setTimeout(() => {
+      const el = this.quillContainerRef?.nativeElement;
+      if (!el) return;
+
+      el.innerHTML = '';
+
+      try {
+        this.quillInstance = new Quill(el, {
+          theme: 'snow',
+          placeholder: 'Escreva o conteúdo completo e formatado do artigo técnico aqui...',
+          modules: {
+            toolbar: {
+              container: [
+                [{ 'header': [2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                ['blockquote', 'link', 'image'],
+                ['clean']
+              ],
+              handlers: {
+                image: () => this.selecionarImagemEditor()
+              }
+            }
+          }
+        });
+
+        // Carrega conteúdo inicial se houver
+        if (conteudoInicial && conteudoInicial.trim()) {
+          const conteudoTratado = this.prepararConteudoParaEditor(conteudoInicial);
+          this.quillInstance.clipboard.dangerouslyPasteHTML(conteudoTratado);
+        }
+
+        // Sincroniza em tempo real com formPost.conteudo
+        this.quillInstance.on('text-change', () => {
+          if (!this.quillInstance) return;
+          const html = this.quillInstance.root.innerHTML;
+          const texto = this.quillInstance.getText().trim();
+          if (html === '<p><br></p>' || (texto.length === 0 && !html.includes('<img'))) {
+            this.formPost.conteudo = '';
+          } else {
+            this.formPost.conteudo = html;
+          }
+        });
+      } catch (err) {
+        console.error('Erro ao inicializar editor Quill:', err);
+      }
+    }, 60);
+  }
+
+  prepararConteudoParaEditor(conteudo: string): string {
+    if (!conteudo) return '';
+    // Suporte retrocompatível: se for texto puro antigo sem tags HTML, converte quebras em parágrafos para o Quill
+    if (!/<[a-z][\s\S]*>/i.test(conteudo)) {
+      return conteudo
+        .split(/\n{2,}/)
+        .map(p => `<p>${p.replace(/\n/g, '<br/>')}</p>`)
+        .join('');
+    }
+    return conteudo;
+  }
+
+  contagemPalavras(): number {
+    if (!this.formPost.conteudo) return 0;
+    const textoPuro = this.formPost.conteudo.replace(/<[^>]*>/g, ' ').trim();
+    if (!textoPuro) return 0;
+    return textoPuro.split(/\s+/).filter(Boolean).length;
+  }
+
+  selecionarImagemEditor(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png, image/jpeg, image/webp, image/gif';
+    input.onchange = async (event: any) => {
+      const file: File | undefined = event.target?.files?.[0];
+      if (!file) return;
+
+      this.enviandoImagemEditor.set(true);
+      try {
+        const res = await this.supabaseService.uploadImagemBlog(file);
+        if (res.error || !res.url) {
+          this.exibirErro('Erro ao fazer upload da imagem: ' + (res.error?.message || 'Falha no armazenamento.'));
+          return;
+        }
+
+        if (this.quillInstance) {
+          const range = this.quillInstance.getSelection(true);
+          const index = range ? range.index : this.quillInstance.getLength();
+          this.quillInstance.insertEmbed(index, 'image', res.url);
+          this.quillInstance.setSelection(index + 1, 0);
+
+          // Atualiza formPost.conteudo
+          this.formPost.conteudo = this.quillInstance.root.innerHTML;
+          this.exibirSucesso('Imagem inserida no artigo com sucesso!');
+        }
+      } catch (err: any) {
+        this.exibirErro('Erro no upload da imagem: ' + (err?.message || err));
+      } finally {
+        this.enviandoImagemEditor.set(false);
+      }
+    };
+    input.click();
   }
 
   async salvarPost(): Promise<void> {
+    // Garante que o conteúdo mais recente do editor foi capturado
+    if (this.quillInstance) {
+      const html = this.quillInstance.root.innerHTML;
+      const texto = this.quillInstance.getText().trim();
+      if (html === '<p><br></p>' || (texto.length === 0 && !html.includes('<img'))) {
+        this.formPost.conteudo = '';
+      } else {
+        this.formPost.conteudo = html;
+      }
+    }
+
     if (!this.formPost.titulo.trim()) {
       this.exibirErro('Informe o título do artigo.');
       return;

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient, Session } from '@supabase/supabase-js';
 import { environment } from '../environments/environment';
+import { gerarCodigoVerificacaoCertificado } from '../app/services/certificado-pdf.service';
 
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
@@ -1863,6 +1864,7 @@ export class SupabaseService {
     categoria?: string;
     modulo_predial_vinculado?: string | null;
     texto_certificado?: string | null;
+    carga_horaria_certificado?: string | null;
   }): Promise<{ error: Error | null; data?: any }> {
     try {
       const payload: any = {
@@ -1873,6 +1875,7 @@ export class SupabaseService {
       if (curso.categoria !== undefined) payload.categoria = curso.categoria;
       if (curso.modulo_predial_vinculado !== undefined) payload.modulo_predial_vinculado = curso.modulo_predial_vinculado;
       if (curso.texto_certificado !== undefined) payload.texto_certificado = curso.texto_certificado;
+      if (curso.carga_horaria_certificado !== undefined) payload.carga_horaria_certificado = curso.carga_horaria_certificado;
 
       const { data, error } = await this.client.from('cursos').insert(payload).select().single();
       return { error, data };
@@ -2117,6 +2120,7 @@ export class SupabaseService {
 
         return {
           ...c,
+          matriculaId: matricula?.id || null,
           modulos: modulosDoCurso,
           temAcesso: !!mapaPermissoes[c.id],
           matriculado: !!matricula,
@@ -2124,6 +2128,7 @@ export class SupabaseService {
           progresso,
           avaliacaoAprovado: matricula?.avaliacao_aprovado || false,
           certificadoEmitidoEm: matricula?.certificado_emitido_em || null,
+          codigo_verificacao: matricula?.codigo_verificacao || null,
         };
       });
     } catch (e: any) {
@@ -2166,18 +2171,133 @@ export class SupabaseService {
     }
   }
 
-  async emitirCertificado(cursoId: string): Promise<{ error: Error | null }> {
+  async emitirCertificado(cursoId: string): Promise<{ error: Error | null; codigo_verificacao?: string }> {
     try {
       const session = await this.getSession();
       if (!session?.user) return { error: new Error('Não autenticado.') };
+
+      // Verifica se já existe código salvo
+      const { data: matExistente } = await this.client
+        .from('cursos_matriculas')
+        .select('id, codigo_verificacao, certificado_emitido_em')
+        .eq('curso_id', cursoId)
+        .eq('profissional_id', session.user.id)
+        .maybeSingle();
+
+      let codigo = matExistente?.codigo_verificacao;
+      if (!codigo) {
+        codigo = gerarCodigoVerificacaoCertificado();
+      }
+
       const { error } = await this.client
         .from('cursos_matriculas')
-        .update({ certificado_emitido_em: new Date().toISOString(), avaliacao_aprovado: true })
+        .update({
+          certificado_emitido_em: matExistente?.certificado_emitido_em || new Date().toISOString(),
+          avaliacao_aprovado: true,
+          codigo_verificacao: codigo,
+          atualizado_em: new Date().toISOString(),
+        })
         .eq('curso_id', cursoId)
         .eq('profissional_id', session.user.id);
-      return { error };
+
+      return { error, codigo_verificacao: codigo };
     } catch (e: any) {
       return { error: e };
+    }
+  }
+
+  /**
+   * Garante que uma matrícula com certificado emitido possua código persistido (lazy backfill)
+   */
+  async garantirCodigoVerificacaoMatricula(matriculaId: string): Promise<string> {
+    try {
+      const { data: mat } = await this.client
+        .from('cursos_matriculas')
+        .select('id, codigo_verificacao, certificado_emitido_em')
+        .eq('id', matriculaId)
+        .maybeSingle();
+
+      if (mat?.codigo_verificacao) {
+        return mat.codigo_verificacao;
+      }
+
+      const novoCodigo = gerarCodigoVerificacaoCertificado();
+      await this.client
+        .from('cursos_matriculas')
+        .update({ codigo_verificacao: novoCodigo })
+        .eq('id', matriculaId);
+
+      return novoCodigo;
+    } catch (e: any) {
+      console.warn('Erro ao garantir código de verificação:', e);
+      return gerarCodigoVerificacaoCertificado();
+    }
+  }
+
+  /**
+   * Consulta pública e segura de autenticidade de certificado
+   */
+  async verificarCertificadoPublico(codigo: string): Promise<{
+    valido: boolean;
+    mensagem?: string;
+    codigo_verificacao?: string;
+    nome_aluno?: string;
+    nome_curso?: string;
+    data_emissao?: string;
+    carga_horaria?: string;
+    texto_normativo?: string;
+    modulo_predial?: string;
+  }> {
+    const cod = (codigo || '').trim().toUpperCase();
+    if (!cod) {
+      return { valido: false, mensagem: 'Código de verificação não informado.' };
+    }
+
+    try {
+      // 1. Tenta invocar a função RPC segura do Supabase (SECURITY DEFINER)
+      const { data, error } = await this.client.rpc('verificar_certificado_publico', { p_codigo: cod });
+      if (!error && data) {
+        const res = typeof data === 'string' ? JSON.parse(data) : data;
+        return res;
+      }
+
+      // 2. Fallback resiliente via select direto caso o RPC ainda não tenha sido aplicado no Supabase remoto
+      const { data: mat, error: matErr } = await this.client
+        .from('cursos_matriculas')
+        .select(`
+          codigo_verificacao,
+          certificado_emitido_em,
+          curso:cursos(titulo, carga_horaria_certificado, texto_certificado, modulo_predial_vinculado),
+          aluno:profissionais(full_name)
+        `)
+        .eq('codigo_verificacao', cod)
+        .not('certificado_emitido_em', 'is', null)
+        .maybeSingle();
+
+      if (mat) {
+        const item = mat as any;
+        return {
+          valido: true,
+          codigo_verificacao: item.codigo_verificacao,
+          nome_aluno: item.aluno?.full_name || 'Membro da Comunidade',
+          nome_curso: item.curso?.titulo || 'Curso de Engenharia Diagnóstica',
+          data_emissao: item.certificado_emitido_em,
+          carga_horaria: item.curso?.carga_horaria_certificado || '',
+          texto_normativo: item.curso?.texto_certificado || '',
+          modulo_predial: item.curso?.modulo_predial_vinculado || '',
+        };
+      }
+
+      return {
+        valido: false,
+        mensagem: 'Código não encontrado. Verifique se digitou corretamente.',
+      };
+    } catch (e: any) {
+      console.warn('Exceção ao verificar certificado público:', e?.message || e);
+      return {
+        valido: false,
+        mensagem: 'Código não encontrado. Verifique se digitou corretamente.',
+      };
     }
   }
 
@@ -2401,6 +2521,54 @@ export class SupabaseService {
     }
   }
 
+  async uploadImagemBlog(file: File): Promise<{ error: Error | null; url?: string | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+
+      // Limite de 15 MB
+      const maxBytes = 15 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        return { error: new Error('A imagem excede o limite máximo permitido de 15 MB.') };
+      }
+
+      const cleanName = file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_');
+
+      const path = `blog_conteudo/${Date.now()}_${cleanName}`;
+
+      // Upload para o bucket materiais-comunidade
+      const { error: uploadError } = await this.client.storage
+        .from('materiais-comunidade')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        return { error: uploadError };
+      }
+
+      // Gera signed URL de longa duração (10 anos = 315360000s)
+      const { data: signedData, error: signedError } = await this.client.storage
+        .from('materiais-comunidade')
+        .createSignedUrl(path, 315360000);
+
+      if (signedError) {
+        const { data: pubData } = this.client.storage
+          .from('materiais-comunidade')
+          .getPublicUrl(path);
+        return { error: null, url: pubData?.publicUrl || null };
+      }
+
+      return { error: null, url: signedData?.signedUrl || null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  }
+
   async inscreverNewsletter(nome: string, email: string): Promise<{ error: Error | null; alreadySubscribed?: boolean }> {
     try {
       const emailLimpo = (email || '').trim().toLowerCase();
@@ -2450,6 +2618,104 @@ export class SupabaseService {
       return (data || []).map((r: any) => r.email);
     } catch {
       return [];
+    }
+  }
+
+  // ----------------------------------------------------
+  // BLOG ANALYTICS & MÉTRICAS
+  // ----------------------------------------------------
+
+  async registrarVisualizacaoPost(postId: string): Promise<void> {
+    try {
+      if (!postId) return;
+      const { error } = await this.client
+        .from('blog_analytics')
+        .insert([{ post_id: postId }]);
+      if (error) {
+        console.warn('Falha ao registrar métrica em blog_analytics:', error.message);
+      }
+    } catch (err: any) {
+      console.warn('Exceção ao registrar visualização do blog:', err?.message || err);
+    }
+  }
+
+  async obterAnalyticsBlog(): Promise<{
+    totalVisualizacoes: number;
+    totalPostsPublicados: number;
+    totalPostsGeral: number;
+    mediaVisualizacoesPorPost: number;
+    rankingPosts: Array<{
+      id: string;
+      titulo: string;
+      categoria: string;
+      publicado: boolean;
+      criado_em: string;
+      totalVisualizacoes: number;
+    }>;
+  }> {
+    try {
+      // 1. Busca todos os posts
+      const { data: posts, error: postsError } = await this.client
+        .from('blog_posts')
+        .select('id, titulo, categoria, publicado, criado_em')
+        .order('criado_em', { ascending: false });
+
+      if (postsError) {
+        console.warn('Erro ao buscar posts para analytics:', postsError.message);
+      }
+
+      // 2. Busca todos os registros de visualizações
+      const { data: views, error: viewsError } = await this.client
+        .from('blog_analytics')
+        .select('id, post_id, criado_em');
+
+      if (viewsError) {
+        console.warn('Erro ao buscar registros de blog_analytics:', viewsError.message);
+      }
+
+      const listaPosts = posts || [];
+      const listaViews = views || [];
+
+      // 3. Agrupamento de contagens por post_id
+      const contagemPorPost: Record<string, number> = {};
+      for (const v of listaViews) {
+        if (v.post_id) {
+          contagemPorPost[v.post_id] = (contagemPorPost[v.post_id] || 0) + 1;
+        }
+      }
+
+      const rankingPosts = listaPosts.map((p: any) => ({
+        id: p.id,
+        titulo: p.titulo || 'Sem título',
+        categoria: p.categoria || 'Geral',
+        publicado: Boolean(p.publicado),
+        criado_em: p.criado_em,
+        totalVisualizacoes: contagemPorPost[p.id] || 0,
+      })).sort((a, b) => b.totalVisualizacoes - a.totalVisualizacoes);
+
+      const totalVisualizacoes = listaViews.length;
+      const totalPostsPublicados = listaPosts.filter((p: any) => p.publicado).length;
+      const totalPostsGeral = listaPosts.length;
+      const mediaVisualizacoesPorPost = totalPostsPublicados > 0
+        ? parseFloat((totalVisualizacoes / totalPostsPublicados).toFixed(1))
+        : 0;
+
+      return {
+        totalVisualizacoes,
+        totalPostsPublicados,
+        totalPostsGeral,
+        mediaVisualizacoesPorPost,
+        rankingPosts,
+      };
+    } catch (err: any) {
+      console.warn('Exceção ao obter analytics do blog:', err?.message || err);
+      return {
+        totalVisualizacoes: 0,
+        totalPostsPublicados: 0,
+        totalPostsGeral: 0,
+        mediaVisualizacoesPorPost: 0,
+        rankingPosts: [],
+      };
     }
   }
 
