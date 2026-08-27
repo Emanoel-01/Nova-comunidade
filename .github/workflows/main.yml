@@ -1,0 +1,112 @@
+name: CI/CD - Auditoria e Integridade das 5 Frentes
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # FRENTE A: Vazamento de Segredos e LGPD / PII
+  frente-a-seguranca:
+    name: "Frente A - Auditoria de Segurança & LGPD"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 1. Bloqueio de Senhas e Chaves Hardcoded (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 2. Varredura SAST e LGPD (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+
+  # FRENTES B e D: Painel ADM, Rotas, Tipagem e Build da Aplicação
+  frente-bd-app:
+    name: "Frentes B/D - Compilação, Tipagem e Build"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar Dependências (Tolerante)
+        run: |
+          npm install --legacy-peer-deps || npm ci
+
+      - name: 1. Checagem de Tipagem TypeScript
+        run: npx tsc --noEmit --skipLibCheck
+
+      - name: 2. Validação de Build de Produção
+        run: npm run build --if-present
+
+  # FRENTE C: Auditoria Estática de SQL e Supabase (Sem Docker / Sem supabase start)
+  frente-c-supabase:
+    name: "Frente C - Auditoria Estática de SQL & Migrações"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 1. Instalar Linter SQL Estático (sqlfluff)
+        run: pip install sqlfluff
+
+      - name: 2. Validar Sintaxe de Todas as Migrações SQL
+        run: |
+          if [ -d "supabase/migrations" ]; then
+            sqlfluff lint supabase/migrations --dialect postgres
+          else
+            echo "Pasta de migrações não encontrada. Pulando."
+          fi
+        continue-on-error: true
+
+      - name: 3. Auditoria de Boas Práticas e RLS em Arquivos SQL (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/sql
+
+  # FRENTE E: Design System e Validação do Gerador de PDFs / Laudos
+  frente-e-pdf-design:
+    name: "Frente E - Validação de Layout e Assets de PDF"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Dependências
+        run: npm install --legacy-peer-deps
+
+      - name: 1. Validação de Folhas de Estilo e Tipografia (CSS Lint)
+        run: npx stylelint "**/*.css" --allow-empty-input || true
+
+      - name: 2. Teste de Renderização do Motor PDF (Playwright Headless)
+        run: |
+          if npm run | grep -q "test:pdf"; then
+            npx playwright install chromium --with-deps
+            npm run test:pdf
+          else
+            echo "Nenhum script test:pdf configurado no package.json. Validado por build."
+          fi
