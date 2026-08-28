@@ -371,7 +371,7 @@ export class SupabaseService {
     try {
       let { data: posts, error } = await this.client
         .from('feed_posts')
-        .select('*, autor:profissionais!feed_posts_autor_id_fkey(id, full_name, professional_title)')
+        .select('*, autor:profissionais!feed_posts_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .order('criado_em', { ascending: false })
         .limit(50);
 
@@ -379,7 +379,7 @@ export class SupabaseService {
         // Fallback 1: sem FK constraint explícita
         const resFallback = await this.client
           .from('feed_posts')
-          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
           .order('criado_em', { ascending: false })
           .limit(50);
 
@@ -400,7 +400,7 @@ export class SupabaseService {
             if (autorIds.length > 0) {
               const { data: autores } = await this.client
                 .from('profissionais')
-                .select('id, full_name, professional_title')
+                .select('id, full_name, professional_title, avatar_url')
                 .in('id', autorIds);
               (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
             }
@@ -429,14 +429,14 @@ export class SupabaseService {
 
       let { data: comentarios } = await this.client
         .from('feed_comentarios')
-        .select('*, autor:profissionais!feed_comentarios_autor_id_fkey(id, full_name, professional_title)')
+        .select('*, autor:profissionais!feed_comentarios_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .in('post_id', postIds)
         .order('criado_em', { ascending: true });
 
       if (!comentarios) {
         const resComFallback = await this.client
           .from('feed_comentarios')
-          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
           .in('post_id', postIds)
           .order('criado_em', { ascending: true });
 
@@ -455,7 +455,7 @@ export class SupabaseService {
             if (comAutorIds.length > 0) {
               const { data: comAutores } = await this.client
                 .from('profissionais')
-                .select('id, full_name, professional_title')
+                .select('id, full_name, professional_title, avatar_url')
                 .in('id', comAutorIds);
               (comAutores || []).forEach((a: any) => { comAutoresMap[a.id] = a; });
             }
@@ -589,6 +589,8 @@ export class SupabaseService {
     instagramUrl?: string;
     whatsappUrl?: string;
     websiteUrl?: string;
+    avatarUrl?: string | null;
+    bannerUrl?: string | null;
   }): Promise<{ error: Error | null }> {
     try {
       const session = await this.getSession();
@@ -609,6 +611,8 @@ export class SupabaseService {
           instagram_url: dados.instagramUrl,
           whatsapp_url: dados.whatsappUrl,
           website_url: dados.websiteUrl,
+          avatar_url: dados.avatarUrl !== undefined ? dados.avatarUrl : undefined,
+          banner_url: dados.bannerUrl !== undefined ? dados.bannerUrl : undefined,
         })
         .eq('id', session.user.id);
       return { error };
@@ -1370,7 +1374,7 @@ export class SupabaseService {
       let topicos: any[] | null = null;
       const res = await this.client
         .from('forum_topicos')
-        .select('*, autor:profissionais!forum_topicos_autor_id_fkey(id, full_name, professional_title)')
+        .select('*, autor:profissionais!forum_topicos_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .order('criado_em', { ascending: false });
 
       if (!res.error && res.data) {
@@ -1378,7 +1382,7 @@ export class SupabaseService {
       } else {
         const resFallback = await this.client
           .from('forum_topicos')
-          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
           .order('criado_em', { ascending: false });
 
         if (!resFallback.error && resFallback.data) {
@@ -1395,7 +1399,7 @@ export class SupabaseService {
             if (autorIds.length > 0) {
               const { data: autores } = await this.client
                 .from('profissionais')
-                .select('id, full_name, professional_title')
+                .select('id, full_name, professional_title, avatar_url')
                 .in('id', autorIds);
               (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
             }
@@ -1419,7 +1423,7 @@ export class SupabaseService {
       let respostas: any[] = [];
       const resResp = await this.client
         .from('forum_respostas')
-        .select('*, autor:profissionais!forum_respostas_autor_id_fkey(id, full_name, professional_title)')
+        .select('*, autor:profissionais!forum_respostas_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .in('topico_id', topicoIds)
         .order('criado_em', { ascending: true });
 
@@ -1428,7 +1432,7 @@ export class SupabaseService {
       } else {
         const resRespFallback = await this.client
           .from('forum_respostas')
-          .select('*, autor:profissionais(id, full_name, professional_title)')
+          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
           .in('topico_id', topicoIds)
           .order('criado_em', { ascending: true });
 
@@ -1447,7 +1451,7 @@ export class SupabaseService {
             if (respAutorIds.length > 0) {
               const { data: respAutores } = await this.client
                 .from('profissionais')
-                .select('id, full_name, professional_title')
+                .select('id, full_name, professional_title, avatar_url')
                 .in('id', respAutorIds);
               (respAutores || []).forEach((a: any) => { respAutoresMap[a.id] = a; });
             }
@@ -1556,7 +1560,7 @@ export class SupabaseService {
       let topicos: any[] | null = null;
       const res = await this.client
         .from('forum_topicos')
-        .select('*, autor:profissionais!forum_topicos_autor_id_fkey(id, full_name, professional_title, email)')
+        .select('*, autor:profissionais!forum_topicos_autor_id_fkey(id, full_name, professional_title, email, avatar_url)')
         .order('criado_em', { ascending: false });
 
       if (!res.error && res.data) {
@@ -1564,7 +1568,7 @@ export class SupabaseService {
       } else {
         const resFallback = await this.client
           .from('forum_topicos')
-          .select('*, autor:profissionais(id, full_name, professional_title, email)')
+          .select('*, autor:profissionais(id, full_name, professional_title, email, avatar_url)')
           .order('criado_em', { ascending: false });
 
         if (!resFallback.error && resFallback.data) {
@@ -1581,7 +1585,7 @@ export class SupabaseService {
             if (autorIds.length > 0) {
               const { data: autores } = await this.client
                 .from('profissionais')
-                .select('id, full_name, professional_title, email')
+                .select('id, full_name, professional_title, email, avatar_url')
                 .in('id', autorIds);
               (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
             }
@@ -1605,7 +1609,7 @@ export class SupabaseService {
       let respostas: any[] = [];
       const resResp = await this.client
         .from('forum_respostas')
-        .select('*, autor:profissionais!forum_respostas_autor_id_fkey(id, full_name, professional_title, email)')
+        .select('*, autor:profissionais!forum_respostas_autor_id_fkey(id, full_name, professional_title, email, avatar_url)')
         .in('topico_id', topicoIds)
         .order('criado_em', { ascending: true });
 
@@ -1614,7 +1618,7 @@ export class SupabaseService {
       } else {
         const resRespFallback = await this.client
           .from('forum_respostas')
-          .select('*, autor:profissionais(id, full_name, professional_title, email)')
+          .select('*, autor:profissionais(id, full_name, professional_title, email, avatar_url)')
           .in('topico_id', topicoIds)
           .order('criado_em', { ascending: true });
 
@@ -1633,7 +1637,7 @@ export class SupabaseService {
             if (respAutorIds.length > 0) {
               const { data: respAutores } = await this.client
                 .from('profissionais')
-                .select('id, full_name, professional_title, email')
+                .select('id, full_name, professional_title, email, avatar_url')
                 .in('id', respAutorIds);
               (respAutores || []).forEach((a: any) => { respAutoresMap[a.id] = a; });
             }
@@ -1698,7 +1702,7 @@ export class SupabaseService {
       );
 
       const { data: participantes } = outroParticipanteIds.length > 0
-        ? await this.client.from('profissionais').select('id, full_name, professional_title').in('id', outroParticipanteIds)
+        ? await this.client.from('profissionais').select('id, full_name, professional_title, avatar_url').in('id', outroParticipanteIds)
         : { data: [] };
 
       const { data: ultimasMensagens } = conversaIds.length > 0
@@ -1716,6 +1720,7 @@ export class SupabaseService {
           outroId,
           nome: participante?.full_name || 'Membro da Comunidade',
           cargo: participante?.professional_title || '',
+          avatarUrl: participante?.avatar_url || null,
           ultimaMensagem: ultimaMsg?.texto || '',
           ultimaMensagemEm: ultimaMsg?.criado_em || c.criado_em,
           naoLidas,
@@ -1778,10 +1783,10 @@ export class SupabaseService {
       if (!session?.user || !termo.trim()) return [];
       const { data, error } = await this.client
         .from('profissionais')
-        .select('id, full_name, professional_title')
+        .select('id, full_name, professional_title, avatar_url, especializacao, categoria_profissional')
         .neq('id', session.user.id)
         .ilike('full_name', `%${termo.trim()}%`)
-        .limit(10);
+        .limit(15);
       if (error) { console.warn('Erro ao buscar membros:', error.message); return []; }
       return data || [];
     } catch (e: any) {
@@ -1819,6 +1824,162 @@ export class SupabaseService {
       return { conversaId: nova.id, error: null };
     } catch (e: any) {
       return { conversaId: null, error: e };
+    }
+  }
+
+  // ----------------------------------------------------
+  // REDE DE MEMBROS E CONEXÕES (SEGUIR / SEGUIDORES)
+  // ----------------------------------------------------
+
+  async listarMembrosComunidade(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('profissionais')
+        .select('id, full_name, professional_title, bio, crea_cau, especializacao, categoria_profissional, avatar_url, banner_url, nivel_atual, email')
+        .order('full_name', { ascending: true });
+
+      if (error) {
+        console.warn('Erro ao listar membros da comunidade:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar membros da comunidade:', e?.message || e);
+      return [];
+    }
+  }
+
+  async obterMinhasConexoes(): Promise<{ seguindoIds: string[]; seguidoresIds: string[] }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { seguindoIds: [], seguidoresIds: [] };
+      const meuId = session.user.id;
+
+      const [seguindoRes, seguidoresRes] = await Promise.all([
+        this.client
+          .from('conexoes_comunidade')
+          .select('seguido_id')
+          .eq('seguidor_id', meuId),
+        this.client
+          .from('conexoes_comunidade')
+          .select('seguidor_id')
+          .eq('seguido_id', meuId),
+      ]);
+
+      const seguindoIds = (seguindoRes.data || []).map((r: any) => r.seguido_id).filter(Boolean);
+      const seguidoresIds = (seguidoresRes.data || []).map((r: any) => r.seguidor_id).filter(Boolean);
+
+      return { seguindoIds, seguidoresIds };
+    } catch (e: any) {
+      console.warn('Exceção ao obter conexões do usuário:', e?.message || e);
+      return { seguindoIds: [], seguidoresIds: [] };
+    }
+  }
+
+  async obterContadoresConexoes(userId: string): Promise<{ totalSeguidores: number; totalSeguindo: number }> {
+    try {
+      const [seguidoresRes, seguindoRes] = await Promise.all([
+        this.client
+          .from('conexoes_comunidade')
+          .select('*', { count: 'exact', head: true })
+          .eq('seguido_id', userId),
+        this.client
+          .from('conexoes_comunidade')
+          .select('*', { count: 'exact', head: true })
+          .eq('seguidor_id', userId),
+      ]);
+
+      return {
+        totalSeguidores: seguidoresRes.count || 0,
+        totalSeguindo: seguindoRes.count || 0,
+      };
+    } catch (e: any) {
+      console.warn('Exceção ao obter contadores de conexões:', e?.message || e);
+      return { totalSeguidores: 0, totalSeguindo: 0 };
+    }
+  }
+
+  async seguirMembro(seguidoId: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const meuId = session.user.id;
+
+      if (meuId === seguidoId) {
+        return { error: new Error('Você não pode seguir a si mesmo.') };
+      }
+
+      const { error } = await this.client
+        .from('conexoes_comunidade')
+        .insert({
+          seguidor_id: meuId,
+          seguido_id: seguidoId,
+        });
+
+      if (error) {
+        // Se já seguir (duplicado), considerar sucesso idempontente
+        if (error.code === '23505' || error.message.includes('unique') || error.message.includes('already exists')) {
+          return { error: null };
+        }
+        return { error };
+      }
+      return { error: null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async deixarDeSeguirMembro(seguidoId: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const meuId = session.user.id;
+
+      const { error } = await this.client
+        .from('conexoes_comunidade')
+        .delete()
+        .eq('seguidor_id', meuId)
+        .eq('seguido_id', seguidoId);
+
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarMembrosQueSigo(): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+      const meuId = session.user.id;
+
+      const { data: conexoes, error: conexoesErr } = await this.client
+        .from('conexoes_comunidade')
+        .select('seguido_id, criado_em')
+        .eq('seguidor_id', meuId)
+        .order('criado_em', { ascending: false });
+
+      if (conexoesErr || !conexoes || conexoes.length === 0) {
+        return [];
+      }
+
+      const seguidoIds = conexoes.map((c: any) => c.seguido_id).filter(Boolean);
+      if (seguidoIds.length === 0) return [];
+
+      const { data: profs, error: profsErr } = await this.client
+        .from('profissionais')
+        .select('id, full_name, professional_title, avatar_url, especializacao, categoria_profissional, nivel_atual')
+        .in('id', seguidoIds);
+
+      if (profsErr || !profs) return [];
+
+      const profsMap = new Map<string, any>();
+      profs.forEach((p: any) => profsMap.set(p.id, p));
+
+      return seguidoIds.map((id: string) => profsMap.get(id)).filter(Boolean);
+    } catch (e: any) {
+      console.warn('Exceção ao listar membros seguidos:', e?.message || e);
+      return [];
     }
   }
 
@@ -1865,6 +2026,8 @@ export class SupabaseService {
     modulo_predial_vinculado?: string | null;
     texto_certificado?: string | null;
     carga_horaria_certificado?: string | null;
+    instrutor_nome?: string | null;
+    instrutor_qualificacao?: string | null;
   }): Promise<{ error: Error | null; data?: any }> {
     try {
       const payload: any = {
@@ -1876,6 +2039,8 @@ export class SupabaseService {
       if (curso.modulo_predial_vinculado !== undefined) payload.modulo_predial_vinculado = curso.modulo_predial_vinculado;
       if (curso.texto_certificado !== undefined) payload.texto_certificado = curso.texto_certificado;
       if (curso.carga_horaria_certificado !== undefined) payload.carga_horaria_certificado = curso.carga_horaria_certificado;
+      if (curso.instrutor_nome !== undefined) payload.instrutor_nome = curso.instrutor_nome;
+      if (curso.instrutor_qualificacao !== undefined) payload.instrutor_qualificacao = curso.instrutor_qualificacao;
 
       const { data, error } = await this.client.from('cursos').insert(payload).select().single();
       return { error, data };
@@ -2552,6 +2717,69 @@ export class SupabaseService {
       }
 
       // Gera signed URL de longa duração (10 anos = 315360000s)
+      const { data: signedData, error: signedError } = await this.client.storage
+        .from('materiais-comunidade')
+        .createSignedUrl(path, 315360000);
+
+      if (signedError) {
+        const { data: pubData } = this.client.storage
+          .from('materiais-comunidade')
+          .getPublicUrl(path);
+        return { error: null, url: pubData?.publicUrl || null };
+      }
+
+      return { error: null, url: signedData?.signedUrl || null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  }
+
+  async uploadImagemPerfil(
+    tipo: 'avatar' | 'banner',
+    file: File
+  ): Promise<{ error: Error | null; url?: string | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+
+      // Validação de formato
+      const formatosValidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!formatosValidos.includes(file.type.toLowerCase())) {
+        return {
+          error: new Error('Formato não suportado. Utilize imagens no formato JPG, PNG ou WebP.')
+        };
+      }
+
+      // Validação de tamanho: Avatar máx 2MB, Banner máx 5MB
+      const maxBytes = tipo === 'avatar' ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
+      const limiteTexto = tipo === 'avatar' ? '2 MB' : '5 MB';
+      if (file.size > maxBytes) {
+        return {
+          error: new Error(`O arquivo excede o limite máximo permitido de ${limiteTexto} para ${tipo === 'avatar' ? 'a foto de perfil' : 'o banner'}.`)
+        };
+      }
+
+      const cleanName = file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_');
+
+      const subpasta = tipo === 'avatar' ? 'avatares' : 'banners';
+      const path = `perfil/${subpasta}/${session.user.id}_${Date.now()}_${cleanName}`;
+
+      // Upload para o bucket materiais-comunidade
+      const { error: uploadError } = await this.client.storage
+        .from('materiais-comunidade')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        return { error: uploadError };
+      }
+
+      // Signed URL de longa duração (10 anos = 315360000s)
       const { data: signedData, error: signedError } = await this.client.storage
         .from('materiais-comunidade')
         .createSignedUrl(path, 315360000);

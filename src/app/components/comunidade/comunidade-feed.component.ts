@@ -14,9 +14,18 @@ import { SupabaseService } from '../../../services/supabase.service';
         
         <div class="flex items-start gap-3.5 sm:gap-4">
           <!-- Avatar Usuário Autenticado -->
-          <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-base flex items-center justify-center shadow-inner shrink-0 uppercase">
-            {{ getMinhaInicial() }}
-          </div>
+          @if (getMinhaFoto()) {
+            <img
+              [src]="getMinhaFoto()!"
+              [alt]="getMeuNome()"
+              class="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-inner shrink-0"
+              referrerpolicy="no-referrer"
+            />
+          } @else {
+            <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-base flex items-center justify-center shadow-inner shrink-0 uppercase">
+              {{ getMinhaInicial() }}
+            </div>
+          }
 
           <div class="flex-1 min-w-0">
             <textarea
@@ -167,12 +176,21 @@ import { SupabaseService } from '../../../services/supabase.service';
               <!-- Header do Post -->
               <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
-                  <div
-                    [class]="isMeuPost(post) ? 'bg-indigo-600' : 'bg-slate-800'"
-                    class="w-10 h-10 rounded-2xl text-white font-black text-sm flex items-center justify-center shadow-inner shrink-0 uppercase"
-                  >
-                    {{ getAutorInicial(post) }}
-                  </div>
+                  @if (getAutorAvatar(post)) {
+                    <img
+                      [src]="getAutorAvatar(post)!"
+                      [alt]="getAutorNome(post)"
+                      class="w-10 h-10 rounded-2xl object-cover border border-slate-200 shadow-inner shrink-0"
+                      referrerpolicy="no-referrer"
+                    />
+                  } @else {
+                    <div
+                      [class]="isMeuPost(post) ? 'bg-indigo-600' : 'bg-slate-800'"
+                      class="w-10 h-10 rounded-2xl text-white font-black text-sm flex items-center justify-center shadow-inner shrink-0 uppercase"
+                    >
+                      {{ getAutorInicial(post) }}
+                    </div>
+                  }
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                       <h4 class="text-xs sm:text-sm font-black text-slate-900 truncate">
@@ -260,9 +278,18 @@ import { SupabaseService } from '../../../services/supabase.service';
                     <div class="space-y-3">
                       @for (com of post.comentarios; track com.id) {
                         <div class="flex items-start gap-2.5 text-xs">
-                          <div class="w-7 h-7 rounded-xl bg-slate-700 text-white font-bold text-[11px] flex items-center justify-center shrink-0 uppercase">
-                            {{ getComentarioAutorInicial(com) }}
-                          </div>
+                          @if (getComentarioAutorAvatar(com)) {
+                            <img
+                              [src]="getComentarioAutorAvatar(com)!"
+                              [alt]="getComentarioAutorNome(com)"
+                              class="w-7 h-7 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0"
+                              referrerpolicy="no-referrer"
+                            />
+                          } @else {
+                            <div class="w-7 h-7 rounded-xl bg-slate-700 text-white font-bold text-[11px] flex items-center justify-center shrink-0 uppercase">
+                              {{ getComentarioAutorInicial(com) }}
+                            </div>
+                          }
                           <div class="flex-1 bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
                             <div class="flex items-center justify-between gap-2">
                               <div class="flex items-center gap-1.5">
@@ -363,17 +390,30 @@ export class ComunidadeFeedComponent implements OnInit {
     }
   }
 
-  getMinhaInicial(): string {
-    const nome =
+  getMeuNome(): string {
+    return (
       this.profissionalAtual()?.full_name ||
       this.usuarioAtual()?.user_metadata?.full_name ||
       this.usuarioAtual()?.email?.split('@')[0] ||
-      'M';
-    return nome.charAt(0).toUpperCase();
+      'Membro'
+    );
+  }
+
+  getMinhaFoto(): string | null {
+    return this.profissionalAtual()?.avatar_url || null;
+  }
+
+  getMinhaInicial(): string {
+    const nome = this.getMeuNome();
+    return nome.charAt(0).toUpperCase() || 'M';
   }
 
   getAutorNome(post: any): string {
     return post.autor?.full_name || 'Membro da Comunidade';
+  }
+
+  getAutorAvatar(post: any): string | null {
+    return post.autor?.avatar_url || null;
   }
 
   getAutorCargo(post: any): string {
@@ -387,6 +427,10 @@ export class ComunidadeFeedComponent implements OnInit {
 
   getComentarioAutorNome(com: any): string {
     return com.autor?.full_name || 'Membro da Comunidade';
+  }
+
+  getComentarioAutorAvatar(com: any): string | null {
+    return com.autor?.avatar_url || null;
   }
 
   getComentarioAutorInicial(com: any): string {

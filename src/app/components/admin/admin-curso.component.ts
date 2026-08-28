@@ -24,6 +24,8 @@ export interface CursoAdmin {
   modulo_predial_vinculado?: string | null;
   texto_certificado?: string | null;
   carga_horaria_certificado?: string | null;
+  instrutor_nome?: string | null;
+  instrutor_qualificacao?: string | null;
   criado_em?: string;
   modulos?: ModuloCursoAdmin[];
   totalMatriculados?: number;
@@ -699,11 +701,13 @@ export interface CursoAdmin {
                   Configuração & Validade do Certificado
                 </h4>
                 <p class="text-xs sm:text-sm text-slate-500">
-                  Configure as diretrizes normativas e a carga horária que constarão no certificado emitido aos alunos ao concluírem o curso.
+                  Configure as diretrizes normativas, carga horária e a dupla assinatura (Responsável Técnico + Instrutor do Curso) para os certificados oficiais emitidos.
                 </p>
               </div>
 
               <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                
+                <!-- Informações Normativas e Carga Horária -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div class="space-y-2 sm:col-span-2">
                     <label class="block text-xs font-bold text-slate-700">
@@ -738,11 +742,75 @@ export interface CursoAdmin {
                   </div>
                 </div>
 
-                <div class="flex items-center justify-end">
+                <!-- Bloco de Instrutor(a) do Curso (Dupla Assinatura) -->
+                <div class="p-5 sm:p-6 rounded-2xl bg-indigo-50/40 border border-indigo-100/80 space-y-5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                      <h5 class="text-xs sm:text-sm font-bold text-slate-800">
+                        Instrutor(a) do Curso (Dupla Assinatura)
+                      </h5>
+                    </div>
+                    <span class="text-[11px] font-semibold text-indigo-700 bg-indigo-100/70 px-2.5 py-0.5 rounded-full">
+                      Opcional
+                    </span>
+                  </div>
+                  <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
+                    Se preenchido, o certificado incluirá a assinatura do instrutor do curso ao centro, ao lado da assinatura do Responsável Técnico. Caso não seja configurado, o certificado será emitido com a assinatura institucional centralizada.
+                  </p>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-bold text-slate-700">
+                        Nome Completo do Instrutor(a)
+                      </label>
+                      <input
+                        type="text"
+                        #instrutorNomeInput
+                        [value]="cursoAtivo()?.instrutor_nome || ''"
+                        placeholder="Ex: Nathalya Aguiar"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-bold text-slate-700">
+                        Qualificação Profissional / Conselho
+                      </label>
+                      <input
+                        type="text"
+                        #instrutorQualificacaoInput
+                        [value]="cursoAtivo()?.instrutor_qualificacao || ''"
+                        placeholder="Ex: Arquiteta e Urbanista · CAU A000000-0"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <button
+                    type="button"
+                    [disabled]="gerandoPdfTeste()"
+                    (click)="baixarCertificadoTeste(textoNormativoInput.value, cargaHorariaInput.value, instrutorNomeInput.value, instrutorQualificacaoInput.value)"
+                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center gap-2"
+                  >
+                    @if (gerandoPdfTeste()) {
+                      <span class="w-3.5 h-3.5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin"></span>
+                      <span>Gerando PDF de Teste...</span>
+                    } @else {
+                      <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Baixar PDF de Teste</span>
+                    }
+                  </button>
+
                   <button
                     type="button"
                     [disabled]="salvando()"
-                    (click)="salvarConfiguracaoCertificado(textoNormativoInput.value, cargaHorariaInput.value)"
+                    (click)="salvarConfiguracaoCertificado(textoNormativoInput.value, cargaHorariaInput.value, instrutorNomeInput.value, instrutorQualificacaoInput.value)"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
                     @if (salvando()) {
@@ -761,7 +829,7 @@ export interface CursoAdmin {
                     <span class="text-[11px] font-bold text-[#B5642A]">Design Oficial 4.0</span>
                   </div>
                   
-                  <div class="p-8 sm:p-10 rounded-2xl bg-[#FEFCF8] border-2 border-[#132A41] relative overflow-hidden text-center space-y-4 max-w-xl mx-auto shadow-md">
+                  <div class="p-8 sm:p-10 rounded-2xl bg-[#FEFCF8] border-2 border-[#132A41] relative overflow-hidden text-center space-y-4 max-w-2xl mx-auto shadow-md">
                     <!-- Borda interna em cobre -->
                     <div class="absolute inset-1.5 border border-[#B5642A] pointer-events-none"></div>
                     
@@ -799,19 +867,54 @@ export interface CursoAdmin {
                       {{ formatarPreviaTexto(textoNormativoInput.value, cargaHorariaInput.value) }}
                     </div>
 
-                    <div class="pt-4 border-t border-slate-200/80 grid grid-cols-2 gap-4 text-left text-[9px] text-slate-500">
-                      <div>
-                        <div class="font-bold text-[#132A41]">DADOS DE EMISSÃO & AUTENTICIDADE</div>
-                        <div>Local e Data: Recife – PE, [Data de Emissão]</div>
-                        <div>Código: <span class="font-mono font-bold text-[#132A41]">AMTECH-XXXXXXXX</span></div>
-                        <div class="pt-1 text-[8px] text-slate-400">Amorim Arquitetura, Tech & Academy · CNPJ 35.673.731/0001-82</div>
-                      </div>
-                      <div class="text-right">
-                        <div class="font-serif italic font-semibold text-xs text-[#132A41]">Emanoel S. de Amorim</div>
-                        <div class="font-bold text-[#132A41]">Emanoel Silva de Amorim</div>
-                        <div class="font-bold text-[#B5642A]">CAU A133593-6 · Arquiteto e Urbanista</div>
-                        <div>Responsável Técnico · AmorimTech</div>
-                      </div>
+                    <!-- Rodapé com Dupla Assinatura Condicional -->
+                    <div class="pt-4 border-t border-slate-200/80 text-left text-[9px] text-slate-500">
+                      @if (instrutorNomeInput.value.trim()) {
+                        <!-- Grade de 3 Colunas: Emissão / Instrutor / Responsável Técnico -->
+                        <div class="grid grid-cols-3 gap-3 items-end">
+                          <div>
+                            <div class="font-bold text-[#132A41]">DADOS DE EMISSÃO & AUTENTICIDADE</div>
+                            <div>Local e Data: Recife – PE, [Data de Emissão]</div>
+                            <div>Código: <span class="font-mono font-bold text-[#132A41]">AMTECH-XXXXXXXX</span></div>
+                            <div class="pt-1 text-[8px] text-slate-400">Amorim Arquitetura, Tech & Academy · CNPJ 35.673.731/0001-82</div>
+                          </div>
+
+                          <div class="text-center">
+                            <div class="font-serif italic font-semibold text-xs text-[#132A41]">{{ instrutorNomeInput.value.trim() }}</div>
+                            <div class="w-28 h-px bg-slate-300 mx-auto mb-1"></div>
+                            <div class="font-bold text-[#132A41] text-[9.5px] leading-tight">{{ instrutorNomeInput.value.trim() }}</div>
+                            <div class="font-bold text-[#B5642A] text-[8.5px] leading-tight">
+                              {{ instrutorQualificacaoInput.value.trim() || 'Instrutor(a) do Curso' }}
+                            </div>
+                            <div class="text-[8px] text-slate-400">Instrutor(a) do Curso</div>
+                          </div>
+
+                          <div class="text-right">
+                            <div class="font-serif italic font-semibold text-xs text-[#132A41]">Emanoel S. de Amorim</div>
+                            <div class="w-28 h-px bg-slate-300 ml-auto mb-1"></div>
+                            <div class="font-bold text-[#132A41] text-[9.5px] leading-tight">Emanoel Silva de Amorim</div>
+                            <div class="font-bold text-[#B5642A] text-[8.5px] leading-tight">CAU A133593-6 · Arquiteto e Urbanista</div>
+                            <div class="text-[8px] text-slate-400">Responsável Técnico · AmorimTech</div>
+                          </div>
+                        </div>
+                      } @else {
+                        <!-- Grade de 2 Colunas: Emissão / Responsável Técnico -->
+                        <div class="grid grid-cols-2 gap-4 items-end">
+                          <div>
+                            <div class="font-bold text-[#132A41]">DADOS DE EMISSÃO & AUTENTICIDADE</div>
+                            <div>Local e Data: Recife – PE, [Data de Emissão]</div>
+                            <div>Código: <span class="font-mono font-bold text-[#132A41]">AMTECH-XXXXXXXX</span></div>
+                            <div class="pt-1 text-[8px] text-slate-400">Amorim Arquitetura, Tech & Academy · CNPJ 35.673.731/0001-82</div>
+                          </div>
+                          <div class="text-right">
+                            <div class="font-serif italic font-semibold text-xs text-[#132A41]">Emanoel S. de Amorim</div>
+                            <div class="w-36 h-px bg-slate-300 ml-auto mb-1"></div>
+                            <div class="font-bold text-[#132A41]">Emanoel Silva de Amorim</div>
+                            <div class="font-bold text-[#B5642A]">CAU A133593-6 · Arquiteto e Urbanista</div>
+                            <div class="text-[8px] text-slate-400">Responsável Técnico · AmorimTech</div>
+                          </div>
+                        </div>
+                      }
                     </div>
                   </div>
                 </div>
@@ -1189,6 +1292,7 @@ export class AdminCursoComponent implements OnInit {
   readonly criandoNovoCurso = signal<boolean>(false);
   readonly salvando = signal<boolean>(false);
   readonly gerandoPdfAlunoId = signal<string | null>(null);
+  readonly gerandoPdfTeste = signal<boolean>(false);
 
   readonly cursoExcluirId = signal<string | null>(null);
   readonly moduloExcluirId = signal<string | null>(null);
@@ -1488,7 +1592,12 @@ export class AdminCursoComponent implements OnInit {
     return `com carga horária total de ${ch}, ${norm}, cumprindo integralmente o conteúdo programático e obtendo aprovação nas avaliações de proficiência técnica dos módulos.`;
   }
 
-  async salvarConfiguracaoCertificado(textoNormativo: string, cargaHoraria: string): Promise<void> {
+  async salvarConfiguracaoCertificado(
+    textoNormativo: string,
+    cargaHoraria: string,
+    instrutorNome: string = '',
+    instrutorQualificacao: string = ''
+  ): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
 
@@ -1497,6 +1606,8 @@ export class AdminCursoComponent implements OnInit {
       const res = await this.supabaseService.atualizarCurso(cId, {
         texto_certificado: textoNormativo.trim() || null,
         carga_horaria_certificado: cargaHoraria.trim() || null,
+        instrutor_nome: instrutorNome.trim() || null,
+        instrutor_qualificacao: instrutorQualificacao.trim() || null,
       });
 
       if (res.error) {
@@ -1513,8 +1624,47 @@ export class AdminCursoComponent implements OnInit {
     }
   }
 
+  async baixarCertificadoTeste(
+    textoNormativo: string,
+    cargaHoraria: string,
+    instrutorNome: string = '',
+    instrutorQualificacao: string = ''
+  ): Promise<void> {
+    const curso = this.cursoAtivo();
+    if (!curso) return;
+
+    this.gerandoPdfTeste.set(true);
+    try {
+      const res = await this.certificadoPdfService.gerarEBaixarCertificadoPDF({
+        nomeAluno: 'NOME DO ALUNO (MODELO DE TESTE)',
+        tituloCurso: curso.titulo,
+        textoNormativo: textoNormativo.trim() || undefined,
+        cargaHoraria: cargaHoraria.trim() || undefined,
+        dataEmissaoIso: new Date().toISOString(),
+        codigoVerificacao: 'AMTECH-TESTE01',
+        instrutorNome: instrutorNome.trim() || undefined,
+        instrutorQualificacao: instrutorQualificacao.trim() || undefined,
+      });
+
+      if (res.sucesso) {
+        this.exibirSucesso('PDF de teste do certificado gerado com sucesso!');
+      } else {
+        this.exibirErro(res.mensagemErro || 'Erro ao gerar PDF de teste.');
+      }
+    } catch (e: any) {
+      this.exibirErro('Erro ao gerar PDF de teste: ' + (e?.message || e));
+    } finally {
+      this.gerandoPdfTeste.set(false);
+    }
+  }
+
   async salvarTextoCertificado(texto: string): Promise<void> {
-    await this.salvarConfiguracaoCertificado(texto, this.cursoAtivo()?.carga_horaria_certificado || '');
+    await this.salvarConfiguracaoCertificado(
+      texto,
+      this.cursoAtivo()?.carga_horaria_certificado || '',
+      this.cursoAtivo()?.instrutor_nome || '',
+      this.cursoAtivo()?.instrutor_qualificacao || ''
+    );
   }
 
   async baixarCertificadoAluno(matricula: any): Promise<void> {
@@ -1542,6 +1692,8 @@ export class AdminCursoComponent implements OnInit {
         cargaHoraria: curso.carga_horaria_certificado || undefined,
         dataEmissaoIso: matricula.certificado_emitido_em || matricula.atualizado_em || matricula.criado_em,
         codigoVerificacao: codigoVerificacao || undefined,
+        instrutorNome: curso.instrutor_nome || undefined,
+        instrutorQualificacao: curso.instrutor_qualificacao || undefined,
       });
 
       if (res.sucesso) {

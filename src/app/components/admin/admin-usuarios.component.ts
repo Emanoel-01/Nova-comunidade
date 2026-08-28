@@ -173,9 +173,18 @@ interface ConfirmacaoSenhaProvisoria {
                 <!-- Cabeçalho do Card: Avatar, Nome, E-mail e Nível -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div class="flex items-center gap-3">
-                    <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
-                      {{ getIniciais(getNome(user)) }}
-                    </div>
+                    @if (user.avatar_url) {
+                      <img
+                        [src]="user.avatar_url"
+                        [alt]="getNome(user)"
+                        class="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0 shadow-2xs"
+                        referrerpolicy="no-referrer"
+                      />
+                    } @else {
+                      <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
+                        {{ getIniciais(getNome(user)) }}
+                      </div>
+                    }
                     <div>
                       <div class="flex items-center gap-2 flex-wrap">
                         <h4 class="text-base font-bold text-slate-900 leading-tight">
@@ -1109,7 +1118,13 @@ export class AdminUsuariosComponent implements OnInit {
   ];
 
   readonly modulosComunidadeAdicionais: ModuloConfig[] = [
+    { key: 'reajuste-contrato', nome: 'Agente: Reajuste de Contrato', descricao: 'Cálculo de reajuste FGV/SINAENCO.', produto: 'comunidade' },
+    { key: 'biblioteca-prompts', nome: 'Agente: Biblioteca de Prompts', descricao: 'Prompts e templates para engenharia e arquitetura.', produto: 'comunidade' },
+    { key: 'skills-catalogo', nome: 'Agente: Skills Claude', descricao: 'Catálogo de skills e automações operacionais.', produto: 'comunidade' },
+    { key: 'checklist-licitacao', nome: 'Agente: Checklist de Licitação', descricao: 'Checklist Lei 14.133/2021 de contratações públicas.', produto: 'comunidade' },
+    { key: 'levantamento-quantitativos', nome: 'Agente: Levantamento de Quantitativos', descricao: 'Cálculo paramétrico de materiais e insumos.', produto: 'comunidade' },
     { key: 'custos-viabilidade', nome: 'Agente: Custos & Viabilidade', descricao: 'Estudo de viabilidade NBR 12.721, CUB e VGV.', produto: 'comunidade' },
+    { key: 'gerador-canteiro', nome: 'Agente: Plano de Canteiro (IA)', descricao: 'Dimensionamento NR-18, Lean e PGRCC (CONAMA 307).', produto: 'comunidade' },
     { key: 'admin_comunidade', nome: 'Admin Comunidade', descricao: 'Permissões administrativas na comunidade.', produto: 'comunidade' },
   ];
 

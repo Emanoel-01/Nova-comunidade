@@ -29,6 +29,10 @@ export interface CursoAluno {
   cargaHorariaCertificado?: string | null;
   codigo_verificacao?: string | null;
   codigoVerificacao?: string | null;
+  instrutor_nome?: string | null;
+  instrutorNome?: string | null;
+  instrutor_qualificacao?: string | null;
+  instrutorQualificacao?: string | null;
   modulos: CursoModuloAluno[];
   temAcesso: boolean;
   matriculado: boolean;
@@ -1044,6 +1048,8 @@ export class ComunidadeCursoComponent implements OnInit {
         cargaHoraria: curso.carga_horaria_certificado || curso.cargaHorariaCertificado || undefined,
         dataEmissaoIso: curso.certificadoEmitidoEm || undefined,
         codigoVerificacao: codigoVerificacao || undefined,
+        instrutorNome: curso.instrutor_nome || curso.instrutorNome || undefined,
+        instrutorQualificacao: curso.instrutor_qualificacao || curso.instrutorQualificacao || undefined,
       });
 
       if (res.sucesso) {

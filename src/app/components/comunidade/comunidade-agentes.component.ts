@@ -7,6 +7,7 @@ import { SkillsCatalogoComponent } from './agentes/skills-catalogo.component';
 import { ChecklistLicitacaoComponent } from './agentes/checklist-licitacao.component';
 import { LevantamentoQuantitativosComponent } from './agentes/levantamento-quantitativos.component';
 import { CustosViabilidadeComponent } from './agentes/custos-viabilidade.component';
+import { GeradorCanteiroComponent } from './agentes/gerador-canteiro.component';
 
 export type FerramentaAtiva =
   | 'lista'
@@ -15,7 +16,8 @@ export type FerramentaAtiva =
   | 'skills-catalogo'
   | 'checklist-licitacao'
   | 'levantamento-quantitativos'
-  | 'custos-viabilidade';
+  | 'custos-viabilidade'
+  | 'gerador-canteiro';
 
 @Component({
   selector: 'app-comunidade-agentes',
@@ -27,7 +29,8 @@ export type FerramentaAtiva =
     SkillsCatalogoComponent,
     ChecklistLicitacaoComponent,
     LevantamentoQuantitativosComponent,
-    CustosViabilidadeComponent
+    CustosViabilidadeComponent,
+    GeradorCanteiroComponent
   ],
   template: `
     <div class="space-y-6">
@@ -108,7 +111,7 @@ export type FerramentaAtiva =
             <!-- Contador de Ferramentas -->
             <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
               <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-                6
+                7
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos no Catálogo</div>
@@ -120,7 +123,7 @@ export type FerramentaAtiva =
           </div>
         </div>
 
-        <!-- 2. Grid de Cards de Agentes (Sempre exibe os 6 cards) -->
+        <!-- 2. Grid de Cards de Agentes -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
           <!-- CARD 1: REAJUSTE DE CONTRATO -->
@@ -472,6 +475,65 @@ export type FerramentaAtiva =
             </div>
           </div>
 
+          <!-- CARD 7: PLANO DE CANTEIRO DE OBRAS (IA) -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-emerald-200 shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
+            <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge Condicional -->
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-emerald-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+
+                @if (temPermissao('gerador-canteiro')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
+              </div>
+
+              <!-- Conteúdo -->
+              <div class="space-y-2">
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-emerald-600 transition-colors">
+                  Plano de Canteiro de Obras (IA)
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Dimensionamento NR-18, layout Lean, fluxo de logística, PGRCC (CONAMA 307), memorial descritivo e relatório executivo em PDF.
+                </p>
+              </div>
+
+              <!-- Tags de Recursos -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">NR-18 Atualizada</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Lean Layout</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">PGRCC / CONAMA</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Relatório PDF</span>
+              </div>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div class="pt-6">
+              <button
+                type="button"
+                (click)="abrirFerramenta('gerador-canteiro')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
+              >
+                <span>Abrir Gerador de Canteiro</span>
+                <svg class="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
         </div>
 
       } @else if (ferramentaAtiva() === 'reajuste-contrato') {
@@ -624,6 +686,31 @@ export type FerramentaAtiva =
           <app-custos-viabilidade></app-custos-viabilidade>
         </div>
 
+      } @else if (ferramentaAtiva() === 'gerador-canteiro') {
+
+        <!-- 9. Visualização do Módulo: Gerador de Plano de Canteiro de Obras (IA) -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: Plano de Canteiro de Obras (NR-18 & IA)
+            </span>
+          </div>
+
+          <!-- Componente do Gerador de Canteiro -->
+          <app-gerador-canteiro></app-gerador-canteiro>
+        </div>
+
       }
 
     </div>
@@ -649,7 +736,8 @@ export class ComunidadeAgentesComponent implements OnInit {
       'skills-catalogo',
       'checklist-licitacao',
       'levantamento-quantitativos',
-      'custos-viabilidade'
+      'custos-viabilidade',
+      'gerador-canteiro'
     ];
     try {
       const resultados = await Promise.all(
@@ -699,6 +787,8 @@ export class ComunidadeAgentesComponent implements OnInit {
         return 'Levantamento de Quantitativos';
       case 'custos-viabilidade':
         return 'Custos & Viabilidade Imobiliária';
+      case 'gerador-canteiro':
+        return 'Plano de Canteiro de Obras (IA)';
       default:
         return 'Ferramenta de Agente';
     }

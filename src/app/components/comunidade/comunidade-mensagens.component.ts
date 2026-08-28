@@ -1,4 +1,4 @@
-import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild, AfterViewChecked } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild, AfterViewChecked, input, output, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../services/supabase.service';
 
@@ -69,17 +69,78 @@ import { SupabaseService } from '../../../services/supabase.service';
                   <p class="text-xs text-slate-400">Buscando membros da comunidade...</p>
                 </div>
               } @else if (!buscaMembroTexto().trim()) {
-                <div class="py-10 text-center space-y-2">
-                  <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 mx-auto flex items-center justify-center">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+                
+                <!-- Sem busca digitada: mostrar lista de contatos que sigo se existirem -->
+                @if (contatosQueSigo().length > 0) {
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between px-2 pt-1">
+                      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        ⭐ Meus Contatos (Pessoas que você segue)
+                      </span>
+                      <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                        {{ contatosQueSigo().length }} contatos
+                      </span>
+                    </div>
+
+                    @for (contato of contatosQueSigo(); track contato.id) {
+                      <div
+                        class="pt-2 first:pt-0 flex items-center justify-between gap-3 p-3 rounded-2xl hover:bg-slate-50 transition-colors"
+                      >
+                        <div class="flex items-center gap-3 min-w-0">
+                          @if (contato.avatar_url) {
+                            <img
+                              [src]="contato.avatar_url"
+                              [alt]="contato.full_name"
+                              class="w-10 h-10 rounded-2xl object-cover border border-slate-200 shadow-xs shrink-0"
+                            />
+                          } @else {
+                            <div class="w-10 h-10 rounded-2xl bg-[#132A41] text-[#E59866] font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                              {{ getIniciais(contato.full_name) }}
+                            </div>
+                          }
+                          <div class="min-w-0">
+                            <h5 class="text-xs sm:text-sm font-black text-slate-900 truncate">
+                              {{ contato.full_name }}
+                            </h5>
+                            <p class="text-[11px] text-slate-500 truncate">
+                              {{ contato.professional_title || 'Membro Conectado' }}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          [disabled]="iniciandoComId() === contato.id"
+                          (click)="selecionarMembroParaConversa(contato)"
+                          class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 text-white font-black text-xs transition-all shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        >
+                          @if (iniciandoComId() === contato.id) {
+                            <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Abrindo...</span>
+                          } @else {
+                            <span>Conversar</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                          }
+                        </button>
+                      </div>
+                    }
                   </div>
-                  <p class="text-xs font-bold text-slate-700">Digite para buscar</p>
-                  <p class="text-[11px] text-slate-400 max-w-xs mx-auto">
-                    Digite ao menos 2 letras do nome para encontrar membros ativos na comunidade.
-                  </p>
-                </div>
+                } @else {
+                  <div class="py-10 text-center space-y-2">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 mx-auto flex items-center justify-center">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700">Digite para buscar</p>
+                    <p class="text-[11px] text-slate-400 max-w-xs mx-auto">
+                      Digite ao menos 2 letras do nome para encontrar membros ativos na comunidade.
+                    </p>
+                  </div>
+                }
+
               } @else if (membrosEncontrados().length === 0) {
                 <div class="py-10 text-center space-y-2">
                   <p class="text-xs font-bold text-slate-700">Nenhum membro encontrado</p>
@@ -93,9 +154,17 @@ import { SupabaseService } from '../../../services/supabase.service';
                     class="pt-2 first:pt-0 flex items-center justify-between gap-3 p-3 rounded-2xl hover:bg-slate-50 transition-colors"
                   >
                     <div class="flex items-center gap-3 min-w-0">
-                      <div class="w-10 h-10 rounded-2xl bg-[#132A41] text-[#E59866] font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
-                        {{ getIniciais(membro.full_name) }}
-                      </div>
+                      @if (membro.avatar_url) {
+                        <img
+                          [src]="membro.avatar_url"
+                          [alt]="membro.full_name"
+                          class="w-10 h-10 rounded-2xl object-cover border border-slate-200 shadow-xs shrink-0"
+                        />
+                      } @else {
+                        <div class="w-10 h-10 rounded-2xl bg-[#132A41] text-[#E59866] font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                          {{ getIniciais(membro.full_name) }}
+                        </div>
+                      }
                       <div class="min-w-0">
                         <h5 class="text-xs sm:text-sm font-black text-slate-900 truncate">
                           {{ membro.full_name }}
@@ -150,63 +219,48 @@ import { SupabaseService } from '../../../services/supabase.service';
           class="p-4 rounded-2xl border flex items-center justify-between text-xs sm:text-sm font-semibold transition-all shadow-xs"
         >
           <div class="flex items-center gap-2">
-            @if (tipoFeedback() === 'sucesso') {
-              <span>✓</span>
-            } @else {
-              <span>⚠</span>
-            }
+            <span>{{ tipoFeedback() === 'sucesso' ? '✓' : '⚠️' }}</span>
             <span>{{ mensagemFeedback() }}</span>
           </div>
-          <button type="button" (click)="mensagemFeedback.set(null)" class="text-slate-400 hover:text-slate-600 font-bold ml-3 cursor-pointer">✕</button>
+          <button
+            type="button"
+            (click)="mensagemFeedback.set(null)"
+            class="text-slate-400 hover:text-slate-600 font-bold ml-3 cursor-pointer"
+          >
+            ✕
+          </button>
         </div>
       }
 
-      <!-- 1. Cabeçalho de Mensagens (Banner Escuro Gradiente) -->
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-indigo-800/30 shadow-md relative overflow-hidden">
-        <div class="absolute inset-0 bg-[radial-gradient(#4338ca_1px,transparent_1px)] [background-size:16px_16px] opacity-20"></div>
-        
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div class="space-y-2 max-w-2xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-400/30">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-              <span>Comunicação Direta & Networking</span>
+      <!-- 1. Header do Módulo de Mensagens -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black tracking-wide border border-indigo-100">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+              <span>Mensagens Diretas Privadas</span>
             </div>
-
-            <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>Mensagens Privadas</span>
+            <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Canal de Mensagens da Comunidade
             </h3>
-
-            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Troque mensagens diretas com colegas de profissão, tire dúvidas sobre laudos técnicos ou combine parcerias periciais.
+            <p class="text-xs sm:text-sm text-slate-500">
+              Troque ideias técnicas, tire dúvidas sobre perícias e consulte colegas da engenharia em canais privados criptografados.
             </p>
           </div>
 
-          <!-- Total de Mensagens Não Lidas + Ação Rápida Nova Conversa -->
-          <div class="flex items-center gap-3 shrink-0 self-start md:self-auto">
+          <!-- Botão Principal de Ação -->
+          <div class="flex items-center gap-3 shrink-0">
             <button
               type="button"
+              id="btn-nova-conversa-header"
               (click)="abrirModalNovaConversa()"
-              class="px-4 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-black transition-all shadow-md shadow-indigo-900/40 flex items-center gap-2 cursor-pointer border border-indigo-400/30"
+              class="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm shadow-xs transition-all flex items-center gap-2 cursor-pointer"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
               <span>Nova Conversa</span>
             </button>
-
-            <div class="p-3.5 sm:p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs flex items-center gap-3">
-              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-base sm:text-lg shadow-inner">
-                {{ totalNaoLidas() }}
-              </div>
-              <div>
-                <div class="text-[11px] sm:text-xs font-bold text-white uppercase tracking-wider">Pendentes</div>
-                <div class="text-[11px] sm:text-[11px] text-indigo-200">
-                  {{ conversas().length }} conversas
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -261,6 +315,50 @@ import { SupabaseService } from '../../../services/supabase.service';
               </svg>
             </div>
           </div>
+
+          <!-- Acesso Rápido a Contatos que Sigo -->
+          @if (contatosQueSigo().length > 0) {
+            <div class="px-4 py-3 bg-slate-50/70 border-b border-slate-100 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <span>⭐</span>
+                  <span>Contatos Rápidos</span>
+                </span>
+                <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded-md">
+                  {{ contatosQueSigo().length }}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                @for (contato of contatosQueSigo(); track contato.id) {
+                  <button
+                    type="button"
+                    (click)="selecionarMembroParaConversa(contato)"
+                    class="flex flex-col items-center gap-1 shrink-0 group cursor-pointer"
+                    [title]="'Conversar com ' + contato.full_name"
+                  >
+                    <div class="relative">
+                      @if (contato.avatar_url) {
+                        <img
+                          [src]="contato.avatar_url"
+                          [alt]="contato.full_name"
+                          class="w-10 h-10 rounded-2xl object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
+                        />
+                      } @else {
+                        <div class="w-10 h-10 rounded-2xl bg-[#132A41] text-[#E59866] font-black text-xs flex items-center justify-center border-2 border-white shadow-xs group-hover:scale-105 transition-transform">
+                          {{ getIniciais(contato.full_name) }}
+                        </div>
+                      }
+                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white absolute -bottom-0.5 -right-0.5 shadow-xs"></span>
+                    </div>
+                    <span class="text-[10px] text-slate-600 font-bold max-w-[54px] truncate group-hover:text-indigo-600 transition-colors">
+                      {{ getPrimeiroNome(contato.full_name) }}
+                    </span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
 
           <!-- Lista de Conversas com Rolagem -->
           <div class="flex-1 overflow-y-auto divide-y divide-slate-100">
@@ -320,14 +418,22 @@ import { SupabaseService } from '../../../services/supabase.service';
                     : 'hover:bg-slate-50/90 border-l-4 border-l-transparent'"
                   class="w-full text-left p-4 transition-colors flex items-start gap-3.5 cursor-pointer"
                 >
-                  <!-- Avatar com Iniciais -->
+                  <!-- Avatar com Foto ou Iniciais -->
                   <div class="relative shrink-0">
-                    <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                      {{ getIniciais(conv.nome) }}
-                    </div>
+                    @if (conv.avatarUrl) {
+                      <img
+                        [src]="conv.avatarUrl"
+                        [alt]="conv.nome"
+                        class="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-xs"
+                      />
+                    } @else {
+                      <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                        {{ getIniciais(conv.nome) }}
+                      </div>
+                    }
                   </div>
 
-                  <!-- Conteúdo Central: Nome +障 Última Mensagem -->
+                  <!-- Conteúdo Central: Nome + Última Mensagem -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between gap-1 mb-0.5">
                       <h5 class="text-xs font-black text-slate-900 truncate">
@@ -394,9 +500,17 @@ import { SupabaseService } from '../../../services/supabase.service';
 
                 <!-- Avatar e Identificação -->
                 <div class="relative shrink-0">
-                  <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                    {{ getIniciais(conv.nome) }}
-                  </div>
+                  @if (conv.avatarUrl) {
+                    <img
+                      [src]="conv.avatarUrl"
+                      [alt]="conv.nome"
+                      class="w-10 h-10 rounded-2xl object-cover border border-slate-200 shadow-xs"
+                    />
+                  } @else {
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                      {{ getIniciais(conv.nome) }}
+                    </div>
+                  }
                 </div>
 
                 <div class="min-w-0">
@@ -448,47 +562,49 @@ import { SupabaseService } from '../../../services/supabase.service';
                           {{ msg.texto }}
                         </p>
                         
-                        <div class="flex items-center justify-end gap-1 text-[11px] text-indigo-200">
+                        <div class="flex items-center justify-end gap-1 text-[10px] text-indigo-200">
                           <span>{{ formatarHora(msg.criado_em) }}</span>
-                          <span [title]="msg.lida ? 'Lida' : 'Enviada'">{{ msg.lida ? '✓✓' : '✓' }}</span>
+                          @if (msg.lida) {
+                            <span title="Lida" class="text-white font-bold">✓✓</span>
+                          } @else {
+                            <span title="Enviada">✓</span>
+                          }
                         </div>
                       </div>
                     </div>
                   } @else {
-                    <!-- MENSAGEM DO OUTRO PARTICIPANTE (ESQUERDA) -->
-                    <div class="flex justify-start items-end gap-2.5 animate-fadeIn">
-                      <div class="w-7 h-7 rounded-xl bg-slate-700 text-white text-[11px] font-black flex items-center justify-center shrink-0 mb-1">
-                        {{ getIniciais(conv.nome) }}
-                      </div>
-
-                      <div class="max-w-[85%] sm:max-w-[70%] bg-white text-slate-800 border border-slate-200 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs space-y-1">
-                        <p class="text-xs sm:text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
+                    
+                    <!-- MENSAGEM DO OUTRO MEMBRO (ESQUERDA) -->
+                    <div class="flex justify-start animate-fadeIn">
+                      <div class="max-w-[85%] sm:max-w-[70%] bg-white border border-slate-200/80 rounded-2xl rounded-tl-xs px-4 py-3 shadow-xs space-y-1">
+                        <p class="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
                           {{ msg.texto }}
                         </p>
-                        
-                        <div class="text-[11px] text-slate-400">
-                          {{ formatarHora(msg.criado_em) }}
+
+                        <div class="flex items-center justify-end text-[10px] text-slate-400">
+                          <span>{{ formatarHora(msg.criado_em) }}</span>
                         </div>
                       </div>
                     </div>
+
                   }
 
                 }
               }
+
             </div>
 
-            <!-- Campo de Texto Fixo Inferior para Envio de Mensagem -->
-            <div class="p-3 sm:p-4 border-t border-slate-200 bg-white">
+            <!-- Campo de Envio de Mensagem -->
+            <div class="p-3 sm:p-4 border-t border-slate-100 bg-white">
               <form (submit)="enviarMensagemSubmit($event)" class="flex items-end gap-2 sm:gap-3">
-                <div class="flex-1 relative">
+                <div class="flex-1 bg-slate-50 rounded-2xl border border-slate-200 focus-within:border-indigo-500 focus-within:bg-white transition-all px-3 py-2">
                   <textarea
-                    #mensagemInput
+                    rows="1"
                     [value]="textoMensagem()"
                     (input)="onTextoInput($event)"
                     (keydown.enter)="onEnterPressionado($event)"
-                    rows="1"
-                    placeholder="Digite sua mensagem técnica (Pressione Enter para enviar)..."
-                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 placeholder-slate-400 rounded-2xl p-3 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden resize-none max-h-28 transition-all"
+                    placeholder="Escreva sua mensagem... (Enter para enviar)"
+                    class="w-full bg-transparent text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-hidden resize-none max-h-32"
                   ></textarea>
                 </div>
 
@@ -496,7 +612,7 @@ import { SupabaseService } from '../../../services/supabase.service';
                   type="submit"
                   [disabled]="!textoMensagem().trim() || enviandoMensagem()"
                   [class]="textoMensagem().trim() && !enviandoMensagem()
-                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 cursor-pointer'
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs cursor-pointer'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
                   class="h-11 px-4 sm:px-5 rounded-2xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 shrink-0"
                 >
@@ -557,8 +673,14 @@ import { SupabaseService } from '../../../services/supabase.service';
 export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
   private readonly supabaseService = inject(SupabaseService);
 
+  readonly contatoInicial = input<any | null>(null);
+  readonly contatoConsumido = output<void>();
+
+  private ultimoContatoProcessadoId: string | null = null;
+
   readonly conversas = signal<any[]>([]);
   readonly mensagens = signal<any[]>([]);
+  readonly contatosQueSigo = signal<any[]>([]);
   readonly carregandoConversas = signal<boolean>(true);
   readonly carregandoMensagens = signal<boolean>(false);
   readonly enviandoMensagem = signal<boolean>(false);
@@ -604,10 +726,32 @@ export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
     return this.conversas().find(c => c.id === id) || null;
   });
 
+  constructor() {
+    effect(() => {
+      const contato = this.contatoInicial();
+      if (!contato) {
+        this.ultimoContatoProcessadoId = null;
+        return;
+      }
+
+      if (contato.id && contato.id !== this.ultimoContatoProcessadoId) {
+        this.ultimoContatoProcessadoId = contato.id;
+        untracked(() => {
+          this.selecionarMembroParaConversa(contato).finally(() => {
+            this.contatoConsumido.emit();
+          });
+        });
+      }
+    });
+  }
+
   async ngOnInit(): Promise<void> {
     const session = await this.supabaseService.getSession();
     this.meuId.set(session?.user?.id || null);
-    await this.carregarConversas();
+    await Promise.all([
+      this.carregarConversas(),
+      this.carregarContatosQueSigo()
+    ]);
   }
 
   ngAfterViewChecked(): void {
@@ -626,6 +770,15 @@ export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
       console.warn('Erro ao carregar conversas:', e);
     } finally {
       this.carregandoConversas.set(false);
+    }
+  }
+
+  async carregarContatosQueSigo(): Promise<void> {
+    try {
+      const contatos = await this.supabaseService.listarMembrosQueSigo();
+      this.contatosQueSigo.set(contatos || []);
+    } catch (e) {
+      console.warn('Erro ao carregar contatos que sigo:', e);
     }
   }
 
@@ -723,7 +876,7 @@ export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
       await this.selecionarConversa(conversaId);
 
       this.tipoFeedback.set('sucesso');
-      this.mensagemFeedback.set(`Conversa com ${membro.full_name} iniciada com sucesso.`);
+      this.mensagemFeedback.set(`Conversa com ${membro.full_name || 'membro'} iniciada com sucesso.`);
     } catch (e: any) {
       this.erroModal.set('Exceção ao criar conversa: ' + (e?.message || e));
     } finally {
@@ -810,6 +963,11 @@ export class ComunidadeMensagensComponent implements OnInit, AfterViewChecked {
     const partes = nome.trim().split(/\s+/);
     if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
     return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  }
+
+  getPrimeiroNome(nome: string | undefined): string {
+    if (!nome) return 'Membro';
+    return nome.trim().split(/\s+/)[0];
   }
 
   formatarTempo(tempoOuData: string | undefined): string {

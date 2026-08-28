@@ -19,6 +19,7 @@ import { ComunidadeEventosComponent } from './comunidade/comunidade-eventos.comp
 import { ComunidadeForumComponent } from './comunidade/comunidade-forum.component';
 import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.component';
 import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.component';
+import { ComunidadeMembrosComponent } from './comunidade/comunidade-membros.component';
 
 @Component({
   selector: 'app-comunidade-preview',
@@ -35,7 +36,8 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
     ComunidadeEventosComponent,
     ComunidadeForumComponent,
     ComunidadeMensagensComponent,
-    ComunidadeAgentesComponent
+    ComunidadeAgentesComponent,
+    ComunidadeMembrosComponent
   ],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col relative pb-20 md:pb-0">
@@ -48,9 +50,18 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             
             <!-- Card do Usuário Autenticado -->
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-              <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-inner shrink-0 uppercase">
-                {{ getInicialUsuario() }}
-              </div>
+              @if (profissional()?.avatar_url) {
+                <img
+                  [src]="profissional()!.avatar_url!"
+                  [alt]="getNomeUsuario()"
+                  class="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-inner shrink-0"
+                  referrerpolicy="no-referrer"
+                />
+              } @else {
+                <div class="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-inner shrink-0 uppercase">
+                  {{ getInicialUsuario() }}
+                </div>
+              }
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-black text-slate-900 truncate" [title]="getNomeUsuario()">
                   {{ getNomeUsuario() }}
@@ -93,6 +104,21 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 <span>Fórum</span>
+              </button>
+
+              <!-- 2.1 Membros -->
+              <button
+                type="button"
+                id="sidebar-btn-membros"
+                (click)="selecionarAba('membros')"
+                [class]="abaAtiva() === 'membros'
+                  ? 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-indigo-50 text-indigo-700 font-bold shadow-xs'
+                  : 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer'"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>Membros</span>
               </button>
 
               <!-- 3. Vagas -->
@@ -340,6 +366,12 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
           } @else if (abaAtiva() === 'perfil') {
             <!-- Área do Perfil -->
             <app-comunidade-perfil></app-comunidade-perfil>
+          } @else if (abaAtiva() === 'membros') {
+            <!-- Área da Rede de Membros & Conexões -->
+            <app-comunidade-membros
+              (abrirConversaCom)="abrirChatComMembro($event)"
+              (verPerfil)="selecionarAba('perfil')"
+            ></app-comunidade-membros>
           } @else if (abaAtiva() === 'vagas') {
             <!-- Área do Mural de Vagas -->
             <app-comunidade-vagas></app-comunidade-vagas>
@@ -354,7 +386,10 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             <app-comunidade-forum></app-comunidade-forum>
           } @else if (abaAtiva() === 'mensagens') {
             <!-- Área de Mensagens Privadas (Chat) -->
-            <app-comunidade-mensagens></app-comunidade-mensagens>
+            <app-comunidade-mensagens
+              [contatoInicial]="contatoDestinoParaMensagem()"
+              (contatoConsumido)="contatoDestinoParaMensagem.set(null)"
+            ></app-comunidade-mensagens>
           } @else if (abaAtiva() === 'hall-fama') {
             <!-- Hall da Fama Conectado ao Componente Real -->
             <div class="space-y-6">
@@ -409,6 +444,19 @@ import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.comp
             
             <!-- Lista rolável de áreas restantes -->
             <div class="p-3 space-y-1 overflow-y-auto flex-1">
+              <!-- 0. Membros -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('membros')"
+                [class]="abaAtiva() === 'membros' ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-700'"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>Membros</span>
+              </button>
+
               <!-- 1. Vagas -->
               <button
                 type="button"
@@ -601,10 +649,12 @@ export class ComunidadePreviewComponent implements OnInit {
   readonly notificacoes = signal<any[]>([]);
   readonly dropdownNotificacoesAberto = signal(false);
   readonly totalNaoLidas = computed(() => this.notificacoes().filter(n => !n.lida).length);
+  readonly contatoDestinoParaMensagem = signal<any | null>(null);
 
   private readonly abasTitulo: Record<string, string> = {
     'feed': 'Feed de Publicações',
     'forum': 'Fórum de Discussão',
+    'membros': 'Rede de Membros & Conexões',
     'vagas': 'Mural de Vagas & Oportunidades',
     'materiais': 'Materiais & Documentos Exclusivos',
     'eventos': 'Agenda de Eventos & Encontros',
@@ -697,6 +747,11 @@ export class ComunidadePreviewComponent implements OnInit {
 
   selecionarAba(abaId: string): void {
     this.abaAtiva.set(abaId);
+  }
+
+  abrirChatComMembro(membro: any): void {
+    this.contatoDestinoParaMensagem.set(membro);
+    this.abaAtiva.set('mensagens');
   }
 
   selecionarAbaMobile(abaId: string): void {

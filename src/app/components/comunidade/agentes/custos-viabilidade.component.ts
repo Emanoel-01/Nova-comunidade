@@ -1,5 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   coeficientesDB,
   etapasDB,
@@ -1327,13 +1329,33 @@ export interface MonthFlowItem {
             <div class="flex items-center gap-2">
               <button
                 type="button"
+                (click)="baixarRelatorioPDF()"
+                [disabled]="gerandoPdf()"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed group"
+              >
+                @if (gerandoPdf()) {
+                  <svg class="w-4 h-4 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Gerando PDF...</span>
+                } @else {
+                  <svg class="w-4 h-4 text-emerald-400 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>Baixar Relatório em PDF</span>
+                }
+              </button>
+
+              <button
+                type="button"
                 (click)="imprimirRelatorio()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                title="Imprimir visualização da janela"
+                class="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                <span>Imprimir / Salvar PDF</span>
               </button>
 
               <button
@@ -1466,6 +1488,7 @@ export class CustosViabilidadeComponent {
   readonly abaAtiva = signal<AbaViabilidade>('premissas');
   readonly cenarioAtivo = signal<'pessimistic' | 'realistic' | 'optimistic'>('realistic');
   readonly modalRelatorioAberto = signal<boolean>(false);
+  readonly gerandoPdf = signal<boolean>(false);
 
   // Identificação do Estudo
   readonly nomeProjeto = signal<string>('Residencial Parque das Acácias');
@@ -1916,6 +1939,363 @@ export class CustosViabilidadeComponent {
 
   imprimirRelatorio(): void {
     window.print();
+  }
+
+  formatarMoeda(valor: number): string {
+    return (valor || 0).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  async baixarRelatorioPDF(): Promise<void> {
+    this.gerandoPdf.set(true);
+
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      const contentWidth = pageWidth - margin * 2;
+      let currentY = 14;
+
+      const navyPrimary: [number, number, number] = [19, 42, 65]; // #132A41
+      const copperAccent: [number, number, number] = [181, 100, 42]; // #B5642A
+      const slateDark: [number, number, number] = [30, 41, 59]; // #1E293B
+      const textWhite: [number, number, number] = [255, 255, 255];
+      const bgCellLight: [number, number, number] = [248, 250, 252];
+      const bgCellEmerald: [number, number, number] = [236, 253, 245];
+      const borderGray: [number, number, number] = [226, 232, 240];
+
+      // 1. Cabeçalho Institucional Faixa Navy + Linha Copper
+      doc.setFillColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.rect(margin, currentY, contentWidth, 20, 'F');
+
+      doc.setFillColor(copperAccent[0], copperAccent[1], copperAccent[2]);
+      doc.rect(margin, currentY + 20, contentWidth, 1.5, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12.5);
+      doc.setTextColor(textWhite[0], textWhite[1], textWhite[2]);
+      doc.text('RELATÓRIO EXECUTIVO DE VIABILIDADE IMOBILIÁRIA', margin + 6, currentY + 8.5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(203, 213, 225);
+      doc.text(
+        'AMORIMTECH • ENGENHARIA DE CUSTOS & AVALIAÇÕES (NBR 12.721 / CUB-SINDUSCON)',
+        margin + 6,
+        currentY + 15
+      );
+
+      currentY += 26;
+
+      // 2. Dados Cadastrais & Identificação do Projeto
+      const nomeProj = (this.nomeProjeto() || 'Residencial Padrão').trim();
+      const estadoProj = this.estado() || 'Brasil';
+      const tipologia = `${this.params().tipo} (${this.params().padrao} - ${this.params().indice})`;
+      const cubRef = `R$ ${this.formatarMoeda(this.params().custoBaseM2)}/m² (${this.params().refMes}/${this.params().refAno})`;
+      const cenarioStr = `${this.currentScenarioMultipliers().name} (Venda: ${this.currentScenarioMultipliers().sales}x | Custo: ${this.currentScenarioMultipliers().cost}x)`;
+      const regimeStr = `${this.regimeTributario().toUpperCase()} (${this.aliquotaImposto().toFixed(2)}%)`;
+
+      const infoCadastrais = [
+        ['EMPREENDIMENTO:', nomeProj, 'LOCALIZAÇÃO:', estadoProj],
+        ['TIPOLOGIA CUB:', tipologia, 'CUB DE REFERÊNCIA:', cubRef],
+        ['CENÁRIO ADOTADO:', cenarioStr, 'REGIME TRIBUTÁRIO:', regimeStr],
+        ['DATA DE EMISSÃO:', new Date().toLocaleDateString('pt-BR'), 'BDI ADOTADO:', `${(this.bdi() || 0).toFixed(2)}%`]
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+        styles: {
+          fontSize: 7.5,
+          cellPadding: 2,
+          lineColor: borderGray,
+          textColor: slateDark
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 36 },
+          1: { cellWidth: 55 },
+          2: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 38 },
+          3: { cellWidth: 53 }
+        },
+        body: infoCadastrais
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 5;
+
+      // 3. Síntese das Áreas (NBR 12.721)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.text('1. SÍNTESE DE ÁREAS (NBR 12.721)', margin, currentY);
+      currentY += 2.5;
+
+      const areaBruta = this.areaTotals().totalAreaBruta;
+      const areaEquiv = this.areaTotals().totalAreaEquivalente;
+      const areaPriv = this.areaVendavel();
+      const eficiencia = areaBruta > 0 ? ((areaPriv / areaBruta) * 100).toFixed(1) : '0.0';
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+        headStyles: {
+          fillColor: navyPrimary,
+          textColor: textWhite,
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          halign: 'center'
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 2.2,
+          lineColor: borderGray,
+          textColor: slateDark,
+          halign: 'center'
+        },
+        head: [['ÁREA BRUTA TOTAL', 'ÁREA EQUIVALENTE (NBR 12.721)', 'ÁREA VENDÁVEL PRIVATIVA', 'EFICIÊNCIA PRIVATIVA']],
+        body: [
+          [
+            `${areaBruta.toFixed(2)} m²`,
+            `${areaEquiv.toFixed(2)} m²`,
+            `${areaPriv.toFixed(2)} m²`,
+            `${eficiencia}%`
+          ]
+        ]
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 5;
+
+      // 4. Demonstrativo Financeiro Consolidado
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.text('2. DEMONSTRATIVO FINANCEIRO CONSOLIDADO', margin, currentY);
+      currentY += 2.5;
+
+      const kpi = this.kpis();
+      const vgv = kpi.scenarioVgvTotal;
+      const cObra = kpi.scenarioCustoObra;
+      const cTerreno = kpi.scenarioCustoTerreno;
+      const cComProj = kpi.totalCustosComerciais + kpi.custoProjetosValor;
+      const cImpostos = kpi.scenarioImpostos;
+      const cFinanc = kpi.scenarioCustoFinanciamento;
+      const cTotal = kpi.scenarioCustoTotalEmpreendimento;
+      const lucroLiq = kpi.scenarioLucroLiquido;
+      const margemLiqPerc = (kpi.scenarioMargemLiquida * 100).toFixed(2);
+
+      const formatM2 = (val: number) => (areaPriv > 0 ? `R$ ${this.formatarMoeda(val / areaPriv)}` : '-');
+
+      const corpoFinanceiro: any[] = [
+        [
+          { content: 'Valor Geral de Vendas (VGV)', styles: { fontStyle: 'bold' } },
+          { content: `R$ ${this.formatarMoeda(vgv)}`, styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: formatM2(vgv), styles: { halign: 'right' } },
+          { content: '100,0%', styles: { fontStyle: 'bold', halign: 'right' } }
+        ],
+        [
+          '(-) Custo Direto de Obra (CUB + Extracontratuais)',
+          { content: `R$ ${this.formatarMoeda(cObra)}`, styles: { halign: 'right' } },
+          { content: formatM2(cObra), styles: { halign: 'right' } },
+          { content: `${this.getPercVgv(cObra)}%`, styles: { halign: 'right' } }
+        ],
+        [
+          '(-) Terreno / Permuta',
+          { content: `R$ ${this.formatarMoeda(cTerreno)}`, styles: { halign: 'right' } },
+          { content: formatM2(cTerreno), styles: { halign: 'right' } },
+          { content: `${this.getPercVgv(cTerreno)}%`, styles: { halign: 'right' } }
+        ],
+        [
+          '(-) Despesas Comerciais & Projetos',
+          { content: `R$ ${this.formatarMoeda(cComProj)}`, styles: { halign: 'right' } },
+          { content: formatM2(cComProj), styles: { halign: 'right' } },
+          { content: `${this.getPercVgv(cComProj)}%`, styles: { halign: 'right' } }
+        ],
+        [
+          `(-) Tributação (${this.regimeTributario().toUpperCase()})`,
+          { content: `R$ ${this.formatarMoeda(cImpostos)}`, styles: { halign: 'right' } },
+          { content: formatM2(cImpostos), styles: { halign: 'right' } },
+          { content: `${this.getPercVgv(cImpostos)}%`, styles: { halign: 'right' } }
+        ]
+      ];
+
+      if (cFinanc > 0) {
+        corpoFinanceiro.push([
+          '(-) Custos Financeiros / Juros',
+          { content: `R$ ${this.formatarMoeda(cFinanc)}`, styles: { halign: 'right' } },
+          { content: formatM2(cFinanc), styles: { halign: 'right' } },
+          { content: `${this.getPercVgv(cFinanc)}%`, styles: { halign: 'right' } }
+        ]);
+      }
+
+      corpoFinanceiro.push(
+        [
+          { content: '(=) CUSTO TOTAL DO EMPREENDIMENTO', styles: { fontStyle: 'bold', fillColor: bgCellLight } },
+          { content: `R$ ${this.formatarMoeda(cTotal)}`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellLight } },
+          { content: formatM2(cTotal), styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellLight } },
+          { content: `${this.getPercVgv(cTotal)}%`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellLight } }
+        ],
+        [
+          { content: '(=) LUCRO LÍQUIDO REAL PROJETADO', styles: { fontStyle: 'bold', fillColor: bgCellEmerald, textColor: [6, 78, 59] } },
+          { content: `R$ ${this.formatarMoeda(lucroLiq)}`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellEmerald, textColor: [6, 78, 59] } },
+          { content: formatM2(lucroLiq), styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellEmerald, textColor: [6, 78, 59] } },
+          { content: `${margemLiqPerc}%`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellEmerald, textColor: [6, 78, 59] } }
+        ]
+      );
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+        headStyles: {
+          fillColor: navyPrimary,
+          textColor: textWhite,
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          halign: 'left'
+        },
+        styles: {
+          fontSize: 7.5,
+          cellPadding: 2,
+          lineColor: borderGray,
+          textColor: slateDark
+        },
+        columnStyles: {
+          0: { cellWidth: 84 },
+          1: { cellWidth: 36 },
+          2: { cellWidth: 34 },
+          3: { cellWidth: 28 }
+        },
+        head: [['INDICADOR ECONÔMICO', 'VALOR TOTAL (R$)', 'R$ / m² PRIV.', '% s/ VGV']],
+        body: corpoFinanceiro
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 5;
+
+      // 5. Indicadores de Rentabilidade & Retorno
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.text('3. INDICADORES DE RENTABILIDADE & RETORNO', margin, currentY);
+      currentY += 2.5;
+
+      const metrics = this.financialMetrics();
+      const tirStr = `${(metrics.tir * 100).toFixed(1)}% a.a.`;
+      const vplStr = `R$ ${this.formatarMoeda(metrics.vpl)}`;
+      const expStr = `R$ ${this.formatarMoeda(metrics.exposicaoMaxima)}`;
+      const margemBrutaStr = `${(kpi.scenarioMargemBruta * 100).toFixed(2)}%`;
+      const lucroM2Str = `R$ ${this.formatarMoeda(kpi.lucroPorM2Privativo)}/m²`;
+      const prazosStr = `${this.prazoConstrucaoMeses()}m obra / ${this.prazoVendasMeses()}m vendas`;
+
+      const tabelaRetorno = [
+        ['MARGEM LÍQUIDA:', `${margemLiqPerc}%`, 'MARGEM BRUTA:', margemBrutaStr],
+        ['LUCRO / m² PRIVATIVO:', lucroM2Str, 'TIR PROJETADA:', tirStr],
+        ['VPL (TMA 12% a.a.):', vplStr, 'EXPOSIÇÃO MÁXIMA CAIXA:', expStr],
+        ['PRAZO ESTIMADO:', prazosStr, 'TMA APLICADA:', `${(this.tmaAnual() || 12).toFixed(1)}% a.a.`]
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+        styles: {
+          fontSize: 7.5,
+          cellPadding: 2,
+          lineColor: borderGray,
+          textColor: slateDark
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 42 },
+          1: { cellWidth: 49 },
+          2: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 45 },
+          3: { cellWidth: 46 }
+        },
+        body: tabelaRetorno
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 5;
+
+      // 6. Nota Metodológica Legal & Responsabilidade Técnica
+      const notaLegal =
+        'Nota Metodológica: Estudo paramétrico fundamentado na NBR 12.721 (Avaliação de custos unitários e preparo de orçamento para incorporação de edifício) e índices do Custo Unitário Básico (CUB/m²) divulgados pelos respectivos Sinduscons estaduais. Os valores extracontratuais, tributários e comerciais devem ser confirmados com os projetos executivos de engenharia e sondagem geológica.';
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(6.5);
+      doc.setTextColor(100, 116, 139);
+      const splitNota = doc.splitTextToSize(notaLegal, contentWidth);
+      doc.text(splitNota, margin, currentY);
+      currentY += splitNota.length * 2.8 + 8;
+
+      // 7. Espaço de Assinatura Profissional
+      const respTecnico = this.responsavelTecnico() || 'Engenheiro / Arquiteto Responsável';
+      const creaCauReg = this.creaCau() || 'CREA / CAU nº 000000/D';
+
+      doc.setDrawColor(71, 85, 105);
+      doc.setLineWidth(0.4);
+      const lineXStart = pageWidth / 2 - 45;
+      const lineXEnd = pageWidth / 2 + 45;
+      doc.line(lineXStart, currentY, lineXEnd, currentY);
+
+      currentY += 3.5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.text(respTecnico, pageWidth / 2, currentY, { align: 'center' });
+
+      currentY += 3;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
+      doc.text(`Responsável Técnico • ${creaCauReg}`, pageWidth / 2, currentY, { align: 'center' });
+
+      // 8. Rodapé com Numeração em Todas as Páginas
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+
+        // Linha divisória de rodapé
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.line(margin, 287, pageWidth - margin, 287);
+
+        doc.text(
+          'AmorimTech • Agente Técnico de Viabilidade Imobiliária (NBR 12.721 & CUB)',
+          margin,
+          291
+        );
+        doc.text(
+          `Página ${i} de ${totalPages}`,
+          pageWidth - margin,
+          291,
+          { align: 'right' }
+        );
+      }
+
+      // 9. Download do Documento PDF
+      const nomeSanitizado = (this.nomeProjeto() || 'Residencial_Padrao')
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .substring(0, 35);
+      const dataStr = new Date().toISOString().split('T')[0];
+      const nomeArquivo = `Viabilidade_${nomeSanitizado}_${dataStr}.pdf`;
+
+      doc.save(nomeArquivo);
+    } catch (err) {
+      console.error('Erro ao gerar relatório de viabilidade em PDF:', err);
+    } finally {
+      this.gerandoPdf.set(false);
+    }
   }
 
   private calcularTIR(flows: number[]): number | null {

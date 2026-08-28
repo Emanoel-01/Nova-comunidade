@@ -17,6 +17,8 @@ export interface PerfilVisual {
   whatsapp: string;
   website: string;
   nivelAtual?: string;
+  avatarUrl?: string | null;
+  bannerUrl?: string | null;
 }
 
 @Component({
@@ -42,25 +44,145 @@ export interface PerfilVisual {
       <!-- 1. Cabeçalho do Perfil & Banner -->
       <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
         
-        <!-- Banner Decorativo (Gradiente Slate/Indigo) -->
-        <div class="h-36 sm:h-48 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 relative">
-          <div class="absolute inset-0 bg-[radial-gradient(#4338ca_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
+        <!-- Banner do Perfil (Foto ou Gradiente Decorativo) -->
+        <div class="h-36 sm:h-52 relative overflow-hidden bg-slate-900 group">
+          @if (editando() ? formPerfil().bannerUrl : perfil().bannerUrl) {
+            <img
+              [src]="editando() ? formPerfil().bannerUrl! : perfil().bannerUrl!"
+              alt="Banner do Perfil"
+              class="w-full h-full object-cover"
+              referrerpolicy="no-referrer"
+            />
+          } @else {
+            <div class="w-full h-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 relative">
+              <div class="absolute inset-0 bg-[radial-gradient(#4338ca_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
+            </div>
+          }
+
+          <!-- Controles de Edição sobre o Banner (Modo Edição) -->
+          @if (editando()) {
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-xs flex flex-col justify-between p-4 sm:p-6 transition-all">
+              <div class="flex items-center justify-between gap-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 text-white/90 text-[11px] font-semibold backdrop-blur-md border border-white/10">
+                  <span>📐</span>
+                  <span>Banner: 1200×400px (3:1 ou 16:9) • Máx. 5MB</span>
+                </span>
+
+                <div class="flex items-center gap-2">
+                  <input
+                    #bannerInput
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    (change)="onSelecionarBanner($event)"
+                    class="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    (click)="bannerInput.click()"
+                    [disabled]="uploadingBanner()"
+                    class="px-3.5 py-1.5 rounded-xl bg-white/90 hover:bg-white text-slate-800 font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    @if (uploadingBanner()) {
+                      <span class="w-3 h-3 border-2 border-slate-700/30 border-t-slate-700 rounded-full animate-spin"></span>
+                      <span>Enviando...</span>
+                    } @else {
+                      <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>{{ formPerfil().bannerUrl ? 'Trocar Banner' : 'Adicionar Banner' }}</span>
+                    }
+                  </button>
+
+                  @if (formPerfil().bannerUrl) {
+                    <button
+                      type="button"
+                      (click)="removerBanner()"
+                      [disabled]="uploadingBanner()"
+                      class="px-3 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                      title="Remover banner e voltar ao gradiente padrão"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span class="hidden sm:inline">Remover</span>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              @if (erroUploadBanner()) {
+                <div class="p-2.5 rounded-xl bg-rose-500/90 text-white text-xs font-semibold backdrop-blur-md flex items-center justify-between">
+                  <span>{{ erroUploadBanner() }}</span>
+                  <button type="button" (click)="erroUploadBanner.set(null)" class="text-white/80 hover:text-white font-bold ml-2">✕</button>
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <!-- Conteúdo do Cabeçalho -->
         <div class="px-6 sm:px-8 pb-8 pt-0 relative">
           
           <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-14 sm:-mt-16 mb-6">
-            <!-- Avatar com Inicial Real -->
-            <div class="flex items-end gap-4">
-              <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-indigo-600 border-4 border-white text-white font-black text-3xl sm:text-4xl flex items-center justify-center shadow-lg shrink-0 uppercase">
-                {{ getInicial() }}
+            
+            <!-- Bloco do Avatar (Foto real ou Inicial) -->
+            <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+              
+              <div class="relative group/avatar">
+                <!-- Avatar Visual -->
+                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl border-4 border-white shadow-lg shrink-0 overflow-hidden bg-indigo-600 flex items-center justify-center">
+                  @if (editando() ? formPerfil().avatarUrl : perfil().avatarUrl) {
+                    <img
+                      [src]="editando() ? formPerfil().avatarUrl! : perfil().avatarUrl!"
+                      [alt]="perfil().nome || 'Avatar de perfil'"
+                      class="w-full h-full object-cover"
+                      referrerpolicy="no-referrer"
+                    />
+                  } @else {
+                    <div class="w-full h-full text-white font-black text-3xl sm:text-4xl flex items-center justify-center uppercase">
+                      {{ getInicial() }}
+                    </div>
+                  }
+                </div>
+
+                <!-- Ações de Avatar no Modo Edição -->
+                @if (editando()) {
+                  <div class="mt-2 flex items-center gap-1.5 sm:hidden">
+                    <input
+                      #avatarInputMobile
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      (change)="onSelecionarAvatar($event)"
+                      class="hidden"
+                    />
+                    <button
+                      type="button"
+                      (click)="avatarInputMobile.click()"
+                      [disabled]="uploadingAvatar()"
+                      class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      {{ formPerfil().avatarUrl ? 'Trocar Foto' : 'Adicionar Foto' }}
+                    </button>
+                    @if (formPerfil().avatarUrl) {
+                      <button
+                        type="button"
+                        (click)="removerAvatar()"
+                        class="px-2 py-1 rounded-lg bg-rose-50 text-rose-600 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer"
+                      >
+                        Remover
+                      </button>
+                    }
+                  </div>
+                }
               </div>
 
+              <!-- Informações Textuais do Membro -->
               <div class="space-y-1 pb-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    {{ perfil().nome || 'Membro da Comunidade' }}
+                    {{ (editando() ? formPerfil().nome : perfil().nome) || 'Membro da Comunidade' }}
                   </h3>
                   <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -68,8 +190,57 @@ export interface PerfilVisual {
                   </span>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-500 font-medium">
-                  {{ perfil().cargo || 'Engenheiro(a) / Arquiteto(a)' }}
+                  {{ (editando() ? formPerfil().cargo : perfil().cargo) || 'Engenheiro(a) / Arquiteto(a)' }}
                 </p>
+
+                <!-- Informações e Ações de Foto no Desktop durante Edição -->
+                @if (editando()) {
+                  <div class="pt-2 hidden sm:flex items-center gap-2 flex-wrap animate-fadeIn">
+                    <input
+                      #avatarInputDesktop
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      (change)="onSelecionarAvatar($event)"
+                      class="hidden"
+                    />
+
+                    <button
+                      type="button"
+                      (click)="avatarInputDesktop.click()"
+                      [disabled]="uploadingAvatar()"
+                      class="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      @if (uploadingAvatar()) {
+                        <span class="w-3 h-3 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></span>
+                        <span>Enviando foto...</span>
+                      } @else {
+                        <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>{{ formPerfil().avatarUrl ? 'Trocar Foto de Perfil' : 'Carregar Foto de Perfil' }}</span>
+                      }
+                    </button>
+
+                    @if (formPerfil().avatarUrl) {
+                      <button
+                        type="button"
+                        (click)="removerAvatar()"
+                        [disabled]="uploadingAvatar()"
+                        class="px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        Remover Foto
+                      </button>
+                    }
+
+                    <span class="text-[11px] text-slate-400">
+                      (400×400px • Máx. 2MB • JPG, PNG, WebP)
+                    </span>
+                  </div>
+
+                  @if (erroUploadAvatar()) {
+                    <p class="text-xs font-semibold text-rose-600 mt-1">{{ erroUploadAvatar() }}</p>
+                  }
+                }
               </div>
             </div>
 
@@ -78,6 +249,7 @@ export interface PerfilVisual {
               @if (!editando()) {
                 <button
                   type="button"
+                  id="btn-iniciar-edicao-perfil"
                   (click)="iniciarEdicao()"
                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
                 >
@@ -90,16 +262,18 @@ export interface PerfilVisual {
                 <div class="flex items-center gap-2">
                   <button
                     type="button"
+                    id="btn-cancelar-edicao-perfil"
                     (click)="cancelarEdicao()"
-                    [disabled]="salvando()"
+                    [disabled]="salvando() || uploadingAvatar() || uploadingBanner()"
                     class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
                   >
                     Cancelar
                   </button>
                   <button
                     type="button"
+                    id="btn-salvar-edicao-perfil"
                     (click)="salvarEdicao()"
-                    [disabled]="salvando()"
+                    [disabled]="salvando() || uploadingAvatar() || uploadingBanner()"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
                   >
                     @if (salvando()) {
@@ -117,12 +291,12 @@ export interface PerfilVisual {
           <!-- Contadores de Conexões -->
           <div class="flex items-center gap-6 py-4 border-y border-slate-100 text-xs sm:text-sm">
             <div class="flex items-center gap-2">
-              <span class="font-black text-slate-900 text-base sm:text-lg">—</span>
+              <span class="font-black text-slate-900 text-base sm:text-lg">{{ totalSeguidores() }}</span>
               <span class="text-slate-500 font-medium">Seguidores</span>
             </div>
             <div class="w-px h-4 bg-slate-200"></div>
             <div class="flex items-center gap-2">
-              <span class="font-black text-slate-900 text-base sm:text-lg">—</span>
+              <span class="font-black text-slate-900 text-base sm:text-lg">{{ totalSeguindo() }}</span>
               <span class="text-slate-500 font-medium">Seguindo</span>
             </div>
             <div class="w-px h-4 bg-slate-200"></div>
@@ -136,7 +310,154 @@ export interface PerfilVisual {
 
       </div>
 
-      <!-- 2. Dados Profissionais e Biografia -->
+      <!-- 2. Personalização Visual & Imagens (Dedicada no Modo Edição) -->
+      @if (editando()) {
+        <div class="bg-white rounded-3xl border border-indigo-100 p-6 sm:p-8 shadow-xs space-y-6">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <h4 class="text-lg font-black text-slate-900 flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Fotos e Identidade Visual</span>
+            </h4>
+            <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+              Personalização
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Bloco 1: Foto de Perfil / Avatar -->
+            <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>👤</span>
+                  <span>Foto de Perfil (Avatar)</span>
+                </span>
+                <span class="text-[11px] font-semibold text-slate-500">Máx. 2MB (1:1)</span>
+              </div>
+
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl border-2 border-white shadow-md shrink-0 overflow-hidden bg-indigo-600 flex items-center justify-center">
+                  @if (formPerfil().avatarUrl) {
+                    <img
+                      [src]="formPerfil().avatarUrl!"
+                      alt="Preview Avatar"
+                      class="w-full h-full object-cover"
+                      referrerpolicy="no-referrer"
+                    />
+                  } @else {
+                    <div class="text-white font-black text-2xl uppercase">
+                      {{ getInicial() }}
+                    </div>
+                  }
+                </div>
+
+                <div class="space-y-1.5 flex-1 min-w-0">
+                  <p class="text-xs text-slate-600 leading-snug">
+                    Recomendado: <strong>400×400px</strong> em formato <strong>JPG, PNG ou WebP</strong>.
+                  </p>
+                  
+                  <div class="flex items-center gap-2 flex-wrap pt-1">
+                    <input
+                      #avatarInputBox
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      (change)="onSelecionarAvatar($event)"
+                      class="hidden"
+                    />
+                    <button
+                      type="button"
+                      (click)="avatarInputBox.click()"
+                      [disabled]="uploadingAvatar()"
+                      class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {{ formPerfil().avatarUrl ? 'Trocar Foto' : 'Carregar Foto' }}
+                    </button>
+
+                    @if (formPerfil().avatarUrl) {
+                      <button
+                        type="button"
+                        (click)="removerAvatar()"
+                        [disabled]="uploadingAvatar()"
+                        class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        Remover Foto
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco 2: Capa / Banner de Perfil -->
+            <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🖼️</span>
+                  <span>Banner de Capa</span>
+                </span>
+                <span class="text-[11px] font-semibold text-slate-500">Máx. 5MB (3:1 ou 16:9)</span>
+              </div>
+
+              <div class="space-y-2.5">
+                <div class="h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 relative">
+                  @if (formPerfil().bannerUrl) {
+                    <img
+                      [src]="formPerfil().bannerUrl!"
+                      alt="Preview Banner"
+                      class="w-full h-full object-cover"
+                      referrerpolicy="no-referrer"
+                    />
+                  } @else {
+                    <div class="w-full h-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center text-slate-400 text-xs font-medium">
+                      Gradiente padrão da Comunidade
+                    </div>
+                  }
+                </div>
+
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <p class="text-xs text-slate-600">
+                    Recomendado: <strong>1200×400px</strong> (JPG, PNG, WebP).
+                  </p>
+
+                  <div class="flex items-center gap-2">
+                    <input
+                      #bannerInputBox
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      (change)="onSelecionarBanner($event)"
+                      class="hidden"
+                    />
+                    <button
+                      type="button"
+                      (click)="bannerInputBox.click()"
+                      [disabled]="uploadingBanner()"
+                      class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {{ formPerfil().bannerUrl ? 'Trocar Banner' : 'Carregar Banner' }}
+                    </button>
+
+                    @if (formPerfil().bannerUrl) {
+                      <button
+                        type="button"
+                        (click)="removerBanner()"
+                        [disabled]="uploadingBanner()"
+                        class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        Remover Banner
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- 3. Dados Profissionais e Biografia -->
       <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
         
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -355,7 +676,7 @@ export interface PerfilVisual {
 
       </div>
 
-      <!-- 3. Redes e Links Sociais -->
+      <!-- 4. Redes e Links Sociais -->
       <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
         
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -452,7 +773,7 @@ export interface PerfilVisual {
                 type="text"
                 [value]="formPerfil().website"
                 (input)="atualizarCampo('website', $event)"
-                placeholder="Ex: https://meusite.com.br"
+                placeholder="Ex: https://meuescritorio.com.br"
                 class="w-full bg-slate-50 text-xs text-slate-800 rounded-xl px-3.5 py-2.5 border border-slate-200 focus:border-indigo-500 outline-hidden"
               />
             </div>
@@ -461,7 +782,7 @@ export interface PerfilVisual {
 
       </div>
 
-      <!-- 4. Meus Posts (Publicações Reais do Membro no Feed) -->
+      <!-- 5. Minhas Atividades & Publicações -->
       <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
         
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -471,32 +792,24 @@ export interface PerfilVisual {
             </svg>
             <span>Minhas Publicações no Feed</span>
           </h4>
-          <span class="text-xs font-bold text-slate-500">
+          <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
             {{ meusPosts().length }} {{ meusPosts().length === 1 ? 'post' : 'posts' }}
           </span>
         </div>
 
         @if (meusPosts().length === 0) {
-          <!-- Estado Informativo de Nenhum Post -->
-          <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center font-bold text-lg">
-              ✍️
-            </div>
-            <h5 class="text-sm font-bold text-slate-800">
-              Suas publicações aparecerão aqui
-            </h5>
-            <p class="text-xs text-slate-500 max-w-sm mx-auto">
-              Compartilhe seu conhecimento técnico ou novidades de campo no Feed da comunidade para vê-las listadas no seu perfil.
-            </p>
+          <div class="text-center py-10 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 space-y-2">
+            <div class="text-3xl">📝</div>
+            <p class="text-xs sm:text-sm font-bold text-slate-700">Você ainda não compartilhou publicações no Feed.</p>
+            <p class="text-xs text-slate-400">Vá até a aba "Feed" e publique sua primeira dica técnica ou dúvida!</p>
           </div>
         } @else {
-          <!-- Lista das publicações criadas -->
           <div class="space-y-4">
             @for (post of meusPosts(); track post.id) {
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <div class="flex items-center justify-between text-xs">
-                  <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
-                    {{ post.tag || 'Publicação' }}
+              <div class="p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-3">
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[11px]">
+                    {{ post.tag || 'Geral' }}
                   </span>
                   <span class="text-slate-400">{{ formatarTempo(post.criado_em) }}</span>
                 </div>
@@ -536,7 +849,9 @@ export class ComunidadePerfilComponent implements OnInit {
     instagram: '',
     whatsapp: '',
     website: '',
-    nivelAtual: 'Membro Ativo'
+    nivelAtual: 'Membro Ativo',
+    avatarUrl: null,
+    bannerUrl: null
   });
 
   readonly editando = signal<boolean>(false);
@@ -544,6 +859,14 @@ export class ComunidadePerfilComponent implements OnInit {
   readonly formPerfil = signal<PerfilVisual>({ ...this.perfil() });
   readonly novaSkillInput = signal<string>('');
   readonly meusPosts = signal<any[]>([]);
+
+  readonly uploadingAvatar = signal<boolean>(false);
+  readonly uploadingBanner = signal<boolean>(false);
+  readonly erroUploadAvatar = signal<string | null>(null);
+  readonly erroUploadBanner = signal<string | null>(null);
+
+  readonly totalSeguidores = signal<number>(0);
+  readonly totalSeguindo = signal<number>(0);
 
   readonly mensagemFeedback = signal<string | null>(null);
   readonly tipoFeedback = signal<'sucesso' | 'erro'>('sucesso');
@@ -570,10 +893,23 @@ export class ComunidadePerfilComponent implements OnInit {
         instagram: dados.instagram_url || '',
         whatsapp: dados.whatsapp_url || '',
         website: dados.website_url || '',
-        nivelAtual: dados.nivel_atual || 'Membro Ativo'
+        nivelAtual: dados.nivel_atual || 'Membro Ativo',
+        avatarUrl: dados.avatar_url || null,
+        bannerUrl: dados.banner_url || null
       };
       this.perfil.set(p);
       this.formPerfil.set({ ...p, skills: [...p.skills] });
+    }
+
+    try {
+      const session = await this.supabaseService.getSession();
+      if (session?.user?.id) {
+        const contadores = await this.supabaseService.obterContadoresConexoes(session.user.id);
+        this.totalSeguidores.set(contadores.totalSeguidores);
+        this.totalSeguindo.set(contadores.totalSeguindo);
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar contadores de conexões:', e);
     }
   }
 
@@ -590,7 +926,7 @@ export class ComunidadePerfilComponent implements OnInit {
   }
 
   getInicial(): string {
-    const n = this.perfil().nome || 'Membro';
+    const n = (this.editando() ? this.formPerfil().nome : this.perfil().nome) || 'Membro';
     return n.charAt(0).toUpperCase() || 'M';
   }
 
@@ -620,17 +956,111 @@ export class ComunidadePerfilComponent implements OnInit {
       ...this.perfil(),
       skills: [...this.perfil().skills]
     });
+    this.erroUploadAvatar.set(null);
+    this.erroUploadBanner.set(null);
     this.editando.set(true);
     this.mensagemFeedback.set(null);
   }
 
   cancelarEdicao(): void {
     this.editando.set(false);
+    this.erroUploadAvatar.set(null);
+    this.erroUploadBanner.set(null);
     this.mensagemFeedback.set(null);
   }
 
+  async onSelecionarAvatar(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.erroUploadAvatar.set(null);
+
+    // Validações client-side
+    const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(file.type.toLowerCase())) {
+      this.erroUploadAvatar.set('Formato inválido. Use JPG, PNG ou WebP.');
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      this.erroUploadAvatar.set('A foto de perfil deve ter no máximo 2 MB.');
+      input.value = '';
+      return;
+    }
+
+    this.uploadingAvatar.set(true);
+    const { error, url } = await this.supabaseService.uploadImagemPerfil('avatar', file);
+    this.uploadingAvatar.set(false);
+    input.value = '';
+
+    if (error || !url) {
+      this.erroUploadAvatar.set('Erro ao enviar imagem: ' + (error?.message || 'Tente novamente.'));
+      return;
+    }
+
+    this.formPerfil.update(p => ({
+      ...p,
+      avatarUrl: url
+    }));
+  }
+
+  removerAvatar(): void {
+    this.formPerfil.update(p => ({
+      ...p,
+      avatarUrl: null
+    }));
+    this.erroUploadAvatar.set(null);
+  }
+
+  async onSelecionarBanner(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.erroUploadBanner.set(null);
+
+    // Validações client-side
+    const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(file.type.toLowerCase())) {
+      this.erroUploadBanner.set('Formato inválido. Use JPG, PNG ou WebP.');
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.erroUploadBanner.set('O banner deve ter no máximo 5 MB.');
+      input.value = '';
+      return;
+    }
+
+    this.uploadingBanner.set(true);
+    const { error, url } = await this.supabaseService.uploadImagemPerfil('banner', file);
+    this.uploadingBanner.set(false);
+    input.value = '';
+
+    if (error || !url) {
+      this.erroUploadBanner.set('Erro ao enviar imagem: ' + (error?.message || 'Tente novamente.'));
+      return;
+    }
+
+    this.formPerfil.update(p => ({
+      ...p,
+      bannerUrl: url
+    }));
+  }
+
+  removerBanner(): void {
+    this.formPerfil.update(p => ({
+      ...p,
+      bannerUrl: null
+    }));
+    this.erroUploadBanner.set(null);
+  }
+
   async salvarEdicao(): Promise<void> {
-    if (this.salvando()) return;
+    if (this.salvando() || this.uploadingAvatar() || this.uploadingBanner()) return;
     this.salvando.set(true);
     this.mensagemFeedback.set(null);
 
@@ -649,6 +1079,8 @@ export class ComunidadePerfilComponent implements OnInit {
       instagramUrl: f.instagram.trim() || undefined,
       whatsappUrl: f.whatsapp.trim() || undefined,
       websiteUrl: f.website.trim() || undefined,
+      avatarUrl: f.avatarUrl !== undefined ? f.avatarUrl : null,
+      bannerUrl: f.bannerUrl !== undefined ? f.bannerUrl : null,
     });
 
     this.salvando.set(false);
