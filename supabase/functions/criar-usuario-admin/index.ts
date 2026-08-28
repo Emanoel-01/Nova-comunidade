@@ -253,7 +253,7 @@ serve(async (req: Request) => {
             email,
             password: senhaFinal,
             email_confirm: true,
-            user_metadata: { full_name, nivel_atual: nivel },
+            user_metadata: { full_name, nivel_atual: nivel, must_change_password: true },
           });
 
           if (authError) {
@@ -355,7 +355,7 @@ serve(async (req: Request) => {
       email: emailLimpo,
       password: senhaFinal,
       email_confirm: true,
-      user_metadata: { full_name: nomeLimpo, nivel_atual: nivel_atual || 'Membro Trainee' },
+      user_metadata: { full_name: nomeLimpo, nivel_atual: nivel_atual || 'Membro Trainee', must_change_password: true },
     });
 
     if (authError) {
