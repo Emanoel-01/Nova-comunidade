@@ -42,6 +42,17 @@ export interface PerfilAcessoItem {
   atualizado_em?: string;
 }
 
+export interface TemplateEmailItem {
+  id: string;
+  chave: string;
+  nome: string;
+  assunto: string;
+  html: string;
+  padrao_sistema: boolean;
+  criado_em?: string;
+  atualizado_em?: string;
+}
+
 interface ModuloConfig {
   key: string;
   nome: string;
@@ -126,6 +137,17 @@ interface ItemImportacaoMassa {
               </svg>
               <span>Criar Perfil de Acesso</span>
             </button>
+          } @else if (abaAtiva() === 'templates') {
+            <button
+              type="button"
+              (click)="abrirEditorTemplate(null)"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Criar Novo Template</span>
+            </button>
           }
         </div>
       </div>
@@ -177,6 +199,22 @@ interface ItemImportacaoMassa {
           <span>Importação em Massa (TXT)</span>
           <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
             Automático
+          </span>
+        </button>
+
+        <button
+          type="button"
+          (click)="abaAtiva.set('templates')"
+          [class]="abaAtiva() === 'templates'
+            ? 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-600 font-bold text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'
+            : 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <span>Templates de E-mail</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-800">
+            {{ templatesEmail().length }}
           </span>
         </button>
       </div>
@@ -602,8 +640,58 @@ interface ItemImportacaoMassa {
                       (change)="enviarEmailBoasVindasMassa.set(!enviarEmailBoasVindasMassa())"
                       class="w-4 h-4 rounded text-indigo-600 border-slate-300"
                     />
-                    <span>Disparar e-mail de boas-vindas</span>
+                    <span>Disparar e-mail no cadastro</span>
                   </label>
+
+                  @if (enviarEmailBoasVindasMassa()) {
+                    <div class="flex items-center gap-2 bg-indigo-50/80 px-3 py-1.5 rounded-lg border border-indigo-100 animate-fadeIn">
+                      <label class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span>Template de e-mail a enviar:</span>
+                      </label>
+                      <select
+                        [value]="templateEmailMassaSelecionado()"
+                        (change)="onTemplateMassaChange($event)"
+                        class="px-2.5 py-1 rounded-md border border-indigo-200 text-xs font-semibold text-indigo-900 bg-white shadow-2xs focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                      >
+                        @for (tpl of templatesEmail(); track tpl.id) {
+                          <option [value]="tpl.chave">
+                            {{ tpl.nome }} {{ tpl.padrao_sistema ? '(Padrão do Sistema)' : '' }}
+                          </option>
+                        }
+                      </select>
+
+                      <button
+                        type="button"
+                        (click)="abrirEditorTemplate(null)"
+                        class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-bold shadow-2xs transition-colors cursor-pointer"
+                        title="Criar novo template de e-mail"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Criar novo template</span>
+                      </button>
+
+                      @let tplMassa = templateSelecionadoMassaObj();
+                      @if (tplMassa) {
+                        <button
+                          type="button"
+                          (click)="abrirPreviewTemplate(tplMassa)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-700 border border-indigo-200 text-[11px] font-bold shadow-2xs transition-colors cursor-pointer"
+                          title="Ver prévia deste template de e-mail"
+                        >
+                          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>Prévia</span>
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
               </div>
 
@@ -714,6 +802,162 @@ interface ItemImportacaoMassa {
 
             </div>
           }
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- ABA 4: TEMPLATES DE E-MAIL (CRUD & PREVIEW) -->
+      <!-- ========================================== -->
+      @if (abaAtiva() === 'templates') {
+        <div class="space-y-6 animate-fadeIn">
+          
+          <!-- Banner Informativo com Navy e Copper -->
+          <div class="p-5 rounded-2xl bg-[#132A41] text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1 max-w-2xl">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#B5642A] text-white">
+                  Templates & Automações
+                </span>
+                <span class="text-xs text-slate-300 font-mono">templates_email</span>
+              </div>
+              <h4 class="text-base font-bold text-white">
+                Modelos de E-mail para Comunicação e Convites em Massa
+              </h4>
+              <p class="text-xs text-slate-300">
+                Personalize o layout HTML dos comunicados e convites. Durante o disparo em massa via TXT, as tags <code class="bg-black/30 px-1.5 py-0.5 rounded text-[#F59E0B] font-mono">&#123;&#123;NOME&#125;&#125;</code>, <code class="bg-black/30 px-1.5 py-0.5 rounded text-[#F59E0B] font-mono">&#123;&#123;EMAIL&#125;&#125;</code> e <code class="bg-black/30 px-1.5 py-0.5 rounded text-[#F59E0B] font-mono">&#123;&#123;SENHA&#125;&#125;</code> são substituídas automaticamente por destinatário.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              (click)="abrirEditorTemplate(null)"
+              class="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#B5642A] hover:bg-[#a05623] text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Criar Novo Template</span>
+            </button>
+          </div>
+
+          <!-- Grade de Templates -->
+          @if (templatesEmail().length === 0) {
+            <div class="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-xs space-y-3">
+              <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h4 class="text-sm font-bold text-slate-800">Nenhum template cadastrado</h4>
+              <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                Crie um modelo HTML para enviar e-mails personalizados na importação de membros em lote.
+              </p>
+              <button
+                type="button"
+                (click)="abrirEditorTemplate(null)"
+                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer"
+              >
+                + Criar Primeiro Template
+              </button>
+            </div>
+          } @else {
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              @for (tpl of templatesEmail(); track tpl.id) {
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between gap-4 hover:border-slate-300 transition-all">
+                  
+                  <div class="space-y-3">
+                    <!-- Topo do Card -->
+                    <div class="flex items-start justify-between gap-3">
+                      <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <h4 class="text-sm font-bold text-slate-900">{{ tpl.nome }}</h4>
+                          @if (tpl.padrao_sistema) {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
+                              Padrão do Sistema
+                            </span>
+                          } @else {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">
+                              Customizado
+                            </span>
+                          }
+                        </div>
+                        <span class="text-[11px] font-mono text-slate-400 block mt-0.5">chave: {{ tpl.chave }}</span>
+                      </div>
+
+                      <div class="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          (click)="abrirPreviewTemplate(tpl)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors cursor-pointer"
+                          title="Visualizar renderização HTML"
+                        >
+                          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>Prévia</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="baixarHtmlTemplate(tpl)"
+                          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#132A41]/10 hover:bg-[#132A41]/15 text-[#132A41] text-[11px] font-bold transition-colors cursor-pointer"
+                          title="Baixar arquivo .html com dados de exemplo"
+                        >
+                          <svg class="w-3.5 h-3.5 text-[#132A41]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span>Baixar HTML</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Assunto -->
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Assunto do E-mail:</span>
+                      <p class="font-medium text-slate-800 mt-0.5 line-clamp-1">{{ tpl.assunto || '(Sem assunto definido)' }}</p>
+                    </div>
+
+                    @if (tpl.padrao_sistema) {
+                      <p class="text-[11px] text-slate-500 italic bg-blue-50/50 p-2.5 rounded-xl border border-blue-100">
+                        🔒 Este template é gerado dinamicamente pela Edge Function <code class="font-mono text-blue-700 font-bold">criar-usuario-admin</code> e permanece protegido.
+                      </p>
+                    }
+                  </div>
+
+                  <!-- Ações Inferiores -->
+                  <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                    <span class="text-[11px] text-slate-400">
+                      {{ tpl.html ? (tpl.html.length + ' caracteres de HTML') : 'HTML dinâmico' }}
+                    </span>
+
+                    <div class="flex items-center gap-2">
+                      @if (!tpl.padrao_sistema) {
+                        <button
+                          type="button"
+                          (click)="abrirEditorTemplate(tpl)"
+                          class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          (click)="solicitarExclusaoTemplate(tpl)"
+                          class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs cursor-pointer transition-colors"
+                        >
+                          Excluir
+                        </button>
+                      } @else {
+                        <span class="text-[11px] text-slate-400 font-medium">Sistema Padrão</span>
+                      }
+                    </div>
+                  </div>
+
+                </div>
+              }
+            </div>
+          }
+
         </div>
       }
 
@@ -1276,13 +1520,209 @@ interface ItemImportacaoMassa {
         </div>
       }
 
+      <!-- ========================================== -->
+      <!-- MODAL: CRIAR / EDITAR TEMPLATE DE E-MAIL -->
+      <!-- ========================================== -->
+      @if (modalTemplateAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-3xl overflow-hidden my-8 space-y-5 p-6">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="text-lg font-bold text-slate-900">
+                  {{ templateEmEdicaoId() ? 'Editar Template de E-mail' : 'Criar Novo Template de E-mail' }}
+                </h3>
+                <p class="text-xs text-slate-500">
+                  Defina o modelo de mensagem com suporte a variáveis dinâmicas por destinatário.
+                </p>
+              </div>
+              <button type="button" (click)="fecharEditorTemplate()" class="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+            </div>
+
+            @if (erroTemplate()) {
+              <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                {{ erroTemplate() }}
+              </div>
+            }
+
+            <div class="space-y-4">
+              <!-- Nome do Template -->
+              <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700">Nome do Template *</label>
+                <input
+                  type="text"
+                  #nomeTplInput
+                  [value]="nomeTemplate()"
+                  (input)="nomeTemplate.set(nomeTplInput.value)"
+                  placeholder="Ex: Convite ESUDA Cursos 2026, Boas-Vindas Masterclass..."
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <!-- Assunto do E-mail -->
+              <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700">Assunto do E-mail *</label>
+                <input
+                  type="text"
+                  #assuntoTplInput
+                  [value]="assuntoTemplate()"
+                  (input)="assuntoTemplate.set(assuntoTplInput.value)"
+                  placeholder="Ex: Seu Acesso Exclusivo à Amorim Academy / ESUDA 2026"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <!-- Nota de Ajuda Visível com Variáveis -->
+              <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <span class="text-base leading-none">💡</span>
+                <div>
+                  <span class="font-bold">Substituição Automática de Variáveis:</span>
+                  <p class="mt-0.5 text-[11px] text-amber-800 leading-relaxed">
+                    Use <strong class="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-950">&#123;&#123;NOME&#125;&#125;</strong>, <strong class="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-950">&#123;&#123;EMAIL&#125;&#125;</strong> e <strong class="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-950">&#123;&#123;SENHA&#125;&#125;</strong> no HTML — serão substituídos automaticamente para cada destinatário durante a criação em massa.
+                  </p>
+                </div>
+              </div>
+
+              <!-- HTML Completo do E-mail -->
+              <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-bold text-slate-700">Código HTML Completo *</label>
+                  <span class="text-[11px] text-slate-400 font-mono">{{ htmlTemplate().length }} caracteres</span>
+                </div>
+                <textarea
+                  #htmlTplInput
+                  rows="12"
+                  [value]="htmlTemplate()"
+                  (input)="htmlTemplate.set(htmlTplInput.value)"
+                  placeholder="Cole aqui a estrutura HTML completa do e-mail (ex: &lt;div style=&quot;...&quot;&gt;Olá, &#123;&#123;NOME&#125;&#125;! Seu login é &#123;&#123;EMAIL&#125;&#125; e senha provisória &#123;&#123;SENHA&#125;&#125;&lt;/div&gt;)"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-100 font-mono focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y leading-relaxed"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Rodapé do Modal -->
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="fecharEditorTemplate()"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="salvarTemplate()"
+                [disabled]="salvandoTemplate() || !nomeTemplate().trim() || !assuntoTemplate().trim() || !htmlTemplate().trim()"
+                class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-2 transition-all"
+              >
+                @if (salvandoTemplate()) {
+                  <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>Salvando Template...</span>
+                } @else {
+                  <span>Salvar Template</span>
+                }
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- MODAL: PRÉVIA DE TEMPLATE DE E-MAIL -->
+      <!-- ========================================== -->
+      @if (modalPreviewTemplateAberto() && templateParaPreview()) {
+        @let tplPreview = templateParaPreview()!;
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl overflow-hidden my-8 space-y-4 p-6">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-lg font-bold text-slate-900">Prévia do E-mail: {{ tplPreview.nome }}</h3>
+                  @if (tplPreview.padrao_sistema) {
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">Sistema</span>
+                  }
+                </div>
+                <p class="text-xs text-slate-500">
+                  Visualização simulada com as variáveis preenchidas para um usuário de exemplo.
+                </p>
+              </div>
+              <button type="button" (click)="fecharPreviewTemplate()" class="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+            </div>
+
+            <!-- Cabeçalho Simulado de E-mail -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5 font-sans">
+              <div class="flex items-center gap-2">
+                <span class="text-slate-400 font-bold w-16">Assunto:</span>
+                <span class="font-bold text-slate-900">{{ tplPreview.assunto }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-slate-400 font-bold w-16">Para:</span>
+                <span class="text-slate-700 font-mono">Dr. Exemplo da Silva &lt;exemplo@dominio.com.br&gt;</span>
+              </div>
+            </div>
+
+            <!-- Visualizador do HTML isolado em iframe -->
+            <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-100 shadow-inner">
+              <iframe
+                [srcdoc]="getHtmlExemplo(tplPreview.html, tplPreview)"
+                class="w-full h-96 bg-white border-0 block"
+                title="Prévia do E-mail"
+              ></iframe>
+            </div>
+
+            <!-- Rodapé da Prévia com Botões de Ação -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="baixarHtmlTemplate(tplPreview)"
+                  class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1b3a5b] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                  title="Baixar arquivo HTML com dados de exemplo"
+                >
+                  <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span>Baixar HTML (.html)</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="abrirHtmlEmNovaAba(tplPreview)"
+                  class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#B5642A] hover:bg-[#a05623] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                  title="Abrir prévia renderizada em uma nova aba do navegador"
+                >
+                  <svg class="w-4 h-4 text-amber-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span>Abrir no Navegador</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                (click)="fecharPreviewTemplate()"
+                class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+              >
+                Fechar Prévia
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }
+
     </div>
   `
 })
 export class AdminUsuariosComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
 
-  readonly abaAtiva = signal<'usuarios' | 'perfis' | 'massa'>('usuarios');
+  readonly abaAtiva = signal<'usuarios' | 'perfis' | 'massa' | 'templates'>('usuarios');
 
   readonly modulosPredial: ModuloConfig[] = [
     { key: 'inspecao_predial', nome: 'Inspeção Predial', descricao: 'Laudos técnicos de inspeção e vistoria periódica.', produto: 'predial4' },
@@ -1357,11 +1797,31 @@ export class AdminUsuariosComponent implements OnInit {
   readonly itensMassa = signal<ItemImportacaoMassa[]>([]);
   readonly perfilPadraoMassa = signal<string>('');
   readonly enviarEmailBoasVindasMassa = signal<boolean>(true);
+  readonly templateEmailMassaSelecionado = signal<string>('boas-vindas-padrao');
   readonly processandoMassa = signal<boolean>(false);
   readonly loteProcessadoComSucesso = signal<boolean>(false);
 
+  // Estados de Templates de E-mail
+  readonly templatesEmail = signal<TemplateEmailItem[]>([]);
+  readonly modalTemplateAberto = signal(false);
+  readonly templateEmEdicaoId = signal<string | null>(null);
+  readonly nomeTemplate = signal('');
+  readonly assuntoTemplate = signal('');
+  readonly htmlTemplate = signal('');
+  readonly salvandoTemplate = signal(false);
+  readonly erroTemplate = signal<string | null>(null);
+
+  // Estados de Visualização/Prévia de Template
+  readonly modalPreviewTemplateAberto = signal(false);
+  readonly templateParaPreview = signal<TemplateEmailItem | null>(null);
+
   readonly totalValidosMassa = computed(() => this.itensMassa().filter(i => i.valido).length);
   readonly totalInvalidosMassa = computed(() => this.itensMassa().filter(i => !i.valido).length);
+
+  readonly templateSelecionadoMassaObj = computed(() => {
+    const chave = this.templateEmailMassaSelecionado();
+    return this.templatesEmail().find(t => t.chave === chave) || null;
+  });
 
   readonly usuariosFiltrados = computed(() => {
     const termo = this.termoBusca().toLowerCase().trim();
@@ -1382,6 +1842,7 @@ export class AdminUsuariosComponent implements OnInit {
     await Promise.all([
       this.carregarUsuarios(),
       this.carregarPerfisAcesso(),
+      this.carregarTemplatesEmail(),
     ]);
     this.carregando.set(false);
   }
@@ -1402,6 +1863,23 @@ export class AdminUsuariosComponent implements OnInit {
     } catch {
       console.warn('Falha ao carregar perfis de acesso.');
     }
+  }
+
+  async carregarTemplatesEmail(): Promise<void> {
+    try {
+      const templates = await this.supabaseService.listarTemplatesEmail();
+      this.templatesEmail.set(templates || []);
+      const chaves = (templates || []).map(t => t.chave);
+      if (!chaves.includes(this.templateEmailMassaSelecionado())) {
+        this.templateEmailMassaSelecionado.set('boas-vindas-padrao');
+      }
+    } catch {
+      console.warn('Falha ao carregar templates de e-mail.');
+    }
+  }
+
+  onTemplateMassaChange(event: Event): void {
+    this.templateEmailMassaSelecionado.set((event.target as HTMLSelectElement).value);
   }
 
   onBuscaInput(event: Event): void {
@@ -1942,6 +2420,11 @@ export class AdminUsuariosComponent implements OnInit {
     this.processandoMassa.set(true);
     this.alertaErro.set(null);
 
+    const deveEnviarEmail = this.enviarEmailBoasVindasMassa();
+    const chaveTemplateEscolhida = this.templateEmailMassaSelecionado();
+    const isTemplatePadrao = chaveTemplateEscolhida === 'boas-vindas-padrao';
+    const templateCustomizado = this.templatesEmail().find(t => t.chave === chaveTemplateEscolhida);
+
     const payload = validos.map(item => ({
       full_name: item.nome,
       email: item.email,
@@ -1949,9 +2432,13 @@ export class AdminUsuariosComponent implements OnInit {
     }));
 
     try {
+      // Se for template customizado, chamamos criarUsuariosEmMassaViaFunction com enviar_email = false
+      // para que a function criar-usuario-admin não envie o template padrão dela
+      const enviarPelaFunctionPrincipal = deveEnviarEmail && isTemplatePadrao;
+
       const res = await this.supabaseService.criarUsuariosEmMassaViaFunction(
         payload,
-        this.enviarEmailBoasVindasMassa()
+        enviarPelaFunctionPrincipal
       );
 
       if (!res.sucesso && res.error) {
@@ -1962,6 +2449,35 @@ export class AdminUsuariosComponent implements OnInit {
       // Mapear resultados de volta para a lista de itens
       const mapaRes = new Map<string, any>();
       (res.resultados || []).forEach(r => mapaRes.set(r.email.toLowerCase(), r));
+
+      // Se deve enviar e-mail e é um template customizado, dispara os e-mails com as variáveis substituídas
+      if (deveEnviarEmail && !isTemplatePadrao && templateCustomizado && templateCustomizado.html) {
+        const htmlBaseDecodificado = this.decodificarEntidadesHtml(templateCustomizado.html);
+        for (const item of validos) {
+          const resItem = mapaRes.get(item.email.toLowerCase());
+          if (resItem && resItem.sucesso) {
+            const senhaUsada = resItem.senhaProvisoria || '';
+            const htmlPersonalizado = htmlBaseDecodificado
+              .replace(/\{\{\s*NOME\s*\}\}/gi, item.nome)
+              .replace(/\{\{\s*EMAIL\s*\}\}/gi, item.email)
+              .replace(/\{\{\s*SENHA\s*\}\}/gi, senhaUsada);
+
+            const assuntoPersonalizado = (templateCustomizado.assunto || 'Seu acesso')
+              .replace(/\{\{\s*NOME\s*\}\}/gi, item.nome)
+              .replace(/\{\{\s*EMAIL\s*\}\}/gi, item.email);
+
+            try {
+              await this.supabaseService.enviarEmailViaFunction({
+                destinatarios: [item.email],
+                assunto: assuntoPersonalizado,
+                html: htmlPersonalizado,
+              });
+            } catch (errEmail) {
+              console.warn(`Aviso: Falha ao enviar e-mail customizado para ${item.email}`, errEmail);
+            }
+          }
+        }
+      }
 
       const listaAtualizada = this.itensMassa().map(item => {
         if (!item.valido) return item;
@@ -1987,6 +2503,264 @@ export class AdminUsuariosComponent implements OnInit {
     } finally {
       this.processandoMassa.set(false);
     }
+  }
+
+  // ==========================================
+  // MÉTODOS CRUD & PREVIEW: TEMPLATES DE E-MAIL
+  // ==========================================
+
+  abrirEditorTemplate(template: TemplateEmailItem | null): void {
+    this.erroTemplate.set(null);
+    if (template) {
+      this.templateEmEdicaoId.set(template.id);
+      this.nomeTemplate.set(template.nome);
+      this.assuntoTemplate.set(template.assunto || '');
+      this.htmlTemplate.set(template.html || '');
+    } else {
+      this.templateEmEdicaoId.set(null);
+      this.nomeTemplate.set('');
+      this.assuntoTemplate.set('');
+      this.htmlTemplate.set('');
+    }
+    this.modalTemplateAberto.set(true);
+  }
+
+  fecharEditorTemplate(): void {
+    this.modalTemplateAberto.set(false);
+    this.templateEmEdicaoId.set(null);
+    this.nomeTemplate.set('');
+    this.assuntoTemplate.set('');
+    this.htmlTemplate.set('');
+    this.erroTemplate.set(null);
+  }
+
+  async salvarTemplate(): Promise<void> {
+    const nome = this.nomeTemplate().trim();
+    const assunto = this.assuntoTemplate().trim();
+    const html = this.htmlTemplate().trim();
+
+    if (!nome || !assunto || !html) {
+      this.erroTemplate.set('Preencha todos os campos obrigatórios (Nome, Assunto e Código HTML).');
+      return;
+    }
+
+    this.salvandoTemplate.set(true);
+    this.erroTemplate.set(null);
+
+    const chave = this.gerarChaveTemplate(nome);
+
+    try {
+      if (this.templateEmEdicaoId()) {
+        const { error } = await this.supabaseService.atualizarTemplateEmail(this.templateEmEdicaoId()!, {
+          nome,
+          assunto,
+          html,
+        });
+        if (error) {
+          this.erroTemplate.set('Erro ao atualizar template: ' + error.message);
+          return;
+        }
+        this.alertaSucesso.set(`Template "${nome}" atualizado com sucesso!`);
+      } else {
+        const { data, error } = await this.supabaseService.criarTemplateEmail({
+          chave,
+          nome,
+          assunto,
+          html,
+          padrao_sistema: false,
+        });
+        if (error) {
+          this.erroTemplate.set('Erro ao criar template: ' + error.message);
+          return;
+        }
+        if (data?.chave) {
+          this.templateEmailMassaSelecionado.set(data.chave);
+        }
+        this.alertaSucesso.set(`Novo template "${nome}" criado com sucesso!`);
+      }
+
+      await this.carregarTemplatesEmail();
+      this.fecharEditorTemplate();
+    } catch (e: any) {
+      this.erroTemplate.set('Ocorreu uma falha ao salvar o template.');
+    } finally {
+      this.salvandoTemplate.set(false);
+    }
+  }
+
+  gerarChaveTemplate(nome: string): string {
+    const limpo = nome
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return limpo || `tpl-${Date.now()}`;
+  }
+
+  async solicitarExclusaoTemplate(tpl: TemplateEmailItem): Promise<void> {
+    if (tpl.padrao_sistema) {
+      this.alertaErro.set('O template padrão do sistema não pode ser excluído.');
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja excluir o template "${tpl.nome}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await this.supabaseService.excluirTemplateEmail(tpl.id);
+      if (error) {
+        this.alertaErro.set('Erro ao excluir template: ' + error.message);
+        return;
+      }
+      this.alertaSucesso.set(`Template "${tpl.nome}" excluído com sucesso.`);
+      if (this.templateEmailMassaSelecionado() === tpl.chave) {
+        this.templateEmailMassaSelecionado.set('boas-vindas-padrao');
+      }
+      await this.carregarTemplatesEmail();
+    } catch {
+      this.alertaErro.set('Falha ao excluir o template.');
+    }
+  }
+
+  abrirPreviewTemplate(tpl: TemplateEmailItem): void {
+    this.templateParaPreview.set(tpl);
+    this.modalPreviewTemplateAberto.set(true);
+  }
+
+  fecharPreviewTemplate(): void {
+    this.modalPreviewTemplateAberto.set(false);
+    this.templateParaPreview.set(null);
+  }
+
+  decodificarEntidadesHtml(str: string): string {
+    if (!str) return '';
+    let resultado = str;
+    // Se contiver tags codificadas como &lt;html, &lt;body, &lt;div, &lt;table, &lt;!DOCTYPE, etc.
+    if (/&lt;\s*(!DOCTYPE|[a-z])/i.test(resultado) || /&amp;lt;/i.test(resultado)) {
+      try {
+        if (typeof document !== 'undefined') {
+          const txt = document.createElement('textarea');
+          txt.innerHTML = resultado;
+          resultado = txt.value;
+          // Tratamento para dupla codificação (ex: &amp;lt;)
+          if (/&lt;\s*(!DOCTYPE|[a-z])/i.test(resultado)) {
+            txt.innerHTML = resultado;
+            resultado = txt.value;
+          }
+        }
+      } catch {
+        resultado = resultado
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&');
+      }
+    }
+    return resultado;
+  }
+
+  getHtmlExemplo(rawHtml?: string | null, tpl?: TemplateEmailItem | null): string {
+    let html = (rawHtml || '').trim();
+    if (!html) {
+      if (tpl?.padrao_sistema || tpl?.chave === 'boas-vindas-padrao') {
+        html = this.templatePadraoHtmlFallback();
+      } else {
+        return '<!DOCTYPE html><html><body style="font-family:sans-serif;color:#64748b;padding:24px;background:#f8fafc;"><p>Sem conteúdo HTML cadastrado.</p></body></html>';
+      }
+    }
+
+    // Decodifica entidades HTML se necessário para correta interpretação pelo iframe/browser
+    html = this.decodificarEntidadesHtml(html);
+
+    // Substituição das variáveis dinâmicas de exemplo
+    return html
+      .replace(/\{\{\s*NOME\s*\}\}/gi, 'Dr. Exemplo da Silva')
+      .replace(/\{\{\s*EMAIL\s*\}\}/gi, 'exemplo@dominio.com.br')
+      .replace(/\{\{\s*SENHA\s*\}\}/gi, 'Abc123XyZ');
+  }
+
+  templatePadraoHtmlFallback(): string {
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+    .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .header { background: #132A41; padding: 32px 24px; text-align: center; color: #ffffff; }
+    .header h1 { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: #ffffff; }
+    .header p { margin: 0; font-size: 13px; color: #94a3b8; }
+    .badge { display: inline-block; background: #B5642A; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
+    .content { padding: 32px 24px; }
+    .greeting { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #0f172a; }
+    .message { font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
+    .credentials { background: #f1f5f9; border-radius: 12px; padding: 18px; border: 1px solid #cbd5e1; margin-bottom: 24px; font-family: monospace; font-size: 13px; }
+    .credential-row { margin-bottom: 8px; }
+    .credential-row:last-child { margin-bottom: 0; }
+    .credential-label { color: #64748b; font-weight: 600; }
+    .credential-value { color: #0f172a; font-weight: 700; }
+    .btn { display: block; width: 100%; box-sizing: border-box; text-align: center; background: #B5642A; color: #ffffff !important; text-decoration: none; padding: 14px 20px; border-radius: 10px; font-weight: 700; font-size: 14px; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">Amorim Academy</span>
+      <h1>Seu Acesso Foi Liberado!</h1>
+      <p>Bem-vindo(a) à plataforma de engenharia e tecnologia</p>
+    </div>
+    <div class="content">
+      <div class="greeting">Olá, {{NOME}}!</div>
+      <div class="message">
+        Sua conta na Amorim Academy foi criada com sucesso. Utilize as credenciais abaixo para realizar o seu primeiro acesso à plataforma:
+      </div>
+      <div class="credentials">
+        <div class="credential-row">
+          <span class="credential-label">E-mail:</span>
+          <span class="credential-value">{{EMAIL}}</span>
+        </div>
+        <div class="credential-row">
+          <span class="credential-label">Senha Provisória:</span>
+          <span class="credential-value">{{SENHA}}</span>
+        </div>
+      </div>
+      <a href="https://comunidade.engenhariadiagnostica.com.br" target="_blank" class="btn">Acessar Plataforma</a>
+    </div>
+    <div class="footer">
+      Amorim Engenharia & Academy &bull; Este é um e-mail automático do sistema.
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+
+  baixarHtmlTemplate(tpl: TemplateEmailItem): void {
+    const htmlFinal = this.getHtmlExemplo(tpl.html, tpl);
+    const blob = new Blob([htmlFinal], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const chaveNome = (tpl.chave || tpl.nome || 'template')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9_-]/g, '-');
+    link.setAttribute('download', `preview-${chaveNome}.html`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  abrirHtmlEmNovaAba(tpl: TemplateEmailItem): void {
+    const htmlFinal = this.getHtmlExemplo(tpl.html, tpl);
+    const blob = new Blob([htmlFinal], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   }
 
   baixarArquivoExemploTxt(): void {
