@@ -2007,9 +2007,9 @@ Carlos Eduardo Lima;carlos.lima@exemplo.com;Membro Trainee
   }
 
   baixarRelatorioLoteCsv(): void {
-    const cabecalho = 'Nome;E-mail;Perfil;Status;Senha Provisória\n';
+    const cabecalho = 'Nome;E-mail;Perfil;Status\n';
     const linhas = this.itensMassa()
-      .map(i => `${i.nome};${i.email};${i.perfilFinal};${i.sucesso ? 'Criado' : 'Falha'};${i.senhaProvisoria || ''}`)
+      .map(i => `${i.nome};${i.email};${i.perfilFinal};${i.sucesso ? 'Criado' : 'Falha'}`)
       .join('\n');
 
     const blob = new Blob([cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
