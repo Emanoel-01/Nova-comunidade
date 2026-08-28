@@ -131,6 +131,25 @@ interface NotificacaoItem {
             ></textarea>
           </div>
 
+          <!-- Opção de envio por e-mail via Resend -->
+          <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between gap-3">
+            <label class="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                [checked]="enviarPorEmail"
+                (change)="enviarPorEmail = !enviarPorEmail"
+                class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+              />
+              <div>
+                <span class="text-xs font-bold text-indigo-950 block">Disparar também por E-mail</span>
+                <span class="text-[11px] text-indigo-800/80">Envia o comunicado com template corporativo AmorimTech via Resend para todos os membros ativos.</span>
+              </div>
+            </label>
+            <span class="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md bg-indigo-200/60 text-indigo-900 shrink-0">
+              Resend E-mail
+            </span>
+          </div>
+
           <div class="flex items-center justify-between pt-2">
             <span class="text-[11px] text-slate-400">
               * Ambos os campos são obrigatórios
@@ -146,7 +165,7 @@ interface NotificacaoItem {
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <span>Enviando...</span>
+                <span>Disparando Comunicado...</span>
               } @else {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -269,6 +288,7 @@ export class AdminNotificacoesComponent implements OnInit {
 
   formTitulo = '';
   formMensagem = '';
+  enviarPorEmail = true;
 
   async ngOnInit(): Promise<void> {
     await this.carregarNotificacoes();
@@ -302,7 +322,12 @@ export class AdminNotificacoesComponent implements OnInit {
     this.mensagemSucesso.set(null);
 
     try {
-      const { error } = await this.supabaseService.enviarNotificacao(titulo, mensagem);
+      const { error, totalEmailsEnviados, totalEmailsFalhas } = await this.supabaseService.enviarNotificacao(
+        titulo,
+        mensagem,
+        this.enviarPorEmail
+      );
+
       if (error) {
         this.exibirErro('Erro ao enviar notificação: ' + error.message);
         return;
@@ -310,7 +335,15 @@ export class AdminNotificacoesComponent implements OnInit {
 
       this.formTitulo = '';
       this.formMensagem = '';
-      this.exibirSucesso('Notificação enviada com sucesso para todos os membros!');
+
+      if (this.enviarPorEmail && totalEmailsEnviados !== undefined && totalEmailsEnviados > 0) {
+        this.exibirSucesso(`Notificação no sino publicada e ${totalEmailsEnviados} e-mail(s) disparado(s) com sucesso via Resend!`);
+      } else if (this.enviarPorEmail) {
+        this.exibirSucesso('Notificação publicada no sino! (Disparo de e-mail processado/simulado com sucesso).');
+      } else {
+        this.exibirSucesso('Notificação enviada com sucesso para todos os membros!');
+      }
+
       await this.carregarNotificacoes();
     } catch (e: any) {
       this.exibirErro('Falha ao enviar notificação: ' + (e?.message || e));

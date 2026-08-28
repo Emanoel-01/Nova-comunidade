@@ -33,6 +33,15 @@ export interface ProfissionalComPermissoes {
   permissoes?: PermissaoAcesso[];
 }
 
+export interface PerfilAcessoItem {
+  id: string;
+  nome: string;
+  descricao?: string | null;
+  modulos: Array<{ produto: 'predial4' | 'comunidade'; modulo: string }>;
+  criado_em?: string;
+  atualizado_em?: string;
+}
+
 interface ModuloConfig {
   key: string;
   nome: string;
@@ -44,7 +53,22 @@ interface ConfirmacaoSenhaProvisoria {
   nome: string;
   email: string;
   senha: string;
+  perfilNome?: string;
   userData?: any;
+}
+
+interface ItemImportacaoMassa {
+  linha: number;
+  nome: string;
+  email: string;
+  perfilInformado?: string;
+  perfilFinal: string;
+  valido: boolean;
+  motivoInvalido?: string;
+  processado?: boolean;
+  sucesso?: boolean;
+  senhaProvisoria?: string;
+  erroMsg?: string;
 }
 
 @Component({
@@ -58,21 +82,21 @@ interface ConfirmacaoSenhaProvisoria {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 class="text-xl font-bold text-slate-900">
-            Gestão de Usuários & Licenças
+            Gestão de Usuários, Perfis & Licenças
           </h3>
           <p class="text-xs sm:text-sm text-slate-500">
-            Defina níveis de acesso, medalhas e permissões modulares para Predial 4.0 e Comunidade.
+            Cadastre membros em lote, configure perfis de acesso reutilizáveis e gerencie permissões modulares.
           </p>
         </div>
 
-        <div class="flex items-center gap-2.5 self-start sm:self-auto">
-          <!-- Botão Recarregar -->
+        <!-- Botões de Ação Rápida no Topo -->
+        <div class="flex items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
-            (click)="carregarUsuarios()"
+            (click)="carregarTudo()"
             [disabled]="carregando()"
             class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-            title="Atualizar lista"
+            title="Atualizar dados"
           >
             <svg class="w-3.5 h-3.5" [class.animate-spin]="carregando()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -80,1029 +104,1185 @@ interface ConfirmacaoSenhaProvisoria {
             <span>Atualizar</span>
           </button>
 
-          <!-- Botão Cadastrar Novo Usuário -->
-          <button
-            type="button"
-            (click)="abrirModalNovoUsuario()"
-            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            <span>Novo Usuário</span>
-          </button>
+          @if (abaAtiva() === 'usuarios') {
+            <button
+              type="button"
+              (click)="abrirModalNovoUsuario()"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <span>Novo Usuário</span>
+            </button>
+          } @else if (abaAtiva() === 'perfis') {
+            <button
+              type="button"
+              (click)="abrirEditorPerfil(null)"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Criar Perfil de Acesso</span>
+            </button>
+          }
         </div>
       </div>
 
-      <!-- Alerta Geral de Sucesso -->
+      <!-- Navegação em Sub-Abas -->
+      <div class="flex items-center gap-2 border-b border-slate-200 pb-px overflow-x-auto">
+        <button
+          type="button"
+          (click)="abaAtiva.set('usuarios')"
+          [class]="abaAtiva() === 'usuarios'
+            ? 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-600 font-bold text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'
+            : 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <span>Usuários & Licenças</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700">
+            {{ usuarios().length }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          (click)="abaAtiva.set('perfis')"
+          [class]="abaAtiva() === 'perfis'
+            ? 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-600 font-bold text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'
+            : 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span>Perfis de Acesso (Moldes)</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700">
+            {{ perfisAcesso().length }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          (click)="abaAtiva.set('massa')"
+          [class]="abaAtiva() === 'massa'
+            ? 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-600 font-bold text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'
+            : 'flex items-center gap-2 px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>Importação em Massa (TXT)</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+            Automático
+          </span>
+        </button>
+      </div>
+
+      <!-- Alertas Gerais de Sucesso / Erro -->
       @if (alertaSucesso()) {
-        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs animate-fadeIn">
           <div class="flex items-center gap-2.5">
             <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
             <span class="font-medium">{{ alertaSucesso() }}</span>
           </div>
-          <button
-            type="button"
-            (click)="alertaSucesso.set(null)"
-            class="text-emerald-600 hover:text-emerald-900 p-1"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <button type="button" (click)="alertaSucesso.set(null)" class="text-emerald-600 hover:text-emerald-900 cursor-pointer">✕</button>
         </div>
       }
 
-      <!-- Alerta Geral de Erro -->
       @if (alertaErro()) {
-        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs animate-fadeIn">
           <div class="flex items-center gap-2.5">
             <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span class="font-medium">{{ alertaErro() }}</span>
           </div>
-          <button
-            type="button"
-            (click)="alertaErro.set(null)"
-            class="text-rose-600 hover:text-rose-900 p-1"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <button type="button" (click)="alertaErro.set(null)" class="text-rose-600 hover:text-rose-900 cursor-pointer">✕</button>
         </div>
       }
 
-      <!-- Barra de Pesquisa e Filtros -->
-      <div class="flex flex-col sm:flex-row items-center gap-3">
-        <div class="relative w-full sm:max-w-md">
-          <input
-            type="text"
-            [value]="termoBusca()"
-            (input)="onBuscaInput($event)"
-            placeholder="Buscar por nome ou e-mail..."
-            class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs"
-          />
-          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+      <!-- ========================================== -->
+      <!-- ABA 1: USUÁRIOS & LICENÇAS -->
+      <!-- ========================================== -->
+      @if (abaAtiva() === 'usuarios') {
+        
+        <!-- Barra de Busca -->
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+          <div class="relative w-full sm:max-w-md">
+            <input
+              type="text"
+              [value]="termoBusca()"
+              (input)="onBuscaInput($event)"
+              placeholder="Buscar por nome ou e-mail..."
+              class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs"
+            />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <div class="text-xs text-slate-500 font-medium sm:ml-auto">
+            Exibindo: <span class="font-bold text-slate-800">{{ usuariosFiltrados().length }}</span> de <span class="font-bold text-slate-800">{{ usuarios().length }}</span> usuários
+          </div>
         </div>
 
-        <div class="text-xs text-slate-500 font-medium sm:ml-auto">
-          Total de usuários: <span class="font-bold text-slate-800">{{ usuariosFiltrados().length }}</span>
-        </div>
-      </div>
-
-      <!-- Estado: Carregando -->
-      @if (carregando()) {
-        <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
-          <div class="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p class="text-xs text-slate-500 font-medium">Carregando usuários e permissões do Supabase...</p>
-        </div>
-      } @else {
-
-        <!-- Lista de Usuários -->
-        @if (usuariosFiltrados().length > 0) {
-          <div class="grid grid-cols-1 gap-4">
-            @for (user of usuariosFiltrados(); track user.id) {
-              <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs hover:border-slate-300 transition-all space-y-4">
-                
-                <!-- Cabeçalho do Card: Avatar, Nome, E-mail e Nível -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div class="flex items-center gap-3">
-                    @if (user.avatar_url) {
-                      <img
-                        [src]="user.avatar_url"
-                        [alt]="getNome(user)"
-                        class="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0 shadow-2xs"
-                        referrerpolicy="no-referrer"
-                      />
-                    } @else {
-                      <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
-                        {{ getIniciais(getNome(user)) }}
-                      </div>
-                    }
-                    <div>
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <h4 class="text-base font-bold text-slate-900 leading-tight">
-                          {{ getNome(user) }}
-                        </h4>
-                        <!-- Badge de Nível / Medalha -->
-                        <span 
-                          [class]="'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold border ' + getNivelBadgeClass(user.nivel_atual)"
-                        >
-                          <span class="w-1.5 h-1.5 rounded-full" [class]="getNivelDotClass(user.nivel_atual)"></span>
-                          {{ user.nivel_atual || 'Membro Trainee' }}
-                        </span>
-
-                        <!-- Badge de Licença Global -->
-                        @let licenca = getLicencaStatus(user);
-                        <span [class]="'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ' + licenca.badgeClass">
-                          @if (licenca.tipo === 'vitalicia') {
-                            <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                          } @else if (licenca.tipo === 'expirada') {
-                            <svg class="w-3 h-3 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                          } @else if (licenca.tipo === 'valida') {
-                            <svg class="w-3 h-3 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          }
-                          <span>{{ licenca.rotulo }}</span>
-                        </span>
-                      </div>
-                      <p class="text-xs text-slate-500 mt-0.5">
-                        {{ user.email }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    (click)="abrirEditorUsuario(user)"
-                    class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer self-start sm:self-auto"
-                  >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    <span>Editar Permissões</span>
-                  </button>
-                </div>
-
-                <!-- Resumo Visual das Permissões por Produto -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-                  
-                  <!-- Bloco Predial 4.0 -->
-                  <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 space-y-2">
-                    <div class="flex items-center justify-between text-slate-600 font-bold text-[11px] uppercase tracking-wider">
-                      <div class="flex items-center gap-1.5 text-slate-700">
-                        <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        <span>Predial 4.0</span>
-                      </div>
-                      <span class="text-[11px] font-semibold text-slate-400">
-                        {{ getLiberadosCount(user, 'predial4') }}/3 módulos
-                      </span>
-                    </div>
-
-                    <div class="flex flex-wrap gap-1.5">
-                      @for (mod of modulosPredial; track mod.key) {
-                        @let status = getModuloStatus(user, 'predial4', mod.key);
-                        <span 
-                          [class]="status.liberado 
-                            ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200'
-                            : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-200/60 text-slate-500'"
-                        >
-                          <span>{{ mod.nome }}</span>
-                          @if (status.liberado) {
-                            <span class="text-emerald-700 font-black">✓</span>
-                          } @else {
-                            <span class="text-slate-400">✗</span>
-                          }
-                          @if (status.validade) {
-                            <span class="text-[11px] text-emerald-700/80 font-normal">({{ formatarValidadeCurta(status.validade) }})</span>
-                          }
-                        </span>
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Bloco Comunidade -->
-                  <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 space-y-2">
-                    <div class="flex items-center justify-between text-slate-600 font-bold text-[11px] uppercase tracking-wider">
-                      <div class="flex items-center gap-1.5 text-slate-700">
-                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <span>Comunidade Nova</span>
-                      </div>
-                      <span class="text-[11px] font-semibold text-slate-400">
-                        {{ getLiberadosCount(user, 'comunidade') }}/{{ modulosComunidade.length }} módulos
-                      </span>
-                    </div>
-
-                    <div class="flex flex-wrap gap-1.5">
-                      @for (mod of modulosComunidade; track mod.key) {
-                        @let status = getModuloStatus(user, 'comunidade', mod.key);
-                        <span 
-                          [class]="status.liberado 
-                            ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200'
-                            : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-200/60 text-slate-500'"
-                        >
-                          <span>{{ mod.nome }}</span>
-                          @if (status.liberado) {
-                            <span class="text-emerald-700 font-black">✓</span>
-                          } @else {
-                            <span class="text-slate-400">✗</span>
-                          }
-                          @if (status.validade) {
-                            <span class="text-[11px] text-emerald-700/80 font-normal">({{ formatarValidadeCurta(status.validade) }})</span>
-                          }
-                        </span>
-                      }
-                      @let totalCursosLib = getCursosLiberadosCount(user);
-                      @if (totalCursosLib > 0) {
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs">
-                          <span>🎓</span>
-                          <span>{{ totalCursosLib }} curso{{ totalCursosLib > 1 ? 's' : '' }} liberado{{ totalCursosLib > 1 ? 's' : '' }}</span>
-                        </span>
-                      }
-                    </div>
-                  </div>
-
-                </div>
-
-              </div>
-            }
+        @if (carregando()) {
+          <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
+            <div class="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="text-xs text-slate-500 font-medium">Carregando usuários e permissões...</p>
           </div>
         } @else {
-          <!-- Estado Vazio -->
-          <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs max-w-lg mx-auto">
-            <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
-              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          @if (usuariosFiltrados().length > 0) {
+            <div class="grid grid-cols-1 gap-4">
+              @for (user of usuariosFiltrados(); track user.id) {
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs hover:border-slate-300 transition-all space-y-4">
+                  
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                      @if (user.avatar_url) {
+                        <img
+                          [src]="user.avatar_url"
+                          [alt]="getNome(user)"
+                          class="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0 shadow-2xs"
+                          referrerpolicy="no-referrer"
+                        />
+                      } @else {
+                        <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
+                          {{ getIniciais(getNome(user)) }}
+                        </div>
+                      }
+                      <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <h4 class="text-base font-bold text-slate-900 leading-tight">
+                            {{ getNome(user) }}
+                          </h4>
+                          
+                          <span [class]="'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold border ' + getNivelBadgeClass(user.nivel_atual)">
+                            <span class="w-1.5 h-1.5 rounded-full" [class]="getNivelDotClass(user.nivel_atual)"></span>
+                            {{ user.nivel_atual || 'Membro Trainee' }}
+                          </span>
+
+                          @let licenca = getLicencaStatus(user);
+                          <span [class]="'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ' + licenca.badgeClass">
+                            <span>{{ licenca.rotulo }}</span>
+                          </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                          {{ user.email }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Ações: Editar e Excluir -->
+                    <div class="flex items-center gap-2 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        (click)="abrirEditorUsuario(user)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Editar Permissões</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="solicitarExclusaoUsuario(user)"
+                        class="inline-flex items-center justify-center p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 text-xs font-bold transition-all cursor-pointer"
+                        title="Excluir Usuário"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Resumo Visual dos Módulos -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+                    
+                    <!-- Predial 4.0 -->
+                    <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 space-y-2">
+                      <div class="flex items-center justify-between text-slate-600 font-bold text-[11px] uppercase tracking-wider">
+                        <div class="flex items-center gap-1.5 text-slate-700">
+                          <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          <span>Predial 4.0</span>
+                        </div>
+                        <span class="text-[11px] font-semibold text-slate-400">
+                          {{ getLiberadosCount(user, 'predial4') }}/3 módulos
+                        </span>
+                      </div>
+
+                      <div class="flex flex-wrap gap-1.5">
+                        @for (mod of modulosPredial; track mod.key) {
+                          @let status = getModuloStatus(user, 'predial4', mod.key);
+                          <span 
+                            [class]="status.liberado 
+                              ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200'
+                              : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-400 border border-slate-200 line-through opacity-60'"
+                          >
+                            {{ mod.nome }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Comunidade -->
+                    <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 space-y-2">
+                      <div class="flex items-center justify-between text-slate-600 font-bold text-[11px] uppercase tracking-wider">
+                        <div class="flex items-center gap-1.5 text-slate-700">
+                          <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span>Comunidade & Agentes</span>
+                        </div>
+                        <span class="text-[11px] font-semibold text-slate-400">
+                          {{ getLiberadosCount(user, 'comunidade') }} módulos liberados
+                        </span>
+                      </div>
+
+                      <div class="flex flex-wrap gap-1.5">
+                        @for (mod of modulosComunidadeBase; track mod.key) {
+                          @let status = getModuloStatus(user, 'comunidade', mod.key);
+                          <span 
+                            [class]="status.liberado 
+                              ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-100/70 text-indigo-800 border border-indigo-200'
+                              : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-400 border border-slate-200 line-through opacity-60'"
+                          >
+                            {{ mod.nome }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3 shadow-xs">
+              <svg class="w-10 h-10 text-slate-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
+              <h4 class="text-sm font-bold text-slate-700">Nenhum usuário encontrado</h4>
+              <p class="text-xs text-slate-400">Tente ajustar o termo de busca ou cadastre um novo membro.</p>
             </div>
-            <div class="space-y-1">
-              <h4 class="text-base font-bold text-slate-800">
-                Nenhum usuário encontrado
-              </h4>
-              <p class="text-xs text-slate-500">
-                @if (termoBusca()) {
-                  Nenhum usuário corresponde ao filtro "{{ termoBusca() }}".
-                } @else {
-                  Ainda não há profissionais registrados na tabela profissionais. Cadastre o primeiro usuário acima.
-                }
-              </p>
-            </div>
-          </div>
+          }
         }
-
       }
 
-    </div>
-
-    <!-- MODAL / PAINEL DE EDIÇÃO DE USUÁRIO -->
-    @if (usuarioEmEdicao()) {
-      @let u = usuarioEmEdicao()!;
-      <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          
-          <!-- Cabeçalho do Modal -->
-          <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-xs">
-                {{ getIniciais(getNome(u)) }}
-              </div>
-              <div>
-                <h4 class="text-base font-bold text-slate-900 leading-tight">
-                  {{ getNome(u) }}
-                </h4>
-                <p class="text-xs text-slate-500">
-                  {{ u.email }}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              (click)="fecharEditor()"
-              class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- Corpo do Modal (Scrollable) -->
-          <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-
-            <!-- Mensagem de Erro de Edição -->
-            @if (erroEdicao()) {
-              <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
-                <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{{ erroEdicao() }}</span>
-              </div>
-            }
-
-            <!-- SEÇÃO 1: Nível de Acesso & Selo Visual -->
-            <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h5 class="text-sm font-bold text-slate-900">
-                    Nível de Acesso & Medalha
-                  </h5>
-                  <p class="text-slate-500 text-[11px]">
-                    Define o reconhecimento do usuário no Hall da Fama e sua autoridade no ecossistema.
-                  </p>
-                </div>
-
-                <!-- Preview Dinâmico do Selo -->
-                <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border shadow-2xs ' + getNivelBadgeClass(nivelEdicao())">
-                  <span class="w-2 h-2 rounded-full" [class]="getNivelDotClass(nivelEdicao())"></span>
-                  {{ nivelEdicao() }}
-                </span>
-              </div>
-
-              <div>
-                <label for="select-nivel-edicao" class="block font-semibold text-slate-700 mb-1.5">
-                  Selecione o Nível Oficial:
-                </label>
-                <select
-                  id="select-nivel-edicao"
-                  [value]="nivelEdicao()"
-                  (change)="onNivelChange($event)"
-                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs cursor-pointer"
-                >
-                  <option value="Membro Trainee">Membro Trainee (Iniciante)</option>
-                  <option value="Membro Engajado">Membro Engajado (Ativo nas discussões)</option>
-                  <option value="Colaborador Ativo">Colaborador Ativo (Contribui com materiais e estudos)</option>
-                  <option value="Especialista 4.0">Especialista 4.0 (Referência técnica)</option>
-                  <option value="Embaixador da Comunidade">Embaixador da Comunidade (Liderança e mentoria)</option>
-                  <option value="Admin">Admin (Gestão Geral do Sistema)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- SEÇÃO DE LICENÇA GLOBAL -->
-            <div class="bg-indigo-50/50 p-4 sm:p-5 rounded-2xl border border-indigo-100 space-y-4">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h5 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    <span>Licença Global do Usuário</span>
-                  </h5>
-                  <p class="text-slate-500 text-[11px]">
-                    Define o período de vigência e duração da conta na plataforma.
-                  </p>
-                </div>
-
-                <!-- Referência: Data de entrada do membro -->
-                @if (u.created_at) {
-                  <div class="text-[11px] text-slate-500 bg-white px-3 py-1 rounded-lg border border-slate-200 self-start sm:self-auto shadow-2xs">
-                    <span class="text-slate-400">Membro desde:</span>
-                    <strong class="text-slate-700 ml-1">{{ formatarDataSimples(u.created_at) }}</strong>
-                  </div>
-                }
-              </div>
-
-              <!-- Seleção Rápida de Licença -->
-              <div class="space-y-2">
-                <label class="block font-semibold text-slate-700 text-xs">
-                  Duração da Licença:
-                </label>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <!-- 6 Meses -->
-                  <button
-                    type="button"
-                    (click)="selecionarLicencaRapida('6_meses')"
-                    [class]="licencaTipoEdicao() === '6_meses'
-                      ? 'px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs border border-indigo-600 shadow-xs cursor-pointer text-center'
-                      : 'px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 cursor-pointer text-center'"
-                  >
-                    6 Meses
-                  </button>
-
-                  <!-- 1 Ano -->
-                  <button
-                    type="button"
-                    (click)="selecionarLicencaRapida('1_ano')"
-                    [class]="licencaTipoEdicao() === '1_ano'
-                      ? 'px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs border border-indigo-600 shadow-xs cursor-pointer text-center'
-                      : 'px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 cursor-pointer text-center'"
-                  >
-                    1 Ano
-                  </button>
-
-                  <!-- Vitalícia -->
-                  <button
-                    type="button"
-                    (click)="selecionarLicencaRapida('vitalicia')"
-                    [class]="licencaTipoEdicao() === 'vitalicia'
-                      ? 'px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs border border-emerald-600 shadow-xs cursor-pointer text-center'
-                      : 'px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 cursor-pointer text-center'"
-                  >
-                    Vitalícia (Sem expiração)
-                  </button>
-                </div>
-              </div>
-
-              <!-- Expiração da Licença / Data Personalizada -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label for="licenca-validade-input" class="block font-semibold text-slate-700 mb-1">
-                    Data de Expiração da Licença:
-                  </label>
-                  @if (licencaTipoEdicao() === 'vitalicia') {
-                    <div class="px-3.5 py-2 rounded-xl bg-emerald-100/70 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
-                      <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>Acesso Vitalício — Sem data limite</span>
-                    </div>
-                  } @else {
-                    <input
-                      id="licenca-validade-input"
-                      type="date"
-                      [value]="licencaValidadeEdicao()"
-                      (input)="onLicencaDataManualChange($event)"
-                      class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs cursor-pointer"
-                    />
-                  }
-                </div>
-
-                <div class="flex items-center text-[11px] text-slate-500 sm:pt-4">
-                  @if (licencaTipoEdicao() === 'vitalicia') {
-                    <span>O membro possui acesso contínuo aos módulos liberados sem prazo de expiração geral.</span>
-                  } @else if (licencaValidadeEdicao()) {
-                    <span>Vigência calculada até <strong>{{ formatarDataSimples(licencaValidadeEdicao()) }}</strong>.</span>
-                  } @else {
-                    <span>Selecione uma das opções de vigência ou preencha uma data de término.</span>
-                  }
-                </div>
-              </div>
-            </div>
-
-            <!-- SEÇÃO 2: Módulos do Predial 4.0 -->
-            <div class="space-y-3">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
-                    P
-                  </div>
-                  <h5 class="text-sm font-bold text-slate-900">
-                    Módulos do Predial 4.0
-                  </h5>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="marcarTodosModulos('predial4', true)"
-                    class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
-                  >
-                    Liberar Todos
-                  </button>
-                  <span class="text-slate-300">·</span>
-                  <button
-                    type="button"
-                    (click)="marcarTodosModulos('predial4', false)"
-                    class="text-[11px] text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
-                  >
-                    Bloquear Todos
-                  </button>
-                </div>
-              </div>
-
-              <div class="space-y-2.5">
-                @for (mod of modulosPredial; track mod.key) {
-                  <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                    <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
-                      <input
-                        type="checkbox"
-                        [checked]="isModuloLiberadoEdicao('predial4', mod.key)"
-                        (change)="toggleModuloEdicao('predial4', mod.key)"
-                        class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
-                      />
-                      <div>
-                        <div class="flex items-center gap-2">
-                          <span class="font-bold text-slate-900">{{ mod.nome }}</span>
-                          @if (isModuloLiberadoEdicao('predial4', mod.key)) {
-                            <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Liberado</span>
-                          } @else {
-                            <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
-                          }
-                        </div>
-                        <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
-                      </div>
-                    </label>
-
-                    <!-- Campo Válido até -->
-                    <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
-                      <label [for]="'validade-predial-' + mod.key" class="text-slate-500 text-[11px] whitespace-nowrap">
-                        Válido até:
-                      </label>
-                      <input
-                        [id]="'validade-predial-' + mod.key"
-                        type="date"
-                        [value]="getValidadeEdicao('predial4', mod.key)"
-                        (input)="onValidadeChange('predial4', mod.key, $event)"
-                        placeholder="Sem vencimento"
-                        class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                      />
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- SEÇÃO 3: Módulos da Comunidade -->
-            <div class="space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
-                    C
-                  </div>
-                  <h5 class="text-sm font-bold text-slate-900">
-                    Módulos da Comunidade Nova
-                  </h5>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="marcarTodosModulos('comunidade', true)"
-                    class="text-[11px] text-emerald-600 hover:text-emerald-800 font-semibold cursor-pointer"
-                  >
-                    Liberar Todos
-                  </button>
-                  <span class="text-slate-300">·</span>
-                  <button
-                    type="button"
-                    (click)="marcarTodosModulos('comunidade', false)"
-                    class="text-[11px] text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
-                  >
-                    Bloquear Todos
-                  </button>
-                </div>
-              </div>
-
-              <!-- Grupo 1: Acesso Base (Automático ao aprovar solicitação) -->
-              <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-600 text-white uppercase tracking-wider">
-                      Acesso Base
-                    </span>
-                    <span class="font-bold text-slate-800 text-xs">Liberado Automaticamente ao Aprovar</span>
-                  </div>
-                  <span class="text-[11px] text-slate-500">Módulos padrão da Comunidade</span>
-                </div>
-                <p class="text-[11px] text-slate-600 leading-relaxed">
-                  Estes 4 módulos são liberados imediatamente para todo membro aprovado. Você pode revogá-los individualmente abaixo se necessário.
-                </p>
-
-                <div class="space-y-2">
-                  @for (mod of modulosComunidadeBase; track mod.key) {
-                    <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                      <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
-                        <input
-                          type="checkbox"
-                          [checked]="isModuloLiberadoEdicao('comunidade', mod.key)"
-                          (change)="toggleModuloEdicao('comunidade', mod.key)"
-                          class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 mt-0.5 cursor-pointer"
-                        />
-                        <div>
-                          <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-bold text-slate-900">{{ mod.nome }}</span>
-                            <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Base</span>
-                            @if (isModuloLiberadoEdicao('comunidade', mod.key)) {
-                              <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-600 text-white">Ativo</span>
-                            } @else {
-                              <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-rose-100 text-rose-700">Revogado</span>
-                            }
-                          </div>
-                          <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
-                        </div>
-                      </label>
-
-                      <!-- Campo Válido até -->
-                      <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
-                        <label [for]="'validade-comunidade-' + mod.key" class="text-slate-500 text-[11px] whitespace-nowrap">
-                          Válido até:
-                        </label>
-                        <input
-                          [id]="'validade-comunidade-' + mod.key"
-                          type="date"
-                          [value]="getValidadeEdicao('comunidade', mod.key)"
-                          (input)="onValidadeChange('comunidade', mod.key, $event)"
-                          placeholder="Sem vencimento"
-                          class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <!-- Grupo 2: Módulos Adicionais (Liberação Manual) -->
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
-                      Adicionais
-                    </span>
-                    <span class="font-bold text-slate-800 text-xs">Liberação Manual</span>
-                  </div>
-                  <span class="text-[11px] text-slate-500">Exige concessão individual pelo administrador</span>
-                </div>
-                <p class="text-[11px] text-slate-600 leading-relaxed">
-                  Módulos de agentes de inteligência artificial e permissões administrativas.
-                </p>
-
-                <div class="space-y-2">
-                  @for (mod of modulosComunidadeAdicionais; track mod.key) {
-                    <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                      <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
-                        <input
-                          type="checkbox"
-                          [checked]="isModuloLiberadoEdicao('comunidade', mod.key)"
-                          (change)="toggleModuloEdicao('comunidade', mod.key)"
-                          class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
-                        />
-                        <div>
-                          <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-bold text-slate-900">{{ mod.nome }}</span>
-                            @if (isModuloLiberadoEdicao('comunidade', mod.key)) {
-                              <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-indigo-100 text-indigo-800">Liberado</span>
-                            } @else {
-                              <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
-                            }
-                          </div>
-                          <p class="text-slate-500 text-[11px] mt-0.5">{{ mod.descricao }}</p>
-                        </div>
-                      </label>
-
-                      <!-- Campo Válido até -->
-                      <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
-                        <label [for]="'validade-comunidade-' + mod.key" class="text-slate-500 text-[11px] whitespace-nowrap">
-                          Válido até:
-                        </label>
-                        <input
-                          [id]="'validade-comunidade-' + mod.key"
-                          type="date"
-                          [value]="getValidadeEdicao('comunidade', mod.key)"
-                          (input)="onValidadeChange('comunidade', mod.key, $event)"
-                          placeholder="Sem vencimento"
-                          class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <!-- Grupo 3: Cursos de Capacitação (Acesso Granular por Curso) -->
-              <div class="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-200/80 space-y-3">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
-                      Cursos Liberados
-                    </span>
-                    <span class="font-bold text-slate-800 text-xs">Acesso Granular por Curso</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button
-                      type="button"
-                      (click)="marcarTodosCursos(true)"
-                      class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
-                    >
-                      Liberar Todos
-                    </button>
-                    <span class="text-slate-300">·</span>
-                    <button
-                      type="button"
-                      (click)="marcarTodosCursos(false)"
-                      class="text-[11px] text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
-                    >
-                      Bloquear Todos
-                    </button>
-                  </div>
-                </div>
-                <p class="text-[11px] text-slate-600 leading-relaxed">
-                  Conceda acesso a cursos e videoaulas técnicas individualmente. O membro terá acesso imediato e sua matrícula oficial é gerada automaticamente.
-                </p>
-
-                @if (cursosCadastrados().length === 0) {
-                  <div class="p-3.5 rounded-xl bg-white border border-slate-200 text-center text-xs text-slate-500">
-                    Nenhum curso ativo cadastrado no sistema. Crie novos cursos na aba Gestão de Cursos.
-                  </div>
-                } @else {
-                  <div class="space-y-2">
-                    @for (curso of cursosCadastrados(); track curso.id) {
-                      <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-200 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                        <label class="flex items-start gap-3 cursor-pointer select-none flex-1">
-                          <input
-                            type="checkbox"
-                            [checked]="isModuloLiberadoEdicao('comunidade', curso.id)"
-                            (change)="toggleModuloEdicao('comunidade', curso.id)"
-                            class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
-                          />
-                          <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                              <span class="font-bold text-slate-900">{{ curso.titulo }}</span>
-                              @if (curso.categoria) {
-                                <span class="px-1.5 py-0.2 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">{{ curso.categoria }}</span>
-                              }
-                              @if (isModuloLiberadoEdicao('comunidade', curso.id)) {
-                                <span class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Liberado</span>
-                              } @else {
-                                <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-slate-100 text-slate-500">Bloqueado</span>
-                              }
-                            </div>
-                          </div>
-                        </label>
-
-                        <!-- Campo Válido até -->
-                        <div class="flex items-center gap-2 shrink-0 sm:pl-4 sm:border-l sm:border-slate-100">
-                          <label [for]="'validade-curso-' + curso.id" class="text-slate-500 text-[11px] whitespace-nowrap">
-                            Válido até:
-                          </label>
-                          <input
-                            [id]="'validade-curso-' + curso.id"
-                            type="date"
-                            [value]="getValidadeEdicao('comunidade', curso.id)"
-                            (input)="onValidadeChange('comunidade', curso.id, $event)"
-                            placeholder="Sem vencimento"
-                            class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Rodapé do Modal com Ações -->
-          <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              (click)="fecharEditor()"
-              [disabled]="salvando()"
-              class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="button"
-              (click)="salvarPermissoes()"
-              [disabled]="salvando()"
-              class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              @if (salvando()) {
-                <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Salvando...</span>
-              } @else {
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Salvar Permissões</span>
-              }
-            </button>
-          </div>
-
-        </div>
-      </div>
-    }
-
-    <!-- MODAL DE CADASTRO MANUAL DE NOVO USUÁRIO -->
-    @if (modalNovoUsuarioAberto()) {
-      <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          
-          <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              </div>
-              <div>
-                <h4 class="text-base font-bold text-slate-900 leading-tight">
-                  Cadastrar Novo Usuário
-                </h4>
-                <p class="text-xs text-slate-500">
-                  Cria a conta com segurança no servidor e gera a senha provisória.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              (click)="fecharModalNovoUsuario()"
-              class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <form (submit)="submeterNovoUsuario($event)" class="p-6 space-y-4 text-xs">
-            
-            @if (erroNovoUsuario()) {
-              <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-2">
-                <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{{ erroNovoUsuario() }}</span>
-              </div>
-            }
-
-            <div>
-              <label for="novo-nome" class="block font-bold text-slate-700 mb-1">
-                Nome Completo *
-              </label>
-              <input
-                id="novo-nome"
-                type="text"
-                [value]="novoNome()"
-                (input)="novoNome.set($any($event.target).value)"
-                placeholder="Ex: Engenheiro Carlos Eduardo"
-                required
-                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs"
-              />
-            </div>
-
-            <div>
-              <label for="novo-email" class="block font-bold text-slate-700 mb-1">
-                E-mail Corporativo / Profissional *
-              </label>
-              <input
-                id="novo-email"
-                type="email"
-                [value]="novoEmail()"
-                (input)="novoEmail.set($any($event.target).value)"
-                placeholder="Ex: carlos@engenharia.com.br"
-                required
-                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs"
-              />
-            </div>
-
-            <div>
-              <label for="novo-nivel" class="block font-bold text-slate-700 mb-1">
-                Nível de Acesso Inicial
-              </label>
-              <select
-                id="novo-nivel"
-                [value]="novoNivel()"
-                (change)="novoNivel.set($any($event.target).value)"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs cursor-pointer"
-              >
-                <option value="Membro Trainee">Membro Trainee</option>
-                <option value="Membro Engajado">Membro Engajado</option>
-                <option value="Colaborador Ativo">Colaborador Ativo</option>
-                <option value="Especialista 4.0">Especialista 4.0</option>
-                <option value="Embaixador da Comunidade">Embaixador da Comunidade</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-
-            <!-- Aviso sobre Autenticação & Edge Function -->
-            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed space-y-1">
-              <div class="flex items-center gap-1.5 font-bold text-slate-700">
-                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <span>Provisionamento Seguro:</span>
-              </div>
-              <p>
-                A conta será criada com e-mail confirmado e uma senha provisória aleatória e segura gerada pelo servidor. Você poderá copiá-la ao finalizar.
+      <!-- ========================================== -->
+      <!-- ABA 2: PERFIS DE ACESSO (MOLDES) -->
+      <!-- ========================================== -->
+      @if (abaAtiva() === 'perfis') {
+        <div class="space-y-6">
+          <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <h4 class="text-sm font-bold text-indigo-950 flex items-center gap-2">
+                <span>🛡️ Moldes de Permissões Reutilizáveis</span>
+              </h4>
+              <p class="text-xs text-indigo-800/80">
+                Crie conjuntos de permissões pré-definidos (ex: Membro Trainee, Especialista 4.0, Auditor). Ao cadastrar usuários ou importar listas em massa, basta selecionar o perfil para aplicar todos os acessos automaticamente.
               </p>
             </div>
 
-            <div class="pt-2 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              (click)="abrirEditorPerfil(null)"
+              class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer shrink-0"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Novo Perfil</span>
+            </button>
+          </div>
+
+          @if (perfisAcesso().length > 0) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (perfil of perfisAcesso(); track perfil.id) {
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:border-slate-300 transition-all space-y-3 flex flex-col justify-between">
+                  
+                  <div class="space-y-2">
+                    <div class="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <span>{{ perfil.nome }}</span>
+                        </h4>
+                        @if (perfil.descricao) {
+                          <p class="text-xs text-slate-500 mt-1 line-clamp-2">
+                            {{ perfil.descricao }}
+                          </p>
+                        }
+                      </div>
+
+                      <span class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0">
+                        {{ perfil.modulos.length }} módulos
+                      </span>
+                    </div>
+
+                    <!-- Módulos inclusos no perfil -->
+                    <div class="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                      @for (m of perfil.modulos; track m.produto + ':' + m.modulo) {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                          <span class="w-1.5 h-1.5 rounded-full" [class]="m.produto === 'predial4' ? 'bg-amber-500' : 'bg-indigo-500'"></span>
+                          {{ getNomeModuloAmigavel(m.produto, m.modulo) }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Ações do Perfil -->
+                  <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      (click)="abrirEditorPerfil(perfil)"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Editar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="solicitarExclusaoPerfil(perfil)"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Excluir</span>
+                    </button>
+                  </div>
+
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto text-xl font-bold">
+                🛡️
+              </div>
+              <h4 class="text-base font-bold text-slate-800">Nenhum Perfil de Acesso Criado</h4>
+              <p class="text-xs text-slate-500 max-w-md mx-auto">
+                Crie perfis personalizados para agilizar a concessão de licenças para alunos e equipes.
+              </p>
               <button
                 type="button"
-                (click)="fecharModalNovoUsuario()"
-                [disabled]="salvandoNovoUsuario()"
-                class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                (click)="abrirEditorPerfil(null)"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                <span>+ Criar Primeiro Perfil</span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- ABA 3: IMPORTAÇÃO EM MASSA (TXT) -->
+      <!-- ========================================== -->
+      @if (abaAtiva() === 'massa') {
+        <div class="space-y-6">
+          
+          <!-- Card de Instruções e Formato -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="space-y-1">
+                <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span>⚡ Importação de Usuários em Lote via Arquivo .TXT</span>
+                </h4>
+                <p class="text-xs text-slate-500">
+                  Faça upload de um arquivo de texto com a lista de membros para cadastrar dezenas de usuários em segundos.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                (click)="baixarArquivoExemploTxt()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer shrink-0"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Baixar Modelo (.txt)</span>
+              </button>
+            </div>
+
+            <!-- Box explicativo do formato -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-700 space-y-1">
+              <div class="text-[11px] font-sans font-bold text-slate-500 uppercase tracking-wider">Formato por linha:</div>
+              <div class="text-indigo-900 font-semibold">Nome Completo;email&#64;dominio.com;Nome do Perfil</div>
+              <div class="text-slate-500 text-[11px] font-sans pt-1">
+                Exemplo:<br>
+                <span class="text-slate-800">Carlos Alberto;carlos.eng&#64;gmail.com;Especialista 4.0</span><br>
+                <span class="text-slate-800">Mariana Souza;mariana&#64;arq.com.br;Membro Trainee</span>
+              </div>
+            </div>
+
+            <!-- Upload Drag & Drop -->
+            <div 
+              class="border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer"
+              [class]="arrastandoArquivo() ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-300 hover:border-indigo-400 bg-slate-50/50'"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDropArquivo($event)"
+              (click)="fileInputMassa.click()"
+            >
+              <input
+                #fileInputMassa
+                type="file"
+                accept=".txt,.csv"
+                (change)="onArquivoSelecionado($event)"
+                class="hidden"
+              />
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <p class="text-xs font-bold text-slate-800">
+                Clique para selecionar o arquivo .txt ou arraste e solte aqui
+              </p>
+              <p class="text-[11px] text-slate-400 mt-1">
+                Arquivos aceitos: .txt ou .csv delimitados por ponto e vírgula (;)
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Configurações do Lote e Preview -->
+          @if (itensMassa().length > 0) {
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-5 animate-fadeIn">
+              
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                  <h4 class="text-base font-bold text-slate-900">
+                    Preview do Lote ({{ itensMassa().length }} registros identificados)
+                  </h4>
+                  <div class="flex items-center gap-3 text-xs mt-1">
+                    <span class="text-emerald-700 font-bold">✓ {{ totalValidosMassa() }} válidos</span>
+                    @if (totalInvalidosMassa() > 0) {
+                      <span class="text-rose-700 font-bold">⚠ {{ totalInvalidosMassa() }} com erro</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Configuração de Perfil Padrão e E-mail -->
+                <div class="flex flex-wrap items-center gap-3">
+                  <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-700">Perfil Padrão:</label>
+                    <select
+                      [value]="perfilPadraoMassa()"
+                      (change)="onPerfilPadraoMassaChange($event)"
+                      class="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 bg-white"
+                    >
+                      <option value="">-- Usar Trainee (Base) --</option>
+                      @for (p of perfisAcesso(); track p.id) {
+                        <option [value]="p.nome">{{ p.nome }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                    <input
+                      type="checkbox"
+                      [checked]="enviarEmailBoasVindasMassa()"
+                      (change)="enviarEmailBoasVindasMassa.set(!enviarEmailBoasVindasMassa())"
+                      class="w-4 h-4 rounded text-indigo-600 border-slate-300"
+                    />
+                    <span>Disparar e-mail de boas-vindas</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Tabela de Preview -->
+              <div class="overflow-x-auto max-h-80 border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px] sticky top-0 border-b border-slate-200">
+                    <tr>
+                      <th class="p-3">#</th>
+                      <th class="p-3">Nome</th>
+                      <th class="p-3">E-mail</th>
+                      <th class="p-3">Perfil Aplicado</th>
+                      <th class="p-3">Status / Senha</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    @for (item of itensMassa(); track item.linha) {
+                      <tr [class]="item.valido ? 'hover:bg-slate-50' : 'bg-rose-50/40'">
+                        <td class="p-3 font-mono text-[11px] text-slate-400">{{ item.linha }}</td>
+                        <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                        <td class="p-3 text-slate-600 font-mono text-[11px]">{{ item.email }}</td>
+                        <td class="p-3">
+                          <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {{ item.perfilFinal }}
+                          </span>
+                        </td>
+                        <td class="p-3">
+                          @if (item.processado) {
+                            @if (item.sucesso) {
+                              <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                  ✓ Criado
+                                </span>
+                                @if (item.senhaProvisoria) {
+                                  <span class="font-mono text-[11px] text-slate-700 font-bold bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {{ item.senhaProvisoria }}
+                                  </span>
+                                }
+                              </div>
+                            } @else {
+                              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800" [title]="item.erroMsg || 'Erro'">
+                                ✕ {{ item.erroMsg || 'Falha' }}
+                              </span>
+                            }
+                          } @else {
+                            @if (item.valido) {
+                              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">
+                                Pronto
+                              </span>
+                            } @else {
+                              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                                ⚠ {{ item.motivoInvalido }}
+                              </span>
+                            }
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Ações de Processamento -->
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  (click)="limparImportacaoMassa()"
+                  class="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer"
+                >
+                  ✕ Limpar Lista
+                </button>
+
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  @if (loteProcessadoComSucesso()) {
+                    <button
+                      type="button"
+                      (click)="baixarRelatorioLoteCsv()"
+                      class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <span>Baixar Relatório com Senhas (.csv)</span>
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    (click)="processarImportacaoEmMassa()"
+                    [disabled]="processandoMassa() || totalValidosMassa() === 0 || loteProcessadoComSucesso()"
+                    class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    @if (processandoMassa()) {
+                      <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                      </svg>
+                      <span>Cadastrando Usuários em Lote...</span>
+                    } @else {
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Processar {{ totalValidosMassa() }} Usuários</span>
+                    }
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- MODAL: EDITAR PERFIL DE ACESSO -->
+      <!-- ========================================== -->
+      @if (modalPerfilAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden my-8 space-y-5 p-6">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 class="text-lg font-bold text-slate-900">
+                  {{ perfilEmEdicaoId() ? 'Editar Perfil de Acesso' : 'Criar Novo Perfil de Acesso' }}
+                </h3>
+                <p class="text-xs text-slate-500">
+                  Defina quais módulos e agentes este molde concederá aos usuários vinculados.
+                </p>
+              </div>
+              <button type="button" (click)="fecharEditorPerfil()" class="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+            </div>
+
+            @if (erroPerfil()) {
+              <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                {{ erroPerfil() }}
+              </div>
+            }
+
+            <div class="space-y-4">
+              <!-- Nome do Perfil -->
+              <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700">Nome do Perfil *</label>
+                <input
+                  type="text"
+                  #nomePerfilInput
+                  [value]="nomePerfil()"
+                  (input)="nomePerfil.set(nomePerfilInput.value)"
+                  placeholder="Ex: Auditor Predial 4.0, Especialista, Aluno Básico..."
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <!-- Descrição -->
+              <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700">Descrição Explicativa</label>
+                <textarea
+                  #descPerfilInput
+                  rows="2"
+                  [value]="descricaoPerfil()"
+                  (input)="descricaoPerfil.set(descPerfilInput.value)"
+                  placeholder="Explique o objetivo deste perfil de acesso..."
+                  class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                ></textarea>
+              </div>
+
+              <!-- Seleção Rápida de Módulos -->
+              <div class="flex items-center justify-between pt-2">
+                <span class="text-xs font-bold text-slate-700">Módulos Liberados</span>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    (click)="marcarTodosModulosPerfil('comunidade', true)"
+                    class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                  >
+                    + Todos Comunidade
+                  </button>
+                  <span class="text-slate-300">·</span>
+                  <button
+                    type="button"
+                    (click)="marcarTodosModulosPerfil('predial4', true)"
+                    class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                  >
+                    + Todos Predial
+                  </button>
+                  <span class="text-slate-300">·</span>
+                  <button
+                    type="button"
+                    (click)="limparModulosPerfil()"
+                    class="text-[11px] font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+
+              <!-- Grade de Toggles -->
+              <div class="space-y-4 max-h-72 overflow-y-auto p-1">
+                
+                <!-- Predial 4.0 -->
+                <div class="space-y-2">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Predial 4.0</span>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @for (mod of modulosPredial; track mod.key) {
+                      <label class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-100/60 cursor-pointer transition-all">
+                        <input
+                          type="checkbox"
+                          [checked]="isModuloNoPerfil('predial4', mod.key)"
+                          (change)="toggleModuloNoPerfil('predial4', mod.key)"
+                          class="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                        />
+                        <div>
+                          <span class="text-xs font-bold text-slate-800 block">{{ mod.nome }}</span>
+                          <span class="text-[10px] text-slate-500 line-clamp-1">{{ mod.descricao }}</span>
+                        </div>
+                      </label>
+                    }
+                  </div>
+                </div>
+
+                <!-- Comunidade Base -->
+                <div class="space-y-2">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Comunidade Base</span>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @for (mod of modulosComunidadeBase; track mod.key) {
+                      <label class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-100/60 cursor-pointer transition-all">
+                        <input
+                          type="checkbox"
+                          [checked]="isModuloNoPerfil('comunidade', mod.key)"
+                          (change)="toggleModuloNoPerfil('comunidade', mod.key)"
+                          class="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                        />
+                        <div>
+                          <span class="text-xs font-bold text-slate-800 block">{{ mod.nome }}</span>
+                          <span class="text-[10px] text-slate-500 line-clamp-1">{{ mod.descricao }}</span>
+                        </div>
+                      </label>
+                    }
+                  </div>
+                </div>
+
+                <!-- Agentes de IA -->
+                <div class="space-y-2">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Agentes de Engenharia 4.0</span>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @for (mod of modulosComunidadeAdicionais; track mod.key) {
+                      <label class="flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-100/60 cursor-pointer transition-all">
+                        <input
+                          type="checkbox"
+                          [checked]="isModuloNoPerfil('comunidade', mod.key)"
+                          (change)="toggleModuloNoPerfil('comunidade', mod.key)"
+                          class="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                        />
+                        <div>
+                          <span class="text-xs font-bold text-slate-800 block">{{ mod.nome }}</span>
+                          <span class="text-[10px] text-slate-500 line-clamp-1">{{ mod.descricao }}</span>
+                        </div>
+                      </label>
+                    }
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Rodapé Modal -->
+            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="fecharEditorPerfil()"
+                class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="salvarPerfil()"
+                [disabled]="salvandoPerfil() || !nomePerfil().trim()"
+                class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                @if (salvandoPerfil()) {
+                  <span>Salvando...</span>
+                } @else {
+                  <span>Salvar Perfil</span>
+                }
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE USUÁRIO -->
+      <!-- ========================================== -->
+      @if (usuarioParaExcluir()) {
+        @let uDel = usuarioParaExcluir()!;
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-5">
+            
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+
+            <div class="text-center space-y-2">
+              <h3 class="text-base font-bold text-slate-900">
+                Confirmar Exclusão de Usuário
+              </h3>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Tem certeza que deseja excluir permanentemente o acesso de <strong>{{ getNome(uDel) }}</strong> ({{ uDel.email }})? Esta ação revoga a conta e remove os dados no Supabase.
+              </p>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                (click)="usuarioParaExcluir.set(null)"
+                [disabled]="excluindoUsuario()"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
               >
                 Cancelar
               </button>
 
               <button
-                type="submit"
-                [disabled]="salvandoNovoUsuario()"
-                class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                type="button"
+                (click)="confirmarExclusaoUsuario()"
+                [disabled]="excluindoUsuario()"
+                class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-2"
               >
-                @if (salvandoNovoUsuario()) {
-                  <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                @if (excluindoUsuario()) {
+                  <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                   </svg>
-                  <span>Provisionando Conta...</span>
+                  <span>Excluindo...</span>
                 } @else {
-                  <span>Criar Conta & Gerar Senha</span>
+                  <span>Sim, Excluir Usuário</span>
                 }
               </button>
             </div>
 
-          </form>
-
+          </div>
         </div>
-      </div>
-    }
+      }
 
-    <!-- MODAL DE CONFIRMAÇÃO DE SENHA PROVISÓRIA GERADA -->
-    @if (confirmacaoSenha()) {
-      @let conf = confirmacaoSenha()!;
-      <div class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          
-          <div class="px-6 py-5 border-b border-emerald-100 bg-emerald-50/70 flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+      <!-- ========================================== -->
+      <!-- MODAL: EDITAR PERMISSÕES DE USUÁRIO -->
+      <!-- ========================================== -->
+      @if (usuarioEmEdicao()) {
+        @let u = usuarioEmEdicao()!;
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-3xl overflow-hidden my-8 space-y-6 p-6">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
-                <h4 class="text-base font-bold text-slate-900 leading-tight">
-                  Conta Criada com Sucesso!
-                </h4>
-                <p class="text-xs text-emerald-800 font-medium">
-                  {{ conf.nome }} ({{ conf.email }})
+                <h3 class="text-lg font-bold text-slate-900">
+                  Gerenciar Acessos de {{ getNome(u) }}
+                </h3>
+                <p class="text-xs text-slate-500">
+                  {{ u.email }} · Defina nível, validade e permissões modulares.
                 </p>
               </div>
+              <button type="button" (click)="fecharEditor()" class="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
             </div>
-          </div>
 
-          <div class="p-6 space-y-5 text-xs">
-            
-            <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
-              <div class="flex items-center gap-2 text-amber-900 font-bold">
-                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span>Atenção: Senha Provisória</span>
-              </div>
-              
-              <p class="text-amber-800 leading-relaxed text-[11px]">
-                Copie e envie para a pessoa por um canal seguro. <strong>Esta senha não será mostrada novamente.</strong>
-              </p>
-
-              <!-- Bloco da Senha com Botão Copiar -->
-              <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-amber-300/80 shadow-2xs">
-                <div class="font-mono text-sm sm:text-base font-black tracking-wider text-slate-900 select-all">
-                  {{ conf.senha }}
+            <!-- SELETOR RÁPIDO: CARREGAR DO PERFIL DE ACESSO -->
+            @if (perfisAcesso().length > 0) {
+              <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-indigo-950">⚡ Aplicar Perfil Pronto:</span>
+                  <span class="text-[11px] text-indigo-700">Preencha os módulos instantaneamente a partir de um molde</span>
                 </div>
 
+                <select
+                  (change)="aplicarPerfilRapidoNoEditor($event)"
+                  class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold text-indigo-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">-- Selecionar Perfil --</option>
+                  @for (p of perfisAcesso(); track p.id) {
+                    <option [value]="p.id">{{ p.nome }} ({{ p.modulos.length }} módulos)</option>
+                  }
+                </select>
+              </div>
+            }
+
+            <!-- Nível de Membro e Licença Global -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700">Nível na Comunidade</label>
+                <select
+                  [value]="nivelEdicao()"
+                  (change)="onNivelChange($event)"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                >
+                  <option value="Membro Trainee">Membro Trainee</option>
+                  <option value="Membro Engajado">Membro Engajado</option>
+                  <option value="Colaborador Ativo">Colaborador Ativo</option>
+                  <option value="Especialista 4.0">Especialista 4.0</option>
+                  <option value="Embaixador da Comunidade">Embaixador da Comunidade</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </div>
+
+              <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700">Atalho de Validade da Licença</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    (click)="selecionarLicencaRapida('6_meses')"
+                    [class]="licencaTipoEdicao() === '6_meses' ? 'bg-indigo-600 text-white font-bold text-xs py-2 rounded-xl' : 'bg-slate-100 text-slate-700 text-xs py-2 rounded-xl hover:bg-slate-200'"
+                  >
+                    6 Meses
+                  </button>
+                  <button
+                    type="button"
+                    (click)="selecionarLicencaRapida('1_ano')"
+                    [class]="licencaTipoEdicao() === '1_ano' ? 'bg-indigo-600 text-white font-bold text-xs py-2 rounded-xl' : 'bg-slate-100 text-slate-700 text-xs py-2 rounded-xl hover:bg-slate-200'"
+                  >
+                    1 Ano
+                  </button>
+                  <button
+                    type="button"
+                    (click)="selecionarLicencaRapida('vitalicia')"
+                    [class]="licencaTipoEdicao() === 'vitalicia' ? 'bg-emerald-600 text-white font-bold text-xs py-2 rounded-xl' : 'bg-slate-100 text-slate-700 text-xs py-2 rounded-xl hover:bg-slate-200'"
+                  >
+                    Vitalícia
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Toggles de Módulos -->
+            <div class="space-y-4 max-h-80 overflow-y-auto p-1 border-t border-slate-100 pt-4">
+              
+              <!-- Predial 4.0 -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-700">Predial 4.0</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" (click)="marcarTodosModulos('predial4', true)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer">+ Todos</button>
+                    <span class="text-slate-300">·</span>
+                    <button type="button" (click)="marcarTodosModulos('predial4', false)" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Nenhum</button>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  @for (mod of modulosPredial; track mod.key) {
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-100 cursor-pointer">
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          [checked]="isModuloLiberadoEdicao('predial4', mod.key)"
+                          (change)="toggleModuloEdicao('predial4', mod.key)"
+                          class="w-4 h-4 rounded text-indigo-600 border-slate-300"
+                        />
+                        <span class="text-xs font-bold text-slate-800">{{ mod.nome }}</span>
+                      </div>
+                    </label>
+                  }
+                </div>
+              </div>
+
+              <!-- Comunidade Base -->
+              <div class="space-y-2 pt-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-700">Comunidade & Agentes de IA</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" (click)="marcarTodosModulos('comunidade', true)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer">+ Todos</button>
+                    <span class="text-slate-300">·</span>
+                    <button type="button" (click)="marcarTodosModulos('comunidade', false)" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Nenhum</button>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  @for (mod of modulosComunidade; track mod.key) {
+                    <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-100 cursor-pointer">
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          [checked]="isModuloLiberadoEdicao('comunidade', mod.key)"
+                          (change)="toggleModuloEdicao('comunidade', mod.key)"
+                          class="w-4 h-4 rounded text-indigo-600 border-slate-300"
+                        />
+                        <span class="text-xs font-bold text-slate-800">{{ mod.nome }}</span>
+                      </div>
+                    </label>
+                  }
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Rodapé Salvar -->
+            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="fecharEditor()"
+                class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="salvarPermissoes()"
+                [disabled]="salvando()"
+                class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                @if (salvando()) {
+                  <span>Salvando Permissões...</span>
+                } @else {
+                  <span>Salvar Acessos</span>
+                }
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- MODAL: CADASTRAR NOVO USUÁRIO INDIVIDUAL -->
+      <!-- ========================================== -->
+      @if (modalNovoUsuarioAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-5">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 class="text-base font-bold text-slate-900">Cadastrar Novo Usuário</h3>
+              <button type="button" (click)="fecharModalNovoUsuario()" class="text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+            </div>
+
+            @if (erroNovoUsuario()) {
+              <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                {{ erroNovoUsuario() }}
+              </div>
+            }
+
+            <form (submit)="submeterNovoUsuario($event)" class="space-y-3.5">
+              <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700">Nome Completo *</label>
+                <input
+                  type="text"
+                  #nomeNovoInput
+                  [value]="novoNome()"
+                  (input)="novoNome.set(nomeNovoInput.value)"
+                  placeholder="Ex: Engenheiro Carlos Silva"
+                  class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700">E-mail *</label>
+                <input
+                  type="email"
+                  #emailNovoInput
+                  [value]="novoEmail()"
+                  (input)="novoEmail.set(emailNovoInput.value)"
+                  placeholder="carlos@exemplo.com"
+                  class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <!-- Perfil de Acesso Inicial -->
+              <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700">Perfil de Acesso Inicial</label>
+                <select
+                  [value]="novoPerfilId()"
+                  (change)="onNovoPerfilChange($event)"
+                  class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800"
+                >
+                  <option value="">-- Usar Permissão Base (Trainee) --</option>
+                  @for (p of perfisAcesso(); track p.id) {
+                    <option [value]="p.nome">{{ p.nome }} ({{ p.modulos.length }} módulos)</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Enviar e-mail de boas-vindas -->
+              <div class="pt-1">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    [checked]="novoEnviarEmail()"
+                    (change)="novoEnviarEmail.set(!novoEnviarEmail())"
+                    class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                  />
+                  <span class="text-xs font-semibold text-slate-700">Disparar e-mail de boas-vindas com senha provisória</span>
+                </label>
+              </div>
+
+              <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  (click)="copiarSenhaProvisoria(conf.senha)"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
-                  [class]="senhaCopiada()
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-900 hover:bg-slate-800 text-white'"
+                  (click)="fecharModalNovoUsuario()"
+                  class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
                 >
-                  @if (senhaCopiada()) {
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  [disabled]="salvandoNovoUsuario() || !novoNome().trim() || !novoEmail().trim()"
+                  class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  @if (salvandoNovoUsuario()) {
+                    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                     </svg>
-                    <span>Copiado!</span>
+                    <span>Criando...</span>
                   } @else {
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    <span>Copiar Senha</span>
+                    <span>Criar Usuário</span>
                   }
                 </button>
               </div>
+            </form>
+
+          </div>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- MODAL: CONFIRMAÇÃO DE SENHA PROVISÓRIA -->
+      <!-- ========================================== -->
+      @if (confirmacaoSenha()) {
+        @let conf = confirmacaoSenha()!;
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4">
+            
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-xl font-bold">
+              ✓
             </div>
 
-            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
-              O usuário já pode fazer login na plataforma utilizando o e-mail <strong>{{ conf.email }}</strong> e esta senha provisória.
+            <div class="text-center space-y-1">
+              <h3 class="text-base font-bold text-slate-900">Usuário Criado com Sucesso!</h3>
+              <p class="text-xs text-slate-500">
+                Credenciais geradas para <strong>{{ conf.nome }}</strong>
+              </p>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+              <span class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">Senha Provisória</span>
+              <div class="font-mono text-xl font-black text-slate-900 tracking-widest selection:bg-indigo-100">
+                {{ conf.senha }}
+              </div>
+              <button
+                type="button"
+                (click)="copiarSenhaProvisoria(conf.senha)"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-2xs hover:bg-slate-50 cursor-pointer"
+              >
+                @if (senhaCopiada()) {
+                  <span class="text-emerald-600 font-bold">✓ Copiado!</span>
+                } @else {
+                  <span>Copiar Senha</span>
+                }
+              </button>
             </div>
 
             <div class="pt-2 flex items-center justify-end">
               <button
                 type="button"
                 (click)="concluirCriacaoUsuario(conf)"
-                class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                class="w-full px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer"
               >
-                <span>Configurar Licenças & Permissões →</span>
+                <span>Concluir</span>
               </button>
             </div>
 
           </div>
-
         </div>
-      </div>
-    }
+      }
 
+    </div>
   `
 })
 export class AdminUsuariosComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+
+  readonly abaAtiva = signal<'usuarios' | 'perfis' | 'massa'>('usuarios');
 
   readonly modulosPredial: ModuloConfig[] = [
     { key: 'inspecao_predial', nome: 'Inspeção Predial', descricao: 'Laudos técnicos de inspeção e vistoria periódica.', produto: 'predial4' },
@@ -1132,69 +1312,99 @@ export class AdminUsuariosComponent implements OnInit {
     return [...this.modulosComunidadeBase, ...this.modulosComunidadeAdicionais];
   }
 
-  readonly cursosCadastrados = signal<{ id: string; titulo: string; categoria?: string; ativo?: boolean }[]>([]);
   readonly usuarios = signal<ProfissionalComPermissoes[]>([]);
+  readonly perfisAcesso = signal<PerfilAcessoItem[]>([]);
   readonly termoBusca = signal('');
   readonly carregando = signal(false);
   readonly alertaSucesso = signal<string | null>(null);
   readonly alertaErro = signal<string | null>(null);
 
-  // Estados de Edição
+  // Estados de Edição de Usuário
   readonly usuarioEmEdicao = signal<ProfissionalComPermissoes | null>(null);
   readonly nivelEdicao = signal<string>('Membro Trainee');
   readonly licencaTipoEdicao = signal<'6_meses' | '1_ano' | 'vitalicia' | 'personalizada' | ''>('');
   readonly licencaValidadeEdicao = signal<string>('');
   readonly permissoesEdicao = signal<Map<string, { liberado: boolean; validade: string | null }>>(new Map());
   readonly salvando = signal(false);
-  readonly erroEdicao = signal<string | null>(null);
 
-  // Estados do Modal Novo Usuário
+  // Estados de Exclusão de Usuário
+  readonly usuarioParaExcluir = signal<ProfissionalComPermissoes | null>(null);
+  readonly excluindoUsuario = signal(false);
+
+  // Estados de Criação Individual
   readonly modalNovoUsuarioAberto = signal(false);
   readonly novoNome = signal('');
   readonly novoEmail = signal('');
-  readonly novoNivel = signal('Membro Trainee');
+  readonly novoPerfilId = signal('');
+  readonly novoEnviarEmail = signal(true);
   readonly salvandoNovoUsuario = signal(false);
   readonly erroNovoUsuario = signal<string | null>(null);
-
-  // Confirmação de Senha Provisória
   readonly confirmacaoSenha = signal<ConfirmacaoSenhaProvisoria | null>(null);
   readonly senhaCopiada = signal(false);
+
+  // Estados de Edição de Perfil de Acesso
+  readonly modalPerfilAberto = signal(false);
+  readonly perfilEmEdicaoId = signal<string | null>(null);
+  readonly nomePerfil = signal('');
+  readonly descricaoPerfil = signal('');
+  readonly modulosPerfilSelecionados = signal<Set<string>>(new Set());
+  readonly salvandoPerfil = signal(false);
+  readonly erroPerfil = signal<string | null>(null);
+
+  // Estados de Importação em Massa
+  readonly arrastandoArquivo = signal(false);
+  readonly itensMassa = signal<ItemImportacaoMassa[]>([]);
+  readonly perfilPadraoMassa = signal<string>('');
+  readonly enviarEmailBoasVindasMassa = signal<boolean>(true);
+  readonly processandoMassa = signal<boolean>(false);
+  readonly loteProcessadoComSucesso = signal<boolean>(false);
+
+  readonly totalValidosMassa = computed(() => this.itensMassa().filter(i => i.valido).length);
+  readonly totalInvalidosMassa = computed(() => this.itensMassa().filter(i => !i.valido).length);
 
   readonly usuariosFiltrados = computed(() => {
     const termo = this.termoBusca().toLowerCase().trim();
     if (!termo) return this.usuarios();
     return this.usuarios().filter(u => {
-      const nome = this.getNome(u).toLowerCase();
-      const email = (u.email || '').toLowerCase();
-      return nome.includes(termo) || email.includes(termo);
+      const n = (u.full_name || u.nome || '').toLowerCase();
+      const e = (u.email || '').toLowerCase();
+      return n.includes(termo) || e.includes(termo);
     });
   });
 
-  ngOnInit(): void {
-    this.carregarUsuarios();
+  async ngOnInit(): Promise<void> {
+    await this.carregarTudo();
+  }
+
+  async carregarTudo(): Promise<void> {
+    this.carregando.set(true);
+    await Promise.all([
+      this.carregarUsuarios(),
+      this.carregarPerfisAcesso(),
+    ]);
+    this.carregando.set(false);
   }
 
   async carregarUsuarios(): Promise<void> {
-    this.carregando.set(true);
-    this.alertaErro.set(null);
-
     try {
-      const [dados, cursos] = await Promise.all([
-        this.supabaseService.listarProfissionaisComPermissoes(),
-        this.supabaseService.listarCursosAtivos(),
-      ]);
-      this.usuarios.set(dados);
-      this.cursosCadastrados.set(cursos);
-    } catch (e: any) {
-      this.alertaErro.set('Erro ao buscar lista de profissionais e cursos.');
-    } finally {
-      this.carregando.set(false);
+      const data = await this.supabaseService.listarProfissionaisAdmin();
+      this.usuarios.set(data || []);
+    } catch {
+      this.alertaErro.set('Não foi possível carregar a lista de usuários.');
+    }
+  }
+
+  async carregarPerfisAcesso(): Promise<void> {
+    try {
+      const perfis = await this.supabaseService.listarPerfisAcesso();
+      this.perfisAcesso.set(perfis || []);
+    } catch {
+      console.warn('Falha ao carregar perfis de acesso.');
     }
   }
 
   onBuscaInput(event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    this.termoBusca.set(val);
+    this.termoBusca.set((event.target as HTMLInputElement).value);
   }
 
   getNome(user: ProfissionalComPermissoes): string {
@@ -1210,99 +1420,45 @@ export class AdminUsuariosComponent implements OnInit {
 
   getNivelBadgeClass(nivel?: string): string {
     switch (nivel) {
-      case 'Membro Engajado':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'Colaborador Ativo':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'Especialista 4.0':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'Embaixador da Comunidade':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'Admin':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
-      case 'Membro Trainee':
-      default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'Membro Engajado': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Colaborador Ativo': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Especialista 4.0': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'Embaixador da Comunidade': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Admin': return 'bg-rose-50 text-rose-700 border-rose-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   }
 
   getNivelDotClass(nivel?: string): string {
     switch (nivel) {
-      case 'Membro Engajado':
-        return 'bg-blue-500';
-      case 'Colaborador Ativo':
-        return 'bg-emerald-500';
-      case 'Especialista 4.0':
-        return 'bg-purple-500';
-      case 'Embaixador da Comunidade':
-        return 'bg-amber-500';
-      case 'Admin':
-        return 'bg-rose-500';
-      case 'Membro Trainee':
-      default:
-        return 'bg-slate-400';
+      case 'Membro Engajado': return 'bg-blue-500';
+      case 'Colaborador Ativo': return 'bg-emerald-500';
+      case 'Especialista 4.0': return 'bg-purple-500';
+      case 'Embaixador da Comunidade': return 'bg-amber-500';
+      case 'Admin': return 'bg-rose-500';
+      default: return 'bg-slate-400';
     }
   }
 
-  formatarDataSimples(valStr?: string | null): string {
-    if (!valStr) return '';
-    try {
-      const d = new Date(valStr);
-      if (isNaN(d.getTime())) return valStr;
-      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    } catch {
-      return valStr;
-    }
-  }
-
-  getLicencaStatus(user: ProfissionalComPermissoes): {
-    tipo: 'vitalicia' | 'valida' | 'expirada' | 'indefinida';
-    rotulo: string;
-    badgeClass: string;
-  } {
+  getLicencaStatus(user: ProfissionalComPermissoes): { rotulo: string; badgeClass: string } {
     if (user.licenca_tipo === 'vitalicia') {
-      return {
-        tipo: 'vitalicia',
-        rotulo: 'Licença Vitalícia',
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      };
+      return { rotulo: 'Vitalícia', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
     }
-
     if (user.licenca_validade) {
       const dataVal = new Date(user.licenca_validade);
       const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-
-      const dataFormatada = this.formatarDataSimples(user.licenca_validade);
       if (!isNaN(dataVal.getTime()) && dataVal < hoje) {
-        return {
-          tipo: 'expirada',
-          rotulo: `Expirada (${dataFormatada})`,
-          badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 font-bold',
-        };
+        return { rotulo: 'Expirada', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 font-bold' };
       }
-
-      return {
-        tipo: 'valida',
-        rotulo: `Expira em ${dataFormatada}`,
-        badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      };
+      return { rotulo: `Expira em ${dataVal.toLocaleDateString('pt-BR')}`, badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
     }
-
-    return {
-      tipo: 'indefinida',
-      rotulo: 'Licença Padrão',
-      badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-    };
+    return { rotulo: 'Padrão', badgeClass: 'bg-slate-100 text-slate-600 border-slate-200' };
   }
 
   getModuloStatus(user: ProfissionalComPermissoes, produto: 'predial4' | 'comunidade', moduloKey: string): { liberado: boolean; validade: string | null } {
     if (!user.permissoes) return { liberado: false, validade: null };
     const perm = user.permissoes.find(p => p.produto === produto && p.modulo === moduloKey);
-    return {
-      liberado: perm?.liberado ?? false,
-      validade: perm?.validade ?? null,
-    };
+    return { liberado: perm?.liberado ?? false, validade: perm?.validade ?? null };
   }
 
   getLiberadosCount(user: ProfissionalComPermissoes, produto: 'predial4' | 'comunidade'): number {
@@ -1310,55 +1466,13 @@ export class AdminUsuariosComponent implements OnInit {
     return user.permissoes.filter(p => p.produto === produto && p.liberado).length;
   }
 
-  getCursosLiberadosCount(user: ProfissionalComPermissoes): number {
-    if (!user.permissoes) return 0;
-    const cursoIds = new Set(this.cursosCadastrados().map(c => c.id));
-    return user.permissoes.filter(p => p.produto === 'comunidade' && cursoIds.has(p.modulo) && p.liberado).length;
-  }
-
-  formatarValidadeCurta(valStr?: string | null): string {
-    if (!valStr) return '';
-    try {
-      const d = new Date(valStr);
-      if (isNaN(d.getTime())) return valStr;
-      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-    } catch {
-      return valStr;
+  getNomeModuloAmigavel(produto: string, moduloKey: string): string {
+    if (produto === 'predial4') {
+      const m = this.modulosPredial.find(x => x.key === moduloKey);
+      return m ? m.nome : moduloKey;
     }
-  }
-
-  // --- CONTROLE DE LICENÇA GLOBAL ---
-  calcularDataMeses(meses: number): string {
-    const d = new Date();
-    d.setMonth(d.getMonth() + meses);
-    return d.toISOString().split('T')[0];
-  }
-
-  calcularDataAnos(anos: number): string {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() + anos);
-    return d.toISOString().split('T')[0];
-  }
-
-  selecionarLicencaRapida(tipo: '6_meses' | '1_ano' | 'vitalicia'): void {
-    this.licencaTipoEdicao.set(tipo);
-    if (tipo === '6_meses') {
-      this.licencaValidadeEdicao.set(this.calcularDataMeses(6));
-    } else if (tipo === '1_ano') {
-      this.licencaValidadeEdicao.set(this.calcularDataAnos(1));
-    } else if (tipo === 'vitalicia') {
-      this.licencaValidadeEdicao.set('');
-    }
-  }
-
-  onLicencaDataManualChange(event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    this.licencaValidadeEdicao.set(val);
-    if (val) {
-      this.licencaTipoEdicao.set('personalizada');
-    } else {
-      this.licencaTipoEdicao.set('');
-    }
+    const mc = this.modulosComunidade.find(x => x.key === moduloKey);
+    return mc ? mc.nome : moduloKey;
   }
 
   // --- EDITOR DE USUÁRIO ---
@@ -1367,52 +1481,66 @@ export class AdminUsuariosComponent implements OnInit {
     this.nivelEdicao.set(user.nivel_atual || 'Membro Trainee');
     this.licencaTipoEdicao.set((user.licenca_tipo as any) || (user.licenca_validade ? 'personalizada' : ''));
     this.licencaValidadeEdicao.set(user.licenca_validade ? user.licenca_validade.split('T')[0] : '');
-    this.erroEdicao.set(null);
 
     const mapa = new Map<string, { liberado: boolean; validade: string | null }>();
-
-    // Carregar módulos do Predial
     for (const m of this.modulosPredial) {
-      const chave = `predial4:${m.key}`;
       const status = this.getModuloStatus(user, 'predial4', m.key);
-      mapa.set(chave, { liberado: status.liberado, validade: status.validade ? status.validade.split('T')[0] : null });
+      mapa.set(`predial4:${m.key}`, { liberado: status.liberado, validade: status.validade });
     }
-
-    // Carregar módulos da Comunidade
     for (const m of this.modulosComunidade) {
-      const chave = `comunidade:${m.key}`;
       const status = this.getModuloStatus(user, 'comunidade', m.key);
-      mapa.set(chave, { liberado: status.liberado, validade: status.validade ? status.validade.split('T')[0] : null });
+      mapa.set(`comunidade:${m.key}`, { liberado: status.liberado, validade: status.validade });
     }
-
-    // Carregar cursos individuais da Comunidade
-    for (const c of this.cursosCadastrados()) {
-      const chave = `comunidade:${c.id}`;
-      const status = this.getModuloStatus(user, 'comunidade', c.id);
-      mapa.set(chave, { liberado: status.liberado, validade: status.validade ? status.validade.split('T')[0] : null });
-    }
-
     this.permissoesEdicao.set(mapa);
   }
 
   fecharEditor(): void {
     this.usuarioEmEdicao.set(null);
-    this.erroEdicao.set(null);
+  }
+
+  aplicarPerfilRapidoNoEditor(event: Event): void {
+    const perfilId = (event.target as HTMLSelectElement).value;
+    if (!perfilId) return;
+
+    const perfil = this.perfisAcesso().find(p => p.id === perfilId);
+    if (!perfil) return;
+
+    const mapa = new Map(this.permissoesEdicao());
+    // Resetar todos para falso
+    for (const [key, val] of mapa.entries()) {
+      mapa.set(key, { ...val, liberado: false });
+    }
+
+    // Ativar os do perfil
+    for (const m of perfil.modulos) {
+      const chave = `${m.produto}:${m.modulo}`;
+      mapa.set(chave, { liberado: true, validade: null });
+    }
+
+    this.permissoesEdicao.set(mapa);
+    this.alertaSucesso.set(`Módulos do perfil "${perfil.nome}" aplicados ao formulário. Clique em Salvar.`);
   }
 
   onNivelChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value;
-    this.nivelEdicao.set(val);
+    this.nivelEdicao.set((event.target as HTMLSelectElement).value);
+  }
+
+  selecionarLicencaRapida(tipo: '6_meses' | '1_ano' | 'vitalicia'): void {
+    this.licencaTipoEdicao.set(tipo);
+    const d = new Date();
+    if (tipo === '6_meses') {
+      d.setMonth(d.getMonth() + 6);
+      this.licencaValidadeEdicao.set(d.toISOString().split('T')[0]);
+    } else if (tipo === '1_ano') {
+      d.setFullYear(d.getFullYear() + 1);
+      this.licencaValidadeEdicao.set(d.toISOString().split('T')[0]);
+    } else if (tipo === 'vitalicia') {
+      this.licencaValidadeEdicao.set('');
+    }
   }
 
   isModuloLiberadoEdicao(produto: 'predial4' | 'comunidade', modulo: string): boolean {
-    const chave = `${produto}:${modulo}`;
-    return this.permissoesEdicao().get(chave)?.liberado ?? false;
-  }
-
-  getValidadeEdicao(produto: 'predial4' | 'comunidade', modulo: string): string {
-    const chave = `${produto}:${modulo}`;
-    return this.permissoesEdicao().get(chave)?.validade ?? '';
+    return this.permissoesEdicao().get(`${produto}:${modulo}`)?.liberado ?? false;
   }
 
   toggleModuloEdicao(produto: 'predial4' | 'comunidade', modulo: string): void {
@@ -1420,15 +1548,6 @@ export class AdminUsuariosComponent implements OnInit {
     const mapa = new Map(this.permissoesEdicao());
     const atual = mapa.get(chave) || { liberado: false, validade: null };
     mapa.set(chave, { ...atual, liberado: !atual.liberado });
-    this.permissoesEdicao.set(mapa);
-  }
-
-  onValidadeChange(produto: 'predial4' | 'comunidade', modulo: string, event: Event): void {
-    const val = (event.target as HTMLInputElement).value || null;
-    const chave = `${produto}:${modulo}`;
-    const mapa = new Map(this.permissoesEdicao());
-    const atual = mapa.get(chave) || { liberado: false, validade: null };
-    mapa.set(chave, { ...atual, validade: val });
     this.permissoesEdicao.set(mapa);
   }
 
@@ -1443,44 +1562,24 @@ export class AdminUsuariosComponent implements OnInit {
     this.permissoesEdicao.set(mapa);
   }
 
-  marcarTodosCursos(liberado: boolean): void {
-    const mapa = new Map(this.permissoesEdicao());
-    for (const curso of this.cursosCadastrados()) {
-      const chave = `comunidade:${curso.id}`;
-      const atual = mapa.get(chave) || { liberado: false, validade: null };
-      mapa.set(chave, { ...atual, liberado });
-    }
-    this.permissoesEdicao.set(mapa);
-  }
-
   async salvarPermissoes(): Promise<void> {
     const u = this.usuarioEmEdicao();
     if (!u) return;
 
     this.salvando.set(true);
-    this.erroEdicao.set(null);
-
     try {
       const nivel = this.nivelEdicao();
       const tipoLicenca = this.licencaTipoEdicao() || null;
       const validadeLicenca = this.licencaValidadeEdicao() || null;
 
-      // Atualizar nível e licença global na tabela profissionais
-      const { error: erroProf } = await this.supabaseService.atualizarProfissionalAdmin(u.id, {
+      await this.supabaseService.atualizarProfissionalAdmin(u.id, {
         nivel_atual: nivel,
         licenca_tipo: tipoLicenca,
         licenca_validade: tipoLicenca === 'vitalicia' ? null : validadeLicenca,
       });
 
-      if (erroProf) {
-        console.warn('Aviso ao atualizar dados do profissional:', erroProf.message);
-      }
-
-      // Upsert das permissões para cada módulo
-      const mapa = this.permissoesEdicao();
-      const promessas: Promise<{ error: Error | null }>[] = [];
-
-      mapa.forEach((val, chave) => {
+      const promessas: Promise<any>[] = [];
+      this.permissoesEdicao().forEach((val, chave) => {
         const [produtoStr, modulo] = chave.split(':') as ['predial4' | 'comunidade', string];
         promessas.push(
           this.supabaseService.upsertPermissao({
@@ -1494,46 +1593,70 @@ export class AdminUsuariosComponent implements OnInit {
         );
       });
 
-      const resultados = await Promise.all(promessas);
-      const erroUpsert = resultados.find(r => r.error !== null);
-
-      if (erroUpsert) {
-        this.erroEdicao.set(`Não foi possível salvar algumas permissões: ${erroUpsert.error?.message || 'erro de rede'}`);
-        return;
-      }
-
-      this.alertaSucesso.set(`Permissões e licença de ${this.getNome(u)} salvas com sucesso!`);
+      await Promise.all(promessas);
+      this.alertaSucesso.set(`Permissões de ${this.getNome(u)} salvas com sucesso!`);
       this.fecharEditor();
       await this.carregarUsuarios();
-    } catch (e: any) {
-      this.erroEdicao.set('Ocorreu uma falha inesperada ao salvar permissões.');
+    } catch {
+      this.alertaErro.set('Erro ao salvar permissões do usuário.');
     } finally {
       this.salvando.set(false);
     }
   }
 
-  // --- CADASTRO SEGURO DE NOVO USUÁRIO ---
+  // --- EXCLUSÃO DE USUÁRIO ---
+  solicitarExclusaoUsuario(user: ProfissionalComPermissoes): void {
+    this.usuarioParaExcluir.set(user);
+  }
+
+  async confirmarExclusaoUsuario(): Promise<void> {
+    const u = this.usuarioParaExcluir();
+    if (!u) return;
+
+    this.excluindoUsuario.set(true);
+    try {
+      const { error } = await this.supabaseService.excluirUsuarioAdminViaFunction(u.id);
+      if (error) {
+        this.alertaErro.set('Erro ao excluir usuário: ' + error.message);
+        return;
+      }
+
+      this.alertaSucesso.set(`Usuário ${this.getNome(u)} excluído com sucesso.`);
+      this.usuarioParaExcluir.set(null);
+      await this.carregarUsuarios();
+    } catch (e: any) {
+      this.alertaErro.set('Falha na exclusão do usuário.');
+    } finally {
+      this.excluindoUsuario.set(false);
+    }
+  }
+
+  // --- NOVO USUÁRIO INDIVIDUAL ---
   abrirModalNovoUsuario(): void {
     this.novoNome.set('');
     this.novoEmail.set('');
-    this.novoNivel.set('Membro Trainee');
+    this.novoPerfilId.set('');
+    this.novoEnviarEmail.set(true);
     this.erroNovoUsuario.set(null);
     this.modalNovoUsuarioAberto.set(true);
   }
 
   fecharModalNovoUsuario(): void {
     this.modalNovoUsuarioAberto.set(false);
-    this.erroNovoUsuario.set(null);
+  }
+
+  onNovoPerfilChange(event: Event): void {
+    this.novoPerfilId.set((event.target as HTMLSelectElement).value);
   }
 
   async submeterNovoUsuario(event: Event): Promise<void> {
     event.preventDefault();
     const nome = this.novoNome().trim();
     const email = this.novoEmail().trim();
-    const nivel = this.novoNivel();
+    const perfilNome = this.novoPerfilId().trim();
 
     if (!nome || !email) {
-      this.erroNovoUsuario.set('Por favor, informe o Nome Completo e o E-mail.');
+      this.erroNovoUsuario.set('Nome e e-mail são obrigatórios.');
       return;
     }
 
@@ -1541,46 +1664,34 @@ export class AdminUsuariosComponent implements OnInit {
     this.erroNovoUsuario.set(null);
 
     try {
-      // 1. Tentar criar via Edge Function segura no servidor
       const { data, error, senhaProvisoria } = await this.supabaseService.criarUsuarioAdminViaFunction({
         full_name: nome,
         email,
-        nivel_atual: nivel,
+        perfil_nome: perfilNome || undefined,
+        enviar_email: this.novoEnviarEmail(),
       });
 
-      if (!error && senhaProvisoria) {
-        this.fecharModalNovoUsuario();
-        await this.carregarUsuarios();
-        this.confirmacaoSenha.set({
-          nome,
-          email,
-          senha: senhaProvisoria,
-          userData: data,
-        });
-        return;
-      }
-
-      // Se a Edge Function retornar erro ou não estiver implantada, tenta via inserção direta na tabela profissionais com aviso
-      const { data: directData, error: directError } = await this.supabaseService.cadastrarProfissional({
-        full_name: nome,
-        email,
-        nivel_atual: nivel,
-      });
-
-      if (directError) {
-        this.erroNovoUsuario.set(`Erro ao criar usuário: ${error?.message || directError.message}`);
+      if (error) {
+        this.erroNovoUsuario.set(error.message);
         return;
       }
 
       this.fecharModalNovoUsuario();
-      this.alertaSucesso.set(`Usuário ${nome} registrado com sucesso! Configure as permissões abaixo.`);
       await this.carregarUsuarios();
 
-      if (directData) {
-        this.abrirEditorUsuario(directData);
+      if (senhaProvisoria) {
+        this.confirmacaoSenha.set({
+          nome,
+          email,
+          senha: senhaProvisoria,
+          perfilNome,
+          userData: data,
+        });
+      } else {
+        this.alertaSucesso.set(`Usuário ${nome} criado com sucesso!`);
       }
     } catch (e: any) {
-      this.erroNovoUsuario.set('Falha ao processar o cadastro de usuário.');
+      this.erroNovoUsuario.set('Falha ao processar cadastro de usuário.');
     } finally {
       this.salvandoNovoUsuario.set(false);
     }
@@ -1591,17 +1702,322 @@ export class AdminUsuariosComponent implements OnInit {
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(senha);
         this.senhaCopiada.set(true);
-        setTimeout(() => this.senhaCopiada.set(false), 3000);
+        setTimeout(() => this.senhaCopiada.set(false), 2500);
       }
-    } catch (err) {
-      console.warn('Falha ao copiar senha para a área de transferência:', err);
+    } catch (e) {
+      console.warn('Falha ao copiar:', e);
     }
   }
 
   concluirCriacaoUsuario(conf: ConfirmacaoSenhaProvisoria): void {
     this.confirmacaoSenha.set(null);
-    if (conf.userData) {
-      this.abrirEditorUsuario(conf.userData);
+  }
+
+  // --- PERFIS DE ACESSO (MOLDES) ---
+  abrirEditorPerfil(perfil: PerfilAcessoItem | null): void {
+    this.erroPerfil.set(null);
+    if (perfil) {
+      this.perfilEmEdicaoId.set(perfil.id);
+      this.nomePerfil.set(perfil.nome);
+      this.descricaoPerfil.set(perfil.descricao || '');
+      const setMod = new Set<string>();
+      for (const m of perfil.modulos) {
+        setMod.add(`${m.produto}:${m.modulo}`);
+      }
+      this.modulosPerfilSelecionados.set(setMod);
+    } else {
+      this.perfilEmEdicaoId.set(null);
+      this.nomePerfil.set('');
+      this.descricaoPerfil.set('');
+      // Inicializa com base da comunidade
+      const setMod = new Set<string>(['comunidade:forum', 'comunidade:vagas', 'comunidade:materiais', 'comunidade:eventos']);
+      this.modulosPerfilSelecionados.set(setMod);
     }
+    this.modalPerfilAberto.set(true);
+  }
+
+  fecharEditorPerfil(): void {
+    this.modalPerfilAberto.set(false);
+    this.erroPerfil.set(null);
+  }
+
+  isModuloNoPerfil(produto: string, modulo: string): boolean {
+    return this.modulosPerfilSelecionados().has(`${produto}:${modulo}`);
+  }
+
+  toggleModuloNoPerfil(produto: string, modulo: string): void {
+    const chave = `${produto}:${modulo}`;
+    const setMod = new Set(this.modulosPerfilSelecionados());
+    if (setMod.has(chave)) {
+      setMod.delete(chave);
+    } else {
+      setMod.add(chave);
+    }
+    this.modulosPerfilSelecionados.set(setMod);
+  }
+
+  marcarTodosModulosPerfil(produto: 'predial4' | 'comunidade', marcar: boolean): void {
+    const setMod = new Set(this.modulosPerfilSelecionados());
+    const lista = produto === 'predial4' ? this.modulosPredial : this.modulosComunidade;
+    for (const m of lista) {
+      const chave = `${produto}:${m.key}`;
+      if (marcar) setMod.add(chave);
+      else setMod.delete(chave);
+    }
+    this.modulosPerfilSelecionados.set(setMod);
+  }
+
+  limparModulosPerfil(): void {
+    this.modulosPerfilSelecionados.set(new Set());
+  }
+
+  async salvarPerfil(): Promise<void> {
+    const nome = this.nomePerfil().trim();
+    if (!nome) {
+      this.erroPerfil.set('O nome do perfil é obrigatório.');
+      return;
+    }
+
+    this.salvandoPerfil.set(true);
+    this.erroPerfil.set(null);
+
+    const modulosArray: Array<{ produto: 'predial4' | 'comunidade'; modulo: string }> = [];
+    this.modulosPerfilSelecionados().forEach(chave => {
+      const [produto, modulo] = chave.split(':') as ['predial4' | 'comunidade', string];
+      modulosArray.push({ produto, modulo });
+    });
+
+    try {
+      const editId = this.perfilEmEdicaoId();
+      if (editId) {
+        const { error } = await this.supabaseService.atualizarPerfilAcesso(editId, {
+          nome,
+          descricao: this.descricaoPerfil().trim() || null,
+          modulos: modulosArray,
+        });
+        if (error) throw error;
+        this.alertaSucesso.set(`Perfil "${nome}" atualizado com sucesso!`);
+      } else {
+        const { error } = await this.supabaseService.criarPerfilAcesso({
+          nome,
+          descricao: this.descricaoPerfil().trim() || null,
+          modulos: modulosArray,
+        });
+        if (error) throw error;
+        this.alertaSucesso.set(`Perfil "${nome}" criado com sucesso!`);
+      }
+
+      this.fecharEditorPerfil();
+      await this.carregarPerfisAcesso();
+    } catch (err: any) {
+      this.erroPerfil.set(err.message || 'Erro ao salvar perfil.');
+    } finally {
+      this.salvandoPerfil.set(false);
+    }
+  }
+
+  async solicitarExclusaoPerfil(perfil: PerfilAcessoItem): Promise<void> {
+    if (!confirm(`Deseja realmente excluir o molde de perfil "${perfil.nome}"?`)) return;
+    try {
+      const { error } = await this.supabaseService.excluirPerfilAcesso(perfil.id);
+      if (error) throw error;
+      this.alertaSucesso.set(`Perfil "${perfil.nome}" excluído com sucesso.`);
+      await this.carregarPerfisAcesso();
+    } catch (e: any) {
+      this.alertaErro.set('Não foi possível excluir o perfil.');
+    }
+  }
+
+  // --- IMPORTAÇÃO EM MASSA (TXT) ---
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastandoArquivo.set(true);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastandoArquivo.set(false);
+  }
+
+  onDropArquivo(event: DragEvent): void {
+    event.preventDefault();
+    this.arrastandoArquivo.set(false);
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      this.processarArquivoTxt(event.dataTransfer.files[0]);
+    }
+  }
+
+  onArquivoSelecionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.processarArquivoTxt(input.files[0]);
+    }
+  }
+
+  processarArquivoTxt(file: File): void {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      this.fazerParserTxt(text);
+    };
+    reader.readAsText(file);
+  }
+
+  fazerParserTxt(conteudo: string): void {
+    const linhas = conteudo.split(/\r?\n/);
+    const parsed: ItemImportacaoMassa[] = [];
+    const emailsVistos = new Set<string>();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    let numLinha = 0;
+    for (const rawLinha of linhas) {
+      numLinha++;
+      const l = rawLinha.trim();
+      if (!l || l.startsWith('#') || l.startsWith('//')) continue;
+
+      // Delimitadores possíveis: ponto e vírgula, vírgula ou tab
+      let partes: string[] = [];
+      if (l.includes(';')) partes = l.split(';');
+      else if (l.includes('\t')) partes = l.split('\t');
+      else if (l.includes(',')) partes = l.split(',');
+      else partes = [l];
+
+      const nome = (partes[0] || '').trim();
+      const email = (partes[1] || '').trim().toLowerCase();
+      const perfilInformado = (partes[2] || '').trim();
+      const perfilFinal = perfilInformado || this.perfilPadraoMassa() || 'Membro Trainee';
+
+      let valido = true;
+      let motivoInvalido: string | undefined = undefined;
+
+      if (!nome) {
+        valido = false;
+        motivoInvalido = 'Nome ausente';
+      } else if (!email || !emailRegex.test(email)) {
+        valido = false;
+        motivoInvalido = 'E-mail inválido';
+      } else if (emailsVistos.has(email)) {
+        valido = false;
+        motivoInvalido = 'E-mail duplicado no arquivo';
+      }
+
+      if (email) emailsVistos.add(email);
+
+      parsed.push({
+        linha: numLinha,
+        nome,
+        email,
+        perfilInformado: perfilInformado || undefined,
+        perfilFinal,
+        valido,
+        motivoInvalido,
+      });
+    }
+
+    this.itensMassa.set(parsed);
+    this.loteProcessadoComSucesso.set(false);
+  }
+
+  onPerfilPadraoMassaChange(event: Event): void {
+    const perfil = (event.target as HTMLSelectElement).value;
+    this.perfilPadraoMassa.set(perfil);
+    // Atualiza itens que não tinham perfil informado
+    const atualizados = this.itensMassa().map(item => ({
+      ...item,
+      perfilFinal: item.perfilInformado || perfil || 'Membro Trainee',
+    }));
+    this.itensMassa.set(atualizados);
+  }
+
+  limparImportacaoMassa(): void {
+    this.itensMassa.set([]);
+    this.loteProcessadoComSucesso.set(false);
+  }
+
+  async processarImportacaoEmMassa(): Promise<void> {
+    const validos = this.itensMassa().filter(i => i.valido);
+    if (validos.length === 0) return;
+
+    this.processandoMassa.set(true);
+    this.alertaErro.set(null);
+
+    const payload = validos.map(item => ({
+      full_name: item.nome,
+      email: item.email,
+      perfil_nome: item.perfilFinal,
+    }));
+
+    try {
+      const res = await this.supabaseService.criarUsuariosEmMassaViaFunction(
+        payload,
+        this.enviarEmailBoasVindasMassa()
+      );
+
+      if (!res.sucesso && res.error) {
+        this.alertaErro.set('Erro ao processar lote: ' + res.error.message);
+        return;
+      }
+
+      // Mapear resultados de volta para a lista de itens
+      const mapaRes = new Map<string, any>();
+      (res.resultados || []).forEach(r => mapaRes.set(r.email.toLowerCase(), r));
+
+      const listaAtualizada = this.itensMassa().map(item => {
+        if (!item.valido) return item;
+        const resItem = mapaRes.get(item.email.toLowerCase());
+        if (resItem) {
+          return {
+            ...item,
+            processado: true,
+            sucesso: resItem.sucesso,
+            senhaProvisoria: resItem.senhaProvisoria,
+            erroMsg: resItem.error,
+          };
+        }
+        return item;
+      });
+
+      this.itensMassa.set(listaAtualizada);
+      this.loteProcessadoComSucesso.set(true);
+      this.alertaSucesso.set(`Lote finalizado! ${res.totalSucesso} usuários cadastrados com sucesso.`);
+      await this.carregarUsuarios();
+    } catch (e: any) {
+      this.alertaErro.set('Falha na importação em massa.');
+    } finally {
+      this.processandoMassa.set(false);
+    }
+  }
+
+  baixarArquivoExemploTxt(): void {
+    const conteudo = `# Modelo de Importação em Massa - Amorim Academy
+# Formato: Nome Completo;email;Perfil de Acesso
+Eng. João Roberto Silva;joao.silva@exemplo.com;Especialista 4.0
+Arq. Mariana Souza;mariana.souza@exemplo.com;Perito Júnior
+Carlos Eduardo Lima;carlos.lima@exemplo.com;Membro Trainee
+`;
+    const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'modelo_importacao_usuarios.txt');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  baixarRelatorioLoteCsv(): void {
+    const cabecalho = 'Nome;E-mail;Perfil;Status;Senha Provisória\n';
+    const linhas = this.itensMassa()
+      .map(i => `${i.nome};${i.email};${i.perfilFinal};${i.sucesso ? 'Criado' : 'Falha'};${i.senhaProvisoria || ''}`)
+      .join('\n');
+
+    const blob = new Blob([cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_criacao_usuarios_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 }

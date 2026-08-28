@@ -212,6 +212,10 @@ export class SupabaseService {
     }
   }
 
+  async listarProfissionaisAdmin(): Promise<any[]> {
+    return this.listarProfissionaisComPermissoes();
+  }
+
   async upsertPermissao(permissao: {
     profissionalId: string;
     produto: 'predial4' | 'comunidade';
@@ -290,7 +294,10 @@ export class SupabaseService {
     full_name: string;
     password?: string;
     nivel_atual?: string;
-  }): Promise<{ data?: any; error: Error | null; senhaProvisoria?: string }> {
+    perfil_nome?: string;
+    perfil_id?: string;
+    enviar_email?: boolean;
+  }): Promise<{ data?: any; error: Error | null; senhaProvisoria?: string; perfilAplicado?: string | null }> {
     try {
       const { data, error } = await this.client.functions.invoke('criar-usuario-admin', {
         body: {
@@ -298,6 +305,9 @@ export class SupabaseService {
           full_name: dados.full_name,
           ...(dados.password ? { password: dados.password } : {}),
           ...(dados.nivel_atual ? { nivel_atual: dados.nivel_atual } : {}),
+          ...(dados.perfil_nome ? { perfil_nome: dados.perfil_nome } : {}),
+          ...(dados.perfil_id ? { perfil_id: dados.perfil_id } : {}),
+          enviar_email: dados.enviar_email !== false,
         },
       });
 
@@ -316,10 +326,235 @@ export class SupabaseService {
       return {
         data: data?.profissional || data?.user,
         senhaProvisoria: data?.senhaProvisoria,
+        perfilAplicado: data?.perfilAplicado,
         error: null,
       };
     } catch (e: any) {
       return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async criarUsuariosEmMassaViaFunction(
+    usuarios: Array<{
+      full_name: string;
+      email: string;
+      password?: string;
+      nivel_atual?: string;
+      perfil_nome?: string;
+    }>,
+    enviarEmail: boolean = true
+  ): Promise<{
+    sucesso: boolean;
+    totalProcessados: number;
+    totalSucesso: number;
+    totalFalhas: number;
+    resultados: Array<{
+      full_name: string;
+      email: string;
+      sucesso: boolean;
+      senhaProvisoria?: string;
+      perfilAplicado?: string | null;
+      error?: string;
+      userId?: string;
+    }>;
+    error: Error | null;
+  }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('criar-usuario-admin', {
+        body: {
+          usuarios,
+          enviar_email: enviarEmail,
+        },
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro ao processar criação de usuários em massa.';
+        if (data?.error) msg = data.error;
+        return {
+          sucesso: false,
+          totalProcessados: usuarios.length,
+          totalSucesso: 0,
+          totalFalhas: usuarios.length,
+          resultados: [],
+          error: new Error(msg),
+        };
+      }
+
+      if (data?.error) {
+        return {
+          sucesso: false,
+          totalProcessados: usuarios.length,
+          totalSucesso: 0,
+          totalFalhas: usuarios.length,
+          resultados: [],
+          error: new Error(data.error),
+        };
+      }
+
+      return {
+        sucesso: true,
+        totalProcessados: data?.totalProcessados || usuarios.length,
+        totalSucesso: data?.totalSucesso || 0,
+        totalFalhas: data?.totalFalhas || 0,
+        resultados: data?.resultados || [],
+        error: null,
+      };
+    } catch (e: any) {
+      return {
+        sucesso: false,
+        totalProcessados: usuarios.length,
+        totalSucesso: 0,
+        totalFalhas: usuarios.length,
+        resultados: [],
+        error: e instanceof Error ? e : new Error(String(e)),
+      };
+    }
+  }
+
+  async excluirUsuarioAdminViaFunction(userId: string): Promise<{ error: Error | null; mensagem?: string }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('excluir-usuario-admin', {
+        body: { userId },
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro ao invocar função excluir-usuario-admin';
+        if (data?.error) msg = data.error;
+        return { error: new Error(msg) };
+      }
+
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+
+      return { error: null, mensagem: data?.mensagem };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  // ----------------------------------------------------
+  // PERFIS DE ACESSO (MOLDES DE PERMISSÃO)
+  // ----------------------------------------------------
+
+  async listarPerfisAcesso(): Promise<Array<{
+    id: string;
+    nome: string;
+    descricao?: string | null;
+    modulos: Array<{ produto: 'predial4' | 'comunidade'; modulo: string }>;
+    criado_em?: string;
+    atualizado_em?: string;
+  }>> {
+    try {
+      const { data, error } = await this.client
+        .from('perfis_acesso')
+        .select('*')
+        .order('nome', { ascending: true });
+
+      if (error) {
+        console.warn('Erro ao listar perfis_acesso:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar perfis_acesso:', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarPerfilAcesso(perfil: {
+    nome: string;
+    descricao?: string | null;
+    modulos: Array<{ produto: 'predial4' | 'comunidade'; modulo: string }>;
+  }): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const { data, error } = await this.client
+        .from('perfis_acesso')
+        .insert({
+          nome: perfil.nome.trim(),
+          descricao: perfil.descricao ? perfil.descricao.trim() : null,
+          modulos: perfil.modulos,
+        })
+        .select()
+        .single();
+      return { data, error };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async atualizarPerfilAcesso(
+    id: string,
+    dados: Partial<{
+      nome: string;
+      descricao: string | null;
+      modulos: Array<{ produto: 'predial4' | 'comunidade'; modulo: string }>;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('perfis_acesso')
+        .update({
+          ...dados,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async excluirPerfilAcesso(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('perfis_acesso')
+        .delete()
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  // ----------------------------------------------------
+  // DISPARO DE E-MAILS VIA RESEND
+  // ----------------------------------------------------
+
+  async enviarEmailViaFunction(dados: {
+    tipo?: 'boas-vindas' | 'notificacao' | 'personalizado';
+    destinatarios: string[];
+    assunto?: string;
+    mensagem?: string;
+    titulo?: string;
+    html?: string;
+    nome?: string;
+    senhaProvisoria?: string;
+    perfilNome?: string;
+  }): Promise<{ sucesso: boolean; error: Error | null; totalEnviados?: number; totalFalhas?: number }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('enviar-email', {
+        body: dados,
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro ao invocar função enviar-email';
+        if (data?.error) msg = data.error;
+        return { sucesso: false, error: new Error(msg) };
+      }
+
+      if (data?.error) {
+        return { sucesso: false, error: new Error(data.error) };
+      }
+
+      return {
+        sucesso: Boolean(data?.sucesso),
+        totalEnviados: data?.totalEnviados || 0,
+        totalFalhas: data?.totalFalhas || 0,
+        error: null,
+      };
+    } catch (e: any) {
+      return { sucesso: false, error: e instanceof Error ? e : new Error(String(e)) };
     }
   }
 
@@ -2951,15 +3186,51 @@ export class SupabaseService {
   // NOTIFICAÇÕES (BLOCO 6 PARTE 2)
   // ----------------------------------------------------
 
-  async enviarNotificacao(titulo: string, mensagem: string): Promise<{ error: Error | null }> {
+  async enviarNotificacao(
+    titulo: string,
+    mensagem: string,
+    enviarPorEmail: boolean = false
+  ): Promise<{ error: Error | null; totalEmailsEnviados?: number; totalEmailsFalhas?: number }> {
     try {
       const session = await this.getSession();
       const { error } = await this.client
         .from('notificacoes')
         .insert({ titulo, mensagem, criado_por: session?.user?.id || null });
-      return { error };
+
+      if (error) return { error };
+
+      let totalEmailsEnviados = 0;
+      let totalEmailsFalhas = 0;
+
+      if (enviarPorEmail) {
+        // Buscar lista de e-mails dos membros cadastrados
+        const { data: profissionais } = await this.client
+          .from('profissionais')
+          .select('email')
+          .not('email', 'is', null);
+
+        const emails = (profissionais || [])
+          .map((p: any) => p.email?.trim()?.toLowerCase())
+          .filter((e: string) => Boolean(e) && e.includes('@'));
+
+        const emailsUnicos = [...new Set(emails)] as string[];
+
+        if (emailsUnicos.length > 0) {
+          const resEmail = await this.enviarEmailViaFunction({
+            tipo: 'notificacao',
+            destinatarios: emailsUnicos,
+            titulo,
+            mensagem,
+          });
+
+          totalEmailsEnviados = resEmail.totalEnviados || 0;
+          totalEmailsFalhas = resEmail.totalFalhas || 0;
+        }
+      }
+
+      return { error: null, totalEmailsEnviados, totalEmailsFalhas };
     } catch (e: any) {
-      return { error: e };
+      return { error: e instanceof Error ? e : new Error(String(e)) };
     }
   }
 
