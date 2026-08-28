@@ -20,6 +20,7 @@ import { ComunidadeForumComponent } from './comunidade/comunidade-forum.componen
 import { ComunidadeMensagensComponent } from './comunidade/comunidade-mensagens.component';
 import { ComunidadeAgentesComponent } from './comunidade/comunidade-agentes.component';
 import { ComunidadeMembrosComponent } from './comunidade/comunidade-membros.component';
+import { ViabilizaIaComponent } from './comunidade/viabiliza-ia.component';
 
 @Component({
   selector: 'app-comunidade-preview',
@@ -37,7 +38,8 @@ import { ComunidadeMembrosComponent } from './comunidade/comunidade-membros.comp
     ComunidadeForumComponent,
     ComunidadeMensagensComponent,
     ComunidadeAgentesComponent,
-    ComunidadeMembrosComponent
+    ComunidadeMembrosComponent,
+    ViabilizaIaComponent
   ],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col relative pb-20 md:pb-0">
@@ -241,6 +243,26 @@ import { ComunidadeMembrosComponent } from './comunidade/comunidade-membros.comp
                 <span>Agentes</span>
               </button>
 
+              <!-- 11. Viabiliza IA (Crédito Imobiliário) -->
+              <button
+                type="button"
+                id="sidebar-btn-viabiliza-ia"
+                (click)="selecionarAba('viabiliza-ia')"
+                [class]="abaAtiva() === 'viabiliza-ia'
+                  ? 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#132A41] text-white font-bold shadow-sm'
+                  : 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer'"
+              >
+                <div class="flex items-center gap-3">
+                  <svg class="w-4 h-4 shrink-0 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  <span>Viabiliza IA</span>
+                </div>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600" [class.text-amber-300]="abaAtiva() === 'viabiliza-ia'">
+                  Crédito
+                </span>
+              </button>
+
             </nav>
           </div>
 
@@ -416,6 +438,9 @@ import { ComunidadeMembrosComponent } from './comunidade/comunidade-membros.comp
           } @else if (abaAtiva() === 'agentes') {
             <!-- Área de Agentes e Automações Técnicas -->
             <app-comunidade-agentes></app-comunidade-agentes>
+          } @else if (abaAtiva() === 'viabiliza-ia') {
+            <!-- Módulo Viabiliza IA (Assessoria de Crédito Imobiliário) -->
+            <app-viabiliza-ia></app-viabiliza-ia>
           } @else {
             <!-- Placeholder Padrão das Outras Áreas -->
             <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-16 text-center space-y-4 shadow-xs">
@@ -546,6 +571,24 @@ import { ComunidadeMembrosComponent } from './comunidade/comunidade-membros.comp
                 </svg>
                 <span>Hall da Fama</span>
               </button>
+
+              <!-- 7. Viabiliza IA (Crédito) -->
+              <button
+                type="button"
+                (click)="selecionarAbaMobile('viabiliza-ia')"
+                [class]="abaAtiva() === 'viabiliza-ia' ? 'bg-[#132A41] text-white font-bold' : 'text-slate-700'"
+                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <div class="flex items-center gap-3">
+                  <svg class="w-4 h-4 shrink-0 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  <span>Viabiliza IA</span>
+                </div>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600" [class.text-amber-300]="abaAtiva() === 'viabiliza-ia'">
+                  Crédito
+                </span>
+              </button>
             </div>
 
             <!-- Fixo no rodapé do menu Mais -->
@@ -674,7 +717,8 @@ export class ComunidadePreviewComponent implements OnInit {
     'mensagens': 'Mensagens Diretas',
     'perfil': 'Meu Perfil de Membro',
     'curso': 'Cursos & Capacitações',
-    'agentes': 'Agentes & Automações Técnicas'
+    'agentes': 'Agentes & Automações Técnicas',
+    'viabiliza-ia': 'Viabiliza IA — Assessoria de Crédito Imobiliário'
   };
 
   async ngOnInit(): Promise<void> {

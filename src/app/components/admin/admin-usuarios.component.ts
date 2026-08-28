@@ -1298,6 +1298,7 @@ export class AdminUsuariosComponent implements OnInit {
   ];
 
   readonly modulosComunidadeAdicionais: ModuloConfig[] = [
+    { key: 'viabiliza-ia', nome: 'Viabiliza IA', descricao: 'Assessoria de crédito imobiliário, comparação bancária e pasta de crédito.', produto: 'comunidade' },
     { key: 'reajuste-contrato', nome: 'Agente: Reajuste de Contrato', descricao: 'Cálculo de reajuste FGV/SINAENCO.', produto: 'comunidade' },
     { key: 'biblioteca-prompts', nome: 'Agente: Biblioteca de Prompts', descricao: 'Prompts e templates para engenharia e arquitetura.', produto: 'comunidade' },
     { key: 'skills-catalogo', nome: 'Agente: Skills Claude', descricao: 'Catálogo de skills e automações operacionais.', produto: 'comunidade' },

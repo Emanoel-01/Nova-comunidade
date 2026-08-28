@@ -1,24 +1,13 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { SupabaseService } from '../../../../services/supabase.service';
 
-export interface IndiceMensal {
-  jan: number | null;
-  fev: number | null;
-  mar: number | null;
-  abr: number | null;
-  mai: number | null;
-  jun: number | null;
-  jul: number | null;
-  ago: number | null;
-  set: number | null;
-  out: number | null;
-  nov: number | null;
-  dez: number | null;
-}
+export type MesChave = 'jan' | 'fev' | 'mar' | 'abr' | 'mai' | 'jun' | 'jul' | 'ago' | 'set' | 'out' | 'nov' | 'dez';
 
-export type MesChave = keyof IndiceMensal;
+export type IndiceMensal = Record<MesChave, number | null>;
+
 export type TipoDocumento = 'parecer' | 'oficio' | 'resumo' | 'pontos' | 'estruturado';
 
 export const BANCO_DE_INDICES: Record<string, Record<number, IndiceMensal>> = {
@@ -370,7 +359,7 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
 
               <!-- Texto explicativo da fonte dos índices -->
               <p class="text-[11px] text-slate-500 italic">
-                Índices conforme SINAENCO — sinaenco.com.br/indices. Atualização automática em desenvolvimento.
+                Índices conforme SINAENCO — atualizados periodicamente pelo administrador.
               </p>
 
               <!-- Valor Total da Medição V -->
@@ -850,12 +839,18 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
     </div>
   `
 })
-export class ReajusteContratoComponent {
+export class ReajusteContratoComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+
   // Controle de Fluxo
   readonly etapa = signal<'formulario' | 'selecao' | 'revisao'>('formulario');
   readonly tipoDocumentoSelecionado = signal<TipoDocumento>('parecer');
   readonly tituloDocumento = signal<string>('Parecer Técnico — Contrato 042/2018');
   readonly corpoDocumento = signal<string>('');
+
+  // Banco de Índices Dinâmico (com fallback padrão)
+  readonly bancoDeIndices = signal<Record<string, Record<number, IndiceMensal>>>(BANCO_DE_INDICES);
+  readonly carregandoIndices = signal<boolean>(false);
 
   // Bloco A - Identificação
   readonly edital = signal<string>('001/2018');
@@ -968,11 +963,54 @@ export class ReajusteContratoComponent {
     this.atualizarValorIiAutomatico();
   }
 
+  async ngOnInit(): Promise<void> {
+    await this.carregarIndices();
+  }
+
+  async carregarIndices(): Promise<void> {
+    this.carregandoIndices.set(true);
+    try {
+      const { data, error } = await this.supabaseService.client
+        .from('indices_sinaenco')
+        .select('coluna, ano, mes, valor')
+        .order('ano', { ascending: true })
+        .order('mes', { ascending: true });
+
+      if (error || !data || data.length === 0) {
+        console.warn('Índices SINAENCO mantidos com base local.');
+        return;
+      }
+
+      const banco: Record<string, Record<number, IndiceMensal>> = { coluna35: {}, coluna39: {} };
+      const nomesMeses: MesChave[] = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+      for (const row of data) {
+        const col = row.coluna;
+        if (!banco[col]) {
+          banco[col] = {};
+        }
+        if (!banco[col][row.ano]) {
+          banco[col][row.ano] = Object.fromEntries(nomesMeses.map(m => [m, null])) as unknown as IndiceMensal;
+        }
+        banco[col][row.ano][nomesMeses[row.mes - 1]] = row.valor;
+      }
+
+      this.bancoDeIndices.set(banco);
+      this.atualizarValorIoAutomatico();
+      this.atualizarValorIiAutomatico();
+    } catch (e: any) {
+      console.warn('Erro ao carregar índices SINAENCO:', e?.message || e);
+    } finally {
+      this.carregandoIndices.set(false);
+    }
+  }
+
   private atualizarValorIoAutomatico(): void {
     const cat = this.categoriaIndice();
     const ano = this.anoIo();
     const mes = this.mesIo();
-    const val = BANCO_DE_INDICES[cat]?.[ano]?.[mes];
+    const banco = this.bancoDeIndices();
+    const val = banco[cat]?.[ano]?.[mes];
     if (val !== null && val !== undefined) {
       this.valorIo.set(val);
     }
@@ -982,7 +1020,8 @@ export class ReajusteContratoComponent {
     const cat = this.categoriaIndice();
     const ano = this.anoIi();
     const mes = this.mesIi();
-    const val = BANCO_DE_INDICES[cat]?.[ano]?.[mes];
+    const banco = this.bancoDeIndices();
+    const val = banco[cat]?.[ano]?.[mes];
     if (val !== null && val !== undefined) {
       this.valorIi.set(val);
     }

@@ -3761,5 +3761,447 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  // ----------------------------------------------------
+  // FINANCEIRO PESSOAL (QUANTO CUSTA & CONSTRUIR VS ALUGAR)
+  // ----------------------------------------------------
+
+  async listarSimulacoesFinanceiroPessoal(): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+
+      const { data, error } = await this.client
+        .from('simulacoes_financeiro_pessoal')
+        .select('*')
+        .eq('profissional_id', session.user.id)
+        .order('criado_em', { ascending: false });
+
+      if (error) {
+        // Tenta fallback com created_at caso o banco use nomenclatura padrão
+        const { data: dataFallback, error: errorFallback } = await this.client
+          .from('simulacoes_financeiro_pessoal')
+          .select('*')
+          .eq('profissional_id', session.user.id)
+          .order('created_at', { ascending: false });
+
+        if (errorFallback) {
+          console.warn('Aviso ao listar simulações financeiro pessoal:', error.message);
+          return [];
+        }
+        return dataFallback || [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar simulações financeiro pessoal:', e?.message || e);
+      return [];
+    }
+  }
+
+  async excluirSimulacaoFinanceiroPessoal(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('simulacoes_financeiro_pessoal')
+        .delete()
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // ----------------------------------------------------
+  // VIABILIZA IA (ASSESSORIA DE CRÉDITO IMOBILIÁRIO)
+  // ----------------------------------------------------
+
+  async listarLinhasCreditoAtivas(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('linhas_credito')
+        .select('*')
+        .eq('ativo', true)
+        .order('ordem_prioridade', { ascending: false });
+
+      if (error) {
+        console.warn('Aviso ao listar linhas de crédito ativas:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar linhas de crédito ativas:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTodasLinhasCreditoAdmin(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('linhas_credito')
+        .select('*')
+        .order('ordem_prioridade', { ascending: false });
+
+      if (error) {
+        console.warn('Aviso ao listar todas linhas de crédito (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar todas linhas de crédito (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarLinhaCredito(linha: any): Promise<{ data: any | null; error: Error | null }> {
+    try {
+      const { data, error } = await this.client
+        .from('linhas_credito')
+        .insert(linha)
+        .select()
+        .single();
+      return { data, error };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async atualizarLinhaCredito(id: string, linha: any): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('linhas_credito')
+        .update(linha)
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirLinhaCredito(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('linhas_credito')
+        .delete()
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarMeusProjetosCredito(): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+
+      const { data, error } = await this.client
+        .from('projetos_credito')
+        .select('*')
+        .eq('profissional_id', session.user.id)
+        .order('atualizado_em', { ascending: false });
+
+      if (error) {
+        // Fallback se coluna for updated_at ou criado_em
+        const { data: dataFallback, error: errFallback } = await this.client
+          .from('projetos_credito')
+          .select('*')
+          .eq('profissional_id', session.user.id)
+          .order('created_at', { ascending: false });
+
+        if (errFallback) {
+          console.warn('Aviso ao listar projetos de crédito:', error.message);
+          return [];
+        }
+        return dataFallback || [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar projetos de crédito:', e?.message || e);
+      return [];
+    }
+  }
+
+  async obterProjetoCredito(id: string): Promise<any | null> {
+    try {
+      const { data, error } = await this.client
+        .from('projetos_credito')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Aviso ao obter projeto de crédito:', error.message);
+        return null;
+      }
+      return data;
+    } catch (e: any) {
+      console.warn('Exceção ao obter projeto de crédito:', e?.message || e);
+      return null;
+    }
+  }
+
+  async criarProjetoCredito(projeto: any): Promise<{ data: any | null; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      const payload = {
+        ...projeto,
+        profissional_id: session?.user?.id || projeto.profissional_id,
+        criado_em: new Date().toISOString(),
+        atualizado_em: new Date().toISOString()
+      };
+
+      const { data, error } = await this.client
+        .from('projetos_credito')
+        .insert(payload)
+        .select()
+        .single();
+      return { data, error };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async atualizarProjetoCredito(id: string, projeto: any): Promise<{ error: Error | null }> {
+    try {
+      const payload = {
+        ...projeto,
+        atualizado_em: new Date().toISOString()
+      };
+
+      const { error } = await this.client
+        .from('projetos_credito')
+        .update(payload)
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirProjetoCredito(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('projetos_credito')
+        .delete()
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async solicitarAssessoriaCredito(dados: {
+    projetoId: string;
+    nome: string;
+    email: string;
+    telefone: string;
+    mensagem: string;
+  }): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      const { error } = await this.client
+        .from('solicitacoes_assessoria_credito')
+        .insert({
+          projeto_credito_id: dados.projetoId,
+          profissional_id: session?.user?.id || null,
+          nome: dados.nome,
+          email: dados.email,
+          telefone: dados.telefone,
+          mensagem: dados.mensagem,
+          canal: 'formulario',
+          status: 'novo',
+          criado_em: new Date().toISOString()
+        });
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarSolicitacoesAssessoriaAdmin(statusFiltro?: string): Promise<any[]> {
+    try {
+      let query = this.client
+        .from('solicitacoes_assessoria_credito')
+        .select('*, projetos_credito(nome_projeto, tipo_operacao, custo_total_estimado, valor_financiavel, parcela_estimada)')
+        .order('criado_em', { ascending: false });
+
+      if (statusFiltro && statusFiltro !== 'todos') {
+        query = query.eq('status', statusFiltro);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        // Fallback se join simples
+        const { data: fallback, error: errFallback } = await this.client
+          .from('solicitacoes_assessoria_credito')
+          .select('*')
+          .order('criado_em', { ascending: false });
+        if (errFallback) {
+          console.warn('Aviso ao listar solicitações de assessoria:', error.message);
+          return [];
+        }
+        return fallback || [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar solicitações de assessoria:', e?.message || e);
+      return [];
+    }
+  }
+
+  async atualizarStatusSolicitacaoAssessoria(id: string, status: 'novo' | 'contatado' | 'finalizado'): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('solicitacoes_assessoria_credito')
+        .update({
+          status,
+          atualizado_em: new Date().toISOString()
+        })
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // ----------------------------------------------------
+  // CUB POR ESTADO (GESTÃO E ESTIMATIVAS)
+  // ----------------------------------------------------
+
+  async listarCubPorEstado(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('cub_por_estado')
+        .select('*')
+        .order('uf', { ascending: true });
+      if (error) {
+        console.warn('Aviso ao listar CUB por estado:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar CUB por estado:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarCubsTodosEstados(): Promise<any[]> {
+    return this.listarCubPorEstado();
+  }
+
+  async obterCubEstado(uf: string, padrao = 'R8-N'): Promise<any | null> {
+    try {
+      const { data, error } = await this.client
+        .from('cub_por_estado')
+        .select('valor_m2, mes_referencia, ano_referencia, sinduscon_responsavel, nome_estado, uf, padrao')
+        .eq('uf', uf)
+        .eq('padrao', padrao)
+        .maybeSingle();
+      if (error) {
+        console.warn('Aviso ao obter CUB do estado:', error.message);
+        return null;
+      }
+      return data;
+    } catch (e: any) {
+      console.warn('Exceção ao obter CUB do estado:', e?.message || e);
+      return null;
+    }
+  }
+
+  async atualizarCubEstado(
+    uf: string,
+    dados: {
+      valor_m2: number;
+      mes_referencia?: number;
+      ano_referencia?: number;
+      sinduscon_responsavel?: string;
+      mes_ano_referencia?: string | null;
+      observacao?: string | null;
+      [key: string]: any;
+    },
+    padrao = 'R8-N'
+  ): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      const payload = {
+        ...dados,
+        atualizado_por: session?.user?.id || null,
+        atualizado_em: new Date().toISOString()
+      };
+      const { error } = await this.client
+        .from('cub_por_estado')
+        .update(payload)
+        .eq('uf', uf)
+        .eq('padrao', padrao);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarIndicesSinaenco(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('indices_sinaenco')
+        .select('id, coluna, ano, mes, valor, atualizado_em, atualizado_por')
+        .order('ano', { ascending: false })
+        .order('mes', { ascending: false });
+
+      if (error) {
+        console.warn('Aviso ao listar índices SINAENCO:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar índices SINAENCO:', e?.message || e);
+      return [];
+    }
+  }
+
+  async adicionarIndiceMensal(dados: {
+    coluna: 'coluna35' | 'coluna39';
+    ano: number;
+    mes: number;
+    valor: number;
+  }): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      const payload = {
+        coluna: dados.coluna,
+        ano: dados.ano,
+        mes: dados.mes,
+        valor: dados.valor,
+        atualizado_por: session?.user?.id || null,
+        atualizado_em: new Date().toISOString()
+      };
+
+      const { error } = await this.client
+        .from('indices_sinaenco')
+        .upsert(payload, { onConflict: 'coluna,ano,mes' });
+
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirIndiceSinaenco(
+    coluna: string,
+    ano: number,
+    mes: number
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('indices_sinaenco')
+        .delete()
+        .eq('coluna', coluna)
+        .eq('ano', ano)
+        .eq('mes', mes);
+
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
 }
+
 

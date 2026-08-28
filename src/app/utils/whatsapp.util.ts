@@ -1,4 +1,4 @@
-export type OrigemWhatsapp = 'home' | 'arquitetura' | 'tech' | 'tech-sindico' | 'academy' | 'contato' | 'footer' | 'links-bio';
+export type OrigemWhatsapp = 'home' | 'arquitetura' | 'tech' | 'tech-sindico' | 'academy' | 'contato' | 'footer' | 'links-bio' | 'viabiliza-ia';
 
 const MENSAGENS: Record<OrigemWhatsapp, string> = {
   'home': 'Olá! Vim pelo site da AmorimTech e quero saber mais sobre os serviços de engenharia diagnóstica.',
@@ -9,6 +9,7 @@ const MENSAGENS: Record<OrigemWhatsapp, string> = {
   'contato': 'Olá! Vim pelo site e quero falar com a equipe.',
   'footer': 'Olá! Vim pelo site da AmorimTech.',
   'links-bio': 'Olá! Vim pelo seu link na bio e quero saber mais.',
+  'viabiliza-ia': 'Olá! Completei o planejamento do meu projeto no Viabiliza IA da Comunidade e gostaria de agendar uma consulta.',
 };
 
 export function gerarLinkWhatsapp(origem: OrigemWhatsapp, numero: string = '5581991298803'): string {

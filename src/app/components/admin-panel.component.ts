@@ -15,6 +15,7 @@ import { AdminNotificacoesComponent } from './admin/admin-notificacoes.component
 import { AdminPortfolioComponent } from './admin/admin-portfolio.component';
 import { AdminAloSindicoComponent } from './admin/admin-alo-sindico.component';
 import { AdminPremiosComponent } from './admin/admin-premios.component';
+import { AdminViabilizaIaComponent } from './admin/admin-viabiliza-ia.component';
 import { SupabaseService } from '../../services/supabase.service';
 
 interface NavSectionItem {
@@ -43,7 +44,8 @@ interface NavSectionItem {
     AdminNotificacoesComponent,
     AdminPortfolioComponent,
     AdminAloSindicoComponent,
-    AdminPremiosComponent
+    AdminPremiosComponent,
+    AdminViabilizaIaComponent
   ],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col md:flex-row">
@@ -315,6 +317,18 @@ interface NavSectionItem {
                   </span>
                 }
               </button>
+
+              <!-- Viabiliza IA (Linhas de Crédito & Solicitações) -->
+              <button
+                type="button"
+                (click)="selecionarAba('viabiliza-ia')"
+                [class]="abaAtiva() === 'viabiliza-ia'
+                  ? 'w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-[#B5642A] text-white font-bold shadow-sm cursor-pointer'
+                  : 'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white font-medium transition-colors cursor-pointer'"
+              >
+                <span class="text-base shrink-0">🏦</span>
+                <span>Viabiliza IA</span>
+              </button>
             </div>
 
           </nav>
@@ -534,6 +548,11 @@ interface NavSectionItem {
               <app-admin-premios></app-admin-premios>
             }
 
+            <!-- CASO: Viabiliza IA (Gestão de Linhas de Crédito & Solicitações) -->
+            @case ('viabiliza-ia') {
+              <app-admin-viabiliza-ia></app-admin-viabiliza-ia>
+            }
+
             <!-- DEMAIS ABAS: Card de "Conector Pendente / Em Construção" -->
             @default {
               <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-16 text-center space-y-5 shadow-xs max-w-2xl mx-auto">
@@ -595,6 +614,8 @@ export class AdminPanelComponent implements OnInit {
     'convites-acessos': { titulo: 'Convites e Acessos' },
     'gestao-usuarios': { titulo: 'Gestão de Usuários & Licenças' },
     'alo-sindico': { titulo: 'Alô Síndico — Atendimento & Leads com IA' },
+    'premios-hall-fama': { titulo: 'Gestão de Prêmios do Hall da Fama' },
+    'viabiliza-ia': { titulo: 'Viabiliza IA — Linhas de Crédito & Solicitações' },
   };
 
   async ngOnInit(): Promise<void> {
