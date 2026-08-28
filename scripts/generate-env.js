@@ -25,11 +25,18 @@ if (fs.existsSync(envPath)) {
 }
 
 const apiBaseUrl = process.env.API_BASE_URL || envVars.API_BASE_URL || '';
-const supabaseUrl = process.env.SUPABASE_URL || envVars.SUPABASE_URL || 'https://qtrypzzcjebvfcihiynt.supabase.co';
+const supabaseUrl = process.env.SUPABASE_URL || envVars.SUPABASE_URL || '';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || envVars.SUPABASE_ANON_KEY || '';
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('[generate-env] ERRO: SUPABASE_URL e/ou SUPABASE_ANON_KEY não definidas. Build abortado para evitar apontar para banco incorreto.');
+  process.exit(1);
+}
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 const fileContent = `export const environment = {
-  production: false,
+  production: ${isProduction},
   apiBaseUrl: ${JSON.stringify(apiBaseUrl)},
   supabaseUrl: ${JSON.stringify(supabaseUrl)},
   supabaseAnonKey: ${JSON.stringify(supabaseAnonKey)},
