@@ -334,15 +334,27 @@ import { ComunidadeMembrosComponent } from './comunidade/comunidade-membros.comp
                           type="button"
                           (click)="marcarComoLida(n.id)"
                           class="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors flex gap-2.5 cursor-pointer"
+                          [class.bg-amber-50]="n.tipo === 'pontos' && !n.lida"
                         >
-                          @if (!n.lida) {
+                          @if (n.tipo === 'pontos') {
+                            <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-sm font-bold shadow-xs">
+                              🏆
+                            </div>
+                          } @else if (!n.lida) {
                             <span class="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0"></span>
                           } @else {
                             <span class="w-2 h-2 shrink-0"></span>
                           }
                           <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-slate-800 truncate" [class.font-bold]="!n.lida">{{ n.titulo }}</p>
-                            <p class="text-xs text-slate-500 line-clamp-2">{{ n.mensagem }}</p>
+                            <div class="flex items-center gap-1.5">
+                              <p class="text-sm font-semibold text-slate-800 truncate" [class.font-bold]="!n.lida">{{ n.titulo }}</p>
+                              @if (n.tipo === 'pontos') {
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-200/80 text-amber-900 font-black tracking-wide shrink-0">
+                                  +PONTOS
+                                </span>
+                              }
+                            </div>
+                            <p class="text-xs text-slate-500 line-clamp-2 mt-0.5">{{ n.mensagem }}</p>
                           </div>
                         </button>
                       }
@@ -696,6 +708,9 @@ export class ComunidadePreviewComponent implements OnInit {
         this.router.navigate(['/comunidade']);
       }
     });
+
+    // Registra atividade diária de acesso fire-and-forget
+    this.supabaseService.registrarAtividadeDiaria('acesso');
 
     await this.carregarNotificacoes();
   }

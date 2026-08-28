@@ -766,6 +766,9 @@ export class ComunidadeAgentesComponent implements OnInit {
     }
     this.mostrarAcessoRestrito.set(null);
     this.ferramentaAtiva.set(ferramenta);
+    if (ferramenta !== 'lista') {
+      this.supabaseService.registrarAtividadeDiaria('agente_ia');
+    }
   }
 
   voltarParaLista(): void {

@@ -14,6 +14,7 @@ import { AdminBlogAnalyticsComponent } from './admin/admin-blog-analytics.compon
 import { AdminNotificacoesComponent } from './admin/admin-notificacoes.component';
 import { AdminPortfolioComponent } from './admin/admin-portfolio.component';
 import { AdminAloSindicoComponent } from './admin/admin-alo-sindico.component';
+import { AdminPremiosComponent } from './admin/admin-premios.component';
 import { SupabaseService } from '../../services/supabase.service';
 
 interface NavSectionItem {
@@ -41,7 +42,8 @@ interface NavSectionItem {
     AdminBlogAnalyticsComponent,
     AdminNotificacoesComponent,
     AdminPortfolioComponent,
-    AdminAloSindicoComponent
+    AdminAloSindicoComponent,
+    AdminPremiosComponent
   ],
   template: `
     <div class="min-h-screen bg-slate-100 flex flex-col md:flex-row">
@@ -281,6 +283,18 @@ interface NavSectionItem {
                 <span>Gestão de Usuários</span>
               </button>
 
+              <!-- Prêmios do Hall da Fama -->
+              <button
+                type="button"
+                (click)="selecionarAba('premios-hall-fama')"
+                [class]="abaAtiva() === 'premios-hall-fama'
+                  ? 'w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold shadow-sm cursor-pointer'
+                  : 'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-colors cursor-pointer'"
+              >
+                <span class="text-base shrink-0">🏆</span>
+                <span>Prêmios do Hall da Fama</span>
+              </button>
+
               <!-- Alô Síndico (Atendimento e Leads) -->
               <button
                 type="button"
@@ -513,6 +527,11 @@ interface NavSectionItem {
             <!-- CASO 12: Alô Síndico (Leads e Chat) -->
             @case ('alo-sindico') {
               <app-admin-alo-sindico></app-admin-alo-sindico>
+            }
+
+            <!-- CASO: Prêmios do Hall da Fama -->
+            @case ('premios-hall-fama') {
+              <app-admin-premios></app-admin-premios>
             }
 
             <!-- DEMAIS ABAS: Card de "Conector Pendente / Em Construção" -->

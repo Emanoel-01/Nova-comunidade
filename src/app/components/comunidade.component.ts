@@ -842,7 +842,8 @@ export class ComunidadeComponent implements OnInit {
       return;
     }
 
-    // Sucesso: navega para a área logada da comunidade
+    // Sucesso: registra atividade diária de acesso e navega para a área logada
+    this.supabaseService.registrarAtividadeDiaria('acesso');
     this.router.navigate(['/comunidade/preview']);
   }
 

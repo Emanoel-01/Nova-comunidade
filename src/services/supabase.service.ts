@@ -3183,7 +3183,7 @@ export class SupabaseService {
   }
 
   // ----------------------------------------------------
-  // NOTIFICAÇÕES (BLOCO 6 PARTE 2)
+  // NOTIFICAÇÕES (BLOCO 6 PARTE 2 - SEGMENTAÇÃO & CANAIS)
   // ----------------------------------------------------
 
   async enviarNotificacao(
@@ -3191,46 +3191,197 @@ export class SupabaseService {
     mensagem: string,
     enviarPorEmail: boolean = false
   ): Promise<{ error: Error | null; totalEmailsEnviados?: number; totalEmailsFalhas?: number }> {
+    return this.enviarNotificacaoSegmentada({
+      titulo,
+      mensagem,
+      modoDestinatario: 'todos',
+      canalSino: true,
+      canalEmail: enviarPorEmail,
+      canalPredial: false,
+    });
+  }
+
+  async enviarNotificacaoSegmentada(dados: {
+    titulo: string;
+    mensagem: string;
+    modoDestinatario: 'todos' | 'perfil' | 'modulo' | 'individual';
+    perfilNome?: string;
+    moduloNome?: string;
+    destinatariosIds?: string[]; // modo individual
+    canalSino: boolean;
+    canalEmail: boolean;
+    canalPredial: boolean;
+  }): Promise<{
+    error: Error | null;
+    totalDestinatarios?: number;
+    totalEmailsEnviados?: number;
+    jsonPredial?: string;
+  }> {
     try {
       const session = await this.getSession();
-      const { error } = await this.client
-        .from('notificacoes')
-        .insert({ titulo, mensagem, criado_por: session?.user?.id || null });
 
-      if (error) return { error };
+      // 1. Resolver lista de destinatários conforme modoDestinatario
+      let idsDestino: string[] = [];
+      let emailsDestino: string[] = [];
 
-      let totalEmailsEnviados = 0;
-      let totalEmailsFalhas = 0;
-
-      if (enviarPorEmail) {
-        // Buscar lista de e-mails dos membros cadastrados
-        const { data: profissionais } = await this.client
+      if (dados.modoDestinatario === 'todos') {
+        // Broadcast total: destinatario_id = null
+      } else if (dados.modoDestinatario === 'perfil') {
+        const { data } = await this.client
           .from('profissionais')
-          .select('email')
-          .not('email', 'is', null);
-
-        const emails = (profissionais || [])
+          .select('id, email')
+          .eq('nivel_atual', dados.perfilNome || '');
+        idsDestino = (data || []).map((p: any) => p.id).filter(Boolean);
+        emailsDestino = (data || [])
           .map((p: any) => p.email?.trim()?.toLowerCase())
           .filter((e: string) => Boolean(e) && e.includes('@'));
-
-        const emailsUnicos = [...new Set(emails)] as string[];
-
-        if (emailsUnicos.length > 0) {
-          const resEmail = await this.enviarEmailViaFunction({
-            tipo: 'notificacao',
-            destinatarios: emailsUnicos,
-            titulo,
-            mensagem,
-          });
-
-          totalEmailsEnviados = resEmail.totalEnviados || 0;
-          totalEmailsFalhas = resEmail.totalFalhas || 0;
+      } else if (dados.modoDestinatario === 'modulo') {
+        const { data } = await this.client
+          .from('permissoes_acesso')
+          .select('profissional_id, liberado')
+          .eq('modulo', dados.moduloNome || '')
+          .eq('liberado', true);
+        idsDestino = [...new Set((data || []).map((p: any) => p.profissional_id).filter(Boolean))];
+        if (idsDestino.length > 0) {
+          const { data: profs } = await this.client
+            .from('profissionais')
+            .select('email')
+            .in('id', idsDestino);
+          emailsDestino = (profs || [])
+            .map((p: any) => p.email?.trim()?.toLowerCase())
+            .filter((e: string) => Boolean(e) && e.includes('@'));
+        }
+      } else if (dados.modoDestinatario === 'individual') {
+        idsDestino = dados.destinatariosIds || [];
+        if (idsDestino.length > 0) {
+          const { data } = await this.client
+            .from('profissionais')
+            .select('email')
+            .in('id', idsDestino);
+          emailsDestino = (data || [])
+            .map((p: any) => p.email?.trim()?.toLowerCase())
+            .filter((e: string) => Boolean(e) && e.includes('@'));
         }
       }
 
-      return { error: null, totalEmailsEnviados, totalEmailsFalhas };
+      // 2. Canal Sino da Comunidade
+      if (dados.canalSino) {
+        if (dados.modoDestinatario === 'todos') {
+          const { error: errSino } = await this.client.from('notificacoes').insert({
+            titulo: dados.titulo,
+            mensagem: dados.mensagem,
+            destinatario_id: null,
+            tipo: 'geral',
+            criado_por: session?.user?.id || null,
+          });
+          if (errSino) return { error: errSino };
+        } else {
+          const linhas = idsDestino.map((id) => ({
+            titulo: dados.titulo,
+            mensagem: dados.mensagem,
+            destinatario_id: id,
+            tipo: 'geral',
+            criado_por: session?.user?.id || null,
+          }));
+          if (linhas.length > 0) {
+            const { error: errSino } = await this.client.from('notificacoes').insert(linhas);
+            if (errSino) return { error: errSino };
+          }
+        }
+      }
+
+      // 3. Canal E-mail via Resend
+      let totalEmailsEnviados = 0;
+      if (dados.canalEmail) {
+        let listaEmails: string[] = [];
+        if (dados.modoDestinatario === 'todos') {
+          const { data: todos } = await this.client
+            .from('profissionais')
+            .select('email')
+            .not('email', 'is', null);
+          listaEmails = (todos || [])
+            .map((p: any) => p.email?.trim()?.toLowerCase())
+            .filter((e: string) => Boolean(e) && e.includes('@'));
+        } else {
+          listaEmails = emailsDestino;
+        }
+
+        const emailsUnicos = [...new Set(listaEmails)] as string[];
+        if (emailsUnicos.length > 0) {
+          const res = await this.enviarEmailViaFunction({
+            tipo: 'notificacao',
+            destinatarios: emailsUnicos,
+            titulo: dados.titulo,
+            mensagem: dados.mensagem,
+          });
+          totalEmailsEnviados = res.totalEnviados || 0;
+        }
+      }
+
+      // 4. Canal Predial 4.0 — JSON pronto para copiar
+      let jsonPredial: string | undefined;
+      if (dados.canalPredial) {
+        jsonPredial = JSON.stringify(
+          {
+            titulo: dados.titulo,
+            mensagem: dados.mensagem,
+            data: new Date().toISOString(),
+          },
+          null,
+          2
+        );
+      }
+
+      return {
+        error: null,
+        totalDestinatarios: dados.modoDestinatario === 'todos' ? undefined : idsDestino.length,
+        totalEmailsEnviados,
+        jsonPredial,
+      };
     } catch (e: any) {
       return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async listarModulosDistintosPermissoes(): Promise<string[]> {
+    try {
+      const { data, error } = await this.client
+        .from('permissoes_acesso')
+        .select('modulo')
+        .order('modulo', { ascending: true });
+      if (error) {
+        console.warn('Aviso ao listar módulos de permissoes_acesso:', error.message);
+        return [];
+      }
+      const modulos = (data || []).map((d: any) => d.modulo).filter(Boolean);
+      return [...new Set(modulos)] as string[];
+    } catch (e: any) {
+      console.warn('Exceção ao listar módulos distintos:', e?.message || e);
+      return [];
+    }
+  }
+
+  async buscarProfissionaisParaNotificacao(termo: string): Promise<any[]> {
+    try {
+      const termoLimpo = (termo || '').trim();
+      if (!termoLimpo) return [];
+      const { data, error } = await this.client
+        .from('profissionais')
+        .select('id, full_name, email, avatar_url, professional_title, nivel_atual')
+        .or(`full_name.ilike.%${termoLimpo}%,email.ilike.%${termoLimpo}%`)
+        .limit(15);
+      if (error) {
+        const { data: fallback } = await this.client
+          .from('profissionais')
+          .select('id, full_name, email, avatar_url, professional_title, nivel_atual')
+          .ilike('full_name', `%${termoLimpo}%`)
+          .limit(15);
+        return fallback || [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao buscar profissionais para notificação:', e?.message || e);
+      return [];
     }
   }
 
@@ -3260,19 +3411,60 @@ export class SupabaseService {
     }
   }
 
+  async registrarAtividadeDiaria(tipo: 'acesso' | 'agente_ia'): Promise<void> {
+    try {
+      // Fire-and-forget: chama RPC registrar_atividade_diaria sem travar UI
+      Promise.resolve(this.client.rpc('registrar_atividade_diaria', { p_tipo: tipo }))
+        .then((res: any) => {
+          if (res?.error) {
+            console.warn(`Aviso ao registrar atividade diária (${tipo}):`, res.error.message);
+          }
+        })
+        .catch((err: any) => {
+          console.warn(`Erro na chamada RPC registrar atividade diária (${tipo}):`, err);
+        });
+    } catch (e: any) {
+      console.warn('Exceção ao disparar registrar atividade:', e);
+    }
+  }
+
   async listarNotificacoesParaMim(): Promise<any[]> {
     try {
       const session = await this.getSession();
       if (!session?.user) return [];
 
-      const { data: notificacoes, error } = await this.client
+      let query = this.client
         .from('notificacoes')
         .select('*')
+        .or(`destinatario_id.is.null,destinatario_id.eq.${session.user.id}`)
         .order('criado_em', { ascending: false })
         .limit(30);
+
+      const { data: notificacoes, error } = await query;
       if (error) {
-        console.warn('Erro ao listar notificações para o usuário:', error.message);
-        return [];
+        // Fallback: busca geral caso a coluna/filtro or apresente restrição
+        const resFallback = await this.client
+          .from('notificacoes')
+          .select('*')
+          .order('criado_em', { ascending: false })
+          .limit(30);
+
+        if (resFallback.error) {
+          console.warn('Erro ao listar notificações para o usuário:', error.message || resFallback.error.message);
+          return [];
+        }
+
+        const { data: leituras } = await this.client
+          .from('notificacoes_leituras')
+          .select('notificacao_id')
+          .eq('profissional_id', session.user.id);
+
+        const idsLidos = new Set((leituras || []).map((l: any) => l.notificacao_id));
+
+        return (resFallback.data || []).map((n: any) => ({
+          ...n,
+          lida: n.lida === true || idsLidos.has(n.id),
+        }));
       }
 
       const { data: leituras } = await this.client
@@ -3282,7 +3474,10 @@ export class SupabaseService {
 
       const idsLidos = new Set((leituras || []).map((l: any) => l.notificacao_id));
 
-      return (notificacoes || []).map((n: any) => ({ ...n, lida: idsLidos.has(n.id) }));
+      return (notificacoes || []).map((n: any) => ({
+        ...n,
+        lida: n.lida === true || idsLidos.has(n.id),
+      }));
     } catch (e: any) {
       console.warn('Exceção ao listar notificações para o usuário:', e?.message || e);
       return [];
@@ -3293,12 +3488,176 @@ export class SupabaseService {
     try {
       const session = await this.getSession();
       if (!session?.user) return { error: new Error('Não autenticado.') };
+
+      // Se a notificação for pessoal (destinatario_id = me), atualiza também diretamente na tabela se possível
+      try {
+        await this.client
+          .from('notificacoes')
+          .update({ lida: true })
+          .eq('id', notificacaoId)
+          .eq('destinatario_id', session.user.id);
+      } catch {
+        // ignora se for notificação geral
+      }
+
       const { error } = await this.client
         .from('notificacoes_leituras')
         .upsert({ notificacao_id: notificacaoId, profissional_id: session.user.id }, { onConflict: 'notificacao_id,profissional_id' });
       return { error };
     } catch (e: any) {
       return { error: e };
+    }
+  }
+
+  /* ==========================================================================
+     GAMIFICAÇÃO & HALL DA FAMA (PREMIAÇÕES E HISTÓRICO)
+     ========================================================================== */
+
+  async listarPremiosGamificacao(mes?: number, ano?: number, apenasAtivos: boolean = false): Promise<any[]> {
+    try {
+      let query = this.client
+        .from('gamificacao_premios')
+        .select('*')
+        .order('ano', { ascending: false })
+        .order('mes', { ascending: false })
+        .order('posicao', { ascending: true });
+
+      if (ano !== undefined && ano !== null) {
+        query = query.eq('ano', ano);
+      }
+      if (mes !== undefined && mes !== null) {
+        query = query.eq('mes', mes);
+      }
+      if (apenasAtivos) {
+        query = query.eq('ativo', true);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.warn('Aviso ao listar prêmios de gamificação:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar prêmios de gamificação:', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarPremioGamificacao(premio: {
+    mes: number;
+    ano: number;
+    posicao: number;
+    titulo: string;
+    descricao?: string;
+    imagem_url?: string;
+    ativo?: boolean;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const { data, error } = await this.client
+        .from('gamificacao_premios')
+        .insert({
+          mes: premio.mes,
+          ano: premio.ano,
+          posicao: premio.posicao,
+          titulo: premio.titulo,
+          descricao: premio.descricao || null,
+          imagem_url: premio.imagem_url || null,
+          ativo: premio.ativo !== false,
+        })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarPremioGamificacao(
+    id: string,
+    dados: Partial<{
+      mes: number;
+      ano: number;
+      posicao: number;
+      titulo: string;
+      descricao: string;
+      imagem_url: string;
+      ativo: boolean;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('gamificacao_premios')
+        .update(dados)
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirPremioGamificacao(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('gamificacao_premios')
+        .delete()
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarHistoricoVencedores(ano?: number, mes?: number): Promise<any[]> {
+    try {
+      let query = this.client
+        .from('gamificacao_historico_vencedores')
+        .select('*')
+        .order('ano', { ascending: false })
+        .order('mes', { ascending: false })
+        .order('posicao', { ascending: true });
+
+      if (ano !== undefined && ano !== null) {
+        query = query.eq('ano', ano);
+      }
+      if (mes !== undefined && mes !== null) {
+        query = query.eq('mes', mes);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.warn('Aviso ao listar histórico de vencedores:', error.message);
+        return [];
+      }
+
+      if (!data || data.length === 0) return [];
+
+      // Enriquecer dados dos profissionais
+      const userIds = [...new Set(data.map((d: any) => d.user_id || d.profissional_id).filter(Boolean))];
+      const profsMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profs } = await this.client
+          .from('profissionais')
+          .select('id, full_name, avatar_url, professional_title, nivel_atual')
+          .in('id', userIds);
+        (profs || []).forEach((p: any) => {
+          profsMap[p.id] = p;
+        });
+      }
+
+      return data.map((d: any) => {
+        const p = profsMap[d.user_id || d.profissional_id];
+        return {
+          ...d,
+          nome_exibicao: d.nome_exibicao || d.nome || p?.full_name || 'Membro da Comunidade',
+          avatar_url: d.avatar_url || p?.avatar_url || null,
+          professional_title: d.professional_title || p?.professional_title || null,
+          nivel_atual: d.nivel_atual || p?.nivel_atual || 'Membro Ativo',
+        };
+      });
+    } catch (e: any) {
+      console.warn('Exceção ao listar histórico de vencedores:', e?.message || e);
+      return [];
     }
   }
 
