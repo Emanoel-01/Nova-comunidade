@@ -4202,6 +4202,118 @@ export class SupabaseService {
       return { error: e };
     }
   }
+
+  // ----------------------------------------------------
+  // TEMPLATES DE E-MAIL (CRUD & LISTAGEM)
+  // ----------------------------------------------------
+
+  async listarTemplatesEmail(): Promise<Array<{
+    id: string;
+    chave: string;
+    nome: string;
+    assunto: string;
+    html: string;
+    padrao_sistema: boolean;
+    criado_em?: string;
+    atualizado_em?: string;
+  }>> {
+    try {
+      const { data, error } = await this.client
+        .from('templates_email')
+        .select('*')
+        .order('padrao_sistema', { ascending: false })
+        .order('nome', { ascending: true });
+
+      if (error) {
+        console.warn('Erro ao listar templates_email:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar templates_email:', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarTemplateEmail(template: {
+    chave?: string;
+    nome: string;
+    assunto: string;
+    html: string;
+    padrao_sistema?: boolean;
+  }): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const chaveFinal =
+        template.chave?.trim() ||
+        template.nome
+          .trim()
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+
+      const { data, error } = await this.client
+        .from('templates_email')
+        .insert({
+          chave: chaveFinal,
+          nome: template.nome.trim(),
+          assunto: template.assunto.trim(),
+          html: template.html,
+          padrao_sistema: false,
+          criado_em: new Date().toISOString(),
+          atualizado_em: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      return { data, error: error ? new Error(error.message) : null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async atualizarTemplateEmail(
+    id: string,
+    dados: {
+      nome?: string;
+      assunto?: string;
+      html?: string;
+    }
+  ): Promise<{ error: Error | null }> {
+    try {
+      const payload: Record<string, any> = {
+        atualizado_em: new Date().toISOString(),
+      };
+      if (dados.nome !== undefined) payload.nome = dados.nome.trim();
+      if (dados.assunto !== undefined) payload.assunto = dados.assunto.trim();
+      if (dados.html !== undefined) payload.html = dados.html;
+
+      const { error } = await this.client
+        .from('templates_email')
+        .update(payload)
+        .eq('id', id)
+        .eq('padrao_sistema', false);
+
+      return { error: error ? new Error(error.message) : null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async excluirTemplateEmail(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('templates_email')
+        .delete()
+        .eq('id', id)
+        .eq('padrao_sistema', false);
+
+      return { error: error ? new Error(error.message) : null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
 }
 
 
