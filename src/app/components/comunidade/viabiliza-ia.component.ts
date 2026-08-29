@@ -1,7 +1,11 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../../services/supabase.service';
+import { SupabaseService, DocumentoCredito } from '../../../services/supabase.service';
+import { MotorPdfService } from '../../services/motor-pdf.service';
 import { gerarLinkWhatsapp } from '../../utils/whatsapp.util';
+import JSZip from 'jszip';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface AmbienteItem {
   id: string;
@@ -1061,36 +1065,134 @@ export const ESTADOS_BRASIL = [
 
                 <!-- Lista de Documentos -->
                 <div class="space-y-4">
-                  <h4 class="text-sm font-black text-slate-800">Documentos Gerais & Específicos</h4>
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-black text-slate-800">Documentos Gerais & Específicos</h4>
+                    <span class="text-xs text-slate-500">
+                      {{ documentosEnviados().length }} arquivo(s) anexado(s)
+                    </span>
+                  </div>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     @for (doc of getDocumentosAtuais(); track doc.id) {
-                      <label class="p-4 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer select-none"
-                        [class.bg-emerald-50]="isDocumentoMarcado(doc.id)"
-                        [class.border-emerald-300]="isDocumentoMarcado(doc.id)"
-                        [class.bg-white]="!isDocumentoMarcado(doc.id)"
-                        [class.border-slate-200]="!isDocumentoMarcado(doc.id)"
+                      <div class="p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3 shadow-xs"
+                        [class.bg-emerald-50/70]="isDocumentoMarcado(doc.id) || !!obterDocumentoEnviado(doc.id)"
+                        [class.border-emerald-300]="isDocumentoMarcado(doc.id) || !!obterDocumentoEnviado(doc.id)"
+                        [class.bg-white]="!isDocumentoMarcado(doc.id) && !obterDocumentoEnviado(doc.id)"
+                        [class.border-slate-200]="!isDocumentoMarcado(doc.id) && !obterDocumentoEnviado(doc.id)"
                       >
-                        <input
-                          type="checkbox"
-                          [checked]="isDocumentoMarcado(doc.id)"
-                          (change)="toggleDocumento(doc.id)"
-                          class="mt-1 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <div class="space-y-0.5 flex-1">
-                          <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-800" [class.line-through]="isDocumentoMarcado(doc.id)">
-                              {{ doc.nome }}
-                            </span>
-                            @if (doc.obrigatorio) {
-                              <span class="text-[10px] font-bold text-rose-600 uppercase">Obrigatório</span>
-                            } @else {
-                              <span class="text-[10px] text-slate-400">Opcional</span>
-                            }
+                        <div class="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            [checked]="isDocumentoMarcado(doc.id) || !!obterDocumentoEnviado(doc.id)"
+                            (change)="toggleDocumento(doc.id)"
+                            class="mt-1 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            id="chk-doc-{{ doc.id }}"
+                          />
+                          <div class="space-y-0.5 flex-1">
+                            <div class="flex items-center justify-between gap-2">
+                              <label for="chk-doc-{{ doc.id }}" class="text-xs font-bold text-slate-800 cursor-pointer" [class.line-through]="isDocumentoMarcado(doc.id) || !!obterDocumentoEnviado(doc.id)">
+                                {{ doc.nome }}
+                              </label>
+                              <div class="flex items-center gap-1.5 shrink-0">
+                                @if (obterDocumentoEnviado(doc.id)) {
+                                  <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-200/80 text-emerald-900 flex items-center gap-1">
+                                    ✓ Anexado
+                                  </span>
+                                }
+                                @if (doc.obrigatorio) {
+                                  <span class="text-[10px] font-bold text-rose-600 uppercase">Obrigatório</span>
+                                } @else {
+                                  <span class="text-[10px] text-slate-400">Opcional</span>
+                                }
+                              </div>
+                            </div>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">{{ doc.descricao }}</p>
                           </div>
-                          <p class="text-[11px] text-slate-500 leading-relaxed">{{ doc.descricao }}</p>
                         </div>
-                      </label>
+
+                        <!-- Bloco de Arquivo Anexado OU Botão de Upload -->
+                        @let docAnexado = obterDocumentoEnviado(doc.id);
+                        @if (docAnexado) {
+                          <div class="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center justify-between gap-2 text-xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                              <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                📄
+                              </div>
+                              <div class="min-w-0">
+                                <div class="text-[11px] font-bold text-slate-800 truncate" [title]="docAnexado.nome_arquivo">
+                                  {{ docAnexado.nome_arquivo }}
+                                </div>
+                                <div class="text-[10px] text-slate-400">
+                                  {{ formatarTamanhoBytes(docAnexado.tamanho_bytes) }} • {{ formatarData(docAnexado.enviado_em) }}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                (click)="baixarDocumentoIndividual(docAnexado, $event)"
+                                class="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                                title="Baixar arquivo"
+                              >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                (click)="excluirDocumento(docAnexado, $event)"
+                                [disabled]="excluindoDocId() === docAnexado.id"
+                                class="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
+                                title="Remover arquivo"
+                              >
+                                @if (excluindoDocId() === docAnexado.id) {
+                                  <svg class="animate-spin w-4 h-4 text-rose-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                } @else {
+                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                }
+                              </button>
+                            </div>
+                          </div>
+                        } @else {
+                          <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <span class="text-[10px] text-slate-400">PDF, JPG ou PNG até 10MB</span>
+                            <div>
+                              <input
+                                #fileInput
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                (change)="onUploadArquivo(doc.id, $event); fileInput.value = ''"
+                                class="hidden"
+                              />
+                              <button
+                                type="button"
+                                (click)="fileInput.click()"
+                                [disabled]="uploadingDocId() === doc.id"
+                                class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-[#132A41] hover:text-white text-slate-700 text-[11px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                              >
+                                @if (uploadingDocId() === doc.id) {
+                                  <svg class="animate-spin w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  <span>Enviando...</span>
+                                } @else {
+                                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                  </svg>
+                                  <span>Anexar Arquivo</span>
+                                }
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
                     }
                   </div>
                 </div>
@@ -1547,13 +1649,93 @@ export const ESTADOS_BRASIL = [
             <!-- ETAPA 7: AGENDAMENTO DE CONSULTA & PASTA DE CRÉDITO -->
             @if (etapaAtiva() === 7) {
               <div class="space-y-8">
+                <!-- Banner de Emissão de Relatório Consolidado e Pacote ZIP -->
+                <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-[#132A41] to-[#1E3A5F] text-white space-y-6 shadow-lg border border-slate-700/50">
+                  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                      <div class="flex items-center gap-2 text-xs font-black uppercase text-[#E8B27E] tracking-wider">
+                        <span>📄 Motor White-Label Oficial</span>
+                        <span>•</span>
+                        <span>Pasta de Crédito</span>
+                      </div>
+                      <h3 class="text-xl sm:text-2xl font-black text-white">
+                        Relatório Consolidado & Pacote de Submissão Bancária
+                      </h3>
+                      <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                        Gere o dossiê executivo reunindo todas as 7 etapas do projeto (Projetos, Custo CUB, Documentação, Comparação Bancária, Financiamento e Construir vs Alugar) com identificação técnica do seu perfil profissional, ou baixe o pacote ZIP completo com o relatório e todos os documentos anexados.
+                      </p>
+                    </div>
+
+                    <!-- Indicador de Prontidão -->
+                    <div class="bg-slate-900/60 border border-slate-700/80 rounded-2xl p-4 text-center shrink-0 min-w-[150px]">
+                      <div class="text-[10px] uppercase font-bold text-slate-400">Prontidão da Pasta</div>
+                      <div class="text-2xl font-black text-[#E8B27E]">
+                        {{ percentualDocumentacao() }}%
+                      </div>
+                      <div class="text-[10px] text-slate-300">
+                        {{ documentosEnviados().length }} arquivo(s) anexado(s)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-700/60">
+                    <!-- Botão 1: PDF Consolidado -->
+                    <button
+                      type="button"
+                      (click)="gerarRelatorioConsolidadoPDF()"
+                      [disabled]="gerandoPdf()"
+                      class="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-black text-xs transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 shadow-md group"
+                    >
+                      @if (gerandoPdf()) {
+                        <svg class="animate-spin w-5 h-5 text-[#E8B27E]" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Gerando Relatório PDF...</span>
+                      } @else {
+                        <span class="w-8 h-8 rounded-xl bg-[#B5642A] text-white flex items-center justify-center font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
+                          📑
+                        </span>
+                        <div class="text-left">
+                          <div class="text-xs font-black text-white">Gerar Relatório Consolidado (PDF)</div>
+                          <div class="text-[10px] text-slate-300 font-normal">Dossiê White-Label das 7 etapas</div>
+                        </div>
+                      }
+                    </button>
+
+                    <!-- Botão 2: Pacote ZIP -->
+                    <button
+                      type="button"
+                      (click)="baixarPacoteCompletoZip()"
+                      [disabled]="gerandoZip()"
+                      class="p-4 rounded-2xl bg-gradient-to-r from-[#B5642A] to-[#8A4315] hover:from-[#C77234] hover:to-[#9E4D19] text-white font-black text-xs transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 shadow-md group"
+                    >
+                      @if (gerandoZip()) {
+                        <svg class="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Empacotando Arquivos em ZIP...</span>
+                      } @else {
+                        <span class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
+                          📦
+                        </span>
+                        <div class="text-left">
+                          <div class="text-xs font-black text-white">Baixar Pacote Completo (ZIP)</div>
+                          <div class="text-[10px] text-amber-200/90 font-normal">Relatório PDF + Documentos anexados</div>
+                        </div>
+                      }
+                    </button>
+                  </div>
+                </div>
+
                 <div class="text-center max-w-2xl mx-auto space-y-2">
                   <div class="w-12 h-12 rounded-2xl bg-amber-100 text-[#B5642A] flex items-center justify-center mx-auto text-xl shadow-inner">
                     📁
                   </div>
-                  <h3 class="text-xl font-black text-slate-900">Sua Pasta de Crédito Está Estruturada!</h3>
+                  <h3 class="text-xl font-black text-slate-900">Agendar Consultoria Técnica de Crédito</h3>
                   <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Você completou o planejamento de <strong>{{ nomeProjeto() }}</strong>. Agende agora uma consultoria técnica de viabilidade bancária para submissão aos bancos.
+                    Você completou o planejamento de <strong>{{ nomeProjeto() }}</strong>. Agende agora uma consultoria técnica de viabilidade bancária para submissão aos bancos parceiros.
                   </p>
                 </div>
 
@@ -1821,6 +2003,7 @@ export const ESTADOS_BRASIL = [
 })
 export class ViabilizaIaComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly motorPdfService = inject(MotorPdfService);
   protected readonly Math = Math;
 
   readonly estadosBrasil = ESTADOS_BRASIL;
@@ -1838,6 +2021,14 @@ export class ViabilizaIaComponent implements OnInit {
   readonly modalNovoProjetoAberto = signal(false);
   readonly mensagemSucesso = signal<string | null>(null);
   readonly mensagemErro = signal<string | null>(null);
+
+  // Documentos e Exportação
+  readonly documentosEnviados = signal<DocumentoCredito[]>([]);
+  readonly carregandoDocumentos = signal(false);
+  readonly uploadingDocId = signal<string | null>(null);
+  readonly excluindoDocId = signal<string | null>(null);
+  readonly gerandoPdf = signal(false);
+  readonly gerandoZip = signal(false);
 
   // Form Novo Projeto
   novoProjetoNome = '';
@@ -2062,6 +2253,7 @@ export class ViabilizaIaComponent implements OnInit {
     this.contatoMensagem = `Olá! Gostaria de uma assessoria para o projeto "${this.nomeProjeto()}" (${this.getTipoOperacaoLabel(this.tipoOperacao())}).`;
 
     await this.atualizarDadosCubPorEstado(proj.uf || 'SP');
+    await this.carregarDocumentosCredito(proj.id);
     this.recalcular();
   }
 
@@ -2521,4 +2713,834 @@ export class ViabilizaIaComponent implements OnInit {
       default: return 'Crédito Imobiliário';
     }
   }
+
+  // --- GESTÃO DE DOCUMENTOS DE CRÉDITO (ETAPA 3) ---
+
+  async carregarDocumentosCredito(projetoId: string): Promise<void> {
+    this.carregandoDocumentos.set(true);
+    try {
+      const docs = await this.supabaseService.listarDocumentosCredito(projetoId);
+      this.documentosEnviados.set(docs || []);
+
+      // Auto-marca no checklist os documentos com arquivos enviados
+      if (docs && docs.length > 0) {
+        const idsEnviados = docs.map(d => d.documento_id).filter(Boolean);
+        this.checklistDocumentacao.update(arr => {
+          const set = new Set([...arr, ...idsEnviados]);
+          return Array.from(set);
+        });
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar documentos de crédito:', e);
+      this.documentosEnviados.set([]);
+    } finally {
+      this.carregandoDocumentos.set(false);
+    }
+  }
+
+  obterDocumentoEnviado(documentoId: string): DocumentoCredito | undefined {
+    return this.documentosEnviados().find(d => d.documento_id === documentoId);
+  }
+
+  async onUploadArquivo(documentoId: string, event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input?.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    const proj = this.projetoAtual();
+    if (!proj?.id) {
+      this.mensagemErro.set('Abra ou salve o projeto antes de anexar documentos.');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.mensagemErro.set(`O arquivo "${file.name}" excede o tamanho máximo permitido de 10 MB.`);
+      return;
+    }
+
+    this.uploadingDocId.set(documentoId);
+    this.mensagemErro.set(null);
+
+    try {
+      const { data, error } = await this.supabaseService.uploadDocumentoCredito(proj.id, documentoId, file);
+      if (error) throw error;
+
+      // Auto-marca como concluído no checklist
+      this.checklistDocumentacao.update(arr => {
+        if (!arr.includes(documentoId)) {
+          return [...arr, documentoId];
+        }
+        return arr;
+      });
+
+      // Recarrega documentos do projeto
+      await this.carregarDocumentosCredito(proj.id);
+      await this.salvarProjetoAtual();
+
+      this.mensagemSucesso.set(`Documento "${file.name}" anexado com sucesso à pasta de crédito!`);
+    } catch (err: any) {
+      console.error('Erro ao enviar documento:', err);
+      this.mensagemErro.set(err?.message || 'Falha ao fazer upload do documento.');
+    } finally {
+      this.uploadingDocId.set(null);
+    }
+  }
+
+  async excluirDocumento(docEnviado: DocumentoCredito, event?: Event): Promise<void> {
+    if (event) event.stopPropagation();
+    if (!confirm(`Deseja remover o arquivo "${docEnviado.nome_arquivo}"?`)) return;
+
+    const proj = this.projetoAtual();
+    if (!proj?.id) return;
+
+    this.excluindoDocId.set(docEnviado.id);
+    try {
+      const { error } = await this.supabaseService.excluirDocumentoCredito(docEnviado.id, docEnviado.caminho_storage);
+      if (error) throw error;
+
+      this.mensagemSucesso.set(`Documento "${docEnviado.nome_arquivo}" removido.`);
+      await this.carregarDocumentosCredito(proj.id);
+    } catch (err: any) {
+      this.mensagemErro.set(err?.message || 'Erro ao excluir documento.');
+    } finally {
+      this.excluindoDocId.set(null);
+    }
+  }
+
+  async baixarDocumentoIndividual(docEnviado: DocumentoCredito, event?: Event): Promise<void> {
+    if (event) event.stopPropagation();
+    try {
+      const { url, error } = await this.supabaseService.obterUrlAssinadaDocumentoCredito(docEnviado.caminho_storage, 300);
+      if (error || !url) {
+        const { data: blob, error: blobErr } = await this.supabaseService.baixarArquivoDocumentoCredito(docEnviado.caminho_storage);
+        if (blobErr || !blob) throw (blobErr || new Error('Não foi possível baixar o arquivo.'));
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = docEnviado.nome_arquivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      } else {
+        window.open(url, '_blank');
+      }
+    } catch (err: any) {
+      this.mensagemErro.set(err?.message || 'Erro ao obter link do documento.');
+    }
+  }
+
+  formatarTamanhoBytes(bytes?: number): string {
+    if (!bytes || bytes <= 0) return '0 KB';
+    if (bytes >= 1024 * 1024) {
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    return Math.round(bytes / 1024) + ' KB';
+  }
+
+  formatarData(dataIso?: string): string {
+    if (!dataIso) return '';
+    try {
+      const d = new Date(dataIso);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return dataIso;
+    }
+  }
+
+  formatarMoeda(val?: number): string {
+    if (val === undefined || val === null || isNaN(val)) return '0,00';
+    return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // --- MOTOR WHITE-LABEL: RELATÓRIO CONSOLIDADO EM PDF (ETAPA 7) ---
+
+  async gerarRelatorioConsolidadoPDF(): Promise<void> {
+    const proj = this.projetoAtual();
+    if (!proj?.id) {
+      this.mensagemErro.set('Abra um projeto para emitir o relatório consolidado.');
+      return;
+    }
+
+    this.gerandoPdf.set(true);
+    this.mensagemErro.set(null);
+
+    try {
+      const perfil = await this.motorPdfService.obterPerfilDocumental();
+      if (!perfil?.crea_cau || perfil.crea_cau.trim().length <= 2) {
+        this.motorPdfService.exibirToast(
+          'Registro Profissional Obrigatório: Para gerar o relatório consolidado com validade técnica, cadastre seu CREA/CAU/CFT na aba "Meu Perfil > Dados para Documentos Técnicos".',
+          'erro'
+        );
+        return;
+      }
+
+      const res = this.resultado();
+      const totalJuros = res ? Math.max(0, res.totalPago - res.valorFinanciavel) : 0;
+      const totalAluguel = (this.areaTotal() || 0) * (this.valorAluguelM2() || 35) * (this.prazoAnos() || 25) * 12;
+
+      // 1. Tabela de Ambientes
+      const ambientesHtml = this.ambientes().length > 0
+        ? this.ambientes().map(a => `
+            <tr>
+              <td><strong>${a.nome}</strong></td>
+              <td class="td-center">${a.tamanho}</td>
+              <td class="td-center">${a.dimensoes}</td>
+              <td class="td-right"><strong>${a.area.toFixed(1)} m²</strong></td>
+            </tr>
+          `).join('')
+        : '<tr><td colspan="4" class="td-center" style="color: #94A3B8;">Nenhum ambiente discriminado</td></tr>';
+
+      // 2. Tabela de Áreas Externas (se houver)
+      let areasExternasSecao = '';
+      if (this.areasExternas().length > 0) {
+        const rows = this.areasExternas().map(ext => `
+          <tr>
+            <td><strong>${ext.tipo}</strong></td>
+            <td class="td-center">${ext.area.toFixed(1)} m²</td>
+            <td class="td-right">R$ ${this.formatarMoeda(ext.custo_m2)}</td>
+            <td class="td-right"><strong>R$ ${this.formatarMoeda(ext.custo_total)}</strong></td>
+          </tr>
+        `).join('');
+
+        areasExternasSecao = `
+          <div style="margin-top: 8px;">
+            <div style="font-size: 7.5pt; font-weight: 700; color: var(--p4-navy); margin-bottom: 4px; text-transform: uppercase;">
+              Áreas Externas e Lazer (${this.areaExternaTotal()} m²)
+            </div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 35%;">Item / Espaço</th>
+                  <th class="th-center" style="width: 20%;">Área (m²)</th>
+                  <th class="th-right" style="width: 20%;">Custo Estimado/m²</th>
+                  <th class="th-right" style="width: 25%;">Total Estimado</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      // 3. Tabela de Itens Adicionais
+      let itensAdicionaisRows = '';
+      if (this.itensAdicionais().length > 0) {
+        itensAdicionaisRows = this.itensAdicionais().map(i => {
+          const valorCalc = i.tipo === 'percentual'
+            ? (this.custoBase() * (i.valor / 100))
+            : i.valor;
+          return `
+            <tr>
+              <td>${i.nome}</td>
+              <td class="td-center">${i.tipo === 'percentual' ? `${i.valor}% sobre base` : 'Valor Fixo'}</td>
+              <td class="td-right">R$ ${this.formatarMoeda(valorCalc)}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 4. Checklist de Documentos
+      const docsRows = this.getDocumentosAtuais().map(doc => {
+        const docAnexado = this.obterDocumentoEnviado(doc.id);
+        const marcado = this.isDocumentoMarcado(doc.id);
+        let statusBadge = '<span style="color: #94A3B8; font-weight: 600;">✗ Pendente</span>';
+        let detalheArquivo = '—';
+
+        if (docAnexado) {
+          statusBadge = '<span style="color: var(--p4-green); font-weight: 700;">✓ Anexado</span>';
+          detalheArquivo = `${docAnexado.nome_arquivo} (${this.formatarTamanhoBytes(docAnexado.tamanho_bytes)})`;
+        } else if (marcado) {
+          statusBadge = '<span style="color: var(--p4-blue); font-weight: 700;">✓ Entregue</span>';
+          detalheArquivo = 'Conferido presencialmente';
+        }
+
+        return `
+          <tr>
+            <td><strong>${doc.nome}</strong></td>
+            <td class="td-center">${doc.obrigatorio ? '<strong style="color: #B91C1C;">Obrigatório</strong>' : '<span style="color: #64748B;">Opcional</span>'}</td>
+            <td class="td-center">${statusBadge}</td>
+            <td style="font-size: 6.8pt; color: #475569;">${detalheArquivo}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 5. Linha de Crédito
+      const linhaSel = this.linhasCredito().find(l => l.id === this.linhaCreditoSelecionadaId());
+      const linhaInfo = linhaSel
+        ? `${linhaSel.banco} - ${linhaSel.nome} (${linhaSel.taxa_juros_min}% a.a. • até ${linhaSel.prazo_max_anos} anos • ${linhaSel.sistema_amortizacao})`
+        : 'Linha Padrão de Mercado (Estimativa SFH/SFI)';
+
+      // 6. Construir vs Alugar (se aplicável)
+      let construirVsAlugarSecao = '';
+      if (this.tipoOperacao() !== 'compra_terreno') {
+        const ecoDiferenca = totalAluguel - (res?.totalPago || 0);
+        construirVsAlugarSecao = `
+          <div class="doc-section">
+            <div class="doc-section-title">6. Estudo Comparativo: Construir vs. Alugar</div>
+            <p style="font-size: 7.2pt; color: #64748B; margin: 0 0 6px 0;">
+              Análise financeira comparando o investimento na construção própria versus o desembolso em locação pelo mesmo prazo contratual (${this.prazoAnos()} anos).
+            </p>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 35%;">Modalidade</th>
+                  <th class="th-right" style="width: 25%;">Desembolso Total (${this.prazoAnos()} anos)</th>
+                  <th style="width: 40%;">Resultado Patrimonial ao Final</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Construção Própria (Financiada)</strong></td>
+                  <td class="td-right"><strong>R$ ${this.formatarMoeda(res?.totalPago)}</strong></td>
+                  <td style="color: var(--p4-green);"><strong>Imóvel 100% quitado e valorizado no patrimônio</strong></td>
+                </tr>
+                <tr>
+                  <td><strong>Aluguel Acumulado (R$ ${this.valorAluguelM2()}/m²)</strong></td>
+                  <td class="td-right">R$ ${this.formatarMoeda(totalAluguel)}</td>
+                  <td style="color: #B91C1C;">Despesa a fundo perdido (zero patrimônio acumulado)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      // Corpo HTML consolidado com o padrão White-Label do MotorPdfService
+      const corpoHtml = `
+        <!-- 1. DADOS DO EMPREENDIMENTO -->
+        <div class="doc-section">
+          <div class="doc-section-title">1. Identificação do Projeto & Localização</div>
+          <div class="doc-card-info">
+            <div class="doc-grid-3">
+              <div>
+                <span class="info-label">Nome do Projeto:</span>
+                <span class="info-value">${this.nomeProjeto()}</span>
+              </div>
+              <div>
+                <span class="info-label">Cliente / Proponente:</span>
+                <span class="info-value">${this.nomeCliente() || 'Não informado'}</span>
+              </div>
+              <div>
+                <span class="info-label">Tipo de Operação:</span>
+                <span class="info-value">${this.getTipoOperacaoLabel(this.tipoOperacao())}</span>
+              </div>
+            </div>
+            <div class="doc-grid-3" style="margin-top: 6px;">
+              <div>
+                <span class="info-label">Localização (UF / Cidade):</span>
+                <span class="info-value">${this.cidade() ? this.cidade() + ' - ' : ''}${this.uf()}</span>
+              </div>
+              <div>
+                <span class="info-label">Endereço / Lote:</span>
+                <span class="info-value">${this.endereco() || 'A definir'}</span>
+              </div>
+              <div>
+                <span class="info-label">CUB Referência:</span>
+                <span class="info-value">R$ ${this.formatarMoeda(this.valorCubEstadoAtual())}/m² (${this.infoCubEstadoAtual()})</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. DIMENSIONAMENTO ARQUITETÔNICO -->
+        <div class="doc-section">
+          <div class="doc-section-title">2. Programa de Necessidades & Áreas (Total: ${this.areaTotal()} m² • ${this.pavimentos()} Pavimento(s))</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 40%;">Ambiente</th>
+                <th class="th-center" style="width: 20%;">Porte</th>
+                <th class="th-center" style="width: 20%;">Dimensões</th>
+                <th class="th-right" style="width: 20%;">Área Útil</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${ambientesHtml}
+            </tbody>
+            <tfoot>
+              <tr class="highlight-gray">
+                <td colspan="3"><strong>ÁREA TOTAL CONSTRUÍDA</strong></td>
+                <td class="td-right"><strong>${this.areaTotal()} m²</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+          ${areasExternasSecao}
+        </div>
+
+        <!-- 3. DEMONSTRATIVO DE CUSTOS & COMPOSIÇÃO -->
+        <div class="doc-section">
+          <div class="doc-section-title">3. Demonstrativo de Custos & Composição do Orçamento</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 50%;">Item de Custo / Investimento</th>
+                <th class="th-center" style="width: 25%;">Critério</th>
+                <th class="th-right" style="width: 25%;">Valor Estimado (R$)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.tipoOperacao() !== 'construcao' ? `
+                <tr>
+                  <td><strong>Aquisição do Terreno / Lote</strong></td>
+                  <td class="td-center">Valor Lançado</td>
+                  <td class="td-right">R$ ${this.formatarMoeda(this.valorTerreno())}</td>
+                </tr>
+              ` : ''}
+              ${this.tipoOperacao() !== 'compra_terreno' ? `
+                <tr>
+                  <td><strong>Custo da Edificação (Base CUB/m²)</strong></td>
+                  <td class="td-center">${this.areaTotal()} m² @ R$ ${this.formatarMoeda(this.valorCubEstadoAtual())}</td>
+                  <td class="td-right">R$ ${this.formatarMoeda(this.custoBase())}</td>
+                </tr>
+              ` : ''}
+              ${this.areasExternas().length > 0 ? `
+                <tr>
+                  <td><strong>Áreas Externas e Lazer</strong></td>
+                  <td class="td-center">${this.areaExternaTotal()} m²</td>
+                  <td class="td-right">R$ ${this.formatarMoeda(this.calcularCustoAreasExternas())}</td>
+                </tr>
+              ` : ''}
+              ${itensAdicionaisRows}
+            </tbody>
+            <tfoot>
+              <tr class="highlight-navy">
+                <td colspan="2"><strong>INVESTIMENTO TOTAL ESTIMADO</strong></td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(res?.custoTotal)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- 4. CHECKLIST DE DOCUMENTAÇÃO BANCÁRIA -->
+        <div class="doc-section">
+          <div class="doc-section-title">
+            4. Auditoria da Pasta de Crédito (${this.tipoRenda().toUpperCase()} • Prontidão: ${this.percentualDocumentacao()}%)
+          </div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 35%;">Documento Requerido</th>
+                <th class="th-center" style="width: 15%;">Exigência</th>
+                <th class="th-center" style="width: 18%;">Status</th>
+                <th style="width: 32%;">Arquivo / Observação</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${docsRows}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5. SIMULAÇÃO DE FINANCIAMENTO & LINHA DE CRÉDITO -->
+        <div class="doc-section">
+          <div class="doc-section-title">5. Simulação de Financiamento & Condições Contratuais</div>
+          <div class="doc-card-info" style="margin-bottom: 8px;">
+            <div class="doc-grid-2">
+              <div>
+                <span class="info-label">Linha de Crédito Selecionada:</span>
+                <span class="info-value">${linhaInfo}</span>
+              </div>
+              <div>
+                <span class="info-label">Sistema de Amortização:</span>
+                <span class="info-value"><strong>${this.sistemaAmortizacao().toUpperCase()}</strong> (${this.sistemaAmortizacao() === 'sac' ? 'Parcelas Decrescentes' : 'Parcelas Fixas - Tabela Price'})</span>
+              </div>
+            </div>
+          </div>
+
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Valor Total</th>
+                <th class="th-center" style="width: 25%;">Entrada (${this.percentualEntrada()}%)</th>
+                <th class="th-center" style="width: 25%;">Valor Financiável</th>
+                <th class="th-right" style="width: 25%;">Prazo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>R$ ${this.formatarMoeda(res?.custoTotal)}</strong></td>
+                <td class="td-center">R$ ${this.formatarMoeda(res?.valorEntrada)}</td>
+                <td class="td-center"><strong>R$ ${this.formatarMoeda(res?.valorFinanciavel)}</strong></td>
+                <td class="td-right"><strong>${this.prazoAnos()} anos</strong> (${this.prazoAnos() * 12} meses)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table class="doc-table" style="margin-top: 6px;">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Taxa de Juros Nominal</th>
+                <th class="th-center" style="width: 25%;">1ª Parcela Estimada</th>
+                <th class="th-center" style="width: 25%;">${this.sistemaAmortizacao() === 'sac' ? 'Última Parcela (SAC)' : 'Parcela Média'}</th>
+                <th class="th-right" style="width: 25%;">Total Estimado de Juros</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>${this.taxaJurosAnual()}% a.a.</strong></td>
+                <td class="td-center font-bold" style="color: var(--p4-navy);">R$ ${this.formatarMoeda(this.getPrimeiraParcela())}</td>
+                <td class="td-center font-bold">${this.sistemaAmortizacao() === 'sac' ? `R$ ${this.formatarMoeda(this.getUltimaParcela())}` : `R$ ${this.formatarMoeda(res?.parcela)}`}</td>
+                <td class="td-right" style="color: var(--p4-copper);"><strong>R$ ${this.formatarMoeda(totalJuros)}</strong></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="highlight-gray">
+                <td colspan="3"><strong>DESEMBOLSO TOTAL NO PRAZO (Entrada + Parcelas)</strong></td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(res?.totalPago)}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          ${this.temJurosObra() ? `
+            <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 6px; padding: 6px 10px; margin-top: 6px; font-size: 7pt; color: #92400E;">
+              <strong>Juros de Obra Ativados:</strong> Durante a fase construtiva de ${this.prazoObraMeses()} meses, incidem juros proporcionais à evolução física com taxa de ${this.taxaJurosObra()}% a.a., amortizando o saldo devedor integralmente após a entrega do Habite-se.
+            </div>
+          ` : ''}
+        </div>
+
+        ${construirVsAlugarSecao}
+
+        <!-- 7. NOTA METODOLÓGICA LEGAL -->
+        <div class="doc-legal-note" style="margin-top: 14px; font-size: 7pt; color: #64748B; border-top: 1px solid var(--p4-rule, #CBD5E1); padding-top: 6px;">
+          <strong>Nota Metodológica & Normas Técnicas:</strong> Estudo paramétrico fundamentado na NBR 12.721 (Avaliação de custos unitários e preparo de orçamento para incorporação de edifício) e índices do Custo Unitário Básico (CUB/m²) divulgados pelos respectivos Sinduscons estaduais. As simulações de crédito imobiliário seguem as diretrizes operacionais do SFH (Sistema Financeiro da Habitação) e SFI (Sistema de Financiamento Imobiliário), sujeitas à aprovação cadastral e análise jurídica de garantias pela instituição financeira concedente.
+        </div>
+      `;
+
+      await this.motorPdfService.gerarDocumento(
+        {
+          tituloDocumento: 'Relatório Consolidado de Viabilidade e Crédito Imobiliário',
+          subtituloDocumento: `Dossiê Executivo de Crédito • ${this.nomeProjeto()}`,
+          nomeAgente: 'Viabiliza IA - Crédito & Viabilidade Imobiliária'
+        },
+        corpoHtml
+      );
+    } catch (err: any) {
+      console.error('Erro ao gerar relatório consolidado em PDF:', err);
+      this.motorPdfService.exibirToast('Erro ao gerar o relatório consolidado em PDF.', 'erro');
+    } finally {
+      this.gerandoPdf.set(false);
+    }
+  }
+
+  // --- EMPACOTAMENTO EM PACOTE COMPLETO ZIP (ETAPA 7) ---
+
+  async baixarPacoteCompletoZip(): Promise<void> {
+    const proj = this.projetoAtual();
+    if (!proj?.id) {
+      this.mensagemErro.set('Abra um projeto para gerar o pacote ZIP.');
+      return;
+    }
+
+    this.gerandoZip.set(true);
+    this.mensagemErro.set(null);
+    this.mensagemSucesso.set(null);
+
+    try {
+      const perfil = await this.motorPdfService.obterPerfilDocumental();
+      if (!perfil?.crea_cau || perfil.crea_cau.trim().length <= 2) {
+        this.motorPdfService.exibirToast(
+          'Registro Profissional Obrigatório: Para gerar o pacote oficial com validade técnica, cadastre seu CREA/CAU/CFT na aba "Meu Perfil > Dados para Documentos Técnicos".',
+          'erro'
+        );
+        return;
+      }
+
+      const zip = new JSZip();
+
+      // 1. Gera o PDF consolidado em formato binário via jsPDF
+      const doc = await this.gerarDocJsPdf(perfil);
+      const pdfBlob = doc.output('blob');
+      const safeProjectName = (this.nomeProjeto() || 'Projeto').replace(/[^a-zA-Z0-9_-]/g, '_');
+      zip.file(`00-Relatorio-Consolidado-ViabilizaIA-${safeProjectName}.pdf`, pdfBlob);
+
+      // 2. Baixa e empacota todos os documentos anexados do Storage
+      const docs = this.documentosEnviados();
+      if (docs && docs.length > 0) {
+        const pastaDocs = zip.folder('Documentos-Anexados') || zip;
+        for (let i = 0; i < docs.length; i++) {
+          const d = docs[i];
+          if (!d.caminho_storage) continue;
+
+          const { data: blob, error } = await this.supabaseService.baixarArquivoDocumentoCredito(d.caminho_storage);
+          if (blob) {
+            const ext = (d.nome_arquivo || '').split('.').pop() || 'pdf';
+            const numPrefix = String(i + 1).padStart(2, '0');
+            const docIdFormatado = (d.documento_id || 'documento').toUpperCase().replace(/_/g, '-');
+            const nomeFormatado = `${numPrefix}-${docIdFormatado}.${ext}`;
+            pastaDocs.file(nomeFormatado, blob);
+          } else {
+            console.warn(`Aviso ao baixar anexo ${d.caminho_storage}:`, error);
+          }
+        }
+      }
+
+      // 3. Gera o arquivo ZIP e dispara o download no navegador
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const clienteOuProjeto = (this.nomeCliente() || this.nomeProjeto() || 'Cliente')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '-');
+      const dataStr = new Date().toISOString().split('T')[0];
+      const nomeZip = `Pasta-Credito-${clienteOuProjeto}-${dataStr}.zip`;
+
+      const downloadUrl = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = nomeZip;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      this.mensagemSucesso.set(`Pacote "${nomeZip}" gerado e baixado com sucesso!`);
+    } catch (err: any) {
+      console.error('Erro ao gerar pacote ZIP:', err);
+      this.mensagemErro.set(err?.message || 'Falha ao empacotar arquivos em ZIP.');
+    } finally {
+      this.gerandoZip.set(false);
+    }
+  }
+
+  // --- GERADOR DE PDF BINÁRIO VETORIAL VIA jsPDF PARA O PACOTE ZIP ---
+
+  async gerarDocJsPdf(perfil: any): Promise<jsPDF> {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const res = this.resultado();
+    const totalJuros = res ? Math.max(0, res.totalPago - res.valorFinanciavel) : 0;
+    const totalAluguel = (this.areaTotal() || 0) * (this.valorAluguelM2() || 35) * (this.prazoAnos() || 25) * 12;
+
+    const nomeEmpresa = perfil?.company_name || perfil?.full_name || 'EMPRESA DE ENGENHARIA';
+    const respTecnico = perfil?.full_name || 'Responsável Técnico';
+    const crea = perfil?.crea_cau || 'CREA/CAU 000000/D';
+    const dataEmissao = new Date().toLocaleDateString('pt-BR');
+
+    // Cabeçalho Página 1
+    doc.setFillColor(19, 42, 65); // #132A41 Navy
+    doc.rect(14, 10, 182, 18, 'F');
+    doc.setFillColor(181, 100, 42); // #B5642A Copper
+    doc.rect(14, 28, 182, 1.5, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text(nomeEmpresa.toUpperCase(), 20, 17);
+
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(203, 213, 225);
+    doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}`, 20, 23);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(232, 178, 126); // #E8B27E
+    doc.text('MEMORIAL CONSOLIDADO DE CRÉDITO IMOBILIÁRIO', 190, 17, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`EMISSÃO: ${dataEmissao}`, 190, 23, { align: 'right' });
+
+    let currentY = 34;
+
+    // Tabela 1: Identificação do Projeto
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['IDENTIFICAÇÃO DO PROJETO & LOCALIZAÇÃO', '']],
+      body: [
+        ['Nome do Projeto:', this.nomeProjeto()],
+        ['Cliente / Proponente:', this.nomeCliente() || 'Não informado'],
+        ['Tipo de Operação:', this.getTipoOperacaoLabel(this.tipoOperacao())],
+        ['Localização:', `${this.cidade() ? this.cidade() + ' - ' : ''}${this.uf()}`],
+        ['Endereço / Lote:', this.endereco() || 'A definir'],
+        ['CUB de Referência:', `R$ ${this.formatarMoeda(this.valorCubEstadoAtual())}/m² (${this.infoCubEstadoAtual()})`]
+      ],
+      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+      styles: { fontSize: 7.5, cellPadding: 1.5, textColor: [30, 41, 59] },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50, fillColor: [248, 250, 252] } }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 6;
+
+    // Tabela 2: Ambientes e Áreas
+    const ambientesBody = this.ambientes().map(a => [
+      a.nome,
+      a.tamanho,
+      a.dimensoes,
+      `${a.area.toFixed(1)} m²`
+    ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'striped',
+      head: [[`QUADRO DE AMBIENTES (Área Total: ${this.areaTotal()} m² • ${this.pavimentos()} Pav.)`, 'Porte', 'Dimensões', 'Área']],
+      body: ambientesBody.length > 0 ? ambientesBody : [['Nenhum ambiente lançado', '—', '—', '0 m²']],
+      foot: [['TOTAL ÁREA CONSTRUÍDA', '', '', `${this.areaTotal()} m²`]],
+      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+      footStyles: { fillColor: [241, 245, 249], textColor: [19, 42, 65], fontStyle: 'bold', fontSize: 7.5 },
+      styles: { fontSize: 7, cellPadding: 1.3 },
+      columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 6;
+
+    // Tabela 3: Demonstrativo Financeiro de Custos
+    const custosBody: string[][] = [];
+    if (this.tipoOperacao() !== 'construcao') {
+      custosBody.push(['Aquisição de Terreno / Lote', 'Lançamento', `R$ ${this.formatarMoeda(this.valorTerreno())}`]);
+    }
+    if (this.tipoOperacao() !== 'compra_terreno') {
+      custosBody.push(['Custo da Edificação (CUB)', `${this.areaTotal()} m²`, `R$ ${this.formatarMoeda(this.custoBase())}`]);
+    }
+    if (this.areasExternas().length > 0) {
+      custosBody.push(['Áreas Externas e Lazer', `${this.areaExternaTotal()} m²`, `R$ ${this.formatarMoeda(this.calcularCustoAreasExternas())}`]);
+    }
+    this.itensAdicionais().forEach(i => {
+      const valor = i.tipo === 'percentual' ? (this.custoBase() * (i.valor / 100)) : i.valor;
+      custosBody.push([i.nome, i.tipo === 'percentual' ? `${i.valor}%` : 'Fixo', `R$ ${this.formatarMoeda(valor)}`]);
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['DEMONSTRATIVO DE CUSTOS DA OBRA', 'Critério', 'Valor Estimado (R$)']],
+      body: custosBody,
+      foot: [
+        ['INVESTIMENTO TOTAL ESTIMADO', '100%', `R$ ${this.formatarMoeda(res?.custoTotal)}`],
+        ['Valor de Entrada', `${this.percentualEntrada()}%`, `R$ ${this.formatarMoeda(res?.valorEntrada)}`],
+        ['Valor Financiável', `${100 - this.percentualEntrada()}%`, `R$ ${this.formatarMoeda(res?.valorFinanciavel)}`]
+      ],
+      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+      footStyles: { fillColor: [248, 250, 252], textColor: [181, 100, 42], fontStyle: 'bold', fontSize: 7.5 },
+      styles: { fontSize: 7, cellPadding: 1.3 },
+      columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
+    });
+
+    // PÁGINA 2: Documentos e Simulação Avançada
+    doc.addPage();
+
+    doc.setFillColor(19, 42, 65);
+    doc.rect(14, 10, 182, 14, 'F');
+    doc.setFillColor(181, 100, 42);
+    doc.rect(14, 24, 182, 1.5, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`PASTA DE CRÉDITO & SIMULAÇÃO • ${this.nomeProjeto()}`, 20, 19);
+
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(232, 178, 126);
+    doc.text(`Prontidão: ${this.percentualDocumentacao()}%`, 190, 19, { align: 'right' });
+
+    currentY = 30;
+
+    // Tabela 4: Checklist de Documentos
+    const docsBody = this.getDocumentosAtuais().map(d => {
+      const anexado = this.obterDocumentoEnviado(d.id);
+      const marcado = this.isDocumentoMarcado(d.id);
+      const statusStr = anexado ? '✓ Anexado' : (marcado ? '✓ Entregue' : '✗ Pendente');
+      const arquivoStr = anexado ? `${anexado.nome_arquivo} (${this.formatarTamanhoBytes(anexado.tamanho_bytes)})` : '—';
+      return [
+        d.nome,
+        d.obrigatorio ? 'Obrigatório' : 'Opcional',
+        statusStr,
+        arquivoStr
+      ];
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [[`AUDITORIA DE DOCUMENTOS (${this.tipoRenda().toUpperCase()})`, 'Tipo', 'Status', 'Arquivo Anexado']],
+      body: docsBody,
+      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+      styles: { fontSize: 6.8, cellPadding: 1.2 },
+      columnStyles: {
+        1: { halign: 'center' },
+        2: { halign: 'center', fontStyle: 'bold' }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 6;
+
+    // Tabela 5: Simulação de Financiamento
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['CONDICIONAMENTO FINANCEIRO BANCÁRIO', '']],
+      body: [
+        ['Sistema de Amortização:', this.sistemaAmortizacao().toUpperCase()],
+        ['Taxa de Juros Anual:', `${this.taxaJurosAnual()}% a.a.`],
+        ['Prazo Contratual:', `${this.prazoAnos()} anos (${this.prazoAnos() * 12} parcelas)`],
+        ['Primeira Parcela Estimada:', `R$ ${this.formatarMoeda(this.getPrimeiraParcela())}`],
+        [this.sistemaAmortizacao() === 'sac' ? 'Última Parcela (SAC):' : 'Parcela Média:', `R$ ${this.formatarMoeda(this.sistemaAmortizacao() === 'sac' ? this.getUltimaParcela() : res?.parcela)}`],
+        ['Total Estimado de Juros:', `R$ ${this.formatarMoeda(totalJuros)}`],
+        ['Desembolso Total no Prazo:', `R$ ${this.formatarMoeda(res?.totalPago)}`]
+      ],
+      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+      styles: { fontSize: 7.2, cellPadding: 1.4 },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 65, fillColor: [248, 250, 252] },
+        1: { fontStyle: 'bold' }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 6;
+
+    // Tabela 6: Construir vs Alugar (se aplicável)
+    if (this.tipoOperacao() !== 'compra_terreno') {
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'striped',
+        head: [['ESTUDO: CONSTRUIR VS. ALUGAR', `Prazo: ${this.prazoAnos()} anos`, 'Resultado Patrimonial']],
+        body: [
+          ['Construção Financiada', `R$ ${this.formatarMoeda(res?.totalPago)}`, 'Imóvel quitado no patrimônio próprio'],
+          ['Aluguel Acumulado', `R$ ${this.formatarMoeda(totalAluguel)}`, 'Despesa a fundo perdido (zero patrimônio)']
+        ],
+        headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
+        styles: { fontSize: 7, cellPadding: 1.3 }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 6;
+    }
+
+    // Assinatura e Responsabilidade Técnica
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      'Nota: Estudo paramétrico fundamentado na NBR 12.721 / CUB Sinduscon e normas de crédito do SFH/SFI. Sujeito à aprovação bancária.',
+      14,
+      currentY + 4,
+      { maxWidth: 182 }
+    );
+
+    doc.setDrawColor(203, 213, 225);
+    doc.line(70, currentY + 22, 140, currentY + 22);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(19, 42, 65);
+    doc.text(respTecnico, 105, currentY + 26, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`${crea} • ${nomeEmpresa}`, 105, currentY + 29.5, { align: 'center' });
+
+    // Rodapé em todas as páginas
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(216, 208, 198);
+      doc.line(14, 287, 196, 287);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`${nomeEmpresa} • Viabiliza IA`, 14, 291);
+      doc.text(`Página ${i} de ${totalPages}`, 196, 291, { align: 'right' });
+    }
+
+    return doc;
+  }
 }
+

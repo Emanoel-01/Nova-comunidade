@@ -853,11 +853,29 @@ export interface PerfilVisual {
             </div>
           </div>
 
-          <!-- Linha 3: Razão Social da Empresa, Cargo & CNPJ -->
+          <!-- Linha 3: Razão Social, Nome Fantasia & CNPJ -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="space-y-1.5">
               <div class="flex items-center justify-between">
-                <label class="block text-xs font-bold text-slate-700">Nome da Empresa / Razão Social</label>
+                <label class="block text-xs font-bold text-slate-700">Razão Social (Oficial)</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().razao_social || formDadosDocumentais().company_name || ''"
+                (input)="atualizarCampoDocumental('razao_social', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: Amorim Engenharia e Construções Ltda."
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+              <p class="text-[10px] text-slate-400">Nome jurídico oficial utilizado nas declarações e propostas.</p>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Nome Fantasia / Marca</label>
                 @if (dadosDocumentais().dados_documentais_confirmados) {
                   <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
                 }
@@ -867,24 +885,7 @@ export interface PerfilVisual {
                 [value]="formDadosDocumentais().company_name || ''"
                 (input)="atualizarCampoDocumental('company_name', $event)"
                 [disabled]="dadosDocumentais().dados_documentais_confirmados"
-                placeholder="Ex: Amorim Engenharia e Diagnósticos Ltda."
-                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
-              />
-            </div>
-
-            <div class="space-y-1.5">
-              <div class="flex items-center justify-between">
-                <label class="block text-xs font-bold text-slate-700">Cargo na Empresa</label>
-                @if (dadosDocumentais().dados_documentais_confirmados) {
-                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
-                }
-              </div>
-              <input
-                type="text"
-                [value]="formDadosDocumentais().company_position || ''"
-                (input)="atualizarCampoDocumental('company_position', $event)"
-                [disabled]="dadosDocumentais().dados_documentais_confirmados"
-                placeholder="Ex: Diretor Técnico / Responsável Técnico"
+                placeholder="Ex: Amorim Engenharia"
                 class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
               />
             </div>
@@ -902,6 +903,44 @@ export interface PerfilVisual {
                 (input)="atualizarCampoDocumental('company_cnpj', $event)"
                 [disabled]="dadosDocumentais().dados_documentais_confirmados"
                 placeholder="Ex: 00.000.000/0001-00"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+          </div>
+
+          <!-- Linha 3.5: Responsável Legal, CPF & Cargo -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">CPF do Responsável / Representante Legal</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().cpf_responsavel || ''"
+                (input)="atualizarCampoDocumental('cpf_responsavel', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: 000.000.000-00"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+              <p class="text-[10px] text-slate-400">Usado para assinaturas nas declarações de licitações e laudos.</p>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Cargo / Função na Empresa</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().company_position || ''"
+                (input)="atualizarCampoDocumental('company_position', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: Sócio-Administrador / Responsável Técnico"
                 class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
               />
             </div>

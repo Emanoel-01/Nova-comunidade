@@ -1,0 +1,1550 @@
+<div class="space-y-6 relative">
+
+  <!-- Toast Notification Feedback -->
+  @if (toastMensagem()) {
+    <div
+      class="fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl border flex items-center gap-3 transition-all duration-300 transform translate-y-0"
+      [class.bg-slate-900]="toastMensagem()?.tipo === 'info'"
+      [class.text-white]="toastMensagem()?.tipo === 'info'"
+      [class.border-slate-700]="toastMensagem()?.tipo === 'info'"
+      [class.bg-emerald-900]="toastMensagem()?.tipo === 'sucesso'"
+      [class.text-emerald-50]="toastMensagem()?.tipo === 'sucesso'"
+      [class.border-emerald-700]="toastMensagem()?.tipo === 'sucesso'"
+      [class.bg-rose-900]="toastMensagem()?.tipo === 'erro'"
+      [class.text-rose-50]="toastMensagem()?.tipo === 'erro'"
+      [class.border-rose-700]="toastMensagem()?.tipo === 'erro'"
+    >
+      <span class="text-base">
+        @if (toastMensagem()?.tipo === 'sucesso') { ✓ }
+        @else if (toastMensagem()?.tipo === 'erro') { ⚠️ }
+        @else { ℹ️ }
+      </span>
+      <span class="text-xs font-semibold max-w-sm">{{ toastMensagem()?.texto }}</span>
+    </div>
+  }
+
+  <!-- 1. Cabeçalho do Módulo & Painel de Créditos dos Pacotes -->
+  <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs relative overflow-hidden">
+    <div class="absolute -right-10 -bottom-10 w-56 h-56 bg-emerald-500/5 rounded-full pointer-events-none blur-2xl"></div>
+
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex items-center justify-center font-bold text-sm shadow-xs">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <span class="text-xs font-black uppercase tracking-wider text-emerald-700">Lei 14.133/2021 · Inteligência Artificial</span>
+
+          <!-- Badge do Pacote Ativo -->
+          @if (statusPacotes().temPacoteA && statusPacotes().temPacoteB) {
+            <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-black tracking-wide border border-indigo-200">
+              Pacote A+B Ativo (Pool 10 Análises/mês)
+            </span>
+          } @else if (statusPacotes().temPacoteA) {
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black tracking-wide border border-emerald-200">
+              Pacote A Ativo (5 Análises/mês)
+            </span>
+          } @else {
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold tracking-wide border border-slate-200">
+              Checklist Básico Gratuito
+            </span>
+          }
+        </div>
+
+        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          Checklist de Licitação & Gerador de Propostas
+        </h3>
+
+        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
+          Análise preventiva de editais (Lei 14.133/2021), auditoria de documentos e geração automática de Declarações (.docx), Capa da Proposta (PDF) e Envelopes.
+        </p>
+      </div>
+
+      <!-- Ações do Cabeçalho: Chat, Histórico, Reiniciar -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Botão Abrir Chat Especialista -->
+        <button
+          id="btn-abrir-chat-licitacao"
+          type="button"
+          (click)="abrirChat(nomeEdital() || undefined)"
+          class="px-4 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1c3c5c] text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
+        >
+          <svg class="w-4 h-4 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+          <span>Chat Especialista (Lei 14.133)</span>
+          <span class="px-1.5 py-0.2 bg-white/20 rounded text-[10px]">{{ statusPacotes().mensagensChatRestantesMes }} rest.</span>
+        </button>
+
+        <!-- Botão Histórico de Análises -->
+        <button
+          id="btn-historico-analises"
+          type="button"
+          (click)="abrirModalHistorico()"
+          class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200/80 active:scale-95"
+          title="Ver análises de editais anteriores"
+        >
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Histórico</span>
+        </button>
+
+        <!-- Botão Reiniciar Checklist -->
+        <button
+          id="btn-reiniciar-checklist"
+          type="button"
+          (click)="reiniciarChecklist()"
+          class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200/80 active:scale-95"
+        >
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Reiniciar</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Indicadores de Consumo do Mês (Pool de Análises + Limite de Mensagens do Chat) -->
+    <div class="mt-6 pt-5 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Card: Pool Mensal de Análises (A/B) -->
+      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+          <span>Pool de Análises (Mês)</span>
+          <span class="text-slate-900 font-black">{{ statusPacotes().analisesUsadasMes }} / {{ statusPacotes().limiteAnalisesMes }}</span>
+        </div>
+        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div
+            class="h-full rounded-full transition-all duration-300"
+            [class.bg-emerald-500]="statusPacotes().analisesRestantesMes > 2"
+            [class.bg-amber-500]="statusPacotes().analisesRestantesMes <= 2 && statusPacotes().analisesRestantesMes > 0"
+            [class.bg-rose-500]="statusPacotes().analisesRestantesMes === 0"
+            [style.width.%]="statusPacotes().limiteAnalisesMes > 0 ? (statusPacotes().analisesUsadasMes / statusPacotes().limiteAnalisesMes) * 100 : 0"
+          ></div>
+        </div>
+        <div class="flex items-center justify-between text-[10px] text-slate-500">
+          <span>{{ statusPacotes().analisesRestantesMes }} análises disponíveis</span>
+          <span class="font-medium text-indigo-600">Edital / Documentos</span>
+        </div>
+      </div>
+
+      <!-- Card: Mensagens de Chat Especialista -->
+      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+          <span>Chat Especialista (Mês)</span>
+          <span class="text-slate-900 font-black">{{ statusPacotes().mensagensChatUsadasMes }} / {{ statusPacotes().limiteMensagensChatMes }}</span>
+        </div>
+        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div
+            class="h-full bg-indigo-600 rounded-full transition-all duration-300"
+            [style.width.%]="(statusPacotes().mensagensChatUsadasMes / statusPacotes().limiteMensagensChatMes) * 100"
+          ></div>
+        </div>
+        <div class="flex items-center justify-between text-[10px] text-slate-500">
+          <span>{{ statusPacotes().mensagensChatRestantesMes }} perguntas restantes</span>
+          <span class="font-medium text-slate-600">Lei 14.133/21</span>
+        </div>
+      </div>
+
+      <!-- Card: Total de Documentos Anexados -->
+      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+          <span>Documentos Anexados</span>
+          <span class="text-slate-900 font-black">{{ totalDocumentosAnexados() }}</span>
+        </div>
+        <p class="text-[11px] text-slate-500 leading-tight">
+          Hospedados na pasta privada do certame para auditoria via IA.
+        </p>
+      </div>
+
+      <!-- Card: Progresso de Itens Obrigatórios -->
+      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+          <span>Habilitação Obrigatória</span>
+          <span class="text-slate-900 font-black">{{ obrigatoriosMarcados() }} / {{ totalObrigatorios() }} ({{ porcentagemProgresso() }}%)</span>
+        </div>
+        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div
+            class="h-full bg-emerald-500 rounded-full transition-all duration-300"
+            [style.width.%]="porcentagemProgresso()"
+          ></div>
+        </div>
+        <div class="flex items-center justify-between text-[10px] text-slate-500">
+          <span>{{ todosObrigatoriosConcluidos() ? '100% Obrigatórios Prontos' : 'Conferência em andamento' }}</span>
+          <span class="font-bold" [class.text-emerald-600]="todosObrigatoriosConcluidos()" [class.text-amber-600]="!todosObrigatoriosConcluidos()">
+            {{ todosObrigatoriosConcluidos() ? '✓ Concluído' : 'Pendente' }}
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. Barra de Navegação por Abas Principais -->
+  <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+    <button
+      id="tab-checklist"
+      type="button"
+      (click)="abaAtiva.set('checklist')"
+      class="px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0"
+      [class.bg-[#132A41]]="abaAtiva() === 'checklist'"
+      [class.text-white]="abaAtiva() === 'checklist'"
+      [class.shadow-xs]="abaAtiva() === 'checklist'"
+      [class.bg-white]="abaAtiva() !== 'checklist'"
+      [class.text-slate-700]="abaAtiva() !== 'checklist'"
+      [class.hover:bg-slate-100]="abaAtiva() !== 'checklist'"
+    >
+      <span>📋 Checklist & Documentos</span>
+      <span class="px-1.5 py-0.5 rounded-full text-[10px]" [class.bg-white/20]="abaAtiva() === 'checklist'" [class.bg-slate-100]="abaAtiva() !== 'checklist'">
+        {{ obrigatoriosMarcados() }}/{{ totalObrigatorios() }}
+      </span>
+    </button>
+
+    <button
+      id="tab-analise-edital"
+      type="button"
+      (click)="abaAtiva.set('analise_edital')"
+      class="px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0"
+      [class.bg-[#132A41]]="abaAtiva() === 'analise_edital'"
+      [class.text-white]="abaAtiva() === 'analise_edital'"
+      [class.shadow-xs]="abaAtiva() === 'analise_edital'"
+      [class.bg-white]="abaAtiva() !== 'analise_edital'"
+      [class.text-slate-700]="abaAtiva() !== 'analise_edital'"
+      [class.hover:bg-slate-100]="abaAtiva() !== 'analise_edital'"
+    >
+      <span>🔍 Análise do Edital (IA)</span>
+      @if (resultadoAnaliseEdital()) {
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      }
+    </button>
+
+    <button
+      id="tab-auditoria-docs"
+      type="button"
+      (click)="abaAtiva.set('auditoria_docs')"
+      class="px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0"
+      [class.bg-[#132A41]]="abaAtiva() === 'auditoria_docs'"
+      [class.text-white]="abaAtiva() === 'auditoria_docs'"
+      [class.shadow-xs]="abaAtiva() === 'auditoria_docs'"
+      [class.bg-white]="abaAtiva() !== 'auditoria_docs'"
+      [class.text-slate-700]="abaAtiva() !== 'auditoria_docs'"
+      [class.hover:bg-slate-100]="abaAtiva() !== 'auditoria_docs'"
+    >
+      <span>🛡️ Auditoria Documental</span>
+      @if (resultadoAnaliseDocumentacao()) {
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      }
+    </button>
+
+    <button
+      id="tab-documentos-proposta"
+      type="button"
+      (click)="abaAtiva.set('documentos_proposta')"
+      class="px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0 relative"
+      [class.bg-[#B5642A]]="abaAtiva() === 'documentos_proposta'"
+      [class.text-white]="abaAtiva() === 'documentos_proposta'"
+      [class.shadow-xs]="abaAtiva() === 'documentos_proposta'"
+      [class.bg-white]="abaAtiva() !== 'documentos_proposta'"
+      [class.text-slate-700]="abaAtiva() !== 'documentos_proposta'"
+      [class.hover:bg-slate-100]="abaAtiva() !== 'documentos_proposta'"
+    >
+      <span>📄 Documentos da Proposta</span>
+      <span class="px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] font-bold">
+        Declarações • Capa • Envelope
+      </span>
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- ABA 1: CHECKLIST & UPLOADS DE DOCUMENTOS                                   -->
+  <!-- ========================================================================= -->
+  @if (abaAtiva() === 'checklist') {
+    <div class="space-y-6">
+      
+      <!-- Bloco de Identificação e Upload do Edital -->
+      <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
+              1
+            </div>
+            <h4 class="text-sm sm:text-base font-black text-slate-900">
+              Identificação & Arquivos do Edital
+            </h4>
+          </div>
+          <span class="text-[11px] text-slate-400">PDFs até 200 MB por arquivo</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700">Nome / Número do Edital ou Processo</label>
+            <input
+              id="input-nome-edital"
+              type="text"
+              [value]="nomeEdital()"
+              (input)="atualizarNomeEdital($event)"
+              placeholder="Ex: Concorrência Eletrônica nº 042/2026 - Prefeitura de Campinas"
+              class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#132A41] focus:ring-1 focus:ring-[#132A41] transition-all outline-none text-slate-900"
+            />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700">Link Oficial / Portal de Compras (Opcional)</label>
+            <input
+              id="input-link-edital"
+              type="url"
+              [value]="linkEdital()"
+              (input)="atualizarLinkEdital($event)"
+              placeholder="Ex: https://pncp.gov.br/app/editais/..."
+              class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#132A41] focus:ring-1 focus:ring-[#132A41] transition-all outline-none text-slate-900"
+            />
+          </div>
+        </div>
+
+        <!-- Área de Upload dos Arquivos do Edital -->
+        <div class="space-y-3 pt-2">
+          <!-- Lista de Arquivos Já Anexados -->
+          @if (arquivosEdital().length > 0) {
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
+                <span>Arquivos do Edital Anexados ({{ arquivosEdital().length }})</span>
+                <span class="text-[11px] font-normal text-slate-400">Totalmente integrados para a análise com IA</span>
+              </div>
+              <div class="divide-y divide-emerald-100/80 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 overflow-hidden">
+                @for (arq of arquivosEdital(); track arq.caminhoStorage) {
+                  <div class="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-emerald-50 transition-colors">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-xs font-bold text-emerald-950 truncate">{{ arq.nome }}</p>
+                        <p class="text-[10px] text-emerald-700 font-medium">{{ formatarBytes(arq.tamanho) }} • Supabase Storage</p>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      @if (arq.urlAssinada) {
+                        <a
+                          [href]="arq.urlAssinada"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-colors cursor-pointer"
+                        >
+                          Visualizar
+                        </a>
+                      }
+                      <button
+                        type="button"
+                        (click)="removerArquivoEdital(arq.caminhoStorage)"
+                        class="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-[11px] font-bold transition-colors cursor-pointer"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Dropzone de Upload (sempre visível para anexar mais PDFs) -->
+          <label class="border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/20 rounded-2xl p-5 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group">
+            <input
+              id="input-file-edital"
+              type="file"
+              multiple
+              accept=".pdf"
+              (change)="onArquivoEditalSelecionado($event)"
+              class="hidden"
+              [disabled]="uploadingEdital()"
+            />
+            <div class="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-indigo-100 text-slate-500 group-hover:text-indigo-600 flex items-center justify-center transition-colors">
+              @if (uploadingEdital()) {
+                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+              } @else {
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              }
+            </div>
+            <div class="text-center space-y-0.5">
+              <span class="text-xs font-bold text-slate-800 block">
+                {{ uploadingEdital() ? 'Enviando arquivos do edital...' : (arquivosEdital().length > 0 ? '+ Clique para anexar mais PDFs do edital ou anexos' : 'Clique para selecionar arquivos PDF do Edital ou arraste até aqui') }}
+              </span>
+              <span class="text-[10px] text-slate-400 block">
+                Aceita apenas <strong>PDF até 200 MB por arquivo</strong> (pode selecionar múltiplos). Se estiver em Word, converta para PDF antes.
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Botão de Ação: Analisar Edital com IA -->
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+          <div class="text-xs text-slate-600">
+            <strong class="text-slate-800">Próximo Passo:</strong> A IA do Claude Sonnet 5 examina todos os arquivos do edital na íntegra, detecta armadilhas jurídicas e extrai os modelos de declarações.
+          </div>
+
+          <button
+            id="btn-analisar-edital-ia"
+            type="button"
+            (click)="executarAnaliseEdital()"
+            [disabled]="analisandoEdital() || (arquivosEdital().length === 0 && !nomeEdital().trim()) || !temCreditosAnalise()"
+            class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1c3c5c] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
+          >
+            @if (analisandoEdital()) {
+              <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>Processando Edital (Claude Sonnet 5)...</span>
+            } @else {
+              <svg class="w-4 h-4 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Analisar Edital & Extrair Declarações</span>
+            }
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Categorias do Checklist com Upload Individual -->
+      <div class="space-y-6">
+        @for (cat of categoriasComItens(); track cat.nome) {
+          <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div class="flex items-center gap-2.5">
+                <div class="w-3 h-3 rounded-full bg-[#132A41]"></div>
+                <h4 class="text-sm sm:text-base font-black text-slate-900">{{ cat.nome }}</h4>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-500">
+                  <strong class="text-slate-800">{{ contarMarcadosCategoria(cat.itens) }}</strong> de {{ cat.itens.length }} concluídos
+                </span>
+                <button
+                  type="button"
+                  (click)="toggleTodosCategoria(cat.itens)"
+                  class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                >
+                  {{ todosCategoriaMarcados(cat.itens) ? 'Desmarcar Todos' : 'Marcar Todos' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de Itens da Categoria -->
+            <div class="divide-y divide-slate-100">
+              @for (item of cat.itens; track item.id) {
+                <div class="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 rounded-xl px-2.5 transition-colors">
+                  
+                  <div class="flex items-start gap-3 flex-1">
+                    <input
+                      type="checkbox"
+                      [id]="'check-' + item.id"
+                      [checked]="itensMarcados().has(item.id)"
+                      (change)="alternarItem(item.id)"
+                      class="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                    />
+                    <label [for]="'check-' + item.id" class="text-xs leading-relaxed cursor-pointer select-none" [class.text-slate-900]="!itensMarcados().has(item.id)" [class.text-slate-400]="itensMarcados().has(item.id)" [class.line-through]="itensMarcados().has(item.id)">
+                      {{ item.item }}
+                      @if (item.obrigatorio) {
+                        <span class="ml-1.5 px-1.5 py-0.2 text-[10px] font-bold bg-rose-50 text-rose-700 rounded border border-rose-200/60">
+                          Obrigatório
+                        </span>
+                      }
+                    </label>
+                  </div>
+
+                  <!-- Upload e Arquivos Anexados ao Item -->
+                  <div class="flex items-center gap-2 self-end sm:self-center">
+                    @if (arquivosPorItem()[item.id]?.length) {
+                      <div class="flex items-center gap-1.5">
+                        @for (arq of arquivosPorItem()[item.id]; track arq.caminhoStorage) {
+                          <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] border border-slate-200">
+                            <span class="max-w-[120px] truncate" [title]="arq.nome">📎 {{ arq.nome }}</span>
+                            <button
+                              type="button"
+                              (click)="removerArquivoItem(item.id, arq.caminhoStorage)"
+                              class="text-slate-400 hover:text-rose-600 font-bold ml-1 text-xs cursor-pointer"
+                              title="Remover anexo"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <label class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors cursor-pointer border border-slate-200/70 inline-flex items-center gap-1">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                        (change)="onArquivoItemSelecionado(item.id, $event)"
+                        class="hidden"
+                        [disabled]="uploadingItemId() === item.id"
+                      />
+                      @if (uploadingItemId() === item.id) {
+                        <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span>Enviando...</span>
+                      } @else {
+                        <span>+ Anexar</span>
+                      }
+                    </label>
+                  </div>
+
+                </div>
+              }
+            </div>
+
+          </div>
+        }
+      </div>
+
+      <!-- Barra de Ação Inferior: Auditar Documentos & Ir para Declarações -->
+      <div class="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <h5 class="text-sm font-black text-slate-900">Documentação Pronta?</h5>
+          <p class="text-xs text-slate-500">
+            Realize uma auditoria preventiva de todos os documentos anexados ou vá direto para o gerador de propostas e declarações.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            id="btn-auditar-docs-inferior"
+            type="button"
+            (click)="executarAnaliseDocumentacao()"
+            [disabled]="analisandoDocumentacao() || totalDocumentosAnexados() === 0 || !temCreditosAnalise()"
+            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200 active:scale-95"
+          >
+            @if (analisandoDocumentacao()) {
+              <span>Auditando Documentos...</span>
+            } @else {
+              <span>Auditar Documentação Anexada</span>
+            }
+          </button>
+
+          <button
+            id="btn-ir-documentos-proposta"
+            type="button"
+            (click)="abaAtiva.set('documentos_proposta')"
+            class="px-5 py-2.5 rounded-xl bg-[#B5642A] hover:bg-[#964f1d] text-white text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
+          >
+            <span>Gerar Declarações, Capa & Envelope →</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- ABA 2: RESULTADO DA ANÁLISE DE EDITAL (IA)                                 -->
+  <!-- ========================================================================= -->
+  @if (abaAtiva() === 'analise_edital') {
+    <div class="space-y-6">
+      @if (resultadoAnaliseEdital(); as analise) {
+        
+        <!-- Sumário Executivo do Edital -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wide bg-indigo-100 text-indigo-800">
+                  {{ analise.modalidade || 'Edital de Licitação' }}
+                </span>
+                <span class="text-xs text-slate-500">Órgão: <strong>{{ analise.orgao_licitante }}</strong></span>
+              </div>
+              <h4 class="text-xl font-black text-slate-900">{{ analise.nome_edital }}</h4>
+            </div>
+
+            <!-- Score e Classificação de Risco -->
+            <div class="flex items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70">
+              <div class="space-y-0.5 text-right">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Risco Global</span>
+                <span
+                  class="text-sm font-black uppercase px-2 py-0.5 rounded"
+                  [class.bg-emerald-100]="analise.nivel_risco_geral === 'Baixo'"
+                  [class.text-emerald-800]="analise.nivel_risco_geral === 'Baixo'"
+                  [class.bg-amber-100]="analise.nivel_risco_geral === 'Médio'"
+                  [class.text-amber-800]="analise.nivel_risco_geral === 'Médio'"
+                  [class.bg-rose-100]="analise.nivel_risco_geral === 'Alto' || analise.nivel_risco_geral === 'Crítico'"
+                  [class.text-rose-800]="analise.nivel_risco_geral === 'Alto' || analise.nivel_risco_geral === 'Crítico'"
+                >
+                  {{ analise.nivel_risco_geral }} ({{ analise.score_risco }}/100)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-1.5">
+            <span class="text-[11px] font-bold text-indigo-900 uppercase tracking-wider block">Resumo Executivo do Certame</span>
+            <p class="text-xs sm:text-sm text-indigo-950 leading-relaxed">{{ analise.resumo_executivo_risco }}</p>
+          </div>
+
+          <!-- Botão Direto para Declarações Extraídas -->
+          <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-0.5">
+              <p class="text-xs font-black text-amber-950">📋 Declarações Identificadas no Edital</p>
+              <p class="text-[11px] text-amber-800">A IA já preparou os textos e minutas com base neste edital e na Lei 14.133/2021.</p>
+            </div>
+            <button
+              type="button"
+              (click)="abaAtiva.set('documentos_proposta'); subAbaDocumentos.set('declaracoes');"
+              class="px-4 py-2 bg-[#B5642A] hover:bg-[#964f1d] text-white text-xs font-black rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              Ver & Exportar Declarações →
+            </button>
+          </div>
+        </div>
+
+        <!-- Cláusulas Restritivas e Exigências Específicas -->
+        @if (analise.exigencias_extras_edital?.length) {
+          <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center gap-2">
+              <span>⚠️ Exigências Específicas & Cláusulas Críticas</span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                {{ analise.exigencias_extras_edital.length }} itens
+              </span>
+            </h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (ex of analise.exigencias_extras_edital; track ex.item) {
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                      {{ ex.categoria }}
+                    </span>
+                    <span
+                      class="text-[10px] font-black uppercase px-2 py-0.5 rounded"
+                      [class.bg-rose-100]="ex.impacto === 'Crítico' || ex.impacto === 'Alto'"
+                      [class.text-rose-800]="ex.impacto === 'Crítico' || ex.impacto === 'Alto'"
+                      [class.bg-amber-100]="ex.impacto === 'Médio'"
+                      [class.text-amber-800]="ex.impacto === 'Médio'"
+                      [class.bg-slate-200]="ex.impacto === 'Baixo'"
+                    >
+                      Impacto {{ ex.impacto }}
+                    </span>
+                  </div>
+
+                  <p class="text-xs font-bold text-slate-900">{{ ex.item }}</p>
+                  <p class="text-xs text-slate-600 leading-relaxed">{{ ex.descricao_detalhada }}</p>
+                  
+                  @if (ex.artigo_lei_14133) {
+                    <span class="inline-block text-[10px] font-semibold text-slate-400">
+                      Fundamento: {{ ex.artigo_lei_14133 }}
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+      } @else {
+        <div class="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl">
+            🔍
+          </div>
+          <h5 class="text-sm font-bold text-slate-700">Nenhum edital analisado ainda</h5>
+          <p class="text-xs text-slate-500 max-w-md mx-auto">
+            Anexe o arquivo do edital na aba principal e clique em "Analisar Edital & Extrair Declarações".
+          </p>
+          <button
+            type="button"
+            (click)="abaAtiva.set('checklist')"
+            class="px-4 py-2 bg-[#132A41] text-white text-xs font-bold rounded-xl"
+          >
+            Voltar para o Checklist
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- ABA 3: AUDITORIA PREVENTIVA DE DOCUMENTAÇÃO                                -->
+  <!-- ========================================================================= -->
+  @if (abaAtiva() === 'auditoria_docs') {
+    <div class="space-y-6">
+      @if (resultadoAnaliseDocumentacao(); as audit) {
+        
+        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+            <div>
+              <span class="text-[11px] font-black uppercase text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md">
+                Auditoria Preventiva Concluída
+              </span>
+              <h4 class="text-lg font-black text-slate-900 mt-1">Conformidade Documental do Licitante</h4>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span
+                class="px-3 py-1 rounded-xl text-xs font-black uppercase"
+                [class.bg-emerald-100]="audit.status_geral_habilitacao === 'Apto'"
+                [class.text-emerald-800]="audit.status_geral_habilitacao === 'Apto'"
+                [class.bg-amber-100]="audit.status_geral_habilitacao === 'Apto com Ressalvas'"
+                [class.text-amber-800]="audit.status_geral_habilitacao === 'Apto com Ressalvas'"
+                [class.bg-rose-100]="audit.status_geral_habilitacao === 'Inapto / Risco de Inabilitação'"
+                [class.text-rose-800]="audit.status_geral_habilitacao === 'Inapto / Risco de Inabilitação'"
+              >
+                {{ audit.status_geral_habilitacao || 'Conferência Concluída' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 leading-relaxed">
+            {{ audit.parecer_preventivo }}
+          </div>
+        </div>
+
+      } @else {
+        <div class="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl">
+            🛡️
+          </div>
+          <h5 class="text-sm font-bold text-slate-700">Nenhuma auditoria realizada</h5>
+          <p class="text-xs text-slate-500 max-w-md mx-auto">
+            Anexe os documentos aos itens do checklist e clique em "Auditar Documentação Anexada".
+          </p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- ABA 4: GERADOR DE DOCUMENTOS DA PROPOSTA (DECLARAÇÕES, CAPA, ENVELOPE)    -->
+  <!-- ========================================================================= -->
+  @if (abaAtiva() === 'documentos_proposta') {
+    <div class="space-y-6">
+
+      <!-- Alerta Bloqueante ou Confirmação dos Dados do Perfil Documental -->
+      @if (!statusValidacaoPerfil().valido) {
+        <div class="p-5 sm:p-6 rounded-3xl bg-amber-50 border-2 border-amber-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">⚠️</span>
+              <h4 class="text-sm font-black text-amber-950">Dados Cadastrais Incompletos para Emissão de Documentos</h4>
+            </div>
+            <p class="text-xs text-amber-900 leading-relaxed max-w-2xl">
+              Para gerar as declarações jurídicas, folha de rosto da proposta e envelope com validade legal, os seguintes campos são obrigatórios:
+              <strong class="font-bold text-amber-950">{{ statusValidacaoPerfil().camposFaltando.join(', ') }}</strong>.
+            </p>
+          </div>
+
+          <button
+            id="btn-completar-perfil-alerta"
+            type="button"
+            (click)="abrirModalCompletarPerfil()"
+            class="px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1c3c5c] text-white text-xs font-black transition-all cursor-pointer shrink-0 shadow-sm"
+          >
+            + Preencher Dados Agora
+          </button>
+        </div>
+      } @else {
+        <!-- Banner de Confirmação dos Dados da Empresa -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-bold text-sm">
+              ✓
+            </div>
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-slate-900">{{ perfilDocumental()?.razao_social || perfilDocumental()?.company_name }}</span>
+                <span class="text-[10px] px-2 py-0.2 bg-slate-100 text-slate-600 rounded font-semibold">CNPJ: {{ perfilDocumental()?.company_cnpj }}</span>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                Representante: <strong>{{ perfilDocumental()?.full_name }}</strong> (CPF: {{ perfilDocumental()?.cpf_responsavel }}) • {{ perfilDocumental()?.crea_cau ? 'Registro: ' + perfilDocumental()?.crea_cau : '' }}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            (click)="abrirModalCompletarPerfil()"
+            class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer self-end md:self-center"
+          >
+            Editar Dados da Empresa ✏️
+          </button>
+        </div>
+      }
+
+      <!-- Sub-Abas do Gerador de Documentos -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+        
+        <!-- Header das Sub-Abas -->
+        <div class="p-2 sm:p-3 bg-slate-50/80 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto">
+          <button
+            type="button"
+            (click)="subAbaDocumentos.set('declaracoes')"
+            class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            [class.bg-[#132A41]]="subAbaDocumentos() === 'declaracoes'"
+            [class.text-white]="subAbaDocumentos() === 'declaracoes'"
+            [class.shadow-2xs]="subAbaDocumentos() === 'declaracoes'"
+            [class.text-slate-600]="subAbaDocumentos() !== 'declaracoes'"
+            [class.hover:bg-slate-200/60]="subAbaDocumentos() !== 'declaracoes'"
+          >
+            <span>📜 Declarações Exigidas (.docx)</span>
+            <span class="px-1.5 py-0.2 rounded-md text-[10px]" [class.bg-white/20]="subAbaDocumentos() === 'declaracoes'" [class.bg-slate-200]="subAbaDocumentos() !== 'declaracoes'">
+              {{ listaDeclaracoes().length }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            (click)="subAbaDocumentos.set('capa')"
+            class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            [class.bg-[#132A41]]="subAbaDocumentos() === 'capa'"
+            [class.text-white]="subAbaDocumentos() === 'capa'"
+            [class.shadow-2xs]="subAbaDocumentos() === 'capa'"
+            [class.text-slate-600]="subAbaDocumentos() !== 'capa'"
+            [class.hover:bg-slate-200/60]="subAbaDocumentos() !== 'capa'"
+          >
+            <span>📑 Capa / Folha de Rosto (PDF)</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="subAbaDocumentos.set('envelope')"
+            class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            [class.bg-[#132A41]]="subAbaDocumentos() === 'envelope'"
+            [class.text-white]="subAbaDocumentos() === 'envelope'"
+            [class.shadow-2xs]="subAbaDocumentos() === 'envelope'"
+            [class.text-slate-600]="subAbaDocumentos() !== 'envelope'"
+            [class.hover:bg-slate-200/60]="subAbaDocumentos() !== 'envelope'"
+          >
+            <span>✉️ Rótulo de Envelope (.docx)</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="subAbaDocumentos.set('gerados')"
+            class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            [class.bg-[#132A41]]="subAbaDocumentos() === 'gerados'"
+            [class.text-white]="subAbaDocumentos() === 'gerados'"
+            [class.shadow-2xs]="subAbaDocumentos() === 'gerados'"
+            [class.text-slate-600]="subAbaDocumentos() !== 'gerados'"
+            [class.hover:bg-slate-200/60]="subAbaDocumentos() !== 'gerados'"
+          >
+            <span>📁 Documentos Gerados</span>
+            <span class="px-1.5 py-0.2 rounded-md text-[10px]" [class.bg-white/20]="subAbaDocumentos() === 'gerados'" [class.bg-slate-200]="subAbaDocumentos() !== 'gerados'">
+              {{ documentosGeradosSalvos().length }}
+            </span>
+          </button>
+        </div>
+
+        <!-- CONTEÚDO SUB-ABA 1: DECLARAÇÕES EXIGIDAS -->
+        @if (subAbaDocumentos() === 'declaracoes') {
+          <div class="p-6 sm:p-7 space-y-6">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div class="space-y-1">
+                <h4 class="text-base font-black text-slate-900">Declarações Jurídicas da Proposta</h4>
+                <p class="text-xs text-slate-500">
+                  Modelos formatados conforme a Lei 14.133/2021 com preenchimento automático das informações da empresa. Você pode revisar e editar antes de exportar.
+                </p>
+              </div>
+
+              <!-- Ações em Lote -->
+              <div class="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  (click)="selecionarTodasDeclaracoes(!todasDeclaracoesEstaoSelecionadas())"
+                  class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                >
+                  {{ todasDeclaracoesEstaoSelecionadas() ? 'Desmarcar Todas' : 'Selecionar Todas' }}
+                </button>
+
+                <button
+                  id="btn-exportar-lote-docx"
+                  type="button"
+                  (click)="exportarDeclaracoesLote()"
+                  [disabled]="exportandoDocx() || totalDeclaracoesSelecionadas() === 0"
+                  class="px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1c3c5c] disabled:opacity-50 text-white text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
+                >
+                  @if (exportandoDocx()) {
+                    <span>Gerando Arquivo .docx...</span>
+                  } @else {
+                    <span>Exportar {{ totalDeclaracoesSelecionadas() }} Selecionadas em Lote (.docx)</span>
+                  }
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de Cards de Declarações -->
+            <div class="space-y-4">
+              @for (dec of listaDeclaracoes(); track dec.id) {
+                <div
+                  class="p-5 rounded-2xl border transition-all duration-200"
+                  [class.border-indigo-300]="dec.selecionada"
+                  [class.bg-indigo-50/10]="dec.selecionada"
+                  [class.border-slate-200]="!dec.selecionada"
+                  [class.bg-white]="!dec.selecionada"
+                >
+                  <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                    
+                    <!-- Lado Esquerdo: Checkbox, Título e Badges -->
+                    <div class="flex items-start gap-3 flex-1">
+                      <input
+                        type="checkbox"
+                        [id]="'dec-check-' + dec.id"
+                        [checked]="dec.selecionada"
+                        (change)="alternarSelecaoDeclaracao(dec.id)"
+                        class="w-4 h-4 mt-1 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                      />
+                      <div class="space-y-1.5">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <label [for]="'dec-check-' + dec.id" class="text-sm font-black text-slate-900 cursor-pointer">
+                            {{ dec.nome }}
+                          </label>
+                          <span class="px-2 py-0.2 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                            {{ dec.origem }}
+                          </span>
+                          @if (dec.obrigatorio) {
+                            <span class="px-2 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">
+                              Obrigatória
+                            </span>
+                          }
+                          @if (dec.textoCustomizado) {
+                            <span class="px-2 py-0.2 rounded text-[10px] font-black bg-amber-100 text-amber-800">
+                              ✏️ Editada pelo Usuário
+                            </span>
+                          }
+                        </div>
+
+                        <p class="text-[11px] font-semibold text-slate-500">
+                          Base Legal: <span class="text-slate-700">{{ dec.baseLegal }}</span>
+                        </p>
+
+                        <!-- Caixa de Prévia Resumida do Texto -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs text-slate-600 leading-relaxed font-mono line-clamp-3">
+                          {{ obterTextoFinalDeclaracao(dec) }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Lado Direito: Botões de Ação -->
+                    <div class="flex items-center gap-2 self-end lg:self-center shrink-0">
+                      <button
+                        type="button"
+                        (click)="abrirModalEdicaoDeclaracao(dec)"
+                        class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer border border-slate-200/80"
+                      >
+                        Revisar & Editar ✏️
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="exportarDeclaracaoIndividual(dec)"
+                        [disabled]="exportandoDocx()"
+                        class="px-3.5 py-2 rounded-xl bg-[#B5642A] hover:bg-[#964f1d] disabled:opacity-50 text-white text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95"
+                      >
+                        Exportar (.docx)
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+              }
+            </div>
+
+          </div>
+        }
+
+        <!-- CONTEÚDO SUB-ABA 2: CAPA / FOLHA DE ROSTO (PDF) -->
+        @if (subAbaDocumentos() === 'capa') {
+          <div class="p-6 sm:p-7 space-y-6">
+            
+            <div class="space-y-1 pb-4 border-b border-slate-100">
+              <h4 class="text-base font-black text-slate-900">Capa & Carta de Apresentação da Proposta</h4>
+              <p class="text-xs text-slate-500">
+                Gere uma folha de rosto corporativa com timbrado, identificação do certame, dados do proponente e condições comerciais em conformidade com o Motor White-Label.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- Formulário de Parâmetros da Capa -->
+              <div class="space-y-4 bg-slate-50/70 p-5 rounded-2xl border border-slate-200">
+                <h5 class="text-xs font-black uppercase text-slate-700 tracking-wider">Condições Comerciais da Proposta</h5>
+                
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Validade da Proposta</label>
+                  <input
+                    type="text"
+                    [value]="formCapaProposta().validadeProposta"
+                    (input)="formCapaProposta().validadeProposta = $any($event.target).value"
+                    class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-white border border-slate-200 focus:border-[#132A41] outline-none text-slate-900"
+                  />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Prazo de Execução dos Serviços</label>
+                  <input
+                    type="text"
+                    [value]="formCapaProposta().prazoExecucao"
+                    (input)="formCapaProposta().prazoExecucao = $any($event.target).value"
+                    class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-white border border-slate-200 focus:border-[#132A41] outline-none text-slate-900"
+                  />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Condições de Pagamento</label>
+                  <input
+                    type="text"
+                    [value]="formCapaProposta().condicoesPagamento"
+                    (input)="formCapaProposta().condicoesPagamento = $any($event.target).value"
+                    class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-white border border-slate-200 focus:border-[#132A41] outline-none text-slate-900"
+                  />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Informações Complementares / Declaração de Aceite</label>
+                  <textarea
+                    rows="3"
+                    [value]="formCapaProposta().informacoesComplementares"
+                    (input)="formCapaProposta().informacoesComplementares = $any($event.target).value"
+                    class="w-full text-xs rounded-xl px-3.5 py-2 bg-white border border-slate-200 focus:border-[#132A41] outline-none text-slate-900"
+                  ></textarea>
+                </div>
+
+                <button
+                  id="btn-gerar-capa-pdf"
+                  type="button"
+                  (click)="gerarCapaPropostaPdf()"
+                  [disabled]="gerandoCapaPdf()"
+                  class="w-full py-3 rounded-xl bg-[#132A41] hover:bg-[#1c3c5c] disabled:opacity-50 text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
+                >
+                  @if (gerandoCapaPdf()) {
+                    <span>Gerando PDF com Motor White-Label...</span>
+                  } @else {
+                    <span>📑 Gerar Capa da Proposta em PDF</span>
+                  }
+                </button>
+              </div>
+
+              <!-- Pré-visualização da Capa -->
+              <div class="p-6 bg-white rounded-2xl border border-slate-200 space-y-4 shadow-xs">
+                <div class="text-center pb-3 border-b border-slate-200">
+                  <span class="text-[10px] font-black uppercase text-[#B5642A] tracking-wider block">Prévia da Folha de Rosto</span>
+                  <h5 class="text-sm font-black text-slate-900 uppercase mt-0.5">Carta de Apresentação da Proposta Comercial</h5>
+                  <p class="text-[11px] text-slate-500 font-semibold">{{ nomeEdital() || 'Edital de Licitação' }}</p>
+                </div>
+
+                <div class="space-y-2 text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p><strong>Licitante:</strong> {{ perfilDocumental()?.razao_social || perfilDocumental()?.company_name || 'Razão Social' }}</p>
+                  <p><strong>CNPJ:</strong> {{ perfilDocumental()?.company_cnpj || '00.000.000/0001-00' }}</p>
+                  <p><strong>Representante:</strong> {{ perfilDocumental()?.full_name }} (CPF: {{ perfilDocumental()?.cpf_responsavel }})</p>
+                  <p><strong>Validade:</strong> {{ formCapaProposta().validadeProposta }}</p>
+                  <p><strong>Execução:</strong> {{ formCapaProposta().prazoExecucao }}</p>
+                </div>
+
+                <div class="text-center text-[10px] text-slate-400">
+                  Documento formatado automaticamente com timbrado corporativo, numeração de páginas e assinatura digitalizada.
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        }
+
+        <!-- CONTEÚDO SUB-ABA 3: RÓTULO DE ENVELOPE (.DOCX) -->
+        @if (subAbaDocumentos() === 'envelope') {
+          <div class="p-6 sm:p-7 space-y-6">
+            
+            <div class="space-y-1 pb-4 border-b border-slate-100">
+              <h4 class="text-base font-black text-slate-900">Rótulo de Identificação do Envelope</h4>
+              <p class="text-xs text-slate-500">
+                Gere o rótulo com moldura padronizada para impressão em papel A4 e fixação no envelope físico lacrado da proposta ou habilitação.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- Formulário do Envelope -->
+              <div class="space-y-4 bg-slate-50/70 p-5 rounded-2xl border border-slate-200">
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Tipo de Envelope</label>
+                  <select
+                    [value]="formEnvelope().tipoEnvelope"
+                    (change)="formEnvelope().tipoEnvelope = $any($event.target).value"
+                    class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-white border border-slate-200 focus:border-[#132A41] outline-none text-slate-900 cursor-pointer"
+                  >
+                    <option value="ENVELOPE Nº 01 — PROPOSTA DE PREÇOS">ENVELOPE Nº 01 — PROPOSTA DE PREÇOS</option>
+                    <option value="ENVELOPE Nº 02 — DOCUMENTOS DE HABILITAÇÃO">ENVELOPE Nº 02 — DOCUMENTOS DE HABILITAÇÃO</option>
+                    <option value="ENVELOPE Nº 03 — PROPOSTA TÉCNICA">ENVELOPE Nº 03 — PROPOSTA TÉCNICA</option>
+                    <option value="ENVELOPE ÚNICO — PROPOSTA & HABILITAÇÃO">ENVELOPE ÚNICO — PROPOSTA & HABILITAÇÃO</option>
+                  </select>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Comissão de Contratação / A/C</label>
+                  <input
+                    type="text"
+                    [value]="formEnvelope().comissaoOuPregoeiro"
+                    (input)="formEnvelope().comissaoOuPregoeiro = $any($event.target).value"
+                    class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-white border border-slate-200 focus:border-[#132A41] outline-none text-slate-900"
+                  />
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Data e Horário da Sessão Pública (Opcional)</label>
+                  <input
+                    type="text"
+                    [value]="formEnvelope().dataHoraSessao"
+                    (input)="formEnvelope().dataHoraSessao = $any($event.target).value"
+                    placeholder="Ex: 15/09/2026 às 09:30h"
+                    class="w-full text-xs rounded-xl px-3.5 py-2.5 bg-white border border-slate-200 focus:border-[#132A41] outline-none text-slate-900"
+                  />
+                </div>
+
+                <button
+                  id="btn-gerar-envelope-docx"
+                  type="button"
+                  (click)="gerarEnvelopeDocx()"
+                  [disabled]="gerandoEnvelopeDocx()"
+                  class="w-full py-3 rounded-xl bg-[#B5642A] hover:bg-[#964f1d] disabled:opacity-50 text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
+                >
+                  @if (gerandoEnvelopeDocx()) {
+                    <span>Gerando Envelope em .docx...</span>
+                  } @else {
+                    <span>✉️ Exportar Rótulo do Envelope (.docx)</span>
+                  }
+                </button>
+              </div>
+
+              <!-- Prévia do Envelope -->
+              <div class="p-6 bg-white rounded-2xl border-2 border-dashed border-slate-300 space-y-4">
+                <div class="text-center">
+                  <span class="text-xs font-black text-slate-900 uppercase block tracking-wider">{{ formEnvelope().tipoEnvelope }}</span>
+                  <span class="text-[11px] font-bold text-[#132A41]">EDITAL: {{ nomeEdital() || 'NÃO INFORMADO' }}</span>
+                </div>
+
+                <!-- Box Destinatário -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs">
+                  <span class="text-[10px] font-black uppercase text-[#132A41] block">DESTINATÁRIO:</span>
+                  <p class="font-bold text-slate-800">{{ orgaoLicitanteManual() || resultadoAnaliseEdital()?.orgao_licitante || 'Órgão Licitante' }}</p>
+                  <p class="text-slate-600 text-[11px]">A/C: {{ formEnvelope().comissaoOuPregoeiro }}</p>
+                </div>
+
+                <!-- Box Remetente -->
+                <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-xl space-y-1 text-xs">
+                  <span class="text-[10px] font-black uppercase text-[#B5642A] block">REMETENTE:</span>
+                  <p class="font-bold text-slate-800">{{ perfilDocumental()?.razao_social || perfilDocumental()?.company_name || 'Razão Social' }}</p>
+                  <p class="text-slate-600 text-[11px]">CNPJ: {{ perfilDocumental()?.company_cnpj || '00.000.000/0001-00' }}</p>
+                  <p class="text-slate-600 text-[11px]">Representante: {{ perfilDocumental()?.full_name }} (CPF: {{ perfilDocumental()?.cpf_responsavel }})</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        }
+
+        <!-- CONTEÚDO SUB-ABA 4: HISTÓRICO DE DOCUMENTOS GERADOS -->
+        @if (subAbaDocumentos() === 'gerados') {
+          <div class="p-6 sm:p-7 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h4 class="text-base font-black text-slate-900">Histórico de Documentos Gerados</h4>
+              <span class="text-xs text-slate-400">{{ documentosGeradosSalvos().length }} registros</span>
+            </div>
+
+            @if (documentosGeradosSalvos().length === 0) {
+              <div class="py-12 text-center text-xs text-slate-500">
+                Nenhum documento gerado ou exportado ainda.
+              </div>
+            } @else {
+              <div class="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
+                @for (doc of documentosGeradosSalvos(); track doc.id) {
+                  <div class="p-4 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                    <div class="space-y-0.5">
+                      <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.2 rounded text-[10px] font-black uppercase" [class.bg-indigo-100]="doc.formato === 'docx'" [class.text-indigo-800]="doc.formato === 'docx'" [class.bg-rose-100]="doc.formato === 'pdf'" [class.text-rose-800]="doc.formato === 'pdf'">
+                          {{ doc.formato }}
+                        </span>
+                        <span class="text-xs font-bold text-slate-900">{{ doc.titulo }}</span>
+                      </div>
+                      <span class="block text-[10px] text-slate-400">Gerado em {{ doc.criado_em | date:'dd/MM/yyyy HH:mm' }} • Arquivo: {{ doc.nome_arquivo }}</span>
+                    </div>
+
+                    <span class="text-xs font-bold text-emerald-600">Salvo ✓</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+      </div>
+
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAIS                                                                    -->
+  <!-- ========================================================================= -->
+
+  <!-- Modal 1: Edição Prévia de Declaração -->
+  @if (modalEdicaoDeclaracaoAberto()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fade-in">
+      <div class="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <div class="p-5 bg-slate-900 text-white flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-[#B5642A] flex items-center justify-center font-bold text-xs">
+              ✏️
+            </div>
+            <div>
+              <h5 class="text-sm font-black">{{ declaracaoEmEdicao()?.nome }}</h5>
+              <span class="text-[10px] text-slate-300">Revise e ajuste as cláusulas antes de gerar o .docx</span>
+            </div>
+          </div>
+          <button type="button" (click)="fecharModalEdicaoDeclaracao()" class="text-slate-400 hover:text-white text-lg">✕</button>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto space-y-4">
+          <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <strong>Dica de Conformidade:</strong> As variáveis da empresa e do certame já foram substituídas automaticamente. Você pode alterar qualquer trecho de texto conforme as peculiaridades do seu edital.
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700">Texto Integral da Declaração:</label>
+            <textarea
+              rows="14"
+              [value]="textoEdicaoTemporario()"
+              (input)="textoEdicaoTemporario.set($any($event.target).value)"
+              class="w-full text-xs font-mono rounded-xl p-3.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#132A41] outline-none text-slate-900 leading-relaxed"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+          <button
+            type="button"
+            (click)="declaracaoEmEdicao() && restaurarModeloOriginalDeclaracao(declaracaoEmEdicao()!)"
+            class="text-xs font-bold text-rose-600 hover:text-rose-800 transition-colors cursor-pointer"
+          >
+            Restaurar Modelo Padrão
+          </button>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="fecharModalEdicaoDeclaracao()"
+              class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              (click)="salvarEdicaoDeclaracao()"
+              class="px-5 py-2 bg-[#132A41] hover:bg-[#1c3c5c] text-white rounded-xl text-xs font-black transition-colors cursor-pointer"
+            >
+              Salvar Alterações
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal 2: Completar Perfil Rápido -->
+  @if (modalCompletarPerfilAberto()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fade-in">
+      <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <div class="p-5 bg-slate-900 text-white flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-[#B5642A] flex items-center justify-center font-bold text-xs">
+              🏢
+            </div>
+            <div>
+              <h5 class="text-sm font-black">Dados Documentais da Empresa</h5>
+              <span class="text-[10px] text-slate-300">Necessários para geração de declarações e propostas com validade jurídica</span>
+            </div>
+          </div>
+          <button type="button" (click)="fecharModalCompletarPerfil()" class="text-slate-400 hover:text-white text-lg">✕</button>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700">Razão Social Oficial *</label>
+              <input
+                type="text"
+                [value]="formPerfilRapido().razao_social || ''"
+                (input)="atualizarCampoPerfilRapido('razao_social', $event)"
+                placeholder="Ex: Amorim Engenharia Ltda."
+                class="w-full text-xs rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700">CNPJ da Empresa *</label>
+              <input
+                type="text"
+                [value]="formPerfilRapido().company_cnpj || ''"
+                (input)="atualizarCampoPerfilRapido('company_cnpj', $event)"
+                placeholder="Ex: 00.000.000/0001-00"
+                class="w-full text-xs rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700">Nome Completo do Responsável Legal *</label>
+              <input
+                type="text"
+                [value]="formPerfilRapido().full_name || ''"
+                (input)="atualizarCampoPerfilRapido('full_name', $event)"
+                placeholder="Ex: Emanoel Amorim"
+                class="w-full text-xs rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700">CPF do Responsável Legal *</label>
+              <input
+                type="text"
+                [value]="formPerfilRapido().cpf_responsavel || ''"
+                (input)="atualizarCampoPerfilRapido('cpf_responsavel', $event)"
+                placeholder="Ex: 000.000.000-00"
+                class="w-full text-xs rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700">Registro CREA / CAU</label>
+              <input
+                type="text"
+                [value]="formPerfilRapido().crea_cau || ''"
+                (input)="atualizarCampoPerfilRapido('crea_cau', $event)"
+                placeholder="Ex: 5069812345/SP"
+                class="w-full text-xs rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700">Cargo do Responsável</label>
+              <input
+                type="text"
+                [value]="formPerfilRapido().company_position || ''"
+                (input)="atualizarCampoPerfilRapido('company_position', $event)"
+                placeholder="Ex: Sócio-Administrador"
+                class="w-full text-xs rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1 sm:col-span-2">
+              <label class="block text-xs font-bold text-slate-700">Endereço Comercial Completo</label>
+              <input
+                type="text"
+                [value]="formPerfilRapido().company_address || ''"
+                (input)="atualizarCampoPerfilRapido('company_address', $event)"
+                placeholder="Ex: Av. Paulista, 1000 - Bela Vista, São Paulo/SP - CEP 01310-100"
+                class="w-full text-xs rounded-xl px-3 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+          <button
+            type="button"
+            (click)="fecharModalCompletarPerfil()"
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="salvarPerfilRapido()"
+            [disabled]="salvandoPerfilRapido()"
+            class="px-5 py-2 bg-[#132A41] hover:bg-[#1c3c5c] text-white rounded-xl text-xs font-black"
+          >
+            {{ salvandoPerfilRapido() ? 'Salvando...' : 'Salvar Dados' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal 3: Chat Especialista em Licitações -->
+  @if (chatAberto()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fade-in">
+      <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[650px] max-h-[90vh]">
+        
+        <!-- Header do Chat -->
+        <div class="p-4 bg-[#132A41] text-white flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-[#B5642A] flex items-center justify-center font-bold text-sm shadow-xs">
+              ⚖️
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h5 class="text-sm font-black">Especialista em Licitações (Lei 14.133)</h5>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              </div>
+              <p class="text-[10px] text-slate-300">Claude Sonnet 5 • Consultoria preventiva para certames</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="fecharChat()"
+            class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer text-sm font-bold"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Mensagens -->
+        <div class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50">
+          @for (msg of mensagensChat(); track $index) {
+            <div
+              class="flex flex-col"
+              [class.items-end]="msg.papel === 'usuario'"
+              [class.items-start]="msg.papel === 'assistente'"
+            >
+              <div
+                class="max-w-[88%] p-3.5 rounded-2xl text-xs leading-relaxed"
+                [class.bg-[#132A41]]="msg.papel === 'usuario'"
+                [class.text-white]="msg.papel === 'usuario'"
+                [class.rounded-br-xs]="msg.papel === 'usuario'"
+                [class.bg-white]="msg.papel === 'assistente'"
+                [class.text-slate-800]="msg.papel === 'assistente'"
+                [class.border]="msg.papel === 'assistente'"
+                [class.border-slate-200]="msg.papel === 'assistente'"
+                [class.shadow-2xs]="msg.papel === 'assistente'"
+                [class.rounded-bl-xs]="msg.papel === 'assistente'"
+              >
+                <div class="whitespace-pre-wrap">{{ msg.conteudo }}</div>
+              </div>
+            </div>
+          }
+
+          @if (enviandoMensagem()) {
+            <div class="flex items-center gap-2 text-xs text-slate-500 italic p-2 bg-white rounded-xl border border-slate-200 w-fit">
+              <svg class="w-4 h-4 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>Consultando Claude Sonnet 5 (Lei 14.133)...</span>
+            </div>
+          }
+        </div>
+
+        <!-- Input do Chat -->
+        <div class="p-3 bg-white border-t border-slate-200">
+          <form (submit)="enviarMensagemChat(); $event.preventDefault();" class="flex gap-2">
+            <input
+              id="input-chat-licitacao"
+              type="text"
+              [value]="inputMensagem()"
+              (input)="atualizarInputMensagem($event)"
+              placeholder="Digite sua dúvida sobre o edital ou Lei 14.133..."
+              [disabled]="enviandoMensagem() || !temCreditosChat()"
+              class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50"
+            />
+            <button
+              id="btn-enviar-chat"
+              type="submit"
+              [disabled]="enviandoMensagem() || !inputMensagem().trim() || !temCreditosChat()"
+              class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1c3c5c] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+            >
+              Enviar
+            </button>
+          </form>
+          <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
+            <span>Orientação consultiva baseada na Lei 14.133/21</span>
+            <span>{{ statusPacotes().mensagensChatUsadasMes }}/35 mensagens usadas</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Modal 4: Histórico de Análises de Editais -->
+  @if (modalHistoricoAberto()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fade-in">
+      <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+        
+        <div class="p-5 bg-slate-900 text-white flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-[#B5642A] flex items-center justify-center font-bold text-xs">
+              📁
+            </div>
+            <h5 class="text-sm font-black">Histórico de Análises de Licitação</h5>
+          </div>
+          <button type="button" (click)="fecharModalHistorico()" class="text-slate-400 hover:text-white text-lg">✕</button>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto space-y-3">
+          @if (carregandoHistorico()) {
+            <div class="py-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+              <svg class="w-4 h-4 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>Carregando histórico salvo...</span>
+            </div>
+          } @else if (historicoAnalises().length === 0) {
+            <div class="py-8 text-center text-xs text-slate-500">
+              Nenhuma análise de edital ou documentação gravada no histórico deste mês.
+            </div>
+          } @else {
+            <div class="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
+              @for (item of historicoAnalises(); track item.id) {
+                <div class="p-4 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase" [class]="item.tipo === 'edital' ? 'bg-indigo-100 text-indigo-800' : 'bg-emerald-100 text-emerald-800'">
+                        {{ item.tipo === 'edital' ? 'Análise de Edital' : 'Auditoria Documental' }}
+                      </span>
+                      <span class="text-xs font-bold text-slate-900">{{ item.nome_edital || 'Edital de Licitação' }}</span>
+                    </div>
+                    <span class="block text-[10px] text-slate-400">Gravado em {{ item.criado_em | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="carregarAnaliseHistorico(item)"
+                    class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-[#132A41] hover:text-white text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Carregar
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button
+            type="button"
+            (click)="fecharModalHistorico()"
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>
