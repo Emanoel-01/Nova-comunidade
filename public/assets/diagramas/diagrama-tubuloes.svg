@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" style="background: transparent;">
+  <defs>
+    <marker id="arrow-t" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#B45309"/>
+    </marker>
+    <marker id="arrow-t-rev" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#B45309"/>
+    </marker>
+  </defs>
+
+  <!-- Título -->
+  <text x="400" y="45" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#132A41" text-anchor="middle" letter-spacing="1">
+    TUBULÃO
+  </text>
+
+  <!-- (a) Perspectiva -->
+  <g transform="translate(50, 30)">
+    <!-- Fuste Cilíndrico / Cônico -->
+    <path d="M 120 160 L 160 160 L 185 240 L 95 240 Z" fill="#EFE9E2" stroke="#334155" stroke-width="2.5"/>
+    <ellipse cx="140" cy="160" rx="20" ry="6" fill="#F4EFEA" stroke="#334155" stroke-width="2"/>
+    <ellipse cx="140" cy="240" rx="45" ry="12" fill="#FAF7F5" stroke="#334155" stroke-width="2"/>
+
+    <!-- Base Alargada / Sino -->
+    <path d="M 95 240 L 185 240 L 225 300 L 55 300 Z" fill="#E2DDD5" stroke="#334155" stroke-width="2.5"/>
+    <ellipse cx="140" cy="300" rx="85" ry="16" fill="#DCD6CC" stroke="#334155" stroke-width="2.5"/>
+
+    <text x="140" y="360" font-family="system-ui, sans-serif" font-size="14" font-style="italic" font-weight="600" fill="#64748B" text-anchor="middle">(a) Perspectiva</text>
+  </g>
+
+  <!-- (b) Corte Longitudinal -->
+  <g transform="translate(420, 30)">
+    <!-- Contorno Corte -->
+    <polygon points="120,120 160,120 180,200 220,290 220,320 60,320 60,290 100,200" fill="#EFE9E2" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Linha tracejada rodapé -->
+    <line x1="60" y1="290" x2="220" y2="290" stroke="#334155" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+    <!-- Cotas -->
+    <!-- Ø Df -->
+    <line x1="124" y1="95" x2="156" y2="95" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-t-rev)" marker-end="url(#arrow-t)"/>
+    <text x="140" y="78" font-family="system-ui, sans-serif" font-size="14" font-weight="800" fill="#B45309" text-anchor="middle">Ø Df</text>
+
+    <!-- Hf (altura fuste) -->
+    <line x1="240" y1="128" x2="240" y2="192" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-t-rev)" marker-end="url(#arrow-t)"/>
+    <text x="255" y="165" font-family="system-ui, sans-serif" font-size="14" font-weight="800" fill="#B45309" text-anchor="start">Hf</text>
+
+    <!-- Hb (altura base) -->
+    <line x1="260" y1="208" x2="260" y2="312" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-t-rev)" marker-end="url(#arrow-t)"/>
+    <text x="275" y="260" font-family="system-ui, sans-serif" font-size="14" font-weight="800" fill="#B45309" text-anchor="start">Hb</text>
+
+    <!-- b (rodapé) -->
+    <line x1="230" y1="296" x2="230" y2="314" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-t-rev)" marker-end="url(#arrow-t)"/>
+    <text x="245" y="308" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#B45309" text-anchor="start">b</text>
+
+    <!-- C.A. e C.B. anotações -->
+    <text x="285" y="115" font-family="system-ui, sans-serif" font-size="11" font-style="italic" fill="#94A3B8">C.A.</text>
+    <text x="285" y="325" font-family="system-ui, sans-serif" font-size="11" font-style="italic" fill="#94A3B8">C.B.</text>
+
+    <!-- Ø Db (diâmetro base) -->
+    <line x1="68" y1="345" x2="212" y2="345" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-t-rev)" marker-end="url(#arrow-t)"/>
+    <text x="140" y="370" font-family="system-ui, sans-serif" font-size="14" font-weight="800" fill="#B45309" text-anchor="middle">Ø Db</text>
+
+    <text x="140" y="405" font-family="system-ui, sans-serif" font-size="14" font-style="italic" font-weight="600" fill="#64748B" text-anchor="middle">(b) Corte Longitudinal</text>
+  </g>
+</svg>

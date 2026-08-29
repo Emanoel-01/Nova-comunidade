@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" style="background: transparent;">
+  <defs>
+    <marker id="arrow-p" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#B45309"/>
+    </marker>
+    <marker id="arrow-p-rev" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#B45309"/>
+    </marker>
+  </defs>
+
+  <!-- Título -->
+  <text x="400" y="45" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#132A41" text-anchor="middle" letter-spacing="1">
+    PILAR
+  </text>
+
+  <!-- Coluna Vertical 3D -->
+  <g transform="translate(100, 20)">
+    <!-- Top Face -->
+    <polygon points="210,70 340,70 390,105 260,105" fill="#F4EFEA" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Right Face -->
+    <polygon points="340,70 390,105 390,380 340,345" fill="#E2DDD5" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Front Face -->
+    <polygon points="210,105 340,105 340,380 210,380" fill="#EFE9E2" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Altura H (altura) -->
+    <line x1="165" y1="112" x2="165" y2="372" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-p-rev)" marker-end="url(#arrow-p)"/>
+    <text x="140" y="245" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="end" transform="rotate(-90 140 245)">H (altura)</text>
+
+    <!-- Largura L -->
+    <line x1="216" y1="405" x2="334" y2="405" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-p-rev)" marker-end="url(#arrow-p)"/>
+    <text x="275" y="425" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="middle">L</text>
+
+    <!-- Comprimento / Espessura C -->
+    <line x1="348" y1="392" x2="386" y2="422" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-p-rev)" marker-end="url(#arrow-p)"/>
+    <text x="385" y="415" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="start">C</text>
+  </g>
+</svg>

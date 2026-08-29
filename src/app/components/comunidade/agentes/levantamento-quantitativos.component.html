@@ -1,0 +1,3005 @@
+<div class="space-y-6">
+  <!-- 1. Cabeçalho do Agente -->
+  <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider">
+            Sienge Engine 2.1
+          </span>
+          <span class="text-xs font-semibold text-slate-500">12 Sistemas Construtivos & Instalações Prediais</span>
+        </div>
+        <h3 class="text-xl font-black text-slate-900 mt-2">Levantamento de Quantitativos de Obras</h3>
+        <p class="text-xs text-slate-500 mt-1 max-w-3xl">
+          Cálculo com fórmulas analíticas Sienge por sistema construtivo: concreto, formas, escavações, lastro, reaterro, bota-fora, cimbramento, armaduras de aço e horas de mão de obra.
+        </p>
+      </div>
+
+      <!-- Ações de Sessão, Nuvem e Exportação -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          (click)="abrirModalMeusProjetos()"
+          class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200 shadow-2xs active:scale-95"
+          title="Ver meus levantamentos salvos na nuvem"
+        >
+          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+          </svg>
+          <span>Meus Projetos Salvos</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="clicarSalvarProjeto()"
+          [disabled]="salvandoProjeto()"
+          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+          [title]="projetoAtualId() ? 'Atualizar projeto salvo na nuvem' : 'Salvar projeto atual na nuvem'"
+        >
+          @if (salvandoProjeto()) {
+            <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Salvando...</span>
+          } @else {
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            <span>{{ projetoAtualId() ? 'Salvar Alterações' : 'Salvar Projeto' }}</span>
+          }
+        </button>
+
+        @if (projetoAtualId()) {
+          <button
+            type="button"
+            (click)="clicarSalvarComoNovo()"
+            class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 active:scale-95"
+            title="Salvar como um novo projeto"
+          >
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Como Novo</span>
+          </button>
+        }
+
+        <button
+          type="button"
+          (click)="salvarSessaoJson()"
+          class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 active:scale-95"
+          title="Baixa um arquivo .json com todos os lançamentos e configurações"
+        >
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span class="hidden sm:inline">JSON</span>
+        </button>
+
+        <label
+          class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 active:scale-95"
+          title="Carrega um arquivo .json salvo anteriormente"
+        >
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span class="hidden sm:inline">Carregar</span>
+          <input type="file" accept="application/json" (change)="carregarSessaoJson($event)" class="hidden" />
+        </label>
+
+        <button
+          type="button"
+          (click)="exportarCsv()"
+          class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
+          title="Exporta a planilha de quantitativos consolidados em CSV"
+        >
+          <svg class="w-4 h-4 text-indigo-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Exportar CSV</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="exportarPDF()"
+          [disabled]="gerandoPdf()"
+          class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+          title="Emitir Memorial de Levantamento de Quantitativos em PDF profissional White-Label"
+        >
+          @if (gerandoPdf()) {
+            <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Gerando PDF...</span>
+          } @else {
+            <svg class="w-4 h-4 text-rose-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span>Exportar PDF</span>
+          }
+        </button>
+      </div>
+    </div>
+
+    @if (projetoAtualNome()) {
+      <div class="mt-4 px-4 py-2.5 rounded-2xl bg-indigo-50/80 border border-indigo-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-black text-indigo-950">Projeto em Edição:</span>
+          <span class="font-bold text-indigo-800 bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200/60 shadow-2xs">{{ projetoAtualNome() }}</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-500 font-medium">
+          <span class="text-[11px] text-indigo-600 font-bold">● Sincronizado na Nuvem</span>
+        </div>
+      </div>
+    }
+
+    @if (mensagemNotificacao()) {
+      <div class="mt-4 p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs font-medium text-indigo-900 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-indigo-600 font-bold">ℹ️</span>
+          <span>{{ mensagemNotificacao() }}</span>
+        </div>
+        <button type="button" (click)="mensagemNotificacao.set(null)" class="text-indigo-500 hover:text-indigo-700 font-bold text-xs">
+          Fechar
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- 2. Barra de Estatísticas Rápidas -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="bg-[#132A41] text-white p-3.5 rounded-2xl border border-slate-800 shadow-xs">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Total de Itens</div>
+      <div class="text-xl font-black text-white mt-1">{{ totalItensLancados() }}</div>
+    </div>
+
+    <div class="bg-[#132A41] text-white p-3.5 rounded-2xl border border-slate-800 shadow-xs">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Concreto</div>
+      <div class="text-xl font-black text-[#E59866] mt-1">{{ totalConcretoGeral().toFixed(2) }} <span class="text-[10px] font-normal text-slate-300">m³</span></div>
+    </div>
+
+    <div class="bg-[#132A41] text-white p-3.5 rounded-2xl border border-slate-800 shadow-xs">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Formas</div>
+      <div class="text-xl font-black text-amber-300 mt-1">{{ totalFormaGeral().toFixed(2) }} <span class="text-[10px] font-normal text-slate-300">m²</span></div>
+    </div>
+
+    <div class="bg-[#132A41] text-white p-3.5 rounded-2xl border border-slate-800 shadow-xs">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Aço Total</div>
+      <div class="text-xl font-black text-emerald-400 mt-1">{{ totalAcoGeral().toFixed(0) }} <span class="text-[10px] font-normal text-slate-300">kg</span></div>
+    </div>
+
+    <div class="bg-[#132A41] text-white p-3.5 rounded-2xl border border-slate-800 shadow-xs">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Escavação</div>
+      <div class="text-xl font-black text-sky-300 mt-1">{{ totalEscavacaoGeral().toFixed(2) }} <span class="text-[10px] font-normal text-slate-300">m³</span></div>
+    </div>
+
+    <div class="bg-[#132A41] text-white p-3.5 rounded-2xl border border-slate-800 shadow-xs">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Escoramento</div>
+      <div class="text-xl font-black text-violet-300 mt-1">{{ totalEscoramentoGeral().toFixed(2) }} <span class="text-[10px] font-normal text-slate-300">m³</span></div>
+    </div>
+  </div>
+
+  <!-- 3. Navegação de Abas por Sistema e Disciplina -->
+  <div class="relative group/tabs border-b border-slate-200 pb-1">
+    <!-- Seta de Rolagem para a Esquerda -->
+    @if (podeRolarEsquerda()) {
+      <button
+        type="button"
+        (click)="rolarAbas('esquerda')"
+        class="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white/95 backdrop-blur-xs border border-slate-300 shadow-md text-slate-700 hover:text-slate-950 hover:bg-slate-50 transition-all cursor-pointer -ml-1.5 md:-ml-3 active:scale-95"
+        aria-label="Rolar abas para a esquerda"
+        title="Rolar abas para a esquerda"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <!-- Gradiente Fade Esquerdo -->
+      <div class="absolute left-0 top-0 bottom-2 w-10 bg-gradient-to-r from-slate-100/90 via-slate-100/40 to-transparent z-10 pointer-events-none rounded-l-xl"></div>
+    }
+
+    <!-- Seta de Rolagem para a Direita -->
+    @if (podeRolarDireita()) {
+      <button
+        type="button"
+        (click)="rolarAbas('direita')"
+        class="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white/95 backdrop-blur-xs border border-slate-300 shadow-md text-slate-700 hover:text-slate-950 hover:bg-slate-50 transition-all cursor-pointer -mr-1.5 md:-mr-3 active:scale-95"
+        aria-label="Rolar abas para a direita"
+        title="Rolar abas para a direita"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      <!-- Gradiente Fade Direito -->
+      <div class="absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-slate-100/90 via-slate-100/40 to-transparent z-10 pointer-events-none rounded-r-xl"></div>
+    }
+
+    <!-- Container com Rolagem Horizontal Visível -->
+    <div
+      #tabsContainer
+      (scroll)="atualizarScrollAbas(tabsContainer)"
+      class="aba-scroll flex items-center gap-1.5 overflow-x-auto pb-2.5 scroll-smooth px-1"
+    >
+      <!-- 8 Sistemas Reais do Sienge -->
+      <button
+        type="button"
+        (click)="selecionarAba('baldrame', $event)"
+        [class]="abaAtiva() === 'baldrame' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>1. Baldrame</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ baldrame().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('blocos', $event)"
+        [class]="abaAtiva() === 'blocos' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>2. Blocos</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ blocos().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('sapatas', $event)"
+        [class]="abaAtiva() === 'sapatas' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>3. Sapatas</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ sapatas().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('radier', $event)"
+        [class]="abaAtiva() === 'radier' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>4. Radier</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ radier().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('tubuloes', $event)"
+        [class]="abaAtiva() === 'tubuloes' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>5. Tubulões</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ tubuloes().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('pilares', $event)"
+        [class]="abaAtiva() === 'pilares' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>6. Pilares</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ pilares().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('vigas', $event)"
+        [class]="abaAtiva() === 'vigas' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>7. Vigas</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ vigas().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('lajes', $event)"
+        [class]="abaAtiva() === 'lajes' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>8. Lajes</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ lajes().length }}
+        </span>
+      </button>
+
+      <!-- Demais Disciplinas -->
+      <div class="h-6 w-[1px] bg-slate-300 mx-1 shrink-0"></div>
+
+      <button
+        type="button"
+        (click)="selecionarAba('arquitetonico', $event)"
+        [class]="abaAtiva() === 'arquitetonico' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>Arquitetônico</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ arquitetonico().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('esquadrias', $event)"
+        [class]="abaAtiva() === 'esquadrias' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>Esquadrias</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ esquadrias().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('cobertura', $event)"
+        [class]="abaAtiva() === 'cobertura' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>Cobertura</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ cobertura().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('pergolados', $event)"
+        [class]="abaAtiva() === 'pergolados' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>Pergolados</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ pergolados().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('distribuicao-eletrica', $event)"
+        [class]="abaAtiva() === 'distribuicao-eletrica' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>9. Distribuição Elétrica</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ distribuicaoEletrica().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('prumadas-eletricas', $event)"
+        [class]="abaAtiva() === 'prumadas-eletricas' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>10. Prumadas Elétricas</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ prumadasEletricas().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('esgoto-pluvial', $event)"
+        [class]="abaAtiva() === 'esgoto-pluvial' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>11. Esgoto & Pluvial</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ esgotoPluvial().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('hidraulica', $event)"
+        [class]="abaAtiva() === 'hidraulica' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>12. Hidráulica</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ hidraulica().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('paisagismo', $event)"
+        [class]="abaAtiva() === 'paisagismo' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+        class="px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+      >
+        <span>Paisagismo</span>
+        <span class="w-4 h-4 rounded-full bg-white/20 text-[10px] flex items-center justify-center font-black">
+          {{ paisagismo().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        (click)="selecionarAba('resumo', $event)"
+        [class]="abaAtiva() === 'resumo' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'"
+        class="px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ml-auto"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span>Resumo & Auditoria</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. Conteúdo das Abas -->
+  <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-6">
+
+    <!-- ==================== ABA 1: BALDRAME ==================== -->
+    @if (abaAtiva() === 'baldrame') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h4 class="text-base font-black text-slate-900">1. Vigas Baldrame (Fundação Corrida)</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmulas Sienge: Forma = Qtd × (C × H × 2) • Escavação = (L + 0.60) × P × C × Qtd • Lastro = (L + 0.10) × C × e × Qtd • Reaterro & Bota-fora automatizados.
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-emerald-100/80 text-emerald-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Baldrame</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Cotas L, H, C, P)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-baldrame.svg"
+                alt="Diagrama de referência técnica — Baldrame (Largura L, Altura H, Comprimento C)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <!-- Formulário Baldrame -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação / Trecho</label>
+            <input #balNome type="text" placeholder="Ex: VB-01 Eixo 1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Largura L (m)</label>
+            <input #balL type="number" step="0.01" min="0" placeholder="Ex: 0.20" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Altura H (m)</label>
+            <input #balH type="number" step="0.01" min="0" placeholder="Ex: 0.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Comprim. C (m)</label>
+            <input #balC type="number" step="0.01" min="0" placeholder="Ex: 12.50" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Profund. P (m)</label>
+            <input #balP type="number" step="0.01" min="0" placeholder="Ex: 0.80" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #balQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Aço (kg)</label>
+            <div class="relative">
+              <input #balAco id="inputAcoBaldrame" type="number" step="0.1" min="0" placeholder="Auto" class="w-full pl-3 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+              <button
+                type="button"
+                (click)="abrirCalculadoraBitola('inputAcoBaldrame')"
+                class="absolute right-1.5 top-2 text-slate-400 hover:text-indigo-600"
+                title="Abrir calculadora de bitolas"
+              >
+                ⚖️
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarBaldrame(balNome.value, balL.value, balH.value, balC.value, balP.value, balQtd.value, '0.05', balAco.value); balNome.value=''; balL.value=''; balH.value=''; balC.value=''; balP.value=''; balQtd.value='1'; balAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Viga Baldrame
+          </button>
+        </div>
+
+        <!-- Tabela Baldrame -->
+        @if (baldrame().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">L × H × C</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Forma (m²)</th>
+                  <th class="p-3">Escavação (m³)</th>
+                  <th class="p-3">Lastro (m³)</th>
+                  <th class="p-3">Reaterro (m³)</th>
+                  <th class="p-3">Bota-Fora (m³)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of baldrame(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }} × {{ item.comprimento }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.escavacao.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.lastro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.reaterro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.botaFora.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerBaldrame(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhuma viga baldrame lançada ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 2: BLOCOS ==================== -->
+    @if (abaAtiva() === 'blocos') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <h4 class="text-base font-black text-slate-900">2. Blocos de Coroamento sobre Estacas</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmulas Sienge: Forma = Qtd × (C × H × 2 + L × H × 2) • Escavação = (L + 0.60) × P × C × Qtd • Lastro = (L + 0.10) × C × e × Qtd.
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-blue-100/80 text-blue-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Blocos de Fundação</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Cotas L, H, C, P)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-blocos.svg"
+                alt="Diagrama de referência técnica — Blocos de Fundação (Largura L, Altura H, Comprimento C)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação / Bloco</label>
+            <input #bloNome type="text" placeholder="Ex: Bloco 2 Estacas" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Largura L (m)</label>
+            <input #bloL type="number" step="0.01" min="0" placeholder="Ex: 0.80" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Altura H (m)</label>
+            <input #bloH type="number" step="0.01" min="0" placeholder="Ex: 0.60" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Comprim. C (m)</label>
+            <input #bloC type="number" step="0.01" min="0" placeholder="Ex: 1.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Profund. P (m)</label>
+            <input #bloP type="number" step="0.01" min="0" placeholder="Ex: 1.20" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #bloQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Aço (kg)</label>
+            <div class="relative">
+              <input #bloAco id="inputAcoBlocos" type="number" step="0.1" min="0" placeholder="Auto" class="w-full pl-3 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+              <button
+                type="button"
+                (click)="abrirCalculadoraBitola('inputAcoBlocos')"
+                class="absolute right-1.5 top-2 text-slate-400 hover:text-indigo-600"
+                title="Abrir calculadora de bitolas"
+              >
+                ⚖️
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarBloco(bloNome.value, bloL.value, bloH.value, bloC.value, bloP.value, bloQtd.value, '0.05', bloAco.value); bloNome.value=''; bloL.value=''; bloH.value=''; bloC.value=''; bloP.value=''; bloQtd.value='1'; bloAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Bloco de Coroamento
+          </button>
+        </div>
+
+        @if (blocos().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">L × H × C</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Forma (m²)</th>
+                  <th class="p-3">Escavação (m³)</th>
+                  <th class="p-3">Lastro (m³)</th>
+                  <th class="p-3">Reaterro (m³)</th>
+                  <th class="p-3">Bota-Fora (m³)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of blocos(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }} × {{ item.comprimento }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.escavacao.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.lastro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.reaterro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.botaFora.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerBloco(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhum bloco de coroamento lançado ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 3: SAPATAS ==================== -->
+    @if (abaAtiva() === 'sapatas') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <h4 class="text-base font-black text-slate-900">3. Sapatas Isoladas / Piramidais com Rodapé</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmula exata do tronco de pirâmide Sienge: Concreto = (H/6) × [(2Lb + Lf)Cb + (2Lf + Lb)Cf] + Lb×Cb×B • Forma inclinada via hipotenusa 3D.
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-amber-100/80 text-amber-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Sapatas Isoladas</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Perspectiva & Corte: Lb, Cb, Lf, Cf, H, B)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-sapatas.svg"
+                alt="Diagrama de referência técnica — Sapatas Isoladas (Base Lb x Cb, Fuste Lf x Cf, Alturas H e B)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-10 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação / Sapata</label>
+            <input #sapNome type="text" placeholder="Ex: S-01 (Pilar P1)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Larg. Base Lb (m)</label>
+            <input #sapLb type="number" step="0.01" min="0" placeholder="Ex: 1.20" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Comp. Base Cb (m)</label>
+            <input #sapCb type="number" step="0.01" min="0" placeholder="Ex: 1.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Larg. Fuste Lf (m)</label>
+            <input #sapLf type="number" step="0.01" min="0" placeholder="Ex: 0.20" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Comp. Fuste Cf (m)</label>
+            <input #sapCf type="number" step="0.01" min="0" placeholder="Ex: 0.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Alt. Tronco H (m)</label>
+            <input #sapH type="number" step="0.01" min="0" placeholder="Ex: 0.35" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Alt. Base B (m)</label>
+            <input #sapB type="number" step="0.01" min="0" placeholder="Ex: 0.20" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Profund. P (m)</label>
+            <input #sapP type="number" step="0.01" min="0" placeholder="Ex: 1.50" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd / Aço</label>
+            <div class="flex gap-1">
+              <input #sapQtd type="number" step="1" min="1" value="1" title="Quantidade" class="w-12 px-2 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+              <input #sapAco type="number" step="0.1" min="0" placeholder="kg" title="Aço (kg)" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarSapata(sapNome.value, sapLb.value, sapCb.value, sapLf.value, sapCf.value, sapH.value, sapB.value, sapP.value, sapQtd.value, '0.05', sapAco.value); sapNome.value=''; sapLb.value=''; sapCb.value=''; sapLf.value=''; sapCf.value=''; sapH.value=''; sapB.value=''; sapP.value=''; sapQtd.value='1'; sapAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Sapata Piramidal
+          </button>
+        </div>
+
+        @if (sapatas().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">Base (Lb×Cb)</th>
+                  <th class="p-3">Fuste (Lf×Cf)</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Forma (m²)</th>
+                  <th class="p-3">Escavação (m³)</th>
+                  <th class="p-3">Lastro (m³)</th>
+                  <th class="p-3">Reaterro (m³)</th>
+                  <th class="p-3">Bota-Fora (m³)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of sapatas(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">{{ item.larguraBase }} × {{ item.comprimentoBase }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.larguraFuste }} × {{ item.comprimentoFuste }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.escavacao.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.lastro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.reaterro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.botaFora.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerSapata(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhuma sapata lançada ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 4: RADIER ==================== -->
+    @if (abaAtiva() === 'radier') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-violet-500"></span>
+              <h4 class="text-base font-black text-slate-900">4. Radier (Laje Maciça de Fundação)</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmulas Sienge: Forma periférica = Qtd × (C × H × 2 + L × H × 2) • Lastro = L × C × e × Qtd • Reaterro = Escavação - Concreto.
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-violet-100/80 text-violet-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Radier</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Placa L, H, C & Lastro)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-radier.svg"
+                alt="Diagrama de referência técnica — Radier (Largura L, Altura H, Comprimento C, Lastro)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação</label>
+            <input #radNome type="text" placeholder="Ex: Radier Geral Bloco A" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Largura L (m)</label>
+            <input #radL type="number" step="0.01" min="0" placeholder="Ex: 8.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Espessura H (m)</label>
+            <input #radH type="number" step="0.01" min="0" placeholder="Ex: 0.15" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Comprim. C (m)</label>
+            <input #radC type="number" step="0.01" min="0" placeholder="Ex: 15.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Profund. P (m)</label>
+            <input #radP type="number" step="0.01" min="0" placeholder="Ex: 0.30" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #radQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Aço (kg)</label>
+            <input #radAco type="number" step="0.1" min="0" placeholder="Auto" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarRadier(radNome.value, radL.value, radH.value, radC.value, radP.value, radQtd.value, '0.05', radAco.value); radNome.value=''; radL.value=''; radH.value=''; radC.value=''; radP.value=''; radQtd.value='1'; radAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Radier
+          </button>
+        </div>
+
+        @if (radier().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">L × H × C</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Forma (m²)</th>
+                  <th class="p-3">Escavação (m³)</th>
+                  <th class="p-3">Lastro (m³)</th>
+                  <th class="p-3">Reaterro (m³)</th>
+                  <th class="p-3">Bota-Fora (m³)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of radier(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }} × {{ item.comprimento }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.escavacao.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.lastro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.reaterro.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.botaFora.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerRadier(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhum radier lançado ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 5: TUBULÕES ==================== -->
+    @if (abaAtiva() === 'tubuloes') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
+              <h4 class="text-base font-black text-slate-900">5. Tubulões a Céu Aberto (Fuste e Base Alargada)</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmula analítica Sienge: Concreto = Base cilíndrica (π·Db²·b/4) + Tronco de cone base (1/3·π·(Hb-b)·(Db²/4 + Db·Df/4 + Df²/4)) + Fuste (π·Df²·Hf/4).
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-teal-100/80 text-teal-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Tubulão</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Fuste Df, Hf & Base Db, Hb, b, C.A., C.B.)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-tubuloes.svg"
+                alt="Diagrama de referência técnica — Tubulões (Fuste Df x Hf, Base Db x Hb, Rodapé b, C.A., C.B.)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação / Tubulão</label>
+            <input #tubNome type="text" placeholder="Ex: TB-01 (Df 70cm)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">⌀ Fuste Df (m)</label>
+            <input #tubDf type="number" step="0.01" min="0" placeholder="Ex: 0.70" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Alt. Fuste Hf (m)</label>
+            <input #tubHf type="number" step="0.01" min="0" placeholder="Ex: 4.50" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">⌀ Base Db (m)</label>
+            <input #tubDb type="number" step="0.01" min="0" placeholder="Ex: 1.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Alt. Base Hb (m)</label>
+            <input #tubHb type="number" step="0.01" min="0" placeholder="Ex: 0.80" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Alt. Cilind. b (m)</label>
+            <input #tubB type="number" step="0.01" min="0" placeholder="Ex: 0.20" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd / Aço</label>
+            <div class="flex gap-1">
+              <input #tubQtd type="number" step="1" min="1" value="1" title="Quantidade" class="w-12 px-2 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+              <input #tubAco type="number" step="0.1" min="0" placeholder="kg" title="Aço (kg)" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarTubulao(tubNome.value, tubDf.value, tubHf.value, tubDb.value, tubHb.value, tubB.value, tubQtd.value, tubAco.value); tubNome.value=''; tubDf.value=''; tubHf.value=''; tubDb.value=''; tubHb.value=''; tubB.value=''; tubQtd.value='1'; tubAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Tubulão
+          </button>
+        </div>
+
+        @if (tubuloes().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">Fuste (⌀ × H)</th>
+                  <th class="p-3">Base (⌀ × Hb × b)</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Escavação (m³)</th>
+                  <th class="p-3">Bota-Fora (m³)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of tubuloes(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">⌀{{ (item.diametroFuste * 100).toFixed(0) }}cm × {{ item.alturaFuste }}m</td>
+                    <td class="p-3 text-slate-600">⌀{{ (item.diametroBase * 100).toFixed(0) }}cm (Hb {{ item.alturaBase }}m)</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.escavacao.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.botaFora.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerTubulao(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhum tubulão lançado ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 6: PILARES ==================== -->
+    @if (abaAtiva() === 'pilares') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <h4 class="text-base font-black text-slate-900">6. Pilares de Concreto Armado</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmulas Sienge: Forma = (C + L) × 2 × H × Qtd • Solda/Amarração = Aço × tempoSolda.
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-rose-100/80 text-rose-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Pilares</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Seção L, C & Altura H)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-pilares.svg"
+                alt="Diagrama de referência técnica — Pilares (Largura L, Altura H, Comprimento C)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação / Pilar</label>
+            <input #pilNome type="text" placeholder="Ex: P-01 Tipo" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Largura L (m)</label>
+            <input #pilL type="number" step="0.01" min="0" placeholder="Ex: 0.20" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Espessura H (m)</label>
+            <input #pilH type="number" step="0.01" min="0" placeholder="Ex: 0.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Compr./Alt. C (m)</label>
+            <input #pilC type="number" step="0.01" min="0" placeholder="Ex: 3.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #pilQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Aço (kg)</label>
+            <div class="relative">
+              <input #pilAco id="inputAcoPilares" type="number" step="0.1" min="0" placeholder="Auto" class="w-full pl-3 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+              <button
+                type="button"
+                (click)="abrirCalculadoraBitola('inputAcoPilares')"
+                class="absolute right-1.5 top-2 text-slate-400 hover:text-indigo-600"
+                title="Abrir calculadora de bitolas"
+              >
+                ⚖️
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarPilar(pilNome.value, pilL.value, pilH.value, pilC.value, pilQtd.value, pilAco.value); pilNome.value=''; pilL.value=''; pilH.value=''; pilC.value=''; pilQtd.value='1'; pilAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Pilar
+          </button>
+        </div>
+
+        @if (pilares().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">Seção × Altura</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Forma (m²)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3">Solda/Amarração (h)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of pilares(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }}m (H={{ item.comprimento }}m)</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.solda.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerPilar(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhum pilar lançado ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 7: VIGAS ==================== -->
+    @if (abaAtiva() === 'vigas') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+              <h4 class="text-base font-black text-slate-900">7. Vigas Superiores de Concreto Armado</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmulas Sienge: Forma = (L + 2H) × C × Qtd • Escoramento = L × AlturaFundoViga × C × Qtd.
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-indigo-100/80 text-indigo-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Vigas Superiores</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Seção L, H, Compr. C & Fundo de Viga Hfv)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-vigas.svg"
+                alt="Diagrama de referência técnica — Vigas Superiores (Largura L, Altura H, Comprimento C, Fundo Hfv)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação / Viga</label>
+            <input #vigNome type="text" placeholder="Ex: V-101 1º Pavimento" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Largura L (m)</label>
+            <input #vigL type="number" step="0.01" min="0" placeholder="Ex: 0.15" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Altura H (m)</label>
+            <input #vigH type="number" step="0.01" min="0" placeholder="Ex: 0.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Comprim. C (m)</label>
+            <input #vigC type="number" step="0.01" min="0" placeholder="Ex: 6.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Alt. Fundo Viga (m)</label>
+            <input #vigHfv type="number" step="0.01" min="0" placeholder="Ex: 2.40" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #vigQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Aço (kg)</label>
+            <div class="relative">
+              <input #vigAco id="inputAcoVigas" type="number" step="0.1" min="0" placeholder="Auto" class="w-full pl-3 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+              <button
+                type="button"
+                (click)="abrirCalculadoraBitola('inputAcoVigas')"
+                class="absolute right-1.5 top-2 text-slate-400 hover:text-indigo-600"
+                title="Abrir calculadora de bitolas"
+              >
+                ⚖️
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarViga(vigNome.value, vigL.value, vigH.value, vigC.value, vigHfv.value, vigQtd.value, vigAco.value); vigNome.value=''; vigL.value=''; vigH.value=''; vigC.value=''; vigHfv.value=''; vigQtd.value='1'; vigAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Viga Superior
+          </button>
+        </div>
+
+        @if (vigas().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">L × H × C</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Forma (m²)</th>
+                  <th class="p-3">Escoramento (m³)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3">Solda (h)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of vigas(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }} × {{ item.comprimento }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.escoramento.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.solda.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerViga(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhuma viga lançada ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 8: LAJES ==================== -->
+    @if (abaAtiva() === 'lajes') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+              <h4 class="text-base font-black text-slate-900">8. Lajes Maciças / Nervuradas</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Fórmulas Sienge: Forma = Qtd × L × C • Escoramento = Forma × PéDireito • Concreto = Qtd × L × H × C.
+            </p>
+          </div>
+        </div>
+
+        <!-- Diagrama Técnico de Referência -->
+        <details class="group bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3.5 transition-all" open>
+          <summary class="flex items-center justify-between cursor-pointer list-none select-none text-xs font-bold text-slate-800">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded-lg bg-cyan-100/80 text-cyan-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span>Diagrama Técnico de Referência — Lajes Maciças</span>
+              <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">(Placa L, H, C & Pé Direito Pd)</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+              <span class="group-open:hidden">Visualizar</span>
+              <span class="hidden group-open:inline">Ocultar</span>
+              <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-slate-200/70 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div class="w-full max-w-lg bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-center">
+              <img
+                src="/assets/diagramas/diagrama-lajes.svg"
+                alt="Diagrama de referência técnica — Lajes Maciças (Largura L, Altura H, Comprimento C, Pé Direito Pd)"
+                class="max-w-full h-auto max-h-64 mx-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </details>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div class="col-span-2">
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Identificação / Painel</label>
+            <input #lajNome type="text" placeholder="Ex: Laje L1 Sala" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Largura L (m)</label>
+            <input #lajL type="number" step="0.01" min="0" placeholder="Ex: 4.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Espessura H (m)</label>
+            <input #lajH type="number" step="0.01" min="0" placeholder="Ex: 0.12" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Comprim. C (m)</label>
+            <input #lajC type="number" step="0.01" min="0" placeholder="Ex: 5.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Pé Direito (m)</label>
+            <input #lajPd type="number" step="0.01" min="0" placeholder="Ex: 2.80" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #lajQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Aço (kg)</label>
+            <div class="relative">
+              <input #lajAco id="inputAcoLajes" type="number" step="0.1" min="0" placeholder="Auto" class="w-full pl-3 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+              <button
+                type="button"
+                (click)="abrirCalculadoraBitola('inputAcoLajes')"
+                class="absolute right-1.5 top-2 text-slate-400 hover:text-indigo-600"
+                title="Abrir calculadora de bitolas"
+              >
+                ⚖️
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarLaje(lajNome.value, lajL.value, lajH.value, lajC.value, lajPd.value, lajQtd.value, lajAco.value); lajNome.value=''; lajL.value=''; lajH.value=''; lajC.value=''; lajPd.value=''; lajQtd.value='1'; lajAco.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Lançar Laje
+          </button>
+        </div>
+
+        @if (lajes().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Identificação</th>
+                  <th class="p-3">Dimensões (L×H×C)</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Concreto (m³)</th>
+                  <th class="p-3">Forma (m²)</th>
+                  <th class="p-3">Escoramento (m³)</th>
+                  <th class="p-3">Aço (kg)</th>
+                  <th class="p-3">Solda (h)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of lajes(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.nome }}</td>
+                    <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }} × {{ item.comprimento }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.escoramento.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.solda.toFixed(1) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerLaje(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhuma laje lançada ainda.
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== DEMAIS DISCIPLINAS ==================== -->
+    @if (abaAtiva() === 'arquitetonico') {
+      <div class="space-y-6">
+        <div>
+          <h4 class="text-base font-black text-slate-900">Arquitetônico & Vedações</h4>
+          <p class="text-xs text-slate-500 mt-1">Alvenarias de vedação e estrutural, revestimentos cerâmicos, emboço/reboco e pintura com desconto automático de vãos.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Serviço</label>
+            <select #aTipo class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+              <option value="alvenaria-ceramica">Alvenaria Cerâmica (m²)</option>
+              <option value="alvenaria-bloco">Alvenaria Bloco de Concreto (m²)</option>
+              <option value="revestimento-parede">Revestimento Reboco/Emboço (m²)</option>
+              <option value="piso-ceramico">Piso Cerâmico / Porcelanato (m²)</option>
+              <option value="pintura">Pintura Látex Acrílica (m²)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Comprimento (m)</label>
+            <input #aComp type="number" step="0.01" min="0" placeholder="Ex: 5.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Altura (m)</label>
+            <input #aAlt type="number" step="0.01" min="0" placeholder="Ex: 2.80" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Desconto Vãos (m²)</label>
+            <input #aDesc type="number" step="0.01" min="0" placeholder="Ex: 2.10" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Qtd (panos)</label>
+            <input #aQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarArquitetonico(aTipo.value, aComp.value, aAlt.value, aQtd.value, aDesc.value); aComp.value=''; aAlt.value=''; aDesc.value=''; aQtd.value='1'"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Adicionar Item Arquitetônico
+          </button>
+        </div>
+
+        @if (arquitetonico().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Serviço</th>
+                  <th class="p-3">Dimensões (C×A)</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Área Bruta (m²)</th>
+                  <th class="p-3">Desconto (m²)</th>
+                  <th class="p-3">Área Líquida (m²)</th>
+                  <th class="p-3">Encunhamento (m)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of arquitetonico(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ formatarNomeServico(item.tipo) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.comprimento }} × {{ item.altura }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 text-slate-600">{{ item.areaBruta.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.desconto.toFixed(2) }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.areaLiquida.toFixed(2) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.encunhamento.toFixed(2) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerArquitetonico(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    @if (abaAtiva() === 'esquadrias') {
+      <div class="space-y-6">
+        <div>
+          <h4 class="text-base font-black text-slate-900">Esquadrias & Fechamentos</h4>
+          <p class="text-xs text-slate-500 mt-1">Portas, janelas, portões e guarda-corpos com cálculo de área total de abertura.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Esquadria</label>
+            <select #qTipo class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+              <option value="porta-lisa">Porta Lisa de Madeira</option>
+              <option value="porta-veneziana">Porta Veneziana de Alumínio</option>
+              <option value="janela-correr">Janela de Correr Vidro/Alumínio</option>
+              <option value="janela-basculante">Janela Basculante / Maxim-ar</option>
+              <option value="portao">Portão Metálico</option>
+              <option value="guarda-corpo">Guarda-Corpo / Gradil</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Largura (m)</label>
+            <input #qLargura type="number" step="0.01" min="0" placeholder="Ex: 0.80" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Altura (m)</label>
+            <input #qAltura type="number" step="0.01" min="0" placeholder="Ex: 2.10" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #qQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarEsquadria(qTipo.value, qLargura.value, qAltura.value, qQtd.value); qLargura.value=''; qAltura.value=''; qQtd.value='1'"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Adicionar Esquadria
+          </button>
+        </div>
+
+        @if (esquadrias().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Tipo</th>
+                  <th class="p-3">Dimensões (L×A)</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Área Total (m²)</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of esquadrias(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ formatarNomeEsquadria(item.tipo) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }}m</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.area.toFixed(2) }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerEsquadria(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    @if (abaAtiva() === 'cobertura') {
+      <div class="space-y-6">
+        <div>
+          <h4 class="text-base font-black text-slate-900">Cobertura & Calhas</h4>
+          <p class="text-xs text-slate-500 mt-1">Telhados cerâmicos e termoacústicos, estruturas de madeira ou metal e calhas pluviais.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Item de Cobertura</label>
+            <select #cTipo class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+              <option value="telha-ceramica">Telhamento Cerâmico / Sanduíche</option>
+              <option value="estrutura-metalica">Estrutura Metálica (perfis)</option>
+              <option value="estrutura-madeira">Estrutura de Madeira (tesouras)</option>
+              <option value="calha">Calha / Rufo Galvanizado</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Dimensão Unitária</label>
+            <input #cDim type="number" step="0.01" min="0" placeholder="Ex: 120.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Unidade</label>
+            <select #cUnidade class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+              <option value="m²">m² (Área de projeção/plano)</option>
+              <option value="m">m (Comprimento de calha/rufo)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #cQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarCobertura(cTipo.value, cDim.value, cUnidade.value, cQtd.value); cDim.value=''; cQtd.value='1'"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Adicionar Item de Cobertura
+          </button>
+        </div>
+
+        @if (cobertura().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Item</th>
+                  <th class="p-3">Dimensão Unit.</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Total</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of cobertura(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ formatarNomeCobertura(item.tipo) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.dimensao }} {{ item.unidade }}</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.total.toFixed(2) }} {{ item.unidade }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerCobertura(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    @if (abaAtiva() === 'pergolados') {
+      <div class="space-y-6">
+        <div>
+          <h4 class="text-base font-black text-slate-900">Pergolados & Estruturas Aparentes</h4>
+          <p class="text-xs text-slate-500 mt-1">Pergolados de madeira maciça, alumínio ou aço e brises para sombreamento.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Estrutura</label>
+            <select #pTipo class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+              <option value="pergolado-madeira">Pergolado de Madeira Tratada</option>
+              <option value="pergolado-metalico">Pergolado Metálico</option>
+              <option value="trelica">Treliça / Brise de Sombreamento</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Área / Extensão</label>
+            <input #pDim type="number" step="0.01" min="0" placeholder="Ex: 24.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Unidade</label>
+            <select #pUnidade class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs">
+              <option value="m²">m² (Área de cobertura)</option>
+              <option value="m">m (Comprimento linear)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Qtd (un)</label>
+            <input #pQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarPergolado(pTipo.value, pDim.value, pUnidade.value, pQtd.value); pDim.value=''; pQtd.value='1'"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Adicionar Pergolado
+          </button>
+        </div>
+
+        @if (pergolados().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Tipo</th>
+                  <th class="p-3">Dimensão Unit.</th>
+                  <th class="p-3">Qtd</th>
+                  <th class="p-3">Total</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of pergolados(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ formatarNomePergolado(item.tipo) }}</td>
+                    <td class="p-3 text-slate-600">{{ item.dimensao }} {{ item.unidade }}</td>
+                    <td class="p-3 text-slate-600">{{ item.qtd }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.total.toFixed(2) }} {{ item.unidade }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerPergolado(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 9: DISTRIBUIÇÃO ELÉTRICA ==================== -->
+    @if (abaAtiva() === 'distribuicao-eletrica') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <h4 class="text-base font-black text-slate-900">9. Distribuição Elétrica (Pavimentos & Circuitos Internos)</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Tubulações corrugadas, fiações de circuitos terminais, caixas de embutir e quadros de distribuição com cálculo automatizado de perdas setoriais.
+            </p>
+          </div>
+        </div>
+
+        <!-- Painel de Margens de Perda por Categoria -->
+        <div class="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black text-amber-900 flex items-center gap-1.5">
+              ⚡ Margens de Perda Padrão Sienge
+            </span>
+            <span class="text-[11px] text-amber-700 font-semibold">Configurável por categoria</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            @for (cat of getCategoriasSistema('distribuicao-eletrica'); track cat.nome) {
+              <div class="bg-white/80 p-2.5 rounded-xl border border-amber-200/60 flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-700 truncate mr-2" [title]="cat.nome">{{ cat.nome }}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    [value]="getPerdaCategoria('distribuicao-eletrica', cat.nome)"
+                    (input)="atualizarPerdaCategoria('distribuicao-eletrica', cat.nome, $event)"
+                    class="w-14 px-1.5 py-1 text-right bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-900"
+                  />
+                  <span class="text-[10px] font-bold text-amber-700">%</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Formulário de Lançamento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoria</label>
+            <select #distCat class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
+              @for (cat of getCategoriasSistema('distribuicao-eletrica'); track cat.nome) {
+                <option [value]="cat.nome">{{ cat.nome }} ({{ cat.unidadePadrao }})</option>
+              }
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Especificação / Bitola / Material</label>
+            <input
+              #distEspec
+              type="text"
+              placeholder="Ex: Eletroduto Corrugado Amarelo 3/4&quot; / Fio Flexível 2,5mm² 750V"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Local / Circuito / Trecho</label>
+            <input
+              #distLocal
+              type="text"
+              placeholder="Ex: Pav. Tipo - Circuito Ilum."
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
+            <input
+              #distQtd
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="Ex: 120.00"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarItemInstalacao('distribuicao-eletrica', distCat.value, distEspec.value, distLocal.value, distQtd.value); distEspec.value=''; distLocal.value=''; distQtd.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-2"
+          >
+            <span>+ Adicionar Item de Distribuição Elétrica</span>
+          </button>
+        </div>
+
+        <!-- Tabela de Itens Lançados -->
+        @if (distribuicaoEletrica().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Categoria</th>
+                  <th class="p-3">Especificação / Insumo</th>
+                  <th class="p-3">Local / Circuito</th>
+                  <th class="p-3 text-right">Qtd Calculada</th>
+                  <th class="p-3 text-right">Perda (%)</th>
+                  <th class="p-3 text-right">Qtd com Perda</th>
+                  <th class="p-3 text-center">Unidade</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of distribuicaoEletrica(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-amber-900 bg-amber-50/30">{{ item.categoria }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.especificacao }}</td>
+                    <td class="p-3 text-slate-500">{{ item.local || '—' }}</td>
+                    <td class="p-3 text-right font-medium text-slate-700">{{ item.quantidade.toFixed(2) }}</td>
+                    <td class="p-3 text-right text-amber-700 font-bold">+{{ item.margemPerda }}%</td>
+                    <td class="p-3 text-right font-black text-slate-900">{{ item.quantidadeComPerda.toFixed(2) }}</td>
+                    <td class="p-3 text-center text-slate-600 font-bold">{{ item.unidade }}</td>
+                    <td class="p-3 text-right">
+                      <button
+                        type="button"
+                        (click)="removerItemInstalacao('distribuicao-eletrica', item.id)"
+                        class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer"
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totalizadores Consolidados por Categoria -->
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Totais do Sistema por Categoria</h5>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              @for (tot of getTotaisPorCategoria('distribuicao-eletrica'); track tot.categoria) {
+                <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <div class="text-[11px] font-bold text-slate-500">{{ tot.categoria }}</div>
+                  <div class="text-base font-black text-slate-900 mt-1">
+                    {{ tot.qtdComPerda.toFixed(2) }} <span class="text-xs font-semibold text-slate-500">{{ tot.unidade }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">
+                    Líquido: {{ tot.qtd.toFixed(2) }} {{ tot.unidade }} (+{{ tot.perda }}% perda)
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 10: PRUMADAS ELÉTRICAS ==================== -->
+    @if (abaAtiva() === 'prumadas-eletricas') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <h4 class="text-base font-black text-slate-900">10. Prumadas Elétricas (Alimentadores & SHAFTs)</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Infraestrutura pesada vertical: eletrocalhas, perfilados, cabos de alimentação de força principal e quadros gerais (QGBT).
+            </p>
+          </div>
+        </div>
+
+        <!-- Painel de Margens de Perda por Categoria -->
+        <div class="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black text-blue-900 flex items-center gap-1.5">
+              ⚡ Margens de Perda Padrão Sienge
+            </span>
+            <span class="text-[11px] text-blue-700 font-semibold">Configurável por categoria</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            @for (cat of getCategoriasSistema('prumadas-eletricas'); track cat.nome) {
+              <div class="bg-white/80 p-2.5 rounded-xl border border-blue-200/60 flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-700 truncate mr-2" [title]="cat.nome">{{ cat.nome }}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    [value]="getPerdaCategoria('prumadas-eletricas', cat.nome)"
+                    (input)="atualizarPerdaCategoria('prumadas-eletricas', cat.nome, $event)"
+                    class="w-14 px-1.5 py-1 text-right bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-900"
+                  />
+                  <span class="text-[10px] font-bold text-blue-700">%</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Formulário de Lançamento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoria</label>
+            <select #prumCat class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
+              @for (cat of getCategoriasSistema('prumadas-eletricas'); track cat.nome) {
+                <option [value]="cat.nome">{{ cat.nome }} ({{ cat.unidadePadrao }})</option>
+              }
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Especificação / Insumo / Bitola</label>
+            <input
+              #prumEspec
+              type="text"
+              placeholder="Ex: Eletrocalha Perfurada 100x50mm / Cabo Cobre 50mm² 0,6/1kV"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Local / SHAFT / Trecho</label>
+            <input
+              #prumLocal
+              type="text"
+              placeholder="Ex: Shaft Principal - Torre A"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
+            <input
+              #prumQtd
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="Ex: 45.00"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarItemInstalacao('prumadas-eletricas', prumCat.value, prumEspec.value, prumLocal.value, prumQtd.value); prumEspec.value=''; prumLocal.value=''; prumQtd.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-2"
+          >
+            <span>+ Adicionar Item de Prumada Elétrica</span>
+          </button>
+        </div>
+
+        <!-- Tabela de Itens Lançados -->
+        @if (prumadasEletricas().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Categoria</th>
+                  <th class="p-3">Especificação / Insumo</th>
+                  <th class="p-3">Local / SHAFT</th>
+                  <th class="p-3 text-right">Qtd Calculada</th>
+                  <th class="p-3 text-right">Perda (%)</th>
+                  <th class="p-3 text-right">Qtd com Perda</th>
+                  <th class="p-3 text-center">Unidade</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of prumadasEletricas(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-blue-900 bg-blue-50/30">{{ item.categoria }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.especificacao }}</td>
+                    <td class="p-3 text-slate-500">{{ item.local || '—' }}</td>
+                    <td class="p-3 text-right font-medium text-slate-700">{{ item.quantidade.toFixed(2) }}</td>
+                    <td class="p-3 text-right text-blue-700 font-bold">+{{ item.margemPerda }}%</td>
+                    <td class="p-3 text-right font-black text-slate-900">{{ item.quantidadeComPerda.toFixed(2) }}</td>
+                    <td class="p-3 text-center text-slate-600 font-bold">{{ item.unidade }}</td>
+                    <td class="p-3 text-right">
+                      <button
+                        type="button"
+                        (click)="removerItemInstalacao('prumadas-eletricas', item.id)"
+                        class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer"
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totalizadores Consolidados por Categoria -->
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Totais do Sistema por Categoria</h5>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              @for (tot of getTotaisPorCategoria('prumadas-eletricas'); track tot.categoria) {
+                <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <div class="text-[11px] font-bold text-slate-500">{{ tot.categoria }}</div>
+                  <div class="text-base font-black text-slate-900 mt-1">
+                    {{ tot.qtdComPerda.toFixed(2) }} <span class="text-xs font-semibold text-slate-500">{{ tot.unidade }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">
+                    Líquido: {{ tot.qtd.toFixed(2) }} {{ tot.unidade }} (+{{ tot.perda }}% perda)
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 11: ESGOTO E PLUVIAL ==================== -->
+    @if (abaAtiva() === 'esgoto-pluvial') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+              <h4 class="text-base font-black text-slate-900">11. Esgoto Sanitário & Drenagem Pluvial</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Tubulações de esgoto primário/secundário, conexões soldáveis/junta elástica, caixas sifonadas, caixas de gordura e caixas de inspeção.
+            </p>
+          </div>
+        </div>
+
+        <!-- Painel de Margens de Perda por Categoria -->
+        <div class="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+              💧 Margens de Perda Padrão Sienge
+            </span>
+            <span class="text-[11px] text-emerald-700 font-semibold">Configurável por categoria</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            @for (cat of getCategoriasSistema('esgoto-pluvial'); track cat.nome) {
+              <div class="bg-white/80 p-2.5 rounded-xl border border-emerald-200/60 flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-700 truncate mr-2" [title]="cat.nome">{{ cat.nome }}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    [value]="getPerdaCategoria('esgoto-pluvial', cat.nome)"
+                    (input)="atualizarPerdaCategoria('esgoto-pluvial', cat.nome, $event)"
+                    class="w-14 px-1.5 py-1 text-right bg-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-900"
+                  />
+                  <span class="text-[10px] font-bold text-emerald-700">%</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Formulário de Lançamento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoria</label>
+            <select #esgCat class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
+              @for (cat of getCategoriasSistema('esgoto-pluvial'); track cat.nome) {
+                <option [value]="cat.nome">{{ cat.nome }} ({{ cat.unidadePadrao }})</option>
+              }
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Especificação / Diâmetro / Insumo</label>
+            <input
+              #esgEspec
+              type="text"
+              placeholder="Ex: Tubo PVC Série Normal DN 100mm / Joelho 90° 100mm"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Ambiente / Trecho</label>
+            <input
+              #esgLocal
+              type="text"
+              placeholder="Ex: Banheiro Suíte / Prumada AP01"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
+            <input
+              #esgQtd
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="Ex: 36.00"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarItemInstalacao('esgoto-pluvial', esgCat.value, esgEspec.value, esgLocal.value, esgQtd.value); esgEspec.value=''; esgLocal.value=''; esgQtd.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-2"
+          >
+            <span>+ Adicionar Item de Esgoto / Pluvial</span>
+          </button>
+        </div>
+
+        <!-- Tabela de Itens Lançados -->
+        @if (esgotoPluvial().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Categoria</th>
+                  <th class="p-3">Especificação / Insumo</th>
+                  <th class="p-3">Ambiente / Trecho</th>
+                  <th class="p-3 text-right">Qtd Calculada</th>
+                  <th class="p-3 text-right">Perda (%)</th>
+                  <th class="p-3 text-right">Qtd com Perda</th>
+                  <th class="p-3 text-center">Unidade</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of esgotoPluvial(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-emerald-900 bg-emerald-50/30">{{ item.categoria }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.especificacao }}</td>
+                    <td class="p-3 text-slate-500">{{ item.local || '—' }}</td>
+                    <td class="p-3 text-right font-medium text-slate-700">{{ item.quantidade.toFixed(2) }}</td>
+                    <td class="p-3 text-right text-emerald-700 font-bold">+{{ item.margemPerda }}%</td>
+                    <td class="p-3 text-right font-black text-slate-900">{{ item.quantidadeComPerda.toFixed(2) }}</td>
+                    <td class="p-3 text-center text-slate-600 font-bold">{{ item.unidade }}</td>
+                    <td class="p-3 text-right">
+                      <button
+                        type="button"
+                        (click)="removerItemInstalacao('esgoto-pluvial', item.id)"
+                        class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer"
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totalizadores Consolidados por Categoria -->
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Totais do Sistema por Categoria</h5>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              @for (tot of getTotaisPorCategoria('esgoto-pluvial'); track tot.categoria) {
+                <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <div class="text-[11px] font-bold text-slate-500">{{ tot.categoria }}</div>
+                  <div class="text-base font-black text-slate-900 mt-1">
+                    {{ tot.qtdComPerda.toFixed(2) }} <span class="text-xs font-semibold text-slate-500">{{ tot.unidade }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">
+                    Líquido: {{ tot.qtd.toFixed(2) }} {{ tot.unidade }} (+{{ tot.perda }}% perda)
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA 12: HIDRÁULICA ==================== -->
+    @if (abaAtiva() === 'hidraulica') {
+      <div class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-600"></span>
+              <h4 class="text-base font-black text-slate-900">12. Instalações Hidráulicas (Água Fria & Água Quente)</h4>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Tubos soldáveis PVC, tubulações PPR / CPVC para água quente, registros de gaveta/pressão e válvulas de retenção.
+            </p>
+          </div>
+        </div>
+
+        <!-- Painel de Margens de Perda por Categoria -->
+        <div class="bg-cyan-50/60 border border-cyan-200/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black text-cyan-900 flex items-center gap-1.5">
+              🚰 Margens de Perda Padrão Sienge
+            </span>
+            <span class="text-[11px] text-cyan-700 font-semibold">Configurável por categoria</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            @for (cat of getCategoriasSistema('hidraulica'); track cat.nome) {
+              <div class="bg-white/80 p-2.5 rounded-xl border border-cyan-200/60 flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-700 truncate mr-2" [title]="cat.nome">{{ cat.nome }}</span>
+                <div class="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    [value]="getPerdaCategoria('hidraulica', cat.nome)"
+                    (input)="atualizarPerdaCategoria('hidraulica', cat.nome, $event)"
+                    class="w-14 px-1.5 py-1 text-right bg-white border border-cyan-300 rounded-lg text-xs font-bold text-cyan-900"
+                  />
+                  <span class="text-[10px] font-bold text-cyan-700">%</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Formulário de Lançamento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Categoria</label>
+            <select #hidrCat class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
+              @for (cat of getCategoriasSistema('hidraulica'); track cat.nome) {
+                <option [value]="cat.nome">{{ cat.nome }} ({{ cat.unidadePadrao }})</option>
+              }
+            </select>
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Especificação / Diâmetro / Material</label>
+            <input
+              #hidrEspec
+              type="text"
+              placeholder="Ex: Tubo PVC Soldável 25mm (3/4&quot;) / Registro Gaveta 1&quot;"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Ambiente / Trecho</label>
+            <input
+              #hidrLocal
+              type="text"
+              placeholder="Ex: Cozinha Gourmet / Barrilete"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
+            <input
+              #hidrQtd
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="Ex: 28.00"
+              class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarItemInstalacao('hidraulica', hidrCat.value, hidrEspec.value, hidrLocal.value, hidrQtd.value); hidrEspec.value=''; hidrLocal.value=''; hidrQtd.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-2"
+          >
+            <span>+ Adicionar Item de Hidráulica</span>
+          </button>
+        </div>
+
+        <!-- Tabela de Itens Lançados -->
+        @if (hidraulica().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Categoria</th>
+                  <th class="p-3">Especificação / Insumo</th>
+                  <th class="p-3">Ambiente / Trecho</th>
+                  <th class="p-3 text-right">Qtd Calculada</th>
+                  <th class="p-3 text-right">Perda (%)</th>
+                  <th class="p-3 text-right">Qtd com Perda</th>
+                  <th class="p-3 text-center">Unidade</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of hidraulica(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-cyan-900 bg-cyan-50/30">{{ item.categoria }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.especificacao }}</td>
+                    <td class="p-3 text-slate-500">{{ item.local || '—' }}</td>
+                    <td class="p-3 text-right font-medium text-slate-700">{{ item.quantidade.toFixed(2) }}</td>
+                    <td class="p-3 text-right text-cyan-700 font-bold">+{{ item.margemPerda }}%</td>
+                    <td class="p-3 text-right font-black text-slate-900">{{ item.quantidadeComPerda.toFixed(2) }}</td>
+                    <td class="p-3 text-center text-slate-600 font-bold">{{ item.unidade }}</td>
+                    <td class="p-3 text-right">
+                      <button
+                        type="button"
+                        (click)="removerItemInstalacao('hidraulica', item.id)"
+                        class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer"
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totalizadores Consolidados por Categoria -->
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h5 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Totais do Sistema por Categoria</h5>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              @for (tot of getTotaisPorCategoria('hidraulica'); track tot.categoria) {
+                <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <div class="text-[11px] font-bold text-slate-500">{{ tot.categoria }}</div>
+                  <div class="text-base font-black text-slate-900 mt-1">
+                    {{ tot.qtdComPerda.toFixed(2) }} <span class="text-xs font-semibold text-slate-500">{{ tot.unidade }}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">
+                    Líquido: {{ tot.qtd.toFixed(2) }} {{ tot.unidade }} (+{{ tot.perda }}% perda)
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (abaAtiva() === 'paisagismo') {
+      <div class="space-y-6">
+        <div>
+          <h4 class="text-base font-black text-slate-900">Paisagismo & Áreas Externas</h4>
+          <p class="text-xs text-slate-500 mt-1">Plantio de grama em placas, forrações, mudas de arbustos, palmeiras e pisos drenantes.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Item de Paisagismo</label>
+            <input #pItem type="text" placeholder="Ex: Grama Esmeralda em Placas" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
+            <input #pQtd type="number" step="0.1" min="0" placeholder="Ex: 85.00" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Unidade</label>
+            <input #pUnidade type="text" placeholder="m², un, m" value="m²" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="adicionarPaisagismo(pItem.value, pQtd.value, pUnidade.value); pItem.value=''; pQtd.value=''"
+            class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            + Adicionar Item de Paisagismo
+          </button>
+        </div>
+
+        @if (paisagismo().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Item</th>
+                  <th class="p-3">Quantidade</th>
+                  <th class="p-3">Unidade</th>
+                  <th class="p-3 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of paisagismo(); track item.id) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.item }}</td>
+                    <td class="p-3 font-semibold text-slate-800">{{ item.qtd }}</td>
+                    <td class="p-3 text-slate-600">{{ item.unidade }}</td>
+                    <td class="p-3 text-right">
+                      <button type="button" (click)="removerPaisagismo(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ==================== ABA: RESUMO & AUDITORIA ==================== -->
+    @if (abaAtiva() === 'resumo') {
+      <div class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h4 class="text-base font-black text-slate-900">Resumo Consolidado & Auditoria Automática</h4>
+            <p class="text-xs text-slate-500 mt-1">Consolidação de todos os insumos com percentuais de perda Sienge e verificação de consistência executiva.</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              (click)="exportarCsv()"
+              class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200 active:scale-95"
+              title="Exportar dados consolidados em planilha CSV"
+            >
+              <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Exportar CSV</span>
+            </button>
+            <button
+              type="button"
+              (click)="exportarPDF()"
+              [disabled]="gerandoPdf()"
+              class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+              title="Emitir Memorial de Quantitativos completo em PDF com layout técnico e anotação profissional"
+            >
+              @if (gerandoPdf()) {
+                <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Emitindo PDF...</span>
+              } @else {
+                <svg class="w-4 h-4 text-rose-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span>Exportar Memorial em PDF</span>
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Painel de Regras de Auditoria -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          @for (regra of regrasAuditoria(); track regra.id) {
+            <div
+              [class]="regra.status === 'ok' ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' : 'bg-amber-50/70 border-amber-200 text-amber-950'"
+              class="p-4 rounded-2xl border text-xs flex items-start gap-3"
+            >
+              <span class="text-base">{{ regra.status === 'ok' ? '✅' : '⚠️' }}</span>
+              <div>
+                <div class="font-black">{{ regra.titulo }}</div>
+                <div class="mt-0.5 text-slate-600">{{ regra.mensagem }}</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Tabela do Resumo Consolidado -->
+        @if (resumoConsolidado().length > 0) {
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Disciplina</th>
+                  <th class="p-3">Serviço / Insumo</th>
+                  <th class="p-3">Unidade</th>
+                  <th class="p-3 text-right">Qtd. Calculada</th>
+                  <th class="p-3 text-right">Perda Sienge</th>
+                  <th class="p-3 text-right">Qtd. com Perda</th>
+                  <th class="p-3 text-right">Produtividade</th>
+                  <th class="p-3 text-right">Duração (h)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (item of resumoConsolidado(); track item.servico) {
+                  <tr class="hover:bg-slate-50/60">
+                    <td class="p-3 font-bold text-slate-800">{{ item.disciplina }}</td>
+                    <td class="p-3 text-slate-700">{{ item.servico }}</td>
+                    <td class="p-3 text-slate-500 font-mono">{{ item.unidade }}</td>
+                    <td class="p-3 text-right font-medium text-slate-600">{{ item.qtdCalculada.toFixed(2) }}</td>
+                    <td class="p-3 text-right text-amber-700 font-bold">{{ item.margemPerda }}%</td>
+                    <td class="p-3 text-right font-black text-slate-900">{{ item.qtdComPerda.toFixed(2) }}</td>
+                    <td class="p-3 text-right text-slate-500">{{ item.produtividade.toFixed(2) }} h/un</td>
+                    <td class="p-3 text-right font-bold text-indigo-700">{{ item.duracaoHoras.toFixed(1) }} h</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-12 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            Nenhum item lançado em nenhuma das disciplinas para consolidar.
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- MODAL / DRAWER CALCULADORA DE BITOLAS DE AÇO -->
+  @if (calculadoraBitolaAberta()) {
+    <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl max-w-lg w-full space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚖️</span>
+            <h4 class="text-sm font-black text-slate-900">Calculadora de Armaduras (Bitolas Sienge)</h4>
+          </div>
+          <button type="button" (click)="fecharCalculadoraBitola()" class="text-slate-400 hover:text-slate-700 text-sm font-bold">
+            ✕
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-500">
+          Informe os metros lineares de cada bitola para calcular automaticamente o peso total de aço (kg):
+        </p>
+
+        <div class="max-h-64 overflow-y-auto space-y-2 pr-1">
+          @for (b of tabelaBitolas; track b.bitola) {
+            <div class="flex items-center justify-between gap-3 p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+              <div class="w-32">
+                <span class="font-bold text-slate-800">⌀ {{ b.bitola }} mm</span>
+                <span class="text-[10px] text-slate-400 ml-1">({{ b.pesoLinear }} kg/m)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="0.0 m"
+                  [value]="bitolasState()[b.bitola] || ''"
+                  (input)="atualizarMetrosBitola(b.bitola, $event)"
+                  class="w-24 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-right"
+                />
+                <span class="text-slate-400 text-[11px]">m</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="bg-[#132A41] text-white p-3.5 rounded-2xl flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-300">Peso Total de Aço:</span>
+          <span class="text-lg font-black text-emerald-400">{{ totalKgCalculadoraBitola().toFixed(2) }} kg</span>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            (click)="limparCalculadoraBitola()"
+            class="text-xs text-slate-500 hover:text-rose-600 font-bold"
+          >
+            Limpar campos
+          </button>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="fecharCalculadoraBitola()"
+              class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              (click)="aplicarAcoCalculadora()"
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-xs cursor-pointer"
+            >
+              Aplicar {{ totalKgCalculadoraBitola().toFixed(1) }} kg
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SALVAR PROJETO / NOMEAR NOVO PROJETO (SUPABASE) -->
+  <!-- ========================================================================= -->
+  @if (modalSalvarAberto()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-slate-900">Salvar Levantamento de Quantitativos</h3>
+              <p class="text-[11px] text-slate-500">Grave todos os 12 sistemas e instalações na sua conta</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="modalSalvarAberto.set(false)"
+            class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="py-4 space-y-3">
+          <label class="block text-xs font-bold text-slate-700">Nome do Projeto ou Identificação da Obra</label>
+          <input
+            type="text"
+            [value]="modalSalvarNomeInput()"
+            (input)="modalSalvarNomeInput.set($any($event.target).value)"
+            (keyup.enter)="confirmarSalvarNovoProjeto()"
+            placeholder="Ex: Residência Alpha - Bloco A"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
+            autofocus
+          />
+          <p class="text-[11px] text-slate-400">
+            Você poderá acessar, editar e reabrir este projeto a qualquer momento na aba "Meus Projetos Salvos".
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+          <button
+            type="button"
+            (click)="modalSalvarAberto.set(false)"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="confirmarSalvarNovoProjeto()"
+            [disabled]="salvandoProjeto()"
+            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+          >
+            @if (salvandoProjeto()) {
+              <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Salvando...</span>
+            } @else {
+              <span>Salvar Projeto</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: LISTAGEM DE MEUS PROJETOS SALVOS (SUPABASE) -->
+  <!-- ========================================================================= -->
+  @if (modalProjetosAberto()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div class="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-slate-900">Meus Levantamentos Salvos</h3>
+              <p class="text-[11px] text-slate-500">Projetos de levantamento de quantitativos sincronizados na nuvem</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="modalProjetosAberto.set(false)"
+            class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-4 space-y-2.5 pr-1">
+          @if (carregandoProjetos()) {
+            <div class="py-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+              <svg class="animate-spin w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span class="text-xs font-semibold">Carregando seus projetos salvos...</span>
+            </div>
+          } @else if (listaProjetosSalvos().length === 0) {
+            <div class="py-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+              <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p class="text-xs font-bold text-slate-600">Nenhum projeto salvo encontrado</p>
+              <p class="text-[11px] text-slate-400 max-w-xs">
+                Clique no botão "Salvar Projeto" no cabeçalho para gravar seus quantitativos na nuvem.
+              </p>
+            </div>
+          } @else {
+            @for (proj of listaProjetosSalvos(); track proj.id) {
+              <div
+                class="p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-indigo-300 hover:shadow-xs bg-white"
+                [class.border-indigo-500]="projetoAtualId() === proj.id"
+                [class.bg-indigo-50_30]="projetoAtualId() === proj.id"
+                [class.border-slate-200]="projetoAtualId() !== proj.id"
+              >
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-slate-900">{{ proj.nome_projeto }}</span>
+                    @if (projetoAtualId() === proj.id) {
+                      <span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-[10px] font-black uppercase tracking-wider">
+                        Aberto
+                      </span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-3 text-[11px] text-slate-500">
+                    <span>Salvo em: {{ formatarDataProjeto(proj.atualizado_em || proj.criado_em) }}</span>
+                    @if (proj.dados_formulario?.parametros) {
+                      <span>• Fórmulas Sienge</span>
+                    }
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 self-end sm:self-center">
+                  <button
+                    type="button"
+                    (click)="abrirProjetoSalvo(proj)"
+                    class="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold transition-colors cursor-pointer border border-indigo-200 hover:border-transparent"
+                  >
+                    {{ projetoAtualId() === proj.id ? 'Recarregar' : 'Abrir Projeto' }}
+                  </button>
+                  <button
+                    type="button"
+                    (click)="confirmarExcluirProjeto(proj, $event)"
+                    class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    title="Excluir projeto salvo"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100 text-xs text-slate-500">
+          <span>{{ listaProjetosSalvos().length }} projeto(s) cadastrado(s)</span>
+          <button
+            type="button"
+            (click)="modalProjetosAberto.set(false)"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- TOAST NOTIFICATION FLUTUANTE (SUPABASE) -->
+  <!-- ========================================================================= -->
+  @if (toastMensagem()) {
+    <div class="fixed bottom-6 right-6 z-50 max-w-md animate-in slide-in-from-bottom-5 fade-in duration-200">
+      <div
+        class="px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-3"
+        [class.bg-emerald-900]="toastMensagem()?.tipo === 'sucesso'"
+        [class.text-emerald-50]="toastMensagem()?.tipo === 'sucesso'"
+        [class.border-emerald-700]="toastMensagem()?.tipo === 'sucesso'"
+        [class.bg-rose-900]="toastMensagem()?.tipo === 'erro'"
+        [class.text-rose-50]="toastMensagem()?.tipo === 'erro'"
+        [class.border-rose-700]="toastMensagem()?.tipo === 'erro'"
+        [class.bg-slate-900]="toastMensagem()?.tipo === 'info'"
+        [class.text-slate-50]="toastMensagem()?.tipo === 'info'"
+        [class.border-slate-700]="toastMensagem()?.tipo === 'info'"
+      >
+        @if (toastMensagem()?.tipo === 'sucesso') {
+          <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        } @else if (toastMensagem()?.tipo === 'erro') {
+          <svg class="w-5 h-5 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        } @else {
+          <svg class="w-5 h-5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+
+        <span class="text-xs font-semibold">{{ toastMensagem()?.texto }}</span>
+
+        <button
+          type="button"
+          (click)="toastMensagem.set(null)"
+          class="ml-auto text-white/60 hover:text-white p-1"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  }
+</div>

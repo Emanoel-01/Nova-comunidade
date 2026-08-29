@@ -70,7 +70,7 @@ import { SupabaseService } from '../../../services/supabase.service';
             [class]="subAbaAtiva() === 'sinaenco' ? 'bg-white text-[#132A41] font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'"
             class="px-4 py-2 rounded-lg text-xs transition-all cursor-pointer flex items-center gap-2"
           >
-            <span>📈 Índices SINAENCO</span>
+            <span>📈 Índices SINAENCO (Reajuste de Contrato)</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-100 text-emerald-900 font-bold">
               {{ indicesSinaenco().length }}
             </span>
@@ -387,6 +387,12 @@ import { SupabaseService } from '../../../services/supabase.service';
                 Tabela central alimentada para o cálculo do Reajuste de Contratos Públicos. Fonte oficial:
                 <a href="http://sinaenco.com.br/indices" target="_blank" rel="noopener noreferrer" class="text-emerald-700 underline font-semibold">sinaenco.com.br/indices</a>.
               </p>
+
+              <!-- Banner Explicativo de Contexto -->
+              <div class="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-start sm:items-center gap-2">
+                <span class="text-sm shrink-0">ℹ️</span>
+                <span>Esta tabela alimenta o agente <strong class="text-slate-800 font-bold">Reajuste de Contrato</strong>, não o Viabiliza IA. Está agrupada aqui por conveniência administrativa (mesma tela de gestão de índices/tabelas).</span>
+              </div>
             </div>
 
             <div class="flex items-center gap-2 shrink-0">

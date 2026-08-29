@@ -258,7 +258,15 @@ export const RESTRICOES_ADICIONAIS_ITEMS = [
  * Função geradora especializada de plano de canteiro com rigor normativo.
  * Aplica NR-18 atualizada (Portaria SEPRT 3.733/2020), NR-10, NR-12, NBR 12.284 e Res. CONAMA 307.
  */
-export function gerarPlanoCanteiroCompleto(form: FormPlanoCanteiro): PlanoCanteiroResultado {
+export function gerarPlanoCanteiroCompleto(
+  form: FormPlanoCanteiro,
+  dadosProfissional?: {
+    nome?: string;
+    titulo?: string;
+    registro?: string;
+    empresa?: string;
+  }
+): PlanoCanteiroResultado {
   const {
     nomeProjeto,
     tipoObra,
@@ -689,9 +697,8 @@ ${porteObra === 'grande' || porteObra === 'especial' || tipoObra === 'residencia
 
 Este memorial descritivo integra o Plano de Gestão de Obras e Segurança do Trabalho da edificação, devendo ser arquivado no canteiro e mantido à disposição da fiscalização do Ministério do Trabalho e Emprego (MTE), CREA/CAU e órgãos ambientais.
 
-**Emanoel S. Amorim**
-Arquiteto e Urbanista • CAU nº A133593-6
-Especialista em Engenharia Diagnóstica e Gestão de Obras
+**${dadosProfissional?.nome || 'Profissional Responsável Técnico'}**
+${dadosProfissional?.titulo || 'Responsável Técnico'}${dadosProfissional?.registro ? ` • ${dadosProfissional.registro}` : ''}${dadosProfissional?.empresa ? `\n${dadosProfissional.empresa}` : ''}
 `;
 
   return {

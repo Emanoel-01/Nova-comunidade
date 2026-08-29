@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" style="background: transparent;">
+  <defs>
+    <marker id="arrow-l" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#B45309"/>
+    </marker>
+    <marker id="arrow-l-rev" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#B45309"/>
+    </marker>
+  </defs>
+
+  <!-- Título -->
+  <text x="400" y="55" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#132A41" text-anchor="middle" letter-spacing="1">
+    LAJE MACIÇA
+  </text>
+
+  <!-- Placa Laje 3D -->
+  <g transform="translate(10, 20)">
+    <!-- Top Face -->
+    <polygon points="110,190 470,190 530,260 170,260" fill="#F4EFEA" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Right Face -->
+    <polygon points="470,190 530,260 530,295 470,225" fill="#E2DDD5" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Front Face -->
+    <polygon points="110,260 470,260 470,295 110,295" fill="#EFE9E2" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Altura H (espessura) -->
+    <line x1="75" y1="266" x2="75" y2="289" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-l-rev)" marker-end="url(#arrow-l)"/>
+    <text x="55" y="282" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="middle">H</text>
+
+    <!-- Comprimento C -->
+    <line x1="118" y1="335" x2="462" y2="335" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-l-rev)" marker-end="url(#arrow-l)"/>
+    <text x="290" y="365" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="middle">C (comprimento)</text>
+
+    <!-- Largura L -->
+    <line x1="480" y1="305" x2="528" y2="350" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-l-rev)" marker-end="url(#arrow-l)"/>
+    <text x="525" y="335" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="start">L</text>
+  </g>
+
+  <!-- Pd (Pé Direito) à Direita -->
+  <g transform="translate(600, 190)">
+    <!-- Barra Superior -->
+    <line x1="10" y1="20" x2="70" y2="20" stroke="#334155" stroke-width="3"/>
+    
+    <!-- Linha Central Guia -->
+    <line x1="40" y1="20" x2="40" y2="200" stroke="#334155" stroke-width="2.5"/>
+
+    <!-- Barra Inferior -->
+    <line x1="10" y1="200" x2="70" y2="200" stroke="#334155" stroke-width="3"/>
+
+    <!-- Cota Pd -->
+    <line x1="90" y1="30" x2="90" y2="190" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-l-rev)" marker-end="url(#arrow-l)"/>
+    <text x="110" y="115" font-family="system-ui, sans-serif" font-size="15" font-weight="800" fill="#B45309" text-anchor="start" transform="rotate(-90 110 115)">Pd (pé direito)</text>
+  </g>
+</svg>

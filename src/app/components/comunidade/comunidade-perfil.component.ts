@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SupabaseService } from '../../../services/supabase.service';
+import { SupabaseService, DadosDocumentaisTecnicos } from '../../../services/supabase.service';
 
 export interface PerfilVisual {
   nome: string;
@@ -676,7 +676,478 @@ export interface PerfilVisual {
 
       </div>
 
-      <!-- 4. Redes e Links Sociais -->
+      <!-- 4. Dados para Documentos Técnicos & Laudos (com trava pós-confirmação) -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="text-lg font-black text-[#132A41] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Dados para Documentos Técnicos & Laudos</span>
+              </h4>
+              @if (dadosDocumentais().dados_documentais_confirmados) {
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs">
+                  <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span>Dados Confirmados & Travados</span>
+                </span>
+              } @else {
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                  <span>Edição Liberada (Primeiro Preenchimento)</span>
+                </span>
+              }
+            </div>
+            <p class="text-xs text-slate-500">
+              Informações oficiais que alimentam cabeçalhos, rodapés e ART/RRT nos laudos emitidos pelo Predial 4.0.
+            </p>
+          </div>
+        </div>
+
+        <!-- Banner de Orientação de Bloqueio -->
+        @if (dadosDocumentais().dados_documentais_confirmados) {
+          <div class="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 border-l-4 border-l-[#132A41] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-xl bg-slate-200/80 text-[#132A41] flex items-center justify-center shrink-0 font-bold">
+                🔒
+              </div>
+              <div class="space-y-1">
+                <p class="text-xs sm:text-sm font-bold text-slate-800">
+                  Seus dados documentais estão confirmados e protegidos contra alterações acidentais.
+                </p>
+                <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
+                  Para garantir a validade jurídica dos laudos já emitidos, as alterações nestes campos requerem solicitação à administração.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              (click)="abrirModalSolicitarAlteracao()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#132A41] hover:bg-[#1b3a5b] text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer self-start sm:self-auto"
+            >
+              <svg class="w-4 h-4 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span>Solicitar Alteração</span>
+            </button>
+          </div>
+        } @else {
+          <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/80 border border-amber-200 border-l-4 border-l-[#B5642A] space-y-2">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-xl bg-amber-100 text-[#B5642A] flex items-center justify-center shrink-0 font-bold text-sm">
+                ⚠️
+              </div>
+              <div class="space-y-1">
+                <p class="text-xs sm:text-sm font-bold text-amber-950">
+                  Preencha estes dados com calma e atenção — incluindo a logo da empresa.
+                </p>
+                <p class="text-[11px] sm:text-xs text-amber-900/90 leading-relaxed">
+                  Após clicar em <strong>"Confirmar e Bloquear Dados"</strong>, TODOS os campos desta seção (nome para documentos, empresa, CNPJ, CREA/CAU, endereço, contatos e logomarca) ficam permanentemente bloqueados e só poderão ser alterados por um administrador.
+                </p>
+              </div>
+            </div>
+            <div class="pt-1 text-[11px] text-amber-800/80 flex items-center gap-1.5 font-medium">
+              <span>💡</span>
+              <span>Os dados ficam salvos na sua conta e preenchem automaticamente os laudos técnicos e orçamentos, em qualquer dispositivo que você usar.</span>
+            </div>
+          </div>
+        }
+
+        <!-- Formulário dos Campos Técnicos -->
+        <div class="space-y-5">
+          
+          <!-- Linha 1: Nome Completo & Título Profissional -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Nome Completo (para Documentos e Laudos) *</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().full_name"
+                (input)="atualizarCampoDocumental('full_name', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: Dr. Carlos Eduardo Mendes de Amorim"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+              <p class="text-[11px] text-slate-400">
+                Nome civil oficial que constará em laudos periciais e emissão de ART/RRT.
+              </p>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Título Profissional *</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().professional_title || ''"
+                (input)="atualizarCampoDocumental('professional_title', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: Engenheiro Civil e Perito Judicial"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+              <p class="text-[11px] text-slate-400">
+                Ex: Engenheiro Civil / Arquiteto e Urbanista / Perito em Patologia Predial.
+              </p>
+            </div>
+          </div>
+
+          <!-- Linha 2: Categoria Profissional & CREA/CAU -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Categoria Profissional *</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <select
+                [value]="formDadosDocumentais().categoria_profissional || 'Engenheiro(a) Civil (CREA)'"
+                (change)="atualizarCampoDocumental('categoria_profissional', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900 cursor-pointer"
+              >
+                <option value="Engenheiro(a) Civil (CREA)">Engenheiro(a) Civil (CREA)</option>
+                <option value="Arquiteto(a) e Urbanista (CAU)">Arquiteto(a) e Urbanista (CAU)</option>
+                <option value="Engenheiro(a) Eletricista (CREA)">Engenheiro(a) Eletricista (CREA)</option>
+                <option value="Engenheiro(a) Mecânico (CREA)">Engenheiro(a) Mecânico (CREA)</option>
+                <option value="Engenheiro(a) de Segurança do Trabalho (CREA)">Engenheiro(a) de Segurança do Trabalho (CREA)</option>
+                <option value="Técnico(a) em Edificações (CFT)">Técnico(a) em Edificações (CFT)</option>
+                <option value="Perito(a) Judicial / Avaliador(a)">Perito(a) Judicial / Avaliador(a)</option>
+                <option value="Outro">Outro</option>
+              </select>
+              <p class="text-[11px] text-slate-400">
+                Define a base legal citada na Seção 2.0 do laudo técnico emitido.
+              </p>
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Registro Profissional (CREA / CAU / CFT) *</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().crea_cau || ''"
+                (input)="atualizarCampoDocumental('crea_cau', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: 5069812345/SP ou 12345-D/MG"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+              <p class="text-[11px] text-slate-400">
+                Número do seu registro profissional no conselho de classe.
+              </p>
+            </div>
+          </div>
+
+          <!-- Linha 3: Razão Social da Empresa, Cargo & CNPJ -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Nome da Empresa / Razão Social</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().company_name || ''"
+                (input)="atualizarCampoDocumental('company_name', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: Amorim Engenharia e Diagnósticos Ltda."
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Cargo na Empresa</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().company_position || ''"
+                (input)="atualizarCampoDocumental('company_position', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: Diretor Técnico / Responsável Técnico"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">CNPJ da Empresa</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().company_cnpj || ''"
+                (input)="atualizarCampoDocumental('company_cnpj', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: 00.000.000/0001-00"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+          </div>
+
+          <!-- Linha 4: Endereço Comercial Completo -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-700">Endereço Comercial da Empresa</label>
+              @if (dadosDocumentais().dados_documentais_confirmados) {
+                <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+              }
+            </div>
+            <input
+              type="text"
+              [value]="formDadosDocumentais().company_address || ''"
+              (input)="atualizarCampoDocumental('company_address', $event)"
+              [disabled]="dadosDocumentais().dados_documentais_confirmados"
+              placeholder="Ex: Av. Paulista, 1000 - Conjunto 42 - Bela Vista, São Paulo/SP - CEP 01310-100"
+              class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+            />
+          </div>
+
+          <!-- Linha 5: Telefones, E-mail Comercial & Site -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Telefone / WhatsApp Comercial</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().company_phone || ''"
+                (input)="atualizarCampoDocumental('company_phone', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: (11) 3456-7890"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">E-mail Institucional / Comercial</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="email"
+                [value]="formDadosDocumentais().company_email || ''"
+                (input)="atualizarCampoDocumental('company_email', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: laudos@amorimengenharia.com"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Site da Empresa</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().company_site || ''"
+                (input)="atualizarCampoDocumental('company_site', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: https://amorimengenharia.com"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+          </div>
+
+          <!-- Linha 6: Rede Social nos Documentos (Rótulo + URL) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Rede Social Institucional (Rótulo)</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().social_network_label || ''"
+                (input)="atualizarCampoDocumental('social_network_label', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: Instagram / LinkedIn / YouTube"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700">Link da Rede Social no Documento</label>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <input
+                type="text"
+                [value]="formDadosDocumentais().social_network_url || ''"
+                (input)="atualizarCampoDocumental('social_network_url', $event)"
+                [disabled]="dadosDocumentais().dados_documentais_confirmados"
+                placeholder="Ex: https://instagram.com/amorimengenharia"
+                class="w-full text-xs sm:text-sm rounded-xl px-3.5 py-2.5 border transition-all outline-hidden font-medium disabled:bg-slate-100 disabled:text-slate-600 disabled:border-slate-200 disabled:cursor-not-allowed bg-slate-50 border-slate-200 focus:border-[#132A41] focus:bg-white text-slate-900"
+              />
+            </div>
+          </div>
+
+          <!-- Linha 7: Logomarca da Empresa para Documentos Técnicos -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-[#132A41] uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🏢</span>
+                  <span>Logomarca da Empresa para Laudos e PDFs</span>
+                </span>
+                @if (dadosDocumentais().dados_documentais_confirmados) {
+                  <span class="text-[10px] text-slate-400 font-semibold">🔒 Bloqueado</span>
+                }
+              </div>
+              <span class="text-[11px] font-semibold text-slate-500">Máx. 5MB • Formatos JPG, PNG ou WebP</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+              <!-- Preview da Logo -->
+              <div class="w-32 h-20 rounded-xl border border-slate-200 bg-white shadow-2xs shrink-0 flex items-center justify-center p-2 overflow-hidden">
+                @if (formDadosDocumentais().company_logo_url) {
+                  <img
+                    [src]="formDadosDocumentais().company_logo_url!"
+                    alt="Logo da Empresa"
+                    class="max-w-full max-h-full object-contain"
+                    referrerpolicy="no-referrer"
+                  />
+                } @else {
+                  <div class="text-center text-[10px] font-bold text-slate-400 leading-tight">
+                    <span>Sem Logo</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Controles de Upload de Logo -->
+              <div class="space-y-2 flex-1 min-w-0">
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Aparece automaticamente no cabeçalho e rodapé dos laudos técnicos (LTIP), orçamentos e relatórios periciais gerados.
+                </p>
+
+                @if (!dadosDocumentais().dados_documentais_confirmados) {
+                  <div class="flex items-center gap-2 flex-wrap pt-1">
+                    <input
+                      #logoInput
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      (change)="onSelecionarLogoEmpresa($event)"
+                      class="hidden"
+                    />
+
+                    <button
+                      type="button"
+                      (click)="logoInput.click()"
+                      [disabled]="uploadingLogo()"
+                      class="px-3.5 py-1.5 rounded-xl bg-[#132A41] hover:bg-[#1b3a5b] text-white font-bold text-xs shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      @if (uploadingLogo()) {
+                        <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        <span>Enviando logo...</span>
+                      } @else {
+                        <svg class="w-3.5 h-3.5 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>{{ formDadosDocumentais().company_logo_url ? 'Trocar Logomarca' : 'Carregar Logomarca' }}</span>
+                      }
+                    </button>
+
+                    @if (formDadosDocumentais().company_logo_url) {
+                      <button
+                        type="button"
+                        (click)="removerLogoEmpresa()"
+                        [disabled]="uploadingLogo()"
+                        class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        Remover Logo
+                      </button>
+                    }
+                  </div>
+
+                  @if (erroUploadLogo()) {
+                    <p class="text-xs font-semibold text-rose-600 mt-1">{{ erroUploadLogo() }}</p>
+                  }
+                } @else {
+                  <p class="text-xs font-medium text-slate-500 italic">
+                    {{ formDadosDocumentais().company_logo_url ? 'Logomarca confirmada e protegida contra alterações.' : 'Nenhuma logomarca cadastrada no momento da confirmação.' }}
+                  </p>
+                }
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Ações do Rodapé da Seção Documental -->
+        @if (!dadosDocumentais().dados_documentais_confirmados) {
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Você pode salvar um rascunho temporário ou confirmar definitivamente para travar os dados.
+            </p>
+
+            <div class="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+              <button
+                type="button"
+                id="btn-salvar-rascunho-documental"
+                (click)="salvarRascunhoDocumentais()"
+                [disabled]="salvandoDocumentais() || confirmandoDocumentais() || uploadingLogo()"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
+              >
+                @if (salvandoDocumentais()) {
+                  <span>Salvando rascunho...</span>
+                } @else {
+                  <span>Salvar Rascunho</span>
+                }
+              </button>
+
+              <button
+                type="button"
+                id="btn-abrir-confirmar-bloquear-documental"
+                (click)="abrirModalConfirmarTrava()"
+                [disabled]="salvandoDocumentais() || confirmandoDocumentais() || uploadingLogo()"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#B5642A] hover:bg-[#9d5320] text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span>Confirmar e Bloquear Dados Técnicos</span>
+              </button>
+            </div>
+          </div>
+        }
+
+      </div>
+
+      <!-- 5. Redes e Links Sociais -->
       <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
         
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -829,6 +1300,161 @@ export interface PerfilVisual {
 
       </div>
 
+      <!-- MODAL DE CONFIRMAÇÃO DE TRAVA DOS DADOS TÉCNICOS -->
+      @if (modalConfirmarTravaAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg p-6 sm:p-7 space-y-5">
+            
+            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div class="w-10 h-10 rounded-2xl bg-amber-100 text-[#B5642A] flex items-center justify-center font-bold text-lg shrink-0">
+                🔒
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-black text-slate-900">Confirmar e Bloquear Dados</h3>
+                <p class="text-xs text-slate-500 font-medium">Ação permanente de proteção de dados documentais</p>
+              </div>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm text-slate-700 leading-relaxed bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80">
+              <p class="font-bold text-amber-950">
+                Você tem certeza de que deseja confirmar estes dados técnicos?
+              </p>
+              <p>
+                Após a confirmação:
+              </p>
+              <ul class="list-disc pl-5 space-y-1 text-slate-700 text-xs">
+                <li>Todos os campos da seção técnica serão <strong>bloqueados para edição direta</strong>.</li>
+                <li>Os laudos técnicos, ART/RRT e orçamentos passarão a usar estas informações oficiais.</li>
+                <li>Qualquer alteração futura precisará ser solicitada ao administrador do sistema.</li>
+              </ul>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                (click)="fecharModalConfirmarTrava()"
+                [disabled]="confirmandoDocumentais()"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Voltar e Revisar
+              </button>
+              <button
+                type="button"
+                id="btn-confirmar-trava-definitiva"
+                (click)="executarConfirmarEBloquear()"
+                [disabled]="confirmandoDocumentais()"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1b3a5b] text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                @if (confirmandoDocumentais()) {
+                  <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <span>Confirmando...</span>
+                } @else {
+                  <span>Sim, Confirmar e Bloquear</span>
+                }
+              </button>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- MODAL DE SOLICITAÇÃO DE ALTERAÇÃO DE DADOS TÉCNICOS -->
+      @if (modalSolicitarAlteracaoAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg p-6 sm:p-7 space-y-5">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-[#132A41] flex items-center justify-center font-bold text-lg shrink-0">
+                  📩
+                </div>
+                <div>
+                  <h3 class="text-base sm:text-lg font-black text-slate-900">Solicitar Alteração de Dados</h3>
+                  <p class="text-xs text-slate-500 font-medium">Envio direto para a administração</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="fecharModalSolicitarAlteracao()"
+                class="text-slate-400 hover:text-slate-600 cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            @if (sucessoSolicitacao()) {
+              <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm space-y-2">
+                <div class="flex items-center gap-2 font-bold text-emerald-800">
+                  <span class="text-lg">✅</span>
+                  <span>Solicitação enviada com sucesso!</span>
+                </div>
+                <p class="text-xs text-emerald-700">
+                  O administrador foi notificado por e-mail e analisará os dados solicitados. Você receberá um retorno em breve.
+                </p>
+              </div>
+              <div class="flex justify-end pt-2">
+                <button
+                  type="button"
+                  (click)="fecharModalSolicitarAlteracao()"
+                  class="px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1b3a5b] text-white font-bold text-xs sm:text-sm cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
+            } @else {
+              <div class="space-y-4">
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Informe abaixo quais dados você precisa atualizar (ex: alteração de razão social, novo número de registro CREA/CAU, troca de endereço ou nova logomarca) e o motivo da mudança:
+                </p>
+
+                @if (erroSolicitacao()) {
+                  <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                    {{ erroSolicitacao() }}
+                  </div>
+                }
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-slate-700">Detalhes da Solicitação *</label>
+                  <textarea
+                    [value]="motivoSolicitacao()"
+                    (input)="onMotivoSolicitacaoInput($event)"
+                    rows="4"
+                    placeholder="Descreva aqui com clareza os campos que deseja alterar e os novos valores..."
+                    class="w-full bg-slate-50 text-xs sm:text-sm text-slate-900 rounded-xl p-3.5 border border-slate-200 focus:border-[#132A41] focus:bg-white outline-hidden resize-none font-medium"
+                  ></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    (click)="fecharModalSolicitarAlteracao()"
+                    [disabled]="enviandoSolicitacao()"
+                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-enviar-solicitacao-documental"
+                    (click)="enviarSolicitacaoAlteracao()"
+                    [disabled]="enviandoSolicitacao() || !motivoSolicitacao().trim()"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1b3a5b] text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    @if (enviandoSolicitacao()) {
+                      <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      <span>Enviando...</span>
+                    } @else {
+                      <span>Enviar Solicitação ao Suporte</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+
+          </div>
+        </div>
+      }
+
     </div>
   `
 })
@@ -853,6 +1479,38 @@ export class ComunidadePerfilComponent implements OnInit {
     avatarUrl: null,
     bannerUrl: null
   });
+
+  // Estado dos Dados Técnicos Documentais (com trava pós-confirmação)
+  readonly dadosDocumentais = signal<DadosDocumentaisTecnicos>({
+    full_name: '',
+    professional_title: '',
+    categoria_profissional: 'Engenheiro(a) Civil (CREA)',
+    crea_cau: '',
+    company_name: '',
+    company_position: '',
+    company_cnpj: '',
+    company_address: '',
+    company_phone: '',
+    company_email: '',
+    company_site: '',
+    social_network_label: 'Instagram',
+    social_network_url: '',
+    company_logo_url: null,
+    dados_documentais_confirmados: false
+  });
+
+  readonly formDadosDocumentais = signal<DadosDocumentaisTecnicos>({ ...this.dadosDocumentais() });
+  readonly salvandoDocumentais = signal<boolean>(false);
+  readonly confirmandoDocumentais = signal<boolean>(false);
+  readonly uploadingLogo = signal<boolean>(false);
+  readonly erroUploadLogo = signal<string | null>(null);
+
+  readonly modalConfirmarTravaAberto = signal<boolean>(false);
+  readonly modalSolicitarAlteracaoAberto = signal<boolean>(false);
+  readonly motivoSolicitacao = signal<string>('');
+  readonly enviandoSolicitacao = signal<boolean>(false);
+  readonly sucessoSolicitacao = signal<boolean>(false);
+  readonly erroSolicitacao = signal<string | null>(null);
 
   readonly editando = signal<boolean>(false);
   readonly salvando = signal<boolean>(false);
@@ -899,6 +1557,26 @@ export class ComunidadePerfilComponent implements OnInit {
       };
       this.perfil.set(p);
       this.formPerfil.set({ ...p, skills: [...p.skills] });
+
+      const doc: DadosDocumentaisTecnicos = {
+        full_name: dados.full_name || '',
+        professional_title: dados.professional_title || '',
+        categoria_profissional: dados.categoria_profissional || 'Engenheiro(a) Civil (CREA)',
+        crea_cau: dados.crea_cau || '',
+        company_name: dados.company_name || '',
+        company_position: dados.company_position || '',
+        company_cnpj: dados.company_cnpj || '',
+        company_address: dados.company_address || '',
+        company_phone: dados.company_phone || '',
+        company_email: dados.company_email || '',
+        company_site: dados.company_site || '',
+        social_network_label: dados.social_network_label || 'Instagram',
+        social_network_url: dados.social_network_url || '',
+        company_logo_url: dados.company_logo_url || null,
+        dados_documentais_confirmados: Boolean(dados.dados_documentais_confirmados)
+      };
+      this.dadosDocumentais.set(doc);
+      this.formDadosDocumentais.set({ ...doc });
     }
 
     try {
@@ -911,6 +1589,199 @@ export class ComunidadePerfilComponent implements OnInit {
     } catch (e) {
       console.warn('Erro ao carregar contadores de conexões:', e);
     }
+  }
+
+  // --- MÉTODOS DE DADOS DOCUMENTAIS TÉCNICOS ---
+
+  atualizarCampoDocumental(campo: keyof DadosDocumentaisTecnicos, event: Event): void {
+    if (this.dadosDocumentais().dados_documentais_confirmados) return;
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
+    this.formDadosDocumentais.update(d => ({
+      ...d,
+      [campo]: target.value
+    }));
+  }
+
+  async onSelecionarLogoEmpresa(event: Event): Promise<void> {
+    if (this.dadosDocumentais().dados_documentais_confirmados) return;
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.erroUploadLogo.set(null);
+
+    const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!tiposPermitidos.includes(file.type.toLowerCase())) {
+      this.erroUploadLogo.set('Formato inválido. Use JPG, PNG ou WebP.');
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.erroUploadLogo.set('A logomarca deve ter no máximo 5 MB.');
+      input.value = '';
+      return;
+    }
+
+    this.uploadingLogo.set(true);
+    const { error, url } = await this.supabaseService.uploadImagemPerfil('logo', file);
+    this.uploadingLogo.set(false);
+    input.value = '';
+
+    if (error || !url) {
+      this.erroUploadLogo.set('Erro ao enviar logomarca: ' + (error?.message || 'Tente novamente.'));
+      return;
+    }
+
+    this.formDadosDocumentais.update(d => ({
+      ...d,
+      company_logo_url: url
+    }));
+  }
+
+  removerLogoEmpresa(): void {
+    if (this.dadosDocumentais().dados_documentais_confirmados) return;
+    this.formDadosDocumentais.update(d => ({
+      ...d,
+      company_logo_url: null
+    }));
+    this.erroUploadLogo.set(null);
+  }
+
+  async salvarRascunhoDocumentais(): Promise<void> {
+    if (this.dadosDocumentais().dados_documentais_confirmados) return;
+    this.salvandoDocumentais.set(true);
+    this.mensagemFeedback.set(null);
+
+    const f = this.formDadosDocumentais();
+    const { error } = await this.supabaseService.salvarDadosDocumentaisUsuario({
+      full_name: f.full_name.trim() || undefined,
+      professional_title: f.professional_title?.trim() || undefined,
+      categoria_profissional: f.categoria_profissional?.trim() || undefined,
+      crea_cau: f.crea_cau?.trim() || undefined,
+      company_name: f.company_name?.trim() || undefined,
+      company_position: f.company_position?.trim() || undefined,
+      company_cnpj: f.company_cnpj?.trim() || undefined,
+      company_address: f.company_address?.trim() || undefined,
+      company_phone: f.company_phone?.trim() || undefined,
+      company_email: f.company_email?.trim() || undefined,
+      company_site: f.company_site?.trim() || undefined,
+      social_network_label: f.social_network_label?.trim() || undefined,
+      social_network_url: f.social_network_url?.trim() || undefined,
+      company_logo_url: f.company_logo_url !== undefined ? f.company_logo_url : null,
+      dados_documentais_confirmados: false
+    });
+
+    this.salvandoDocumentais.set(false);
+
+    if (error) {
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Erro ao salvar rascunho: ' + (error.message || 'Tente novamente.'));
+      return;
+    }
+
+    this.dadosDocumentais.set({ ...f, dados_documentais_confirmados: false });
+    // Se o nome foi atualizado, sincroniza no perfil social
+    if (f.full_name.trim()) {
+      this.perfil.update(p => ({ ...p, nome: f.full_name.trim() }));
+      this.formPerfil.update(p => ({ ...p, nome: f.full_name.trim() }));
+    }
+    this.tipoFeedback.set('sucesso');
+    this.mensagemFeedback.set('Rascunho dos dados técnicos salvo com sucesso!');
+  }
+
+  abrirModalConfirmarTrava(): void {
+    if (this.dadosDocumentais().dados_documentais_confirmados) return;
+    this.modalConfirmarTravaAberto.set(true);
+  }
+
+  fecharModalConfirmarTrava(): void {
+    this.modalConfirmarTravaAberto.set(false);
+  }
+
+  async executarConfirmarEBloquear(): Promise<void> {
+    if (this.dadosDocumentais().dados_documentais_confirmados) return;
+    this.confirmandoDocumentais.set(true);
+
+    const f = this.formDadosDocumentais();
+    const { error } = await this.supabaseService.salvarDadosDocumentaisUsuario({
+      full_name: f.full_name.trim() || undefined,
+      professional_title: f.professional_title?.trim() || undefined,
+      categoria_profissional: f.categoria_profissional?.trim() || undefined,
+      crea_cau: f.crea_cau?.trim() || undefined,
+      company_name: f.company_name?.trim() || undefined,
+      company_position: f.company_position?.trim() || undefined,
+      company_cnpj: f.company_cnpj?.trim() || undefined,
+      company_address: f.company_address?.trim() || undefined,
+      company_phone: f.company_phone?.trim() || undefined,
+      company_email: f.company_email?.trim() || undefined,
+      company_site: f.company_site?.trim() || undefined,
+      social_network_label: f.social_network_label?.trim() || undefined,
+      social_network_url: f.social_network_url?.trim() || undefined,
+      company_logo_url: f.company_logo_url !== undefined ? f.company_logo_url : null,
+      dados_documentais_confirmados: true
+    });
+
+    this.confirmandoDocumentais.set(false);
+    this.modalConfirmarTravaAberto.set(false);
+
+    if (error) {
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Erro ao confirmar dados: ' + (error.message || 'Tente novamente.'));
+      return;
+    }
+
+    const docAtualizado: DadosDocumentaisTecnicos = { ...f, dados_documentais_confirmados: true };
+    this.dadosDocumentais.set(docAtualizado);
+    this.formDadosDocumentais.set(docAtualizado);
+
+    if (f.full_name.trim()) {
+      this.perfil.update(p => ({ ...p, nome: f.full_name.trim() }));
+      this.formPerfil.update(p => ({ ...p, nome: f.full_name.trim() }));
+    }
+
+    this.tipoFeedback.set('sucesso');
+    this.mensagemFeedback.set('Dados para documentos técnicos confirmados e bloqueados com sucesso!');
+  }
+
+  abrirModalSolicitarAlteracao(): void {
+    this.motivoSolicitacao.set('');
+    this.sucessoSolicitacao.set(false);
+    this.erroSolicitacao.set(null);
+    this.modalSolicitarAlteracaoAberto.set(true);
+  }
+
+  fecharModalSolicitarAlteracao(): void {
+    this.modalSolicitarAlteracaoAberto.set(false);
+    this.motivoSolicitacao.set('');
+    this.sucessoSolicitacao.set(false);
+    this.erroSolicitacao.set(null);
+  }
+
+  onMotivoSolicitacaoInput(event: Event): void {
+    const target = event.target as HTMLTextAreaElement;
+    this.motivoSolicitacao.set(target.value);
+  }
+
+  async enviarSolicitacaoAlteracao(): Promise<void> {
+    const motivo = this.motivoSolicitacao().trim();
+    if (!motivo) {
+      this.erroSolicitacao.set('Por favor, descreva quais dados você deseja alterar e o motivo.');
+      return;
+    }
+
+    this.enviandoSolicitacao.set(true);
+    this.erroSolicitacao.set(null);
+
+    const { error } = await this.supabaseService.solicitarAlteracaoDadosDocumentais(motivo);
+    this.enviandoSolicitacao.set(false);
+
+    if (error) {
+      this.erroSolicitacao.set('Erro ao enviar solicitação: ' + (error.message || 'Tente novamente.'));
+      return;
+    }
+
+    this.sucessoSolicitacao.set(true);
   }
 
   async carregarMeusPosts(): Promise<void> {

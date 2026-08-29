@@ -1,8 +1,7 @@
 import { Component, computed, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { SupabaseService } from '../../../../services/supabase.service';
+import { MotorPdfService } from '../../../services/motor-pdf.service';
 
 export type MesChave = 'jan' | 'fev' | 'mar' | 'abr' | 'mai' | 'jun' | 'jul' | 'ago' | 'set' | 'out' | 'nov' | 'dez';
 
@@ -86,19 +85,66 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
             </p>
           </div>
 
-          <!-- Ação Rápida: Carregar Exemplo Real de Referência -->
-          <div class="shrink-0 self-start md:self-auto flex flex-col items-start md:items-end gap-2">
+          <!-- Ações do Cabeçalho -->
+          <div class="shrink-0 self-start md:self-auto flex flex-wrap items-center md:justify-end gap-2.5">
+            <button
+              type="button"
+              (click)="abrirModalMeusProjetos()"
+              class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-2 cursor-pointer shadow-xs"
+              title="Ver meus contratos/reajustes salvos"
+            >
+              <svg class="w-4 h-4 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              <span>Meus Projetos Salvos</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="clicarSalvarProjeto()"
+              [disabled]="salvandoProjeto()"
+              class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-950/40 disabled:opacity-50"
+              [title]="projetoAtualId() ? 'Atualizar contrato salvo' : 'Salvar dados do contrato'"
+            >
+              @if (salvandoProjeto()) {
+                <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Salvando...</span>
+              } @else {
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                <span>{{ projetoAtualId() ? 'Salvar Alterações' : 'Salvar Projeto' }}</span>
+              }
+            </button>
+
+            @if (projetoAtualId()) {
+              <button
+                type="button"
+                (click)="clicarSalvarComoNovo()"
+                class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
+                title="Salvar como um novo projeto"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Como Novo</span>
+              </button>
+            }
+
             <button
               type="button"
               (click)="carregarExemploReal()"
-              class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-2 cursor-pointer shadow-xs"
+              class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-medium border border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Carregar dados de exemplo Edital 001/2018"
             >
-              <svg class="w-4 h-4 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3.5 h-3.5 text-[#E59866]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>Preencher Exemplo de Referência</span>
+              <span>Exemplo</span>
             </button>
-            <span class="text-[11px] text-slate-400">Edital 001/2018 • Medição 22</span>
           </div>
         </div>
       </div>
@@ -836,11 +882,241 @@ export const LISTA_ANOS: number[] = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2
         </div>
       }
 
+      <!-- MODAL: SALVAR PROJETO -->
+      @if (modalSalvarAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-orange-50 text-[#B5642A] flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-slate-900">Salvar Contrato / Reajuste</h4>
+                  <p class="text-xs text-slate-500">Dê um nome para identificar este estudo de reajuste</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="modalSalvarAberto.set(false)"
+                class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-700">Identificação do Projeto</label>
+              <input
+                type="text"
+                [value]="modalSalvarNomeInput()"
+                (input)="modalSalvarNomeInput.set($any($event.target).value)"
+                (keydown.enter)="confirmarSalvarNovoProjeto()"
+                placeholder="Ex: Contrato 042/2018 — Medição 22 (Autarquia Federal)"
+                class="w-full bg-slate-50 text-xs sm:text-sm font-semibold text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-[#B5642A] focus:bg-white outline-hidden transition-all"
+                autofocus
+              />
+              <p class="text-[11px] text-slate-400">Texto livre para localização em sua lista de projetos.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="modalSalvarAberto.set(false)"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="confirmarSalvarNovoProjeto()"
+                [disabled]="salvandoProjeto() || !modalSalvarNomeInput().trim()"
+                class="px-5 py-2.5 rounded-xl bg-[#B5642A] hover:bg-[#9c5220] text-white text-xs font-extrabold transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                @if (salvandoProjeto()) {
+                  <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Salvando...</span>
+                } @else {
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Salvar Projeto</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL: MEUS PROJETOS SALVOS -->
+      @if (modalProjetosAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-xl w-full border border-slate-200 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+            <!-- Header do Modal -->
+            <div class="flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-orange-50 text-[#B5642A] flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-slate-900">Meus Projetos Salvos (Reajuste)</h4>
+                  <p class="text-xs text-slate-500">Selecione um cálculo/contrato para carregar e continuar editando</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="modalProjetosAberto.set(false)"
+                class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Lista de Projetos com Scroll -->
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-[160px]">
+              @if (carregandoProjetos()) {
+                <div class="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <svg class="animate-spin w-6 h-6 text-[#B5642A]" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span class="text-xs font-semibold">Carregando seus contratos salvos...</span>
+                </div>
+              } @else if (listaProjetosSalvos().length === 0) {
+                <div class="py-12 flex flex-col items-center justify-center gap-2 text-slate-400 text-center">
+                  <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p class="text-xs font-bold text-slate-600">Nenhum contrato salvo ainda</p>
+                  <p class="text-[11px] text-slate-400 max-w-xs">Preencha os dados da medição e clique em "Salvar Projeto" para armazenar seus cálculos contratuais.</p>
+                </div>
+              } @else {
+                @for (proj of listaProjetosSalvos(); track proj.id) {
+                  <div
+                    class="p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group"
+                    [class]="projetoAtualId() === proj.id
+                      ? 'border-[#B5642A] bg-orange-50/40 ring-1 ring-[#B5642A]/20'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 bg-white'"
+                  >
+                    <div class="space-y-1 min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <h5 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          {{ proj.nome_projeto }}
+                        </h5>
+                        @if (projetoAtualId() === proj.id) {
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#B5642A] text-white shrink-0">
+                            Aberto
+                          </span>
+                        }
+                      </div>
+                      <p class="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Atualizado em: {{ formatarDataProjeto(proj.atualizado_em) }}</span>
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        (click)="abrirProjetoSalvo(proj)"
+                        class="px-3 py-1.5 rounded-xl bg-[#B5642A] hover:bg-[#9c5220] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>Abrir</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="confirmarExcluirProjeto(proj, $event)"
+                        class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Excluir contrato salvo"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Rodapé do Modal -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                (click)="modalProjetosAberto.set(false)"
+                class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TOAST DE FEEDBACK -->
+      @if (toastMensagem()) {
+        <div class="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div
+            class="px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-3 text-xs font-semibold"
+            [class]="toastMensagem()?.tipo === 'sucesso'
+              ? 'bg-emerald-900/95 text-emerald-100 border-emerald-700/60 shadow-emerald-950/30'
+              : toastMensagem()?.tipo === 'erro'
+                ? 'bg-rose-900/95 text-rose-100 border-rose-700/60 shadow-rose-950/30'
+                : 'bg-slate-900/95 text-slate-100 border-slate-700/60 shadow-slate-950/30'"
+          >
+            @if (toastMensagem()?.tipo === 'sucesso') {
+              <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            } @else if (toastMensagem()?.tipo === 'erro') {
+              <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            } @else {
+              <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+            <span>{{ toastMensagem()?.texto }}</span>
+          </div>
+        </div>
+      }
+
     </div>
   `
 })
 export class ReajusteContratoComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly motorPdfService = inject(MotorPdfService);
+
+  // Controle de Projetos Salvos
+  readonly projetoAtualId = signal<string | null>(null);
+  readonly projetoAtualNome = signal<string>('');
+  readonly salvandoProjeto = signal<boolean>(false);
+  readonly modalSalvarAberto = signal<boolean>(false);
+  readonly modalSalvarNomeInput = signal<string>('');
+  readonly modalProjetosAberto = signal<boolean>(false);
+  readonly carregandoProjetos = signal<boolean>(false);
+  readonly listaProjetosSalvos = signal<any[]>([]);
+  readonly toastMensagem = signal<{ texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null>(null);
 
   // Controle de Fluxo
   readonly etapa = signal<'formulario' | 'selecao' | 'revisao'>('formulario');
@@ -1242,378 +1518,309 @@ Impacto orçamentário: acréscimo de R$ ${vReaj} sobre a rubrica orçamentária
   }
 
   // =========================================================================
-  // GERAÇÃO DE PDF COM TEXTO EDITADO (Design System Amorim: Navy/Copper)
+  // GERAÇÃO DE PDF COM TEXTO EDITADO (Design System Amorim White-Label)
   // =========================================================================
-  baixarTextoPDF(): void {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+  async baixarTextoPDF(): Promise<void> {
+    try {
+      const tituloHeader = this.tituloDocumento() || 'Documento Técnico de Reajuste';
+      const tipoStr = this.tipoDocumentoSelecionado();
+      const numContrato = this.numeroContrato() || '-';
+      const numMedicao = this.numeroMedicao() || '-';
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const contentWidth = pageWidth - margin * 2;
-    let currentY = 20;
+      const textoCompleto = this.corpoDocumento();
+      const paragrafos = textoCompleto.split('\n');
 
-    const navyPrimary = [19, 42, 65]; // #132A41
-    const copperAccent = [181, 100, 42]; // #B5642A
-    const slateDark = [51, 65, 85];
+      let htmlParagrafos = '';
+      let inList = false;
 
-    // 1. Cabeçalho Institucional Superior
-    doc.setFillColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-    doc.rect(margin, currentY, contentWidth, 14, 'F');
+      for (const p of paragrafos) {
+        const pTrim = p.trim();
+        if (!pTrim) {
+          if (inList) {
+            htmlParagrafos += '</ul>';
+            inList = false;
+          }
+          continue;
+        }
 
-    // Faixa fina de destaque em cobre
-    doc.setFillColor(copperAccent[0], copperAccent[1], copperAccent[2]);
-    doc.rect(margin, currentY + 14, contentWidth, 1.5, 'F');
+        const isBullet = pTrim.startsWith('•') || pTrim.startsWith('-') || pTrim.startsWith('*');
+        const isHeader = pTrim.toUpperCase() === pTrim && pTrim.length < 60 && !isBullet;
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(255, 255, 255);
-    const tituloHeader = (this.tituloDocumento() || 'REAJUSTE DE CONTRATOS PÚBLICOS').toUpperCase();
-    doc.text(tituloHeader, pageWidth / 2, currentY + 9, { align: 'center' });
+        if (isBullet) {
+          if (!inList) {
+            htmlParagrafos += '<ul style="margin: 6px 0 10px 18px; padding: 0; line-height: 1.5; font-size: 8.5pt;">';
+            inList = true;
+          }
+          const itemText = pTrim.replace(/^[•\-\*]\s*/, '');
+          htmlParagrafos += `<li style="margin-bottom: 4px;">${itemText}</li>`;
+        } else {
+          if (inList) {
+            htmlParagrafos += '</ul>';
+            inList = false;
+          }
 
-    currentY += 24;
-
-    // 2. Corpo do Texto (Processado parágrafo por parágrafo)
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
-
-    const textoCompleto = this.corpoDocumento();
-    const paragrafos = textoCompleto.split('\n');
-
-    for (const p of paragrafos) {
-      if (p.trim() === '') {
-        currentY += 4;
-        continue;
+          if (isHeader) {
+            htmlParagrafos += `<div class="doc-section-title" style="margin-top: 14px; margin-bottom: 6px;">${pTrim}</div>`;
+          } else {
+            htmlParagrafos += `<p style="margin-bottom: 8px; line-height: 1.6; font-size: 8.5pt; text-align: justify;">${pTrim}</p>`;
+          }
+        }
       }
 
-      // Detectar cabeçalhos em maiúsculo ou destaque
-      const isHeader = p.toUpperCase() === p && p.length < 50 && !p.startsWith('•') && !p.startsWith('-');
-
-      if (isHeader) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10.5);
-        doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      } else if (p.startsWith('•') || p.startsWith('-')) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
-        doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
-      } else {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9.5);
-        doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
+      if (inList) {
+        htmlParagrafos += '</ul>';
       }
 
-      const linhas = doc.splitTextToSize(p, contentWidth);
+      const corpoHtml = `
+        <div class="doc-card-info" style="margin-bottom: 14px;">
+          <div class="doc-grid-4">
+            <div class="doc-info-item">
+              <span class="doc-info-label">Tipo de Documento</span>
+              <span class="doc-info-value" style="text-transform: capitalize;">${tipoStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Contrato Nº</span>
+              <span class="doc-info-value">${numContrato}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Medição Nº</span>
+              <span class="doc-info-value">${numMedicao}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Data de Emissão</span>
+              <span class="doc-info-value">${new Date().toLocaleDateString('pt-BR')}</span>
+            </div>
+          </div>
+        </div>
 
-      // Quebra de página se necessário
-      if (currentY + linhas.length * 5 > pageHeight - 35) {
-        doc.addPage();
-        currentY = 20;
-      }
+        <div style="padding: 10px 0;">
+          ${htmlParagrafos}
+        </div>
+      `;
 
-      doc.text(linhas, margin, currentY);
-      currentY += linhas.length * 5 + 2;
+      const isOficio = tipoStr === 'oficio';
+
+      await this.motorPdfService.gerarDocumento(
+        {
+          tituloDocumento: tituloHeader,
+          subtituloDocumento: isOficio ? undefined : `Contrato nº ${numContrato} • Medição nº ${numMedicao}`,
+          nomeAgente: 'Agente de Reajuste de Contratos',
+          cabecalhoGenerico: isOficio
+        },
+        corpoHtml
+      );
+    } catch (err) {
+      console.error('Erro ao gerar documento PDF de reajuste:', err);
+      this.motorPdfService.exibirToast('Ocorreu um erro ao emitir o documento em PDF.', 'erro');
     }
-
-    // 3. Rodapé Institucional
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(7.5);
-    doc.setTextColor(148, 163, 184);
-    doc.text('AmorimTech • Agente Técnico de Reajuste de Contratos', margin, pageHeight - 12);
-    doc.text(`Página ${doc.getNumberOfPages()}`, pageWidth - margin, pageHeight - 12, { align: 'right' });
-
-    // Salvar PDF
-    const tipoStr = this.tipoDocumentoSelecionado();
-    const numLimpo = (this.numeroContrato() || '000').replace(/[^a-zA-Z0-9]/g, '_');
-    const nomeArquivo = `${tipoStr.toUpperCase()}_Contrato_${numLimpo}.pdf`;
-    doc.save(nomeArquivo);
   }
 
   // =========================================================================
-  // GERAÇÃO DO RELATÓRIO ESTRUTURADO EM TABELAS (PDF Fiel ao Modelo Real)
+  // GERAÇÃO DO RELATÓRIO ESTRUTURADO EM TABELAS (Design System Amorim White-Label)
   // =========================================================================
-  gerarRelatorioPDF(): void {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+  async gerarRelatorioPDF(): Promise<void> {
+    try {
+      const editalStr = this.edital() || '-';
+      const modalidadeStr = this.modalidade() || '-';
+      const contratoStr = this.numeroContrato() || '-';
+      const medicaoStr = this.numeroMedicao() || '-';
+      const periodoStr = this.periodoMedicao() || '-';
+      const contratanteStr = this.contratante() || '-';
+      const contratadaStr = this.empresaContratada() || '-';
+      const cnpjStr = this.cnpjContratada() || '-';
+      const objetoStr = this.objeto() || '-';
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 15;
-    const contentWidth = pageWidth - margin * 2;
-    let currentY = 15;
+      const nomeColuna = this.categoriaIndice() === 'coluna39'
+        ? 'Coluna 39 - Consultoria (FGV/SINAENCO)'
+        : 'Coluna 35 - Edificação INCC (FGV)';
 
-    const navyPrimary: [number, number, number] = [19, 42, 65]; // #132A41
-    const copperAccent: [number, number, number] = [181, 100, 42]; // #B5642A
-    const slateDark: [number, number, number] = [51, 65, 85];
-    const borderGray: [number, number, number] = [203, 213, 225];
-    const textWhite: [number, number, number] = [255, 255, 255];
-    const bgCellLight: [number, number, number] = [248, 250, 252];
-    const bgCellGray: [number, number, number] = [241, 245, 249];
+      const vMedicaoStr = this.formatarMoeda(this.valorMedicao());
+      const fatorStr = this.fatorCalculado().toFixed(8).replace('.', ',');
+      const reajusteStr = this.formatarMoeda(this.valorReajusteCalculado());
+      const totalComReajusteStr = this.formatarMoeda(this.valorTotalCalculado());
 
-    // 1. Faixa Superior Institucional
-    doc.setFillColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-    doc.rect(margin, currentY, contentWidth, 18, 'F');
+      const nomeMesIo = this.getNomeMes(this.mesIo());
+      const nomeMesIi = this.getNomeMes(this.mesIi());
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(255, 255, 255);
-    doc.text('REAJUSTAMENTO DE SERVIÇOS', pageWidth / 2, currentY + 11, { align: 'center' });
-    currentY += 24;
+      const notaLegal = this.categoriaIndice() === 'coluna39'
+        ? 'Nota Legal: Reajustamento de preços fundamentado nos termos do Decreto nº 2.271/1997, Instrução Normativa MP/SLTI nº 02/2008 e disposições da Lei Federal nº 8.666/1993 e Lei nº 14.133/2021, decorrido o interregno mínimo de 12 (doze) meses a contar da data limite para apresentação da proposta comercial, aplicando-se a variação do índice setorial FGV/SINAENCO Coluna 39 (Consultoria - Projetos e Supervisão).'
+        : 'Nota Legal: Reajustamento de preços fundamentado nos termos da Lei Federal nº 8.666/1993, Lei nº 14.133/2021 e disposições contratuais, decorrido o interregno mínimo de 12 (doze) meses da data-base da proposta, aplicando-se a variação do Índice Setorial de Custo da Construção Civil – FGV Coluna 35 (Edificação - INCC).';
 
-    // 2. Bloco de Identificação
-    doc.setFontSize(9);
-    doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
+      let retencoesHtml = '';
+      if (this.incluirRetencoes()) {
+        const reajuste = this.valorReajusteCalculado();
+        const pisVal = (reajuste * this.aliquotaPis()) / 100;
+        const csllVal = (reajuste * this.aliquotaCsll()) / 100;
+        const irpjVal = (reajuste * this.aliquotaIrpj()) / 100;
+        const cofinsVal = (reajuste * this.aliquotaCofins()) / 100;
+        const issVal = (reajuste * this.aliquotaIss()) / 100;
 
-    const infoData = [
-      ['EDITAL:', this.edital() || '-', 'MODALIDADE:', this.modalidade() || '-'],
-      ['CONTRATO Nº:', this.numeroContrato() || '-', 'MEDIÇÃO Nº:', this.numeroMedicao() || '-'],
-      ['PERÍODO MEDIÇÃO:', this.periodoMedicao() || '-', 'CONTRATANTE:', this.contratante() || '-'],
-      ['CONTRATADA:', this.empresaContratada() || '-', 'CNPJ:', this.cnpjContratada() || '-']
-    ];
+        retencoesHtml = `
+          <!-- 4. RETENÇÕES TRIBUTÁRIAS NA FONTE -->
+          <div class="doc-section">
+            <div class="doc-section-title">4. Retenções Tributárias na Fonte</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th class="th-center" style="width: 14%;">PIS (${this.aliquotaPis().toFixed(2)}%)</th>
+                  <th class="th-center" style="width: 14%;">CSLL (${this.aliquotaCsll().toFixed(2)}%)</th>
+                  <th class="th-center" style="width: 14%;">IRPJ (${this.aliquotaIrpj().toFixed(2)}%)</th>
+                  <th class="th-center" style="width: 14%;">COFINS (${this.aliquotaCofins().toFixed(2)}%)</th>
+                  <th class="th-center" style="width: 14%;">ISS (${this.aliquotaIss().toFixed(2)}%)</th>
+                  <th class="th-center" style="width: 15%;">Total Retenções</th>
+                  <th class="th-center" style="width: 15%;">Reajuste Líquido</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="td-center">R$ ${this.formatarMoeda(pisVal)}</td>
+                  <td class="td-center">R$ ${this.formatarMoeda(csllVal)}</td>
+                  <td class="td-center">R$ ${this.formatarMoeda(irpjVal)}</td>
+                  <td class="td-center">R$ ${this.formatarMoeda(cofinsVal)}</td>
+                  <td class="td-center">R$ ${this.formatarMoeda(issVal)}</td>
+                  <td class="td-center font-bold" style="color: var(--p4-red);">R$ ${this.formatarMoeda(this.totalRetencoesCalculado())}</td>
+                  <td class="td-center font-bold" style="color: var(--p4-green);">R$ ${this.formatarMoeda(this.reajusteLiquidoCalculado())}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
 
-    autoTable(doc, {
-      startY: currentY,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-        lineColor: borderGray,
-        textColor: slateDark
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 32 },
-        1: { cellWidth: 58 },
-        2: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 32 },
-        3: { cellWidth: 58 }
-      },
-      body: infoData
-    });
+      const corpoHtml = `
+        <!-- IDENTIFICAÇÃO DO CONTRATO E MEDIÇÃO -->
+        <div class="doc-card-info">
+          <div class="doc-grid-4">
+            <div class="doc-info-item">
+              <span class="doc-info-label">Edital</span>
+              <span class="doc-info-value">${editalStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Modalidade</span>
+              <span class="doc-info-value">${modalidadeStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Contrato Nº</span>
+              <span class="doc-info-value font-bold">${contratoStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Medição Nº</span>
+              <span class="doc-info-value font-bold">${medicaoStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Período de Medição</span>
+              <span class="doc-info-value">${periodoStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Contratante</span>
+              <span class="doc-info-value">${contratanteStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Contratada</span>
+              <span class="doc-info-value">${contratadaStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">CNPJ Contratada</span>
+              <span class="doc-info-value">${cnpjStr}</span>
+            </div>
+          </div>
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--p4-border);">
+            <span class="doc-info-label">Objeto Contratual</span>
+            <div class="doc-info-value" style="margin-top: 2px;">${objetoStr}</div>
+          </div>
+        </div>
 
-    currentY = (doc as any).lastAutoTable.finalY + 3;
+        <!-- 1. REAJUSTAMENTO DOS SERVIÇOS -->
+        <div class="doc-section">
+          <div class="doc-section-title">1. Reajustamento dos Serviços da Medição</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 40%;">Cálculo (Índice Setorial)</th>
+                <th class="th-right" style="width: 20%;">Valor Medição</th>
+                <th class="th-right" style="width: 20%;">Fator de Reajuste</th>
+                <th class="th-right" style="width: 20%;">Total do Reajuste</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${nomeColuna}</td>
+                <td class="td-right">R$ ${vMedicaoStr}</td>
+                <td class="td-right">${fatorStr}</td>
+                <td class="td-right font-bold" style="color: var(--p4-copper);">R$ ${reajusteStr}</td>
+              </tr>
+              <tr class="highlight-gray">
+                <td colspan="3" class="td-right"><strong>TOTAL GERAL DO REAJUSTE CONTRATUAL</strong></td>
+                <td class="td-right font-bold" style="color: var(--p4-copper);">R$ ${reajusteStr}</td>
+              </tr>
+              <tr class="highlight-emerald">
+                <td colspan="3" class="td-right"><strong>VALOR TOTAL DA MEDIÇÃO COM REAJUSTE</strong></td>
+                <td class="td-right font-bold" style="color: var(--p4-green);">R$ ${totalComReajusteStr}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-    // Linha de Objeto
-    autoTable(doc, {
-      startY: currentY,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-        lineColor: borderGray,
-        textColor: slateDark
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 32 },
-        1: { cellWidth: 148 }
-      },
-      body: [
-        ['OBJETO:', this.objeto() || '-']
-      ]
-    });
+        <!-- 2. ÍNDICES DE REAJUSTAMENTO APLICADOS -->
+        <div class="doc-section">
+          <div class="doc-section-title">2. Índices de Reajustamento Aplicados</div>
+          <table class="doc-table">
+            <tbody>
+              <tr>
+                <td style="width: 30%; font-weight: 700; background-color: #F8FAFC;">Índice Setorial Adotado:</td>
+                <td style="width: 70%;">${nomeColuna}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700; background-color: #F8FAFC;">Mês/Ano Base da Proposta (Io):</td>
+                <td>${nomeMesIo}/${this.anoIo()} = <strong>${this.valorIo().toFixed(3).replace('.', ',')}</strong></td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700; background-color: #F8FAFC;">Mês/Ano Reajuste da Medição (Ii):</td>
+                <td>${nomeMesIi}/${this.anoIi()} = <strong>${this.valorIi().toFixed(3).replace('.', ',')}</strong></td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700; background-color: #F8FAFC;">Fator de Reajuste ( (Ii - Io) / Io ):</td>
+                <td><strong>${this.fatorCalculado().toFixed(8).replace('.', ',')}</strong> (+${this.percentualCalculado().toFixed(2).replace('.', ',')}%)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-    currentY = (doc as any).lastAutoTable.finalY + 6;
+        <!-- 3. DESCRIÇÃO E MEMÓRIA DE CÁLCULO -->
+        <div class="doc-section">
+          <div class="doc-section-title">3. Descrição e Memória de Cálculo</div>
+          <div style="background-color: #F8FAFC; border: 1px solid var(--p4-border); border-radius: 4px; padding: 8px 10px; font-size: 7.5pt; line-height: 1.5;">
+            <div style="font-weight: 700; color: var(--p4-navy); margin-bottom: 4px;">Fórmula Aplicada: R = [ (Ii - Io) / Io ] × V</div>
+            <div><strong>Onde:</strong></div>
+            <div style="margin-left: 8px;">
+              • <strong>R</strong> = Valor do reajustamento financeiro procurado;<br/>
+              • <strong>Ii</strong> = Índice referente ao mês da medição / reajuste;<br/>
+              • <strong>Io</strong> = Índice referente ao mês limite de apresentação da proposta de preços;<br/>
+              • <strong>V</strong> = Valor a preços iniciais do serviço executado na respectiva medição.
+            </div>
+          </div>
+        </div>
 
-    // 3. Tabela "REAJUSTAMENTO DOS SERVIÇOS"
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-    doc.text('1. REAJUSTAMENTO DOS SERVIÇOS', margin, currentY);
-    currentY += 3;
+        ${retencoesHtml}
 
-    const nomeColuna = this.categoriaIndice() === 'coluna39'
-      ? 'Coluna 39 - Consultoria (FGV)'
-      : 'Coluna 35 - Edificação INCC (FGV)';
+        <!-- NOTA LEGAL -->
+        <div class="doc-legal-note">
+          ${notaLegal}
+        </div>
+      `;
 
-    const vMedicaoStr = this.formatarMoeda(this.valorMedicao());
-    const fatorStr = this.fatorCalculado().toFixed(8).replace('.', ',');
-    const reajusteStr = this.formatarMoeda(this.valorReajusteCalculado());
-    const totalComReajusteStr = this.formatarMoeda(this.valorTotalCalculado());
-
-    autoTable(doc, {
-      startY: currentY,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      headStyles: {
-        fillColor: navyPrimary,
-        textColor: textWhite,
-        fontStyle: 'bold',
-        fontSize: 8,
-        halign: 'center'
-      },
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        lineColor: borderGray,
-        textColor: slateDark
-      },
-      head: [['CÁLCULO (ÍNDICE)', 'VALOR TOTAL DA MEDIÇÃO', 'FATOR DE REAJUSTE', 'TOTAL DO REAJUSTE']],
-      body: [
-        [nomeColuna, `R$ ${vMedicaoStr}`, fatorStr, `R$ ${reajusteStr}`],
-        [
-          { content: 'TOTAL GERAL DO REAJUSTE', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellLight } },
-          { content: `R$ ${reajusteStr}`, styles: { fontStyle: 'bold', textColor: copperAccent } }
-        ],
-        [
-          { content: 'VALOR TOTAL DA MEDIÇÃO COM REAJUSTE', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellGray } },
-          { content: `R$ ${totalComReajusteStr}`, styles: { fontStyle: 'bold', textColor: navyPrimary } }
-        ]
-      ]
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 6;
-
-    // 4. Bloco "ÍNDICES DE REAJUSTAMENTO"
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-    doc.text('2. ÍNDICES DE REAJUSTAMENTO APLICADOS', margin, currentY);
-    currentY += 3;
-
-    const nomeMesIo = this.getNomeMes(this.mesIo());
-    const nomeMesIi = this.getNomeMes(this.mesIi());
-
-    const indicesData = [
-      ['ÍNDICE SETORIAL:', nomeColuna],
-      [`MÊS/ANO BASE (Io):`, `${nomeMesIo}/${this.anoIo()} = ${this.valorIo().toFixed(3).replace('.', ',')}`],
-      [`MÊS/ANO REAJUSTE (Ii):`, `${nomeMesIi}/${this.anoIi()} = ${this.valorIi().toFixed(3).replace('.', ',')}`],
-      ['FATOR ( (Ii - Io) / Io ):', `${this.fatorCalculado().toFixed(8).replace('.', ',')} (+${this.percentualCalculado().toFixed(2).replace('.', ',')}%)`]
-    ];
-
-    autoTable(doc, {
-      startY: currentY,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-        lineColor: borderGray,
-        textColor: slateDark
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 50 },
-        1: { cellWidth: 130 }
-      },
-      body: indicesData
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 6;
-
-    // 5. Descrição do Cálculo e Fórmula
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-    doc.text('3. DESCRIÇÃO E MEMÓRIA DE CÁLCULO', margin, currentY);
-    currentY += 3;
-
-    autoTable(doc, {
-      startY: currentY,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 2.5,
-        lineColor: borderGray,
-        textColor: slateDark
-      },
-      body: [
-        [{ content: 'Fórmula Aplicada: R = [ (Ii - Io) / Io ] x V', styles: { fontStyle: 'bold', fillColor: bgCellLight } }],
-        ['Onde:\n• R = Valor do reajuste financeiro procurado;\n• Ii = Índice referente ao mês da medição / reajuste;\n• Io = Índice referente ao mês limite de apresentação da proposta de preços;\n• V = Valor a preços iniciais do serviço executado na medição.']
-      ]
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 5;
-
-    // 6. Bloco Opcional de Retenções
-    if (this.incluirRetencoes()) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('4. RETENÇÕES TRIBUTÁRIAS NA FONTE', margin, currentY);
-      currentY += 3;
-
-      const reajuste = this.valorReajusteCalculado();
-      const pisVal = (reajuste * this.aliquotaPis()) / 100;
-      const csllVal = (reajuste * this.aliquotaCsll()) / 100;
-      const irpjVal = (reajuste * this.aliquotaIrpj()) / 100;
-      const cofinsVal = (reajuste * this.aliquotaCofins()) / 100;
-      const issVal = (reajuste * this.aliquotaIss()) / 100;
-
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        headStyles: {
-          fillColor: navyPrimary,
-          textColor: textWhite,
-          fontStyle: 'bold',
-          fontSize: 7.5,
-          halign: 'center'
+      await this.motorPdfService.gerarDocumento(
+        {
+          tituloDocumento: 'Relatório Técnico de Reajustamento de Serviços',
+          subtituloDocumento: `Contrato Administrativo nº ${contratoStr} • Medição nº ${medicaoStr}`,
+          nomeAgente: 'Agente de Reajuste de Contratos'
         },
-        styles: {
-          fontSize: 7.5,
-          cellPadding: 2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        head: [['PIS', 'CSLL', 'IRPJ', 'COFINS', 'ISS', 'TOTAL RETENÇÕES', 'REAJUSTE LÍQUIDO']],
-        body: [
-          [
-            `${this.aliquotaPis().toFixed(2)}%\nR$ ${this.formatarMoeda(pisVal)}`,
-            `${this.aliquotaCsll().toFixed(2)}%\nR$ ${this.formatarMoeda(csllVal)}`,
-            `${this.aliquotaIrpj().toFixed(2)}%\nR$ ${this.formatarMoeda(irpjVal)}`,
-            `${this.aliquotaCofins().toFixed(2)}%\nR$ ${this.formatarMoeda(cofinsVal)}`,
-            `${this.aliquotaIss().toFixed(2)}%\nR$ ${this.formatarMoeda(issVal)}`,
-            `${this.totalAliquotaRetencoes().toFixed(2)}%\nR$ ${this.formatarMoeda(this.totalRetencoesCalculado())}`,
-            `R$ ${this.formatarMoeda(this.reajusteLiquidoCalculado())}`
-          ]
-        ]
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 5;
+        corpoHtml
+      );
+    } catch (err) {
+      console.error('Erro ao gerar relatório de reajuste em PDF:', err);
+      this.motorPdfService.exibirToast('Ocorreu um erro ao emitir o relatório de reajuste em PDF.', 'erro');
     }
-
-    // 7. Nota Legal Fixa Contextualizada
-    const notaLegal = this.categoriaIndice() === 'coluna39'
-      ? 'Nota Legal: Reajustamento de preços fundamentado nos termos do Decreto nº 2.271/1997, Instrução Normativa MP/SLTI nº 02/2008 e disposições da Lei Federal nº 8.666/1993 e Lei nº 14.133/2021, decorrido o interregno mínimo de 12 (doze) meses a contar da data limite para apresentação da proposta comercial, aplicando-se a variação do índice setorial FGV/SINAENCO Coluna 39 (Consultoria - Projetos e Supervisão).'
-      : 'Nota Legal: Reajustamento de preços fundamentado nos termos da Lei Federal nº 8.666/1993, Lei nº 14.133/2021 e disposições contratuais, decorrido o interregno mínimo de 12 (doze) meses da data-base da proposta, aplicando-se a variação do Índice Setorial de Custo da Construção Civil – FGV Coluna 35 (Edificação - INCC).';
-
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(7);
-    doc.setTextColor(100, 116, 139);
-    const splitNota = doc.splitTextToSize(notaLegal, contentWidth);
-    doc.text(splitNota, margin, currentY);
-    currentY += splitNota.length * 3 + 12;
-
-    // 8. Espaço de Assinatura Profissional
-    doc.setDrawColor(71, 85, 105);
-    doc.setLineWidth(0.5);
-    const lineXStart = pageWidth / 2 - 45;
-    const lineXEnd = pageWidth / 2 + 45;
-    doc.line(lineXStart, currentY, lineXEnd, currentY);
-
-    currentY += 4;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-    doc.text('Emanoel S. Amorim', pageWidth / 2, currentY, { align: 'center' });
-
-    currentY += 3.5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
-    doc.text('Arquiteto e Urbanista • CAU nº A133593-6', pageWidth / 2, currentY, { align: 'center' });
-
-    // Salvar Documento
-    const nomeArquivo = `Reajuste_Contrato_${(this.numeroContrato() || '000').replace(/[^a-zA-Z0-9]/g, '_')}_Medicao_${this.numeroMedicao() || '1'}.pdf`;
-    doc.save(nomeArquivo);
   }
 
   private formatarMoeda(valor: number): string {
@@ -1621,5 +1828,219 @@ Impacto orçamentário: acréscimo de R$ ${vReaj} sobre a rubrica orçamentária
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  // =========================================================================
+  // GESTÃO DE PROJETOS SALVOS (Reajuste de Contratos)
+  // =========================================================================
+
+  exibirToast(texto: string, tipo: 'sucesso' | 'erro' | 'info' = 'sucesso'): void {
+    this.toastMensagem.set({ texto, tipo });
+    setTimeout(() => {
+      this.toastMensagem.set(null);
+    }, 3500);
+  }
+
+  obterNomeProjetoSugerido(): string {
+    const contrato = this.numeroContrato()?.trim() || 'Sem Número';
+    const medicao = this.numeroMedicao()?.trim() || '1';
+    return `Contrato ${contrato} — Medição ${medicao}`;
+  }
+
+  serializarDadosFormulario(): any {
+    return {
+      edital: this.edital(),
+      modalidade: this.modalidade(),
+      contratante: this.contratante(),
+      numeroContrato: this.numeroContrato(),
+      empresaContratada: this.empresaContratada(),
+      cnpjContratada: this.cnpjContratada(),
+      objeto: this.objeto(),
+      categoriaIndice: this.categoriaIndice(),
+      periodoMedicao: this.periodoMedicao(),
+      numeroMedicao: this.numeroMedicao(),
+      mesIo: this.mesIo(),
+      anoIo: this.anoIo(),
+      valorIo: this.valorIo(),
+      mesIi: this.mesIi(),
+      anoIi: this.anoIi(),
+      valorIi: this.valorIi(),
+      valorMedicao: this.valorMedicao(),
+      incluirRetencoes: this.incluirRetencoes(),
+      aliquotaPis: this.aliquotaPis(),
+      aliquotaCsll: this.aliquotaCsll(),
+      aliquotaIrpj: this.aliquotaIrpj(),
+      aliquotaCofins: this.aliquotaCofins(),
+      aliquotaIss: this.aliquotaIss(),
+      etapa: this.etapa(),
+      tipoDocumentoSelecionado: this.tipoDocumentoSelecionado(),
+      tituloDocumento: this.tituloDocumento(),
+      corpoDocumento: this.corpoDocumento()
+    };
+  }
+
+  deserializarDadosFormulario(dados: any): void {
+    if (!dados) return;
+
+    if (dados.edital !== undefined) this.edital.set(dados.edital);
+    if (dados.modalidade !== undefined) this.modalidade.set(dados.modalidade);
+    if (dados.contratante !== undefined) this.contratante.set(dados.contratante);
+    if (dados.numeroContrato !== undefined) this.numeroContrato.set(dados.numeroContrato);
+    if (dados.empresaContratada !== undefined) this.empresaContratada.set(dados.empresaContratada);
+    if (dados.cnpjContratada !== undefined) this.cnpjContratada.set(dados.cnpjContratada);
+    if (dados.objeto !== undefined) this.objeto.set(dados.objeto);
+
+    if (dados.categoriaIndice !== undefined) this.categoriaIndice.set(dados.categoriaIndice);
+    if (dados.periodoMedicao !== undefined) this.periodoMedicao.set(dados.periodoMedicao);
+    if (dados.numeroMedicao !== undefined) this.numeroMedicao.set(dados.numeroMedicao);
+    if (dados.mesIo !== undefined) this.mesIo.set(dados.mesIo);
+    if (dados.anoIo !== undefined) this.anoIo.set(dados.anoIo);
+    if (dados.valorIo !== undefined) this.valorIo.set(dados.valorIo);
+    if (dados.mesIi !== undefined) this.mesIi.set(dados.mesIi);
+    if (dados.anoIi !== undefined) this.anoIi.set(dados.anoIi);
+    if (dados.valorIi !== undefined) this.valorIi.set(dados.valorIi);
+    if (dados.valorMedicao !== undefined) this.valorMedicao.set(dados.valorMedicao);
+
+    if (dados.incluirRetencoes !== undefined) this.incluirRetencoes.set(dados.incluirRetencoes);
+    if (dados.aliquotaPis !== undefined) this.aliquotaPis.set(dados.aliquotaPis);
+    if (dados.aliquotaCsll !== undefined) this.aliquotaCsll.set(dados.aliquotaCsll);
+    if (dados.aliquotaIrpj !== undefined) this.aliquotaIrpj.set(dados.aliquotaIrpj);
+    if (dados.aliquotaCofins !== undefined) this.aliquotaCofins.set(dados.aliquotaCofins);
+    if (dados.aliquotaIss !== undefined) this.aliquotaIss.set(dados.aliquotaIss);
+
+    if (dados.etapa !== undefined) this.etapa.set(dados.etapa);
+    if (dados.tipoDocumentoSelecionado !== undefined) this.tipoDocumentoSelecionado.set(dados.tipoDocumentoSelecionado);
+    if (dados.tituloDocumento !== undefined) this.tituloDocumento.set(dados.tituloDocumento);
+    if (dados.corpoDocumento !== undefined) this.corpoDocumento.set(dados.corpoDocumento);
+  }
+
+  clicarSalvarProjeto(): void {
+    if (this.projetoAtualId()) {
+      this.executarAtualizarProjeto();
+    } else {
+      const sugerido = this.obterNomeProjetoSugerido();
+      this.modalSalvarNomeInput.set(sugerido);
+      this.modalSalvarAberto.set(true);
+    }
+  }
+
+  clicarSalvarComoNovo(): void {
+    const sugerido = `${this.obterNomeProjetoSugerido()} (Cópia)`;
+    this.modalSalvarNomeInput.set(sugerido);
+    this.modalSalvarAberto.set(true);
+  }
+
+  async confirmarSalvarNovoProjeto(): Promise<void> {
+    const nome = this.modalSalvarNomeInput().trim();
+    if (!nome) {
+      this.exibirToast('Digite uma identificação para o projeto.', 'erro');
+      return;
+    }
+
+    this.salvandoProjeto.set(true);
+    try {
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.salvarProjeto('reajuste', nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao salvar: ${res.error.message}`, 'erro');
+      } else {
+        this.projetoAtualId.set(res.id || null);
+        this.projetoAtualNome.set(nome);
+        this.modalSalvarAberto.set(false);
+        this.exibirToast(`Contrato "${nome}" salvo com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao salvar contrato: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async executarAtualizarProjeto(): Promise<void> {
+    const id = this.projetoAtualId();
+    if (!id) return;
+
+    this.salvandoProjeto.set(true);
+    try {
+      const nome = this.projetoAtualNome() || this.obterNomeProjetoSugerido();
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.atualizarProjeto(id, nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao atualizar: ${res.error.message}`, 'erro');
+      } else {
+        this.exibirToast(`Contrato "${nome}" atualizado com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao atualizar contrato: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async abrirModalMeusProjetos(): Promise<void> {
+    this.modalProjetosAberto.set(true);
+    this.carregandoProjetos.set(true);
+    try {
+      const lista = await this.supabaseService.listarMeusProjetos('reajuste');
+      this.listaProjetosSalvos.set(lista);
+    } catch (err) {
+      console.error('Erro ao listar contratos salvos:', err);
+    } finally {
+      this.carregandoProjetos.set(false);
+    }
+  }
+
+  abrirProjetoSalvo(proj: any): void {
+    try {
+      this.deserializarDadosFormulario(proj.dados_formulario);
+      this.projetoAtualId.set(proj.id);
+      this.projetoAtualNome.set(proj.nome_projeto);
+      this.modalProjetosAberto.set(false);
+      this.exibirToast(`Contrato "${proj.nome_projeto}" carregado com sucesso!`, 'sucesso');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      this.exibirToast(`Erro ao carregar contrato: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  async confirmarExcluirProjeto(proj: any, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (!confirm(`Deseja realmente excluir o contrato "${proj.nome_projeto}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const res = await this.supabaseService.excluirProjeto(proj.id);
+      if (res.error) {
+        this.exibirToast(`Erro ao excluir: ${res.error.message}`, 'erro');
+      } else {
+        if (this.projetoAtualId() === proj.id) {
+          this.projetoAtualId.set(null);
+          this.projetoAtualNome.set('');
+        }
+        this.listaProjetosSalvos.update(l => l.filter(p => p.id !== proj.id));
+        this.exibirToast(`Contrato "${proj.nome_projeto}" excluído.`, 'info');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao excluir contrato: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  formatarDataProjeto(dataIso: string): string {
+    if (!dataIso) return '-';
+    try {
+      const d = new Date(dataIso);
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dataIso;
+    }
   }
 }

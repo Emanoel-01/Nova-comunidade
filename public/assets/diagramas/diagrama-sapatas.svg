@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" style="background: transparent;">
+  <defs>
+    <marker id="arrow-s" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#B45309"/>
+    </marker>
+    <marker id="arrow-s-rev" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#B45309"/>
+    </marker>
+  </defs>
+
+  <!-- Título -->
+  <text x="400" y="45" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#132A41" text-anchor="middle" letter-spacing="1">
+    SAPATA ISOLADA
+  </text>
+
+  <!-- (a) Perspectiva -->
+  <g transform="translate(20, 30)">
+    <!-- Base Retangular -->
+    <polygon points="120,310 260,310 295,280 155,280" fill="#E5DFD7" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="80,310 260,310 260,340 80,340" fill="#EFE9E2" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="260,310 295,280 295,310 260,340" fill="#DCD6CC" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+
+    <!-- Tronco de Pirâmide -->
+    <polygon points="135,170 205,170 230,150 160,150" fill="#F4EFEA" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="135,170 205,170 260,310 80,310" fill="#EAE4DC" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="205,170 230,150 295,280 260,310" fill="#D8D1C7" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+
+    <text x="185" y="385" font-family="system-ui, sans-serif" font-size="14" font-style="italic" font-weight="600" fill="#64748B" text-anchor="middle">(a) Perspectiva</text>
+  </g>
+
+  <!-- (b) Corte Longitudinal -->
+  <g transform="translate(380, 30)">
+    <!-- Base Retangular corte -->
+    <rect x="50" y="280" width="200" height="40" fill="#EFE9E2" stroke="#334155" stroke-width="2.5"/>
+
+    <!-- Tronco corte -->
+    <polygon points="95,280 205,280 165,160 135,160" fill="#F4EFEA" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+
+    <!-- Cotas -->
+    <!-- Cf (compr. fuste) -->
+    <line x1="138" y1="130" x2="162" y2="130" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-s-rev)" marker-end="url(#arrow-s)"/>
+    <text x="150" y="110" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#B45309" text-anchor="middle">Cf (compr. fuste)</text>
+
+    <!-- H (altura tronco) -->
+    <line x1="280" y1="168" x2="280" y2="272" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-s-rev)" marker-end="url(#arrow-s)"/>
+    <text x="300" y="225" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#B45309" text-anchor="start" transform="rotate(-90 300 225)">H (altura tronco)</text>
+
+    <!-- B (altura base) -->
+    <line x1="240" y1="286" x2="240" y2="314" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-s-rev)" marker-end="url(#arrow-s)"/>
+    <text x="260" y="305" font-family="system-ui, sans-serif" font-size="14" font-weight="800" fill="#B45309" text-anchor="start">B</text>
+
+    <!-- Cb (compr. base) -->
+    <line x1="58" y1="350" x2="242" y2="350" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-s-rev)" marker-end="url(#arrow-s)"/>
+    <text x="150" y="375" font-family="system-ui, sans-serif" font-size="13" font-weight="800" fill="#B45309" text-anchor="middle">Cb (compr. base)</text>
+
+    <text x="150" y="405" font-family="system-ui, sans-serif" font-size="14" font-style="italic" font-weight="600" fill="#64748B" text-anchor="middle">(b) Corte Longitudinal</text>
+  </g>
+</svg>

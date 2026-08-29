@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" style="background: transparent;">
+  <defs>
+    <marker id="arrow-r" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#B45309"/>
+    </marker>
+    <marker id="arrow-r-rev" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#B45309"/>
+    </marker>
+  </defs>
+
+  <!-- Título -->
+  <text x="400" y="55" font-family="system-ui, sans-serif" font-size="22" font-weight="900" fill="#132A41" text-anchor="middle" letter-spacing="1">
+    RADIER
+  </text>
+
+  <!-- Placa Radier 3D -->
+  <g transform="translate(10, 20)">
+    <!-- Top Face -->
+    <polygon points="110,180 470,180 530,260 170,260" fill="#F4EFEA" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Right Face -->
+    <polygon points="470,180 530,260 530,310 470,230" fill="#E2DDD5" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+    
+    <!-- Front Face -->
+    <polygon points="110,260 470,260 470,310 110,310" fill="#EFE9E2" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>
+
+    <!-- Altura H -->
+    <line x1="75" y1="266" x2="75" y2="304" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-r-rev)" marker-end="url(#arrow-r)"/>
+    <text x="55" y="290" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="middle">H</text>
+
+    <!-- Comprimento C -->
+    <line x1="118" y1="350" x2="462" y2="350" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-r-rev)" marker-end="url(#arrow-r)"/>
+    <text x="290" y="380" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="middle">C (comprimento)</text>
+
+    <!-- Largura L -->
+    <line x1="480" y1="322" x2="528" y2="370" stroke="#B45309" stroke-width="2.5" marker-start="url(#arrow-r-rev)" marker-end="url(#arrow-r)"/>
+    <text x="525" y="350" font-family="system-ui, sans-serif" font-size="16" font-weight="800" fill="#B45309" text-anchor="start">L</text>
+  </g>
+
+  <!-- Referência do Lastro -->
+  <g transform="translate(580, 140)">
+    <text x="80" y="30" font-family="system-ui, sans-serif" font-size="14" font-style="italic" font-weight="600" fill="#64748B" text-anchor="middle">Referência do Lastro</text>
+
+    <!-- Laje Superior -->
+    <rect x="25" y="60" width="110" height="55" fill="#FAF7F5" stroke="#334155" stroke-width="2.5"/>
+
+    <!-- Camada de Lastro de Brita/Concreto Magro -->
+    <rect x="15" y="115" width="130" height="30" fill="#D8D0C5" stroke="#334155" stroke-width="2.5"/>
+
+    <!-- Cota Lastro -->
+    <line x1="5" y1="120" x2="5" y2="140" stroke="#B45309" stroke-width="2" marker-start="url(#arrow-r-rev)" marker-end="url(#arrow-r)"/>
+    <text x="-10" y="133" font-family="system-ui, sans-serif" font-size="12" font-weight="800" fill="#B45309" text-anchor="end" transform="rotate(-90 -10 133)">Lastro</text>
+  </g>
+</svg>

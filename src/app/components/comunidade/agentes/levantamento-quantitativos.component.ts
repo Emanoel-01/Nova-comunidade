@@ -1,29 +1,51 @@
-import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, ViewChild, ElementRef, AfterViewInit, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SupabaseService } from '../../../../services/supabase.service';
+import { MotorPdfService } from '../../../services/motor-pdf.service';
 import {
-  ItemFundacao,
-  ItemEstrutura,
+  ItemBaldrame,
+  ItemBloco,
+  ItemSapata,
+  ItemRadier,
+  ItemTubulao,
+  ItemPilar,
+  ItemViga,
+  ItemLaje,
   ItemArquitetonico,
   ItemEsquadria,
   ItemCobertura,
   ItemPergolado,
   ItemInstalacao,
+  ItemInstalacaoPredial,
+  SistemaInstalacao,
+  CategoriaConfig,
+  CATEGORIAS_POR_SISTEMA,
   ItemPaisagismo,
   ItemResumoConsolidado,
   RegraAuditoria,
   ParametrosCalculo,
   MargensPerda,
+  TABELA_BITOLAS_PADRAO,
   CHECKLIST_INSTALACOES_GUIA
 } from './levantamento-quantitativos.data';
 
-type AbaDisciplina =
-  | 'fundacoes'
-  | 'estrutura'
+export type AbaDisciplina =
+  | 'baldrame'
+  | 'blocos'
+  | 'sapatas'
+  | 'radier'
+  | 'tubuloes'
+  | 'pilares'
+  | 'vigas'
+  | 'lajes'
   | 'arquitetonico'
   | 'esquadrias'
   | 'cobertura'
   | 'pergolados'
-  | 'instalacoes'
+  | 'distribuicao-eletrica'
+  | 'prumadas-eletricas'
+  | 'esgoto-pluvial'
+  | 'hidraulica'
   | 'paisagismo'
   | 'resumo';
 
@@ -31,1192 +53,155 @@ type AbaDisciplina =
   selector: 'app-levantamento-quantitativos',
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="space-y-6">
-
-      <!-- 1. Cabeçalho Principal -->
-      <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/5 rounded-full pointer-events-none blur-2xl"></div>
-
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div class="space-y-2 max-w-2xl">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/60 flex items-center justify-center font-bold text-sm shadow-xs">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span class="text-xs font-black uppercase tracking-wider text-indigo-700">Engenharia de Custos & Planejamento</span>
-            </div>
-
-            <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Levantamento de Quantitativos
-            </h3>
-
-            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Calcule automaticamente concreto, forma, aço, escavação e demais insumos por disciplina — organize seu levantamento de quantitativos antes de partir para o orçamento executivo.
-            </p>
-          </div>
-
-          <!-- Ações de Sessão e Exportação -->
-          <div class="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              (click)="salvarSessaoJson()"
-              class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200 active:scale-95"
-              title="Baixa um arquivo .json com todos os lançamentos e configurações"
-            >
-              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-              <span>Salvar sessão (.json)</span>
-            </button>
-
-            <label
-              class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200 active:scale-95"
-              title="Carrega um arquivo .json salvo anteriormente"
-            >
-              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>Carregar sessão</span>
-              <input type="file" accept="application/json" (change)="carregarSessaoJson($event)" class="hidden" />
-            </label>
-
-            <button
-              type="button"
-              (click)="exportarCsv()"
-              class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
-              title="Exporta a planilha de quantitativos consolidados em CSV"
-            >
-              <svg class="w-4 h-4 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>Exportar CSV</span>
-            </button>
-          </div>
-        </div>
-
-        @if (mensagemNotificacao()) {
-          <div class="mt-4 p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs font-medium text-indigo-900 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-indigo-600 font-bold">ℹ️</span>
-              <span>{{ mensagemNotificacao() }}</span>
-            </div>
-            <button type="button" (click)="mensagemNotificacao.set(null)" class="text-indigo-500 hover:text-indigo-700 font-bold text-xs">
-              Fechar
-            </button>
-          </div>
-        }
-      </div>
-
-      <!-- 2. Barra de Estatísticas Rápidas -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div class="bg-[#132A41] text-white p-4 rounded-2xl border border-slate-800 shadow-xs">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Total de Itens</div>
-          <div class="text-2xl font-black text-white mt-1">{{ totalItensLancados() }}</div>
-        </div>
-
-        <div class="bg-[#132A41] text-white p-4 rounded-2xl border border-slate-800 shadow-xs">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Concreto Total</div>
-          <div class="text-2xl font-black text-[#E59866] mt-1">{{ totalConcretoGeral().toFixed(2) }} <span class="text-xs font-normal text-slate-300">m³</span></div>
-        </div>
-
-        <div class="bg-[#132A41] text-white p-4 rounded-2xl border border-slate-800 shadow-xs">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Forma Total</div>
-          <div class="text-2xl font-black text-amber-300 mt-1">{{ totalFormaGeral().toFixed(2) }} <span class="text-xs font-normal text-slate-300">m²</span></div>
-        </div>
-
-        <div class="bg-[#132A41] text-white p-4 rounded-2xl border border-slate-800 shadow-xs">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Aço Total</div>
-          <div class="text-2xl font-black text-emerald-400 mt-1">{{ totalAcoGeral().toFixed(0) }} <span class="text-xs font-normal text-slate-300">kg</span></div>
-        </div>
-
-        <div class="bg-[#132A41] text-white p-4 rounded-2xl border border-slate-800 shadow-xs col-span-2 sm:col-span-1">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Escavação Total</div>
-          <div class="text-2xl font-black text-sky-300 mt-1">{{ totalEscavacaoGeral().toFixed(2) }} <span class="text-xs font-normal text-slate-300">m³</span></div>
-        </div>
-      </div>
-
-      <!-- 3. Navegação de Abas por Disciplina -->
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none border-b border-slate-200">
-        <button
-          type="button"
-          (click)="abaAtiva.set('fundacoes')"
-          [class]="abaAtiva() === 'fundacoes' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Fundações</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ fundacoes().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('estrutura')"
-          [class]="abaAtiva() === 'estrutura' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Estrutura</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ estrutura().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('arquitetonico')"
-          [class]="abaAtiva() === 'arquitetonico' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Arquitetônico</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ arquitetonico().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('esquadrias')"
-          [class]="abaAtiva() === 'esquadrias' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Esquadrias</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ esquadrias().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('cobertura')"
-          [class]="abaAtiva() === 'cobertura' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Cobertura</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ cobertura().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('pergolados')"
-          [class]="abaAtiva() === 'pergolados' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Pergolados</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ pergolados().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('instalacoes')"
-          [class]="abaAtiva() === 'instalacoes' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Instalações</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ instalacoes().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('paisagismo')"
-          [class]="abaAtiva() === 'paisagismo' ? 'bg-[#132A41] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
-          class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2"
-        >
-          <span>Paisagismo</span>
-          <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-black">
-            {{ paisagismo().length }}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          (click)="abaAtiva.set('resumo')"
-          [class]="abaAtiva() === 'resumo' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'"
-          class="px-4 py-2.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-2 ml-auto"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>Resumo & Auditoria</span>
-        </button>
-      </div>
-
-      <!-- 4. Conteúdo das Abas -->
-      <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-6">
-
-        <!-- ==================== ABA 1: FUNDAÇÕES ==================== -->
-        @if (abaAtiva() === 'fundacoes') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Fundações</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Sapatas, baldrames ou blocos de fundação. Informe as dimensões do elemento e a profundidade de escavação — o sistema calcula concreto, forma, volume escavado, reaproveitamento no reaterro, bota-fora e armadura de aço.
-              </p>
-            </div>
-
-            <!-- Parâmetros de Cálculo da Disciplina -->
-            <details class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs">
-              <summary class="font-bold text-slate-800 cursor-pointer flex items-center justify-between">
-                <span>⚙️ Parâmetros de cálculo de fundações</span>
-                <span class="text-[11px] text-slate-400 font-normal">Clique para ajustar</span>
-              </summary>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-200">
-                <div>
-                  <label class="block text-slate-600 font-bold mb-1">Reaproveitamento no reaterro (% da escavação)</label>
-                  <input
-                    type="number"
-                    [value]="parametros().reaproveitamentoSolo"
-                    (input)="atualizarParametro('reaproveitamentoSolo', $event)"
-                    min="0"
-                    max="100"
-                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                  />
-                  <span class="text-[11px] text-slate-400">Faixa usual: 60% a 80% conforme o solo.</span>
-                </div>
-                <div>
-                  <label class="block text-slate-600 font-bold mb-1">Índice de aço (kg por m³ de concreto)</label>
-                  <input
-                    type="number"
-                    [value]="parametros().acoFundacao"
-                    (input)="atualizarParametro('acoFundacao', $event)"
-                    min="0"
-                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                  />
-                  <span class="text-[11px] text-slate-400">Referência de mercado: 60 a 90 kg/m³.</span>
-                </div>
-              </div>
-            </details>
-
-            <!-- Formulário de Adição -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Elemento</label>
-                <select #fTipo class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="sapata-isolada">Sapata isolada</option>
-                  <option value="sapata-corrida">Sapata corrida</option>
-                  <option value="baldrame">Baldrame</option>
-                  <option value="bloco">Bloco de fundação</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Largura (m)</label>
-                <input #fLargura type="number" step="0.01" min="0" placeholder="Ex: 1.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Altura (m)</label>
-                <input #fAltura type="number" step="0.01" min="0" placeholder="Ex: 0.50" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Comprimento (m)</label>
-                <input #fComprimento type="number" step="0.01" min="0" placeholder="Ex: 1.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Profund. escav. (m)</label>
-                <input #fProfundidade type="number" step="0.01" min="0" placeholder="Ex: 1.20" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Qtd (un)</label>
-                <input #fQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarFundacao(fTipo.value, fLargura.value, fAltura.value, fComprimento.value, fProfundidade.value, fQtd.value); fLargura.value=''; fAltura.value=''; fComprimento.value=''; fProfundidade.value=''; fQtd.value='1'"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Fundação
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (fundacoes().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Elemento</th>
-                      <th class="p-3">Dimensões (L×A×C)</th>
-                      <th class="p-3">Qtd</th>
-                      <th class="p-3">Concreto (m³)</th>
-                      <th class="p-3">Forma (m²)</th>
-                      <th class="p-3">Escavação (m³)</th>
-                      <th class="p-3">Reaprov. (m³)</th>
-                      <th class="p-3">Bota-Fora (m³)</th>
-                      <th class="p-3">Aço (kg)</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of fundacoes(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800 capitalize">{{ formatarNomeTipo(item.tipo) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }} × {{ item.comprimento }}m</td>
-                        <td class="p-3 text-slate-600">{{ item.qtd }}</td>
-                        <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
-                        <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.escavacao.toFixed(2) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.reaproveitamento.toFixed(2) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.botaFora.toFixed(2) }}</td>
-                        <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerFundacao(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhum elemento de fundação lançado ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 2: ESTRUTURA ==================== -->
-        @if (abaAtiva() === 'estrutura') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Estrutura</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Pilares, vigas e lajes de concreto armado. O sistema calcula volume de concreto, área de forma, cimbramento, consumo de aço e tempo estimado de solda/amarração.
-              </p>
-            </div>
-
-            <!-- Parâmetros de Cálculo da Disciplina -->
-            <details class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs">
-              <summary class="font-bold text-slate-800 cursor-pointer flex items-center justify-between">
-                <span>⚙️ Parâmetros de cálculo de estrutura</span>
-                <span class="text-[11px] text-slate-400 font-normal">Clique para ajustar</span>
-              </summary>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-200">
-                <div>
-                  <label class="block text-slate-600 font-bold mb-1">Índice de aço (kg por m³ de concreto)</label>
-                  <input
-                    type="number"
-                    [value]="parametros().acoEstrutura"
-                    (input)="atualizarParametro('acoEstrutura', $event)"
-                    min="0"
-                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                  />
-                  <span class="text-[11px] text-slate-400">Padrão: 100 kg/m³. Faixa de mercado: 80 a 130 kg/m³.</span>
-                </div>
-                <div>
-                  <label class="block text-slate-600 font-bold mb-1">Tempo de solda/amarração (h por kg de aço)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    [value]="parametros().tempoSolda"
-                    (input)="atualizarParametro('tempoSolda', $event)"
-                    min="0"
-                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                  />
-                  <span class="text-[11px] text-slate-400">Padrão de referência: 0.05 h/kg.</span>
-                </div>
-              </div>
-            </details>
-
-            <!-- Formulário de Adição -->
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Elemento</label>
-                <select #eTipo class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="pilar">Pilar</option>
-                  <option value="viga">Viga</option>
-                  <option value="laje">Laje</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Largura (m)</label>
-                <input #eLargura type="number" step="0.01" min="0" placeholder="Ex: 0.20" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Altura (m)</label>
-                <input #eAltura type="number" step="0.01" min="0" placeholder="Ex: 0.40" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Comprimento (m)</label>
-                <input #eComprimento type="number" step="0.01" min="0" placeholder="Ex: 5.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Qtd (un)</label>
-                <input #eQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarEstrutura(eTipo.value, eLargura.value, eAltura.value, eComprimento.value, eQtd.value); eLargura.value=''; eAltura.value=''; eComprimento.value=''; eQtd.value='1'"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Elemento Estrutural
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (estrutura().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Elemento</th>
-                      <th class="p-3">Dimensões (L×A×C)</th>
-                      <th class="p-3">Qtd</th>
-                      <th class="p-3">Concreto (m³)</th>
-                      <th class="p-3">Forma (m²)</th>
-                      <th class="p-3">Cimbramento (m³)</th>
-                      <th class="p-3">Aço (kg)</th>
-                      <th class="p-3">Solda (h)</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of estrutura(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800 capitalize">{{ formatarNomeTipo(item.tipo) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }} × {{ item.comprimento }}m</td>
-                        <td class="p-3 text-slate-600">{{ item.qtd }}</td>
-                        <td class="p-3 font-semibold text-slate-800">{{ item.concreto.toFixed(2) }}</td>
-                        <td class="p-3 font-semibold text-slate-800">{{ item.forma.toFixed(2) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.cimbramento.toFixed(2) }}</td>
-                        <td class="p-3 font-semibold text-emerald-700">{{ item.aco.toFixed(1) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.solda.toFixed(1) }}h</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerEstrutura(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhum elemento estrutural lançado ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 3: ARQUITETÔNICO ==================== -->
-        @if (abaAtiva() === 'arquitetonico') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Arquitetônico</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Alvenarias de vedação/estrutural, revestimento de paredes, pisos e pinturas. Meça o comprimento e altura dos panos ou ambientes e desconte os vãos de portas e janelas.
-              </p>
-            </div>
-
-            <!-- Alerta de referência das Esquadrias -->
-            @if (totalAreaEsquadrias() > 0) {
-              <div class="p-3.5 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl text-xs text-indigo-900 flex items-center justify-between">
-                <span>💡 <strong>Área total de esquadrias cadastradas:</strong> {{ totalAreaEsquadrias().toFixed(2) }} m². Use este valor como base para o desconto de vãos de alvenaria.</span>
-                <button type="button" (click)="abaAtiva.set('esquadrias')" class="text-indigo-700 font-bold hover:underline">
-                  Ver Esquadrias
-                </button>
-              </div>
-            }
-
-            <!-- Formulário de Adição -->
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Serviço</label>
-                <select #aTipo class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="alvenaria-ceramica">Alvenaria — bloco cerâmico</option>
-                  <option value="alvenaria-bloco">Alvenaria — bloco de concreto</option>
-                  <option value="revestimento-parede">Revestimento de parede (emboço/reboco)</option>
-                  <option value="piso-ceramico">Piso cerâmico / porcelanato</option>
-                  <option value="pintura">Pintura látex / acrílica</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Comprimento (m)</label>
-                <input #aComprimento type="number" step="0.01" min="0" placeholder="Ex: 8.50" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Altura (m)</label>
-                <input #aAltura type="number" step="0.01" min="0" placeholder="Ex: 2.80" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Qtd Panos/Ambientes</label>
-                <input #aQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Desconto vãos (m²)</label>
-                <input #aDesconto type="number" step="0.01" min="0" value="0" placeholder="Ex: 3.20" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarArquitetonico(aTipo.value, aComprimento.value, aAltura.value, aQtd.value, aDesconto.value); aComprimento.value=''; aAltura.value=''; aQtd.value='1'; aDesconto.value='0'"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Item Arquitetônico
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (arquitetonico().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Serviço</th>
-                      <th class="p-3">Dimensões (C×A)</th>
-                      <th class="p-3">Qtd Panos</th>
-                      <th class="p-3">Área Bruta (m²)</th>
-                      <th class="p-3">Desconto (m²)</th>
-                      <th class="p-3">Área Líquida (m²)</th>
-                      <th class="p-3">Encunhamento (m)</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of arquitetonico(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800">{{ formatarNomeServico(item.tipo) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.comprimento }} × {{ item.altura }}m</td>
-                        <td class="p-3 text-slate-600">{{ item.qtd }}</td>
-                        <td class="p-3 text-slate-600">{{ item.areaBruta.toFixed(2) }}</td>
-                        <td class="p-3 text-amber-700">-{{ item.desconto.toFixed(2) }}</td>
-                        <td class="p-3 font-bold text-indigo-900">{{ item.areaLiquida.toFixed(2) }} m²</td>
-                        <td class="p-3 text-slate-600">{{ item.encunhamento > 0 ? item.encunhamento.toFixed(2) + ' m' : '—' }}</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerArquitetonico(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhum serviço arquitetônico lançado ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 4: ESQUADRIAS ==================== -->
-        @if (abaAtiva() === 'esquadrias') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Esquadrias</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Portas, janelas, portões e gradis. O sistema calcula a área total dos vãos (para verificação de vidro/folhas e desconto de alvenaria) e consolida no resumo de arquitetura.
-              </p>
-            </div>
-
-            <!-- Formulário de Adição -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Elemento</label>
-                <select #qTipo class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="porta-lisa">Porta lisa de madeira</option>
-                  <option value="porta-veneziana">Porta veneziana / alumínio</option>
-                  <option value="janela-correr">Janela de correr (2 ou 4 folhas)</option>
-                  <option value="janela-basculante">Janela basculante / maxim-ar</option>
-                  <option value="portao">Portão metálico / acesso</option>
-                  <option value="guarda-corpo">Guarda-corpo / gradil</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Largura (m)</label>
-                <input #qLargura type="number" step="0.01" min="0" placeholder="Ex: 0.80" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Altura (m)</label>
-                <input #qAltura type="number" step="0.01" min="0" placeholder="Ex: 2.10" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade (un)</label>
-                <input #qQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarEsquadria(qTipo.value, qLargura.value, qAltura.value, qQtd.value); qLargura.value=''; qAltura.value=''; qQtd.value='1'"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Esquadria
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (esquadrias().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Elemento</th>
-                      <th class="p-3">Dimensões (L×A)</th>
-                      <th class="p-3">Quantidade (un)</th>
-                      <th class="p-3">Área Total (m²)</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of esquadrias(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800">{{ formatarNomeEsquadria(item.tipo) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.largura }} × {{ item.altura }}m</td>
-                        <td class="p-3 font-semibold text-slate-800">{{ item.qtd }} un</td>
-                        <td class="p-3 font-bold text-indigo-900">{{ item.area.toFixed(2) }} m²</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerEsquadria(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhuma esquadria lançada ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 5: COBERTURA ==================== -->
-        @if (abaAtiva() === 'cobertura') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Cobertura</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Telhas, estrutura metálica/madeira, calhas e rufos. Informe a dimensão unitária do elemento (área ou comprimento) e a quantidade de módulos.
-              </p>
-            </div>
-
-            <!-- Formulário de Adição -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Elemento</label>
-                <select #cTipo class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="telha-ceramica">Telha cerâmica / termoacústica</option>
-                  <option value="estrutura-metalica">Estrutura metálica de cobertura</option>
-                  <option value="estrutura-madeira">Estrutura de madeira (tesouras/ripas)</option>
-                  <option value="calha">Calha / rufo galvanizado</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Dimensão unitária</label>
-                <input #cDimensao type="number" step="0.01" min="0" placeholder="Ex: 50.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Unidade</label>
-                <select #cUnidade class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="m²">m² (área)</option>
-                  <option value="m">m (comprimento linear)</option>
-                  <option value="un">un (unidades)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Qtd Módulos</label>
-                <input #cQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarCobertura(cTipo.value, cDimensao.value, cUnidade.value, cQtd.value); cDimensao.value=''; cQtd.value='1'"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Item de Cobertura
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (cobertura().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Elemento</th>
-                      <th class="p-3">Dimensão Unitária</th>
-                      <th class="p-3">Qtd Módulos</th>
-                      <th class="p-3">Total Calculado</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of cobertura(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800">{{ formatarNomeCobertura(item.tipo) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.dimensao }} {{ item.unidade }}</td>
-                        <td class="p-3 text-slate-600">{{ item.qtd }}</td>
-                        <td class="p-3 font-bold text-indigo-900">{{ item.total.toFixed(2) }} {{ item.unidade }}</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerCobertura(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhum item de cobertura lançado ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 6: PERGOLADOS ==================== -->
-        @if (abaAtiva() === 'pergolados') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Pergolados e Estruturas de Sombreamento</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Pergolados de madeira ou metálicos, treliças e brises de sombreamento. Consolida com as estruturas de paisagismo e áreas externas no resumo.
-              </p>
-            </div>
-
-            <!-- Formulário de Adição -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Elemento</label>
-                <select #gTipo class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="pergolado-madeira">Pergolado de madeira tratada</option>
-                  <option value="pergolado-metalico">Pergolado metálico / perfil tubular</option>
-                  <option value="trelica">Treliça / brise de sombreamento</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Dimensão unitária</label>
-                <input #gDimensao type="number" step="0.01" min="0" placeholder="Ex: 18.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Unidade</label>
-                <select #gUnidade class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="m²">m² (área)</option>
-                  <option value="m">m (comprimento)</option>
-                  <option value="un">un (unidades)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Qtd Módulos</label>
-                <input #gQtd type="number" step="1" min="1" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarPergolado(gTipo.value, gDimensao.value, gUnidade.value, gQtd.value); gDimensao.value=''; gQtd.value='1'"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Pergolado
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (pergolados().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Elemento</th>
-                      <th class="p-3">Dimensão Unitária</th>
-                      <th class="p-3">Qtd Módulos</th>
-                      <th class="p-3">Total Calculado</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of pergolados(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800">{{ formatarNomePergolado(item.tipo) }}</td>
-                        <td class="p-3 text-slate-600">{{ item.dimensao }} {{ item.unidade }}</td>
-                        <td class="p-3 text-slate-600">{{ item.qtd }}</td>
-                        <td class="p-3 font-bold text-indigo-900">{{ item.total.toFixed(2) }} {{ item.unidade }}</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerPergolado(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhum pergolado lançado ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 7: INSTALAÇÕES ==================== -->
-        @if (abaAtiva() === 'instalacoes') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Hidrossanitário e Elétrico — Levantamento Guiado</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Percorra a planta baixa disciplina por disciplina, confira as legendas e registre as tubulações, pontos elétricos, quadros, e as louças e metais sanitários.
-              </p>
-            </div>
-
-            <!-- Checklist Rápido de Verificação de Legendas -->
-            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-              <div class="text-xs font-black text-slate-800 uppercase tracking-wider">Checklist de Itens para Conferência em Planta</div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                @for (check of checklistGuia; track check.id) {
-                  <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 cursor-pointer hover:bg-slate-50">
-                    <input type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500" />
-                    <span class="truncate">{{ check.label }}</span>
-                  </label>
-                }
-              </div>
-            </div>
-
-            <!-- Formulário de Adição de Instalação -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Disciplina</label>
-                <select #iDisciplina class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                  <option value="hidrossanitario">Hidrossanitário (tubos e conexões)</option>
-                  <option value="eletrico">Elétrico (cabos, pontos, quadro)</option>
-                  <option value="pecas-sanitarias">Louças e metais sanitários</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Item / Descrição</label>
-                <input #iItem type="text" placeholder="Ex: Tubo PVC Esgoto 100mm ou Ponto de Tomada 2P+T" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
-                <input #iQtd type="number" step="0.01" min="0" placeholder="Ex: 32" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Unidade</label>
-                <input #iUnidade type="text" placeholder="Ex: m, un, pt, cj" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarInstalacao(iDisciplina.value, iItem.value, iQtd.value, iUnidade.value); iItem.value=''; iQtd.value=''; iUnidade.value=''"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Item de Instalações
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (instalacoes().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Disciplina</th>
-                      <th class="p-3">Item / Material</th>
-                      <th class="p-3">Quantidade</th>
-                      <th class="p-3">Unidade</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of instalacoes(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800 capitalize">{{ item.disciplina }}</td>
-                        <td class="p-3 text-slate-800 font-medium">{{ item.item }}</td>
-                        <td class="p-3 font-bold text-indigo-900">{{ item.qtd }}</td>
-                        <td class="p-3 text-slate-600">{{ item.unidade }}</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerInstalacao(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhum item de instalações lançado ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 8: PAISAGISMO ==================== -->
-        @if (abaAtiva() === 'paisagismo') {
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-base font-black text-slate-900">Paisagismo e Áreas Externas</h4>
-              <p class="text-xs text-slate-500 mt-1">
-                Registre os quantitativos de forração de grama, mudas, árvores, preparo de solo/terra vegetal e pisos drenantes das áreas externas.
-              </p>
-            </div>
-
-            <!-- Formulário de Adição de Paisagismo -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Item / Descrição</label>
-                <input #pItem type="text" placeholder="Ex: Grama esmeralda em placas ou Mudas de arbusto" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Quantidade</label>
-                <input #pQtd type="number" step="0.01" min="0" placeholder="Ex: 250" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Unidade</label>
-                <input #pUnidade type="text" placeholder="Ex: m², un, m³" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" />
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button
-                type="button"
-                (click)="adicionarPaisagismo(pItem.value, pQtd.value, pUnidade.value); pItem.value=''; pQtd.value=''; pUnidade.value=''"
-                class="px-4 py-2.5 bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
-              >
-                + Adicionar Item de Paisagismo
-              </button>
-            </div>
-
-            <!-- Tabela de Itens -->
-            @if (paisagismo().length > 0) {
-              <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-3">Item / Material</th>
-                      <th class="p-3">Quantidade</th>
-                      <th class="p-3">Unidade</th>
-                      <th class="p-3 text-right">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (item of paisagismo(); track item.id) {
-                      <tr class="hover:bg-slate-50/60">
-                        <td class="p-3 font-bold text-slate-800">{{ item.item }}</td>
-                        <td class="p-3 font-bold text-indigo-900">{{ item.qtd }}</td>
-                        <td class="p-3 text-slate-600">{{ item.unidade }}</td>
-                        <td class="p-3 text-right">
-                          <button type="button" (click)="removerPaisagismo(item.id)" class="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer">
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Nenhum item de paisagismo lançado ainda.
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ==================== ABA 9: RESUMO & AUDITORIA ==================== -->
-        @if (abaAtiva() === 'resumo') {
-          <div class="space-y-8">
-            
-            <!-- 1. Bloco de Autoauditoria de Inconsistências -->
-            <div class="bg-slate-50 border border-slate-200 rounded-3xl p-6 space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h4 class="text-sm font-black text-slate-900 flex items-center gap-2">
-                    <span class="text-base">🛡️</span>
-                    <span>Autoauditoria — antes de fechar a lista, confira</span>
-                  </h4>
-                  <p class="text-xs text-slate-500 mt-0.5">
-                    Verificação automática de regras de coerência construtiva e detecção de serviços complementares esquecidos.
-                  </p>
-                </div>
-
-                <div class="flex items-center gap-1.5">
-                  <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 text-[11px] font-bold">
-                    {{ regrasAuditoria().length }} Regras Avaliadas
-                  </span>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                @for (regra of regrasAuditoria(); track regra.id) {
-                  <div
-                    class="p-3.5 rounded-2xl border text-xs flex items-start gap-3 transition-all"
-                    [class]="regra.status === 'ok' ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' : (regra.status === 'alerta' ? 'bg-amber-50/80 border-amber-200 text-amber-900 shadow-2xs' : 'bg-slate-100/70 border-slate-200 text-slate-600')"
-                  >
-                    <span class="text-sm shrink-0 mt-0.5">
-                      {{ regra.status === 'ok' ? '✅' : (regra.status === 'alerta' ? '⚠️' : '⚪') }}
-                    </span>
-                    <div class="space-y-1">
-                      <div class="font-bold">{{ regra.titulo }}</div>
-                      <div class="text-[11px] leading-relaxed opacity-90">{{ regra.mensagem }}</div>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- 2. Margens de Perda por Disciplina -->
-            <details class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs">
-              <summary class="font-bold text-slate-800 cursor-pointer flex items-center justify-between">
-                <span>⚙️ Configuração de Margens de Perda Operacional (%)</span>
-                <span class="text-[11px] text-slate-400 font-normal">Ajuste os percentuais aplicados ao resumo</span>
-              </summary>
-              <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-3 pt-3 border-t border-slate-200">
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Fundações (%)</label>
-                  <input type="number" [value]="margensPerda().fundacoes" (input)="atualizarMargemPerda('fundacoes', $event)" min="0" max="50" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Estrutura (%)</label>
-                  <input type="number" [value]="margensPerda().estrutura" (input)="atualizarMargemPerda('estrutura', $event)" min="0" max="50" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Arquitetura (%)</label>
-                  <input type="number" [value]="margensPerda().arquitetonico" (input)="atualizarMargemPerda('arquitetonico', $event)" min="0" max="50" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Cobertura (%)</label>
-                  <input type="number" [value]="margensPerda().cobertura" (input)="atualizarMargemPerda('cobertura', $event)" min="0" max="50" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Esquadrias (%)</label>
-                  <input type="number" [value]="margensPerda().esquadrias" (input)="atualizarMargemPerda('esquadrias', $event)" min="0" max="50" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Instalações (%)</label>
-                  <input type="number" [value]="margensPerda().instalacoes" (input)="atualizarMargemPerda('instalacoes', $event)" min="0" max="50" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Paisagismo (%)</label>
-                  <input type="number" [value]="margensPerda().paisagismo" (input)="atualizarMargemPerda('paisagismo', $event)" min="0" max="50" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs" />
-                </div>
-              </div>
-            </details>
-
-            <!-- 3. Tabela Consolidada de Quantitativos e Produtividade -->
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h4 class="text-base font-black text-slate-900">Resumo Consolidado</h4>
-                  <p class="text-xs text-slate-500">
-                    Quantitativos totais com aplicação de perda operacional e estimativa de duração por produtividade técnica.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  (click)="exportarCsv()"
-                  class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <span>Exportar Planilha (CSV)</span>
-                </button>
-              </div>
-
-              @if (resumoConsolidado().length > 0) {
-                <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                  <table class="w-full text-xs text-left">
-                    <thead class="bg-[#132A41] text-white font-bold">
-                      <tr>
-                        <th class="p-3">Disciplina</th>
-                        <th class="p-3">Serviço / Insumo</th>
-                        <th class="p-3">Unidade</th>
-                        <th class="p-3">Qtd. Calculada</th>
-                        <th class="p-3">Perda (%)</th>
-                        <th class="p-3">Qtd. com Perda</th>
-                        <th class="p-3">Produtividade (h/un)</th>
-                        <th class="p-3">Duração (h equipe)</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                      @for (item of resumoConsolidado(); track item.servico) {
-                        <tr class="hover:bg-slate-50/60">
-                          <td class="p-3 font-semibold text-slate-700">{{ item.disciplina }}</td>
-                          <td class="p-3 font-bold text-slate-900">{{ item.servico }}</td>
-                          <td class="p-3 text-slate-600">{{ item.unidade }}</td>
-                          <td class="p-3 text-slate-700">{{ item.qtdCalculada.toFixed(2) }}</td>
-                          <td class="p-3 text-amber-700">+{{ item.margemPerda }}%</td>
-                          <td class="p-3 font-black text-indigo-900">{{ item.qtdComPerda.toFixed(2) }}</td>
-                          <td class="p-3 text-slate-600">{{ item.produtividade.toFixed(2) }} h/{{ item.unidade }}</td>
-                          <td class="p-3 font-bold text-slate-800">{{ item.duracaoHoras.toFixed(1) }} h</td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              } @else {
-                <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                  Lance itens nas abas anteriores para gerar o resumo consolidado.
-                </div>
-              }
-            </div>
-
-          </div>
-        }
-
-      </div>
-
-      <!-- Rodapé Institucional e Orientação -->
-      <div class="text-center text-[11px] text-slate-400 pt-2">
-        Levantamento de Quantitativos · Amorim Tech · Nada é salvo automaticamente — use "Salvar sessão" para continuar depois.
-      </div>
-
-    </div>
-  `
+  templateUrl: './levantamento-quantitativos.component.html',
+  styles: [`
+    .aba-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 #f8fafc;
+      -webkit-overflow-scrolling: touch;
+    }
+    .aba-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+    .aba-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+    .aba-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .aba-scroll::-webkit-scrollbar-track {
+      background: #f8fafc;
+      border-radius: 999px;
+    }
+  `]
 })
-export class LevantamentoQuantitativosComponent {
-  readonly abaAtiva = signal<AbaDisciplina>('fundacoes');
+export class LevantamentoQuantitativosComponent implements AfterViewInit {
+  private readonly supabaseService = inject(SupabaseService);
+  private readonly motorPdfService = inject(MotorPdfService);
+
+  @ViewChild('tabsContainer') tabsContainer?: ElementRef<HTMLDivElement>;
+
+  readonly abaAtiva = signal<AbaDisciplina>('baldrame');
+  readonly podeRolarEsquerda = signal<boolean>(false);
+  readonly podeRolarDireita = signal<boolean>(true);
   readonly mensagemNotificacao = signal<string | null>(null);
+  readonly calculadoraBitolaAberta = signal<boolean>(false);
+  readonly bitolasState = signal<Record<string, number>>({});
+  readonly alvoCalculadoraBitola = signal<string | null>(null);
+  readonly gerandoPdf = signal<boolean>(false);
+
+  // ==================== GESTÃO DE PROJETOS SALVOS (SUPABASE) ====================
+  readonly projetoAtualId = signal<string | null>(null);
+  readonly projetoAtualNome = signal<string>('');
+  readonly salvandoProjeto = signal<boolean>(false);
+  readonly modalSalvarAberto = signal<boolean>(false);
+  readonly modalSalvarNomeInput = signal<string>('');
+  readonly modalProjetosAberto = signal<boolean>(false);
+  readonly carregandoProjetos = signal<boolean>(false);
+  readonly listaProjetosSalvos = signal<any[]>([]);
+  readonly toastMensagem = signal<{ texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null>(null);
 
   readonly checklistGuia = CHECKLIST_INSTALACOES_GUIA;
+  readonly tabelaBitolas = TABELA_BITOLAS_PADRAO;
+  readonly categoriasPorSistema = CATEGORIAS_POR_SISTEMA;
 
-  // Estados Reativos por Disciplina
-  readonly fundacoes = signal<ItemFundacao[]>([]);
-  readonly estrutura = signal<ItemEstrutura[]>([]);
+  // ==================== 8 SISTEMAS DE FUNDAÇÃO E ESTRUTURA ====================
+  readonly baldrame = signal<ItemBaldrame[]>([]);
+  readonly blocos = signal<ItemBloco[]>([]);
+  readonly sapatas = signal<ItemSapata[]>([]);
+  readonly radier = signal<ItemRadier[]>([]);
+  readonly tubuloes = signal<ItemTubulao[]>([]);
+  readonly pilares = signal<ItemPilar[]>([]);
+  readonly vigas = signal<ItemViga[]>([]);
+  readonly lajes = signal<ItemLaje[]>([]);
+
+  // ==================== OUTRAS DISCIPLINAS ====================
   readonly arquitetonico = signal<ItemArquitetonico[]>([]);
   readonly esquadrias = signal<ItemEsquadria[]>([]);
   readonly cobertura = signal<ItemCobertura[]>([]);
   readonly pergolados = signal<ItemPergolado[]>([]);
-  readonly instalacoes = signal<ItemInstalacao[]>([]);
   readonly paisagismo = signal<ItemPaisagismo[]>([]);
 
-  // Parâmetros Globais de Cálculo
-  readonly parametros = signal<ParametrosCalculo>({
-    reaproveitamentoSolo: 70,
-    acoFundacao: 80,
-    acoEstrutura: 100,
-    tempoSolda: 0.05
+  // ==================== 4 SISTEMAS REAIS DE INSTALAÇÕES PREDIAIS ====================
+  readonly distribuicaoEletrica = signal<ItemInstalacaoPredial[]>([]);
+  readonly prumadasEletricas = signal<ItemInstalacaoPredial[]>([]);
+  readonly esgotoPluvial = signal<ItemInstalacaoPredial[]>([]);
+  readonly hidraulica = signal<ItemInstalacaoPredial[]>([]);
+
+  // Margens de perda configuráveis por sistema e categoria (%)
+  readonly perdasCategorias = signal<Record<SistemaInstalacao, Record<string, number>>>({
+    'distribuicao-eletrica': {
+      'Eletrodutos': 5,
+      'Eletrocalhas e Perfilados': 1,
+      'Fios e cabos elétricos': 9,
+      'Conduletes': 20,
+      'Tomadas': 30,
+      'Interruptores': 10,
+      'Luminárias': 7
+    },
+    'prumadas-eletricas': {
+      'Eletrodutos': 25,
+      'Eletrocalhas e Perfilados': 2,
+      'Fios e cabos elétricos': 9,
+      'Caixas': 20
+    },
+    'esgoto-pluvial': {
+      'Tubulação PVC': 5,
+      'Conexões PVC': 1,
+      'Tubulação Ferro Fundido': 9,
+      'Conexões Ferro Fundido': 20,
+      'Acessórios para Esgoto': 20
+    },
+    'hidraulica': {
+      'Tubulação PVC': 5,
+      'Conexões PVC': 1,
+      'Tubulação Cobre': 9,
+      'Conexões Cobre': 20,
+      'Registros e Válvulas': 20,
+      'Diversos': 2
+    }
   });
 
-  // Margens de Perda por Disciplina (%)
+  // Array legado para compatibilidade segura caso sessões antigas sejam carregadas
+  readonly instalacoes = signal<ItemInstalacao[]>([]);
+
+  // ==================== PARÂMETROS E PERDAS Sienge ====================
+  readonly parametros = signal<ParametrosCalculo>({
+    espessuraLastroDefault: 0.05,
+    tempoSolda: 0.05,
+    perdaConcretoFundacao: 5,
+    perdaFormaFundacao: 1,
+    perdaEscavacaoFundacao: 9,
+    perdaReaterroFundacao: 20,
+    perdaBotaForaFundacao: 30,
+    perdaLastroFundacao: 10,
+    perdaAcoFundacao: 10,
+    perdaSoldaFundacao: 10,
+    perdaConcretoTubulao: 5,
+    perdaEscavacaoTubulao: 9,
+    perdaBotaForaTubulao: 30,
+    perdaConcretoEstrutura: 5,
+    perdaFormaEstrutura: 1,
+    perdaEscoramentoEstrutura: 9,
+    perdaAcoEstrutura: 9,
+    perdaSoldaEstrutura: 9,
+    perdaArquitetonico: 8,
+    perdaCobertura: 5,
+    perdaEsquadrias: 0,
+    perdaInstalacoes: 7,
+    perdaPaisagismo: 5
+  });
+
   readonly margensPerda = signal<MargensPerda>({
+    baldrame: 5,
+    blocos: 5,
+    sapatas: 5,
+    radier: 5,
+    tubuloes: 5,
+    pilares: 5,
+    vigas: 5,
+    lajes: 5,
     fundacoes: 5,
     estrutura: 5,
     arquitetonico: 8,
@@ -1226,11 +211,17 @@ export class LevantamentoQuantitativosComponent {
     paisagismo: 5
   });
 
-  // Totais Gerais Computados
+  // ==================== TOTAIS GERAIS COMPUTADOS ====================
   readonly totalItensLancados = computed(() => {
     return (
-      this.fundacoes().length +
-      this.estrutura().length +
+      this.baldrame().length +
+      this.blocos().length +
+      this.sapatas().length +
+      this.radier().length +
+      this.tubuloes().length +
+      this.pilares().length +
+      this.vigas().length +
+      this.lajes().length +
       this.arquitetonico().length +
       this.esquadrias().length +
       this.cobertura().length +
@@ -1241,151 +232,626 @@ export class LevantamentoQuantitativosComponent {
   });
 
   readonly totalConcretoGeral = computed(() => {
-    const f = this.fundacoes().reduce((acc, item) => acc + item.concreto, 0);
-    const e = this.estrutura().reduce((acc, item) => acc + item.concreto, 0);
-    return f + e;
+    const cBaldrame = this.baldrame().reduce((acc, i) => acc + i.concreto, 0);
+    const cBlocos = this.blocos().reduce((acc, i) => acc + i.concreto, 0);
+    const cSapatas = this.sapatas().reduce((acc, i) => acc + i.concreto, 0);
+    const cRadier = this.radier().reduce((acc, i) => acc + i.concreto, 0);
+    const cTubuloes = this.tubuloes().reduce((acc, i) => acc + i.concreto, 0);
+    const cPilares = this.pilares().reduce((acc, i) => acc + i.concreto, 0);
+    const cVigas = this.vigas().reduce((acc, i) => acc + i.concreto, 0);
+    const cLajes = this.lajes().reduce((acc, i) => acc + i.concreto, 0);
+    return cBaldrame + cBlocos + cSapatas + cRadier + cTubuloes + cPilares + cVigas + cLajes;
   });
 
   readonly totalFormaGeral = computed(() => {
-    const f = this.fundacoes().reduce((acc, item) => acc + item.forma, 0);
-    const e = this.estrutura().reduce((acc, item) => acc + item.forma, 0);
-    return f + e;
+    const fBaldrame = this.baldrame().reduce((acc, i) => acc + i.forma, 0);
+    const fBlocos = this.blocos().reduce((acc, i) => acc + i.forma, 0);
+    const fSapatas = this.sapatas().reduce((acc, i) => acc + i.forma, 0);
+    const fRadier = this.radier().reduce((acc, i) => acc + i.forma, 0);
+    const fPilares = this.pilares().reduce((acc, i) => acc + i.forma, 0);
+    const fVigas = this.vigas().reduce((acc, i) => acc + i.forma, 0);
+    const fLajes = this.lajes().reduce((acc, i) => acc + i.forma, 0);
+    return fBaldrame + fBlocos + fSapatas + fRadier + fPilares + fVigas + fLajes;
   });
 
   readonly totalAcoGeral = computed(() => {
-    const f = this.fundacoes().reduce((acc, item) => acc + item.aco, 0);
-    const e = this.estrutura().reduce((acc, item) => acc + item.aco, 0);
-    return f + e;
+    const aBaldrame = this.baldrame().reduce((acc, i) => acc + i.aco, 0);
+    const aBlocos = this.blocos().reduce((acc, i) => acc + i.aco, 0);
+    const aSapatas = this.sapatas().reduce((acc, i) => acc + i.aco, 0);
+    const aRadier = this.radier().reduce((acc, i) => acc + i.aco, 0);
+    const aTubuloes = this.tubuloes().reduce((acc, i) => acc + i.aco, 0);
+    const aPilares = this.pilares().reduce((acc, i) => acc + i.aco, 0);
+    const aVigas = this.vigas().reduce((acc, i) => acc + i.aco, 0);
+    const aLajes = this.lajes().reduce((acc, i) => acc + i.aco, 0);
+    return aBaldrame + aBlocos + aSapatas + aRadier + aTubuloes + aPilares + aVigas + aLajes;
   });
 
   readonly totalEscavacaoGeral = computed(() => {
-    return this.fundacoes().reduce((acc, item) => acc + item.escavacao, 0);
+    const eBaldrame = this.baldrame().reduce((acc, i) => acc + i.escavacao, 0);
+    const eBlocos = this.blocos().reduce((acc, i) => acc + i.escavacao, 0);
+    const eSapatas = this.sapatas().reduce((acc, i) => acc + i.escavacao, 0);
+    const eRadier = this.radier().reduce((acc, i) => acc + i.escavacao, 0);
+    const eTubuloes = this.tubuloes().reduce((acc, i) => acc + i.escavacao, 0);
+    return eBaldrame + eBlocos + eSapatas + eRadier + eTubuloes;
+  });
+
+  readonly totalEscoramentoGeral = computed(() => {
+    const eVigas = this.vigas().reduce((acc, i) => acc + i.escoramento, 0);
+    const eLajes = this.lajes().reduce((acc, i) => acc + i.escoramento, 0);
+    return eVigas + eLajes;
   });
 
   readonly totalAreaEsquadrias = computed(() => {
     return this.esquadrias().reduce((acc, item) => acc + item.area, 0);
   });
 
-  // ==================== MÉTODOS DE FUNDAÇÕES ====================
-  adicionarFundacao(
-    tipoStr: string,
+  // Calculadora de Bitolas total
+  readonly totalKgCalculadoraBitola = computed(() => {
+    const map = this.bitolasState();
+    let total = 0;
+    for (const b of this.tabelaBitolas) {
+      const metros = map[b.bitola] || 0;
+      total += metros * b.pesoLinear;
+    }
+    return total;
+  });
+
+  ngAfterViewInit(): void {
+    setTimeout(() => this.verificarScrollAbas(), 100);
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.verificarScrollAbas();
+  }
+
+  verificarScrollAbas(): void {
+    if (this.tabsContainer?.nativeElement) {
+      const el = this.tabsContainer.nativeElement;
+      const temScrollEsquerda = el.scrollLeft > 6;
+      const temScrollDireita = el.scrollLeft + el.clientWidth < el.scrollWidth - 6;
+      this.podeRolarEsquerda.set(temScrollEsquerda);
+      this.podeRolarDireita.set(temScrollDireita);
+    }
+  }
+
+  atualizarScrollAbas(el?: HTMLElement): void {
+    const target = el || this.tabsContainer?.nativeElement;
+    if (target) {
+      this.podeRolarEsquerda.set(target.scrollLeft > 6);
+      this.podeRolarDireita.set(target.scrollLeft + target.clientWidth < target.scrollWidth - 6);
+    }
+  }
+
+  rolarAbas(direcao: 'esquerda' | 'direita'): void {
+    if (this.tabsContainer?.nativeElement) {
+      const el = this.tabsContainer.nativeElement;
+      const deslocamento = direcao === 'esquerda' ? -260 : 260;
+      el.scrollBy({ left: deslocamento, behavior: 'smooth' });
+      setTimeout(() => this.verificarScrollAbas(), 320);
+    }
+  }
+
+  selecionarAba(aba: AbaDisciplina, event?: MouseEvent): void {
+    this.abaAtiva.set(aba);
+    if (event?.currentTarget) {
+      (event.currentTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      setTimeout(() => this.verificarScrollAbas(), 320);
+    }
+  }
+
+  abrirCalculadoraBitola(campoAlvoId: string): void {
+    this.alvoCalculadoraBitola.set(campoAlvoId);
+    this.calculadoraBitolaAberta.set(true);
+  }
+
+  fecharCalculadoraBitola(): void {
+    this.calculadoraBitolaAberta.set(false);
+    this.alvoCalculadoraBitola.set(null);
+  }
+
+  atualizarMetrosBitola(bitola: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const metros = parseFloat(input.value) || 0;
+    this.bitolasState.update(st => ({ ...st, [bitola]: metros }));
+  }
+
+  aplicarAcoCalculadora(): void {
+    const total = this.totalKgCalculadoraBitola();
+    const id = this.alvoCalculadoraBitola();
+    if (id && typeof document !== 'undefined') {
+      const inputElem = document.getElementById(id) as HTMLInputElement | null;
+      if (inputElem) {
+        inputElem.value = total > 0 ? total.toFixed(2) : '0';
+      }
+    }
+    this.fecharCalculadoraBitola();
+    this.exibirNotificacao(`Aço de ${total.toFixed(2)} kg aplicado a partir das bitolas!`);
+  }
+
+  limparCalculadoraBitola(): void {
+    this.bitolasState.set({});
+  }
+
+  // ==================== 1. BALDRAME ====================
+  adicionarBaldrame(
+    nomeStr: string,
     larguraStr: string,
     alturaStr: string,
     comprimentoStr: string,
     profundidadeStr: string,
-    qtdStr: string
+    qtdStr: string,
+    espessuraLastroStr: string,
+    acoStr: string
   ): void {
     const largura = parseFloat(larguraStr);
     const altura = parseFloat(alturaStr);
     const comprimento = parseFloat(comprimentoStr);
-    const profundidade = parseFloat(profundidadeStr);
+    const profundidade = parseFloat(profundidadeStr) || 0;
     const qtd = parseInt(qtdStr, 10) || 1;
+    const espessuraLastro = parseFloat(espessuraLastroStr) || this.parametros().espessuraLastroDefault;
+    let aco = parseFloat(acoStr) || 0;
 
-    if (!largura || !altura || !comprimento || isNaN(profundidade) || profundidade < 0) {
-      this.exibirNotificacao('Por favor, informe largura, altura, comprimento e profundidade válidos.');
+    if (!largura || !altura || !comprimento) {
+      this.exibirNotificacao('Por favor, informe largura, altura e comprimento válidos do baldrame.');
       return;
     }
 
-    const cfg = this.parametros();
-    const tipo = tipoStr as ItemFundacao['tipo'];
+    // Fórmulas reais do Sienge
+    const concreto = qtd * largura * altura * comprimento;
+    const forma = qtd * (comprimento * altura * 2);
+    const escavacao = (largura + 0.6) * profundidade * comprimento * qtd;
+    const lastro = (largura + 0.1) * comprimento * espessuraLastro * qtd;
+    const reaterro = Math.max(0, escavacao - concreto - lastro);
+    const botaFora = Math.max(0, (escavacao * 1.3) - concreto - lastro);
 
-    // Fórmulas exatas do artefato de engenharia
-    const concreto = largura * altura * comprimento * qtd;
-    let forma = 0;
-    if (tipo === 'sapata-isolada' || tipo === 'bloco') {
-      forma = 2 * (largura + comprimento) * altura * qtd;
-    } else {
-      forma = 2 * comprimento * altura * qtd;
+    if (!aco) {
+      aco = concreto * 80; // fallback paramétrico usual
     }
 
-    const escavacao = largura * comprimento * profundidade * qtd;
-    const reaproveitamento = escavacao * (cfg.reaproveitamentoSolo / 100);
-    const botaFora = Math.max(0, escavacao - reaproveitamento);
-    const aco = concreto * cfg.acoFundacao;
-
-    const novoItem: ItemFundacao = {
-      id: 'f_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-      tipo,
+    const novoItem: ItemBaldrame = {
+      id: 'bal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Baldrame ${largura * 100}x${altura * 100}cm`,
       largura,
       altura,
       comprimento,
       profundidade,
       qtd,
+      espessuraLastro,
       concreto,
       forma,
       escavacao,
-      reaproveitamento,
+      lastro,
+      reaterro,
       botaFora,
       aco
     };
 
-    this.fundacoes.update(lista => [...lista, novoItem]);
-    this.exibirNotificacao('Elemento de fundação adicionado com sucesso!');
+    this.baldrame.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Viga baldrame adicionada com sucesso!');
   }
 
-  removerFundacao(id: string): void {
-    this.fundacoes.update(lista => lista.filter(item => item.id !== id));
+  removerBaldrame(id: string): void {
+    this.baldrame.update(l => l.filter(i => i.id !== id));
   }
 
-  // ==================== MÉTODOS DE ESTRUTURA ====================
-  adicionarEstrutura(
-    tipoStr: string,
+  // ==================== 2. BLOCOS DE FUNDAÇÃO ====================
+  adicionarBloco(
+    nomeStr: string,
     larguraStr: string,
     alturaStr: string,
     comprimentoStr: string,
-    qtdStr: string
+    profundidadeStr: string,
+    qtdStr: string,
+    espessuraLastroStr: string,
+    acoStr: string
+  ): void {
+    const largura = parseFloat(larguraStr);
+    const altura = parseFloat(alturaStr);
+    const comprimento = parseFloat(comprimentoStr);
+    const profundidade = parseFloat(profundidadeStr) || 0;
+    const qtd = parseInt(qtdStr, 10) || 1;
+    const espessuraLastro = parseFloat(espessuraLastroStr) || this.parametros().espessuraLastroDefault;
+    let aco = parseFloat(acoStr) || 0;
+
+    if (!largura || !altura || !comprimento) {
+      this.exibirNotificacao('Por favor, informe largura, altura e comprimento válidos do bloco.');
+      return;
+    }
+
+    // Fórmulas reais do Sienge
+    const concreto = qtd * largura * altura * comprimento;
+    const forma = qtd * (comprimento * altura * 2 + largura * altura * 2);
+    const escavacao = (largura + 0.6) * profundidade * comprimento * qtd;
+    const lastro = (largura + 0.1) * comprimento * espessuraLastro * qtd;
+    const reaterro = Math.max(0, escavacao - concreto - lastro);
+    const botaFora = Math.max(0, (escavacao * 1.3) - concreto - lastro);
+
+    if (!aco) {
+      aco = concreto * 80;
+    }
+
+    const novoItem: ItemBloco = {
+      id: 'blo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Bloco ${largura}x${comprimento}m`,
+      largura,
+      altura,
+      comprimento,
+      profundidade,
+      qtd,
+      espessuraLastro,
+      concreto,
+      forma,
+      escavacao,
+      lastro,
+      reaterro,
+      botaFora,
+      aco
+    };
+
+    this.blocos.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Bloco de fundação adicionado com sucesso!');
+  }
+
+  removerBloco(id: string): void {
+    this.blocos.update(l => l.filter(i => i.id !== id));
+  }
+
+  // ==================== 3. SAPATAS ====================
+  adicionarSapata(
+    nomeStr: string,
+    larguraBaseStr: string,
+    comprimentoBaseStr: string,
+    larguraFusteStr: string,
+    comprimentoFusteStr: string,
+    alturaTroncoStr: string,
+    alturaBaseStr: string,
+    profundidadeStr: string,
+    qtdStr: string,
+    espessuraLastroStr: string,
+    acoStr: string
+  ): void {
+    const Lb = parseFloat(larguraBaseStr);
+    const Cb = parseFloat(comprimentoBaseStr);
+    const Lf = parseFloat(larguraFusteStr) || 0;
+    const Cf = parseFloat(comprimentoFusteStr) || 0;
+    const H = parseFloat(alturaTroncoStr) || 0;
+    const B = parseFloat(alturaBaseStr) || 0;
+    const P = parseFloat(profundidadeStr) || 0;
+    const qtd = parseInt(qtdStr, 10) || 1;
+    const espessuraLastro = parseFloat(espessuraLastroStr) || this.parametros().espessuraLastroDefault;
+    let aco = parseFloat(acoStr) || 0;
+
+    if (!Lb || !Cb || (!H && !B)) {
+      this.exibirNotificacao('Informe largura e comprimento da base, e as alturas da sapata.');
+      return;
+    }
+
+    // Fórmulas reais do Sienge para Sapata Piramidal com Rodapé
+    const concretoUnit = (H / 6) * ((2 * Lb + Lf) * Cb + (2 * Lf + Lb) * Cf) + (Lb * Cb * B);
+    const concreto = concretoUnit * qtd;
+
+    const formaUnit =
+      (Cb + Cf) * Math.sqrt(Math.pow((Cb - Cf) / 2, 2) + Math.pow(H, 2)) +
+      (Lb + Lf) * Math.sqrt(Math.pow((Lb - Lf) / 2, 2) + Math.pow(H, 2)) +
+      (Lb + Cb) * 2 * B;
+    const forma = formaUnit * qtd;
+
+    const escavacao = (Lb + 0.6) * (Cb + 0.6) * P * qtd;
+    const lastro = (Lb + 0.2) * (Cb + 0.2) * qtd * espessuraLastro;
+    const reaterro = Math.max(0, escavacao - concreto - lastro);
+    const botaFora = Math.max(0, (escavacao * 1.3) - concreto - lastro);
+
+    if (!aco) {
+      aco = concreto * 80;
+    }
+
+    const novoItem: ItemSapata = {
+      id: 'sap_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Sapata ${Lb}x${Cb}m`,
+      larguraBase: Lb,
+      comprimentoBase: Cb,
+      larguraFuste: Lf,
+      comprimentoFuste: Cf,
+      alturaTronco: H,
+      alturaBase: B,
+      profundidade: P,
+      qtd,
+      espessuraLastro,
+      concreto,
+      forma,
+      escavacao,
+      lastro,
+      reaterro,
+      botaFora,
+      aco
+    };
+
+    this.sapatas.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Sapata adicionada com sucesso!');
+  }
+
+  removerSapata(id: string): void {
+    this.sapatas.update(l => l.filter(i => i.id !== id));
+  }
+
+  // ==================== 4. RADIER ====================
+  adicionarRadier(
+    nomeStr: string,
+    larguraStr: string,
+    alturaStr: string,
+    comprimentoStr: string,
+    profundidadeStr: string,
+    qtdStr: string,
+    espessuraLastroStr: string,
+    acoStr: string
+  ): void {
+    const largura = parseFloat(larguraStr);
+    const altura = parseFloat(alturaStr);
+    const comprimento = parseFloat(comprimentoStr);
+    const profundidade = parseFloat(profundidadeStr) || 0;
+    const qtd = parseInt(qtdStr, 10) || 1;
+    const espessuraLastro = parseFloat(espessuraLastroStr) || this.parametros().espessuraLastroDefault;
+    let aco = parseFloat(acoStr) || 0;
+
+    if (!largura || !altura || !comprimento) {
+      this.exibirNotificacao('Informe largura, espessura e comprimento do radier.');
+      return;
+    }
+
+    // Fórmulas reais do Sienge
+    const concreto = qtd * largura * altura * comprimento;
+    const forma = qtd * (comprimento * altura * 2 + largura * altura * 2);
+    const escavacao = (largura + 0.6) * profundidade * comprimento * qtd;
+    const lastro = largura * comprimento * espessuraLastro * qtd;
+    const reaterro = Math.max(0, escavacao - concreto); // nota técnica: sem descontar lastro
+    const botaFora = Math.max(0, (escavacao * 1.3) - concreto);
+
+    if (!aco) {
+      aco = concreto * 85;
+    }
+
+    const novoItem: ItemRadier = {
+      id: 'rad_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Radier ${largura}x${comprimento}m (e=${altura * 100}cm)`,
+      largura,
+      altura,
+      comprimento,
+      profundidade,
+      qtd,
+      espessuraLastro,
+      concreto,
+      forma,
+      escavacao,
+      lastro,
+      reaterro,
+      botaFora,
+      aco
+    };
+
+    this.radier.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Radier adicionado com sucesso!');
+  }
+
+  removerRadier(id: string): void {
+    this.radier.update(l => l.filter(i => i.id !== id));
+  }
+
+  // ==================== 5. TUBULÕES ====================
+  adicionarTubulao(
+    nomeStr: string,
+    diametroFusteStr: string,
+    alturaFusteStr: string,
+    diametroBaseStr: string,
+    alturaBaseStr: string,
+    alturaBStr: string,
+    qtdStr: string,
+    acoStr: string
+  ): void {
+    const Df = parseFloat(diametroFusteStr);
+    const Hf = parseFloat(alturaFusteStr);
+    const Db = parseFloat(diametroBaseStr) || Df;
+    const Hb = parseFloat(alturaBaseStr) || 0;
+    const b = parseFloat(alturaBStr) || 0;
+    const qtd = parseInt(qtdStr, 10) || 1;
+    let aco = parseFloat(acoStr) || 0;
+
+    if (!Df || !Hf) {
+      this.exibirNotificacao('Informe o diâmetro e a altura do fuste do tubulão.');
+      return;
+    }
+
+    // Fórmulas reais do Sienge
+    const volBaseCilindrica = (Math.PI * Math.pow(Db, 2) / 4) * b;
+    const volTroncoCone = (1 / 3) * Math.PI * (Hb - b) * (Math.pow(Db, 2) / 4 + (Db * Df) / 4 + Math.pow(Df, 2) / 4);
+    const volFuste = (Math.PI * Math.pow(Df, 2) / 4) * Hf;
+    const concretoUnit = volBaseCilindrica + (Hb > b ? volTroncoCone : 0) + volFuste;
+    const concreto = concretoUnit * qtd;
+    const escavacao = concreto;
+    const botaFora = escavacao * 1.3;
+
+    if (!aco) {
+      aco = concreto * 60;
+    }
+
+    const novoItem: ItemTubulao = {
+      id: 'tub_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Tubulão ⌀${Df * 100}cm (Prof ${Hf + Hb}m)`,
+      diametroFuste: Df,
+      alturaFuste: Hf,
+      diametroBase: Db,
+      alturaBase: Hb,
+      alturaB: b,
+      qtd,
+      concreto,
+      escavacao,
+      botaFora,
+      aco
+    };
+
+    this.tubuloes.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Tubulão adicionado com sucesso!');
+  }
+
+  removerTubulao(id: string): void {
+    this.tubuloes.update(l => l.filter(i => i.id !== id));
+  }
+
+  // ==================== 6. PILARES ====================
+  adicionarPilar(
+    nomeStr: string,
+    larguraStr: string,
+    alturaStr: string,
+    comprimentoStr: string,
+    qtdStr: string,
+    acoStr: string
   ): void {
     const largura = parseFloat(larguraStr);
     const altura = parseFloat(alturaStr);
     const comprimento = parseFloat(comprimentoStr);
     const qtd = parseInt(qtdStr, 10) || 1;
+    let aco = parseFloat(acoStr) || 0;
 
     if (!largura || !altura || !comprimento) {
-      this.exibirNotificacao('Por favor, preencha largura, altura e comprimento do elemento estrutural.');
+      this.exibirNotificacao('Informe seção (largura × altura) e comprimento/altura do pilar.');
       return;
     }
 
-    const cfg = this.parametros();
-    const tipo = tipoStr as ItemEstrutura['tipo'];
-
-    const concreto = largura * altura * comprimento * qtd;
-    let forma = 0;
-    let cimbramento = 0;
-
-    if (tipo === 'pilar') {
-      forma = 2 * (largura + altura) * comprimento * qtd;
-      cimbramento = 0;
-    } else if (tipo === 'viga') {
-      forma = (largura + 2 * altura) * comprimento * qtd;
-      cimbramento = largura * altura * comprimento * qtd;
-    } else if (tipo === 'laje') {
-      forma = largura * comprimento * qtd;
-      cimbramento = largura * comprimento * altura * qtd;
+    // Fórmulas reais do Sienge
+    const concreto = qtd * largura * altura * comprimento;
+    const forma = (comprimento + largura) * 2 * altura * qtd;
+    if (!aco) {
+      aco = concreto * 110;
     }
+    const solda = aco * this.parametros().tempoSolda;
 
-    const aco = concreto * cfg.acoEstrutura;
-    const solda = aco * cfg.tempoSolda;
-
-    const novoItem: ItemEstrutura = {
-      id: 'e_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-      tipo,
+    const novoItem: ItemPilar = {
+      id: 'pil_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Pilar ${largura * 100}x${altura * 100}cm (H=${comprimento}m)`,
       largura,
       altura,
       comprimento,
       qtd,
       concreto,
       forma,
-      cimbramento,
       aco,
       solda
     };
 
-    this.estrutura.update(lista => [...lista, novoItem]);
-    this.exibirNotificacao('Elemento estrutural adicionado com sucesso!');
+    this.pilares.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Pilar adicionado com sucesso!');
   }
 
-  removerEstrutura(id: string): void {
-    this.estrutura.update(lista => lista.filter(item => item.id !== id));
+  removerPilar(id: string): void {
+    this.pilares.update(l => l.filter(i => i.id !== id));
+  }
+
+  // ==================== 7. VIGAS ====================
+  adicionarViga(
+    nomeStr: string,
+    larguraStr: string,
+    alturaStr: string,
+    comprimentoStr: string,
+    alturaFundoVigaStr: string,
+    qtdStr: string,
+    acoStr: string
+  ): void {
+    const largura = parseFloat(larguraStr);
+    const altura = parseFloat(alturaStr);
+    const comprimento = parseFloat(comprimentoStr);
+    const alturaFundoViga = parseFloat(alturaFundoVigaStr) || (2.80 - altura);
+    const qtd = parseInt(qtdStr, 10) || 1;
+    let aco = parseFloat(acoStr) || 0;
+
+    if (!largura || !altura || !comprimento) {
+      this.exibirNotificacao('Informe largura, altura e comprimento da viga.');
+      return;
+    }
+
+    // Fórmulas reais do Sienge
+    const concreto = qtd * largura * altura * comprimento;
+    const forma = (largura + 2 * altura) * comprimento * qtd;
+    const escoramento = largura * alturaFundoViga * comprimento * qtd;
+    if (!aco) {
+      aco = concreto * 100;
+    }
+    const solda = aco * this.parametros().tempoSolda;
+
+    const novoItem: ItemViga = {
+      id: 'vig_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Viga ${largura * 100}x${altura * 100}cm (L=${comprimento}m)`,
+      largura,
+      altura,
+      comprimento,
+      alturaFundoViga,
+      qtd,
+      concreto,
+      forma,
+      escoramento,
+      aco,
+      solda
+    };
+
+    this.vigas.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Viga adicionada com sucesso!');
+  }
+
+  removerViga(id: string): void {
+    this.vigas.update(l => l.filter(i => i.id !== id));
+  }
+
+  // ==================== 8. LAJES ====================
+  adicionarLaje(
+    nomeStr: string,
+    larguraStr: string,
+    alturaStr: string,
+    comprimentoStr: string,
+    peDireitoStr: string,
+    qtdStr: string,
+    acoStr: string
+  ): void {
+    const largura = parseFloat(larguraStr);
+    const altura = parseFloat(alturaStr); // espessura
+    const comprimento = parseFloat(comprimentoStr);
+    const peDireito = parseFloat(peDireitoStr) || 2.80;
+    const qtd = parseInt(qtdStr, 10) || 1;
+    let aco = parseFloat(acoStr) || 0;
+
+    if (!largura || !altura || !comprimento) {
+      this.exibirNotificacao('Informe largura, espessura e comprimento da laje.');
+      return;
+    }
+
+    // Fórmulas reais do Sienge
+    const concreto = qtd * largura * altura * comprimento;
+    const forma = qtd * largura * comprimento;
+    const escoramento = forma * peDireito;
+    if (!aco) {
+      aco = concreto * 80;
+    }
+    const solda = aco * this.parametros().tempoSolda;
+
+    const novoItem: ItemLaje = {
+      id: 'laj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      nome: nomeStr.trim() || `Laje ${largura}x${comprimento}m (e=${altura * 100}cm)`,
+      largura,
+      altura,
+      comprimento,
+      peDireito,
+      qtd,
+      concreto,
+      forma,
+      escoramento,
+      aco,
+      solda
+    };
+
+    this.lajes.update(l => [...l, novoItem]);
+    this.exibirNotificacao('Laje adicionada com sucesso!');
+  }
+
+  removerLaje(id: string): void {
+    this.lajes.update(l => l.filter(i => i.id !== id));
   }
 
   // ==================== MÉTODOS DE ARQUITETÔNICO ====================
@@ -1524,7 +990,154 @@ export class LevantamentoQuantitativosComponent {
     this.pergolados.update(lista => lista.filter(item => item.id !== id));
   }
 
-  // ==================== MÉTODOS DE INSTALAÇÕES ====================
+  // ==================== MÉTODOS DOS 4 SISTEMAS DE INSTALAÇÕES PREDIAIS ====================
+  getCategoriasSistema(sistema: SistemaInstalacao): CategoriaConfig[] {
+    return this.categoriasPorSistema[sistema] || [];
+  }
+
+  getPerdaCategoria(sistema: SistemaInstalacao, categoria: string): number {
+    const custom = this.perdasCategorias()[sistema]?.[categoria];
+    if (custom !== undefined) return custom;
+    const config = this.categoriasPorSistema[sistema]?.find(c => c.nome === categoria);
+    return config ? config.percentualPerda * 100 : 5;
+  }
+
+  getUnidadePadrao(sistema: SistemaInstalacao, categoria: string): string {
+    const config = this.categoriasPorSistema[sistema]?.find(c => c.nome === categoria);
+    return config ? config.unidadePadrao : 'un';
+  }
+
+  atualizarPerdaCategoria(sistema: SistemaInstalacao, categoria: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseFloat(input.value);
+    if (isNaN(val) || val < 0) return;
+    this.perdasCategorias.update(map => ({
+      ...map,
+      [sistema]: {
+        ...(map[sistema] || {}),
+        [categoria]: val
+      }
+    }));
+  }
+
+  adicionarItemInstalacao(
+    sistema: SistemaInstalacao,
+    categoria: string,
+    especificacaoStr: string,
+    localStr: string,
+    qtdStr: string,
+    unidadeCustom?: string
+  ): void {
+    const especificacao = especificacaoStr.trim();
+    const local = localStr.trim();
+    const quantidade = parseFloat(qtdStr);
+
+    if (!especificacao || isNaN(quantidade) || quantidade <= 0) {
+      this.exibirNotificacao('Informe a especificação/material e uma quantidade válida maior que zero.');
+      return;
+    }
+
+    const unidade = (unidadeCustom && unidadeCustom.trim()) || this.getUnidadePadrao(sistema, categoria);
+    const margemPerda = this.getPerdaCategoria(sistema, categoria);
+    const quantidadeComPerda = quantidade * (1 + margemPerda / 100);
+
+    const novoItem: ItemInstalacaoPredial = {
+      id: `inst_${sistema.slice(0, 4)}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      sistema,
+      categoria,
+      especificacao,
+      local: local || undefined,
+      quantidade,
+      unidade,
+      margemPerda,
+      quantidadeComPerda
+    };
+
+    switch (sistema) {
+      case 'distribuicao-eletrica':
+        this.distribuicaoEletrica.update(l => [...l, novoItem]);
+        break;
+      case 'prumadas-eletricas':
+        this.prumadasEletricas.update(l => [...l, novoItem]);
+        break;
+      case 'esgoto-pluvial':
+        this.esgotoPluvial.update(l => [...l, novoItem]);
+        break;
+      case 'hidraulica':
+        this.hidraulica.update(l => [...l, novoItem]);
+        break;
+    }
+
+    this.exibirNotificacao(`Item adicionado com sucesso! (+${margemPerda}% de perda calculada)`);
+  }
+
+  removerItemInstalacao(sistema: SistemaInstalacao, id: string): void {
+    switch (sistema) {
+      case 'distribuicao-eletrica':
+        this.distribuicaoEletrica.update(l => l.filter(i => i.id !== id));
+        break;
+      case 'prumadas-eletricas':
+        this.prumadasEletricas.update(l => l.filter(i => i.id !== id));
+        break;
+      case 'esgoto-pluvial':
+        this.esgotoPluvial.update(l => l.filter(i => i.id !== id));
+        break;
+      case 'hidraulica':
+        this.hidraulica.update(l => l.filter(i => i.id !== id));
+        break;
+    }
+  }
+
+  getTotaisPorCategoria(sistema: SistemaInstalacao) {
+    let itens: ItemInstalacaoPredial[] = [];
+    switch (sistema) {
+      case 'distribuicao-eletrica':
+        itens = this.distribuicaoEletrica();
+        break;
+      case 'prumadas-eletricas':
+        itens = this.prumadasEletricas();
+        break;
+      case 'esgoto-pluvial':
+        itens = this.esgotoPluvial();
+        break;
+      case 'hidraulica':
+        itens = this.hidraulica();
+        break;
+    }
+
+    const mapa = new Map<string, { categoria: string; qtd: number; qtdComPerda: number; unidade: string; perda: number; itens: ItemInstalacaoPredial[] }>();
+
+    const configs = this.getCategoriasSistema(sistema);
+    configs.forEach(c => {
+      mapa.set(c.nome, {
+        categoria: c.nome,
+        qtd: 0,
+        qtdComPerda: 0,
+        unidade: c.unidadePadrao,
+        perda: this.getPerdaCategoria(sistema, c.nome),
+        itens: []
+      });
+    });
+
+    itens.forEach(item => {
+      const cur = mapa.get(item.categoria) || {
+        categoria: item.categoria,
+        qtd: 0,
+        qtdComPerda: 0,
+        unidade: item.unidade,
+        perda: item.margemPerda,
+        itens: []
+      };
+      cur.qtd += item.quantidade;
+      cur.qtdComPerda += item.quantidadeComPerda;
+      cur.itens.push(item);
+      mapa.set(item.categoria, cur);
+    });
+
+    return Array.from(mapa.values()).filter(g => g.itens.length > 0);
+  }
+
+  // Método legado mantido para segurança
   adicionarInstalacao(disciplinaStr: string, itemStr: string, qtdStr: string, unidadeStr: string): void {
     const item = itemStr.trim();
     const qtd = parseFloat(qtdStr);
@@ -1582,18 +1195,24 @@ export class LevantamentoQuantitativosComponent {
   // ==================== RESUMO CONSOLIDADO ====================
   readonly resumoConsolidado = computed<ItemResumoConsolidado[]>(() => {
     const lista: ItemResumoConsolidado[] = [];
-    const margens = this.margensPerda();
+    const p = this.parametros();
+    const m = this.margensPerda();
 
-    // 1. Escavação (Fundações)
-    const escavacao = this.fundacoes().reduce((acc, i) => acc + i.escavacao, 0);
-    if (escavacao > 0) {
-      const perda = margens.fundacoes;
-      const comPerda = escavacao * (1 + perda / 100);
+    // 1. Escavação em Fundações
+    const escavFund =
+      this.baldrame().reduce((acc, i) => acc + i.escavacao, 0) +
+      this.blocos().reduce((acc, i) => acc + i.escavacao, 0) +
+      this.sapatas().reduce((acc, i) => acc + i.escavacao, 0) +
+      this.radier().reduce((acc, i) => acc + i.escavacao, 0);
+
+    if (escavFund > 0) {
+      const perda = p.perdaEscavacaoFundacao;
+      const comPerda = escavFund * (1 + perda / 100);
       lista.push({
         disciplina: 'Fundações',
-        servico: 'Escavação manual/mecânica de valas e cavas',
+        servico: 'Escavação manual/mecânica (Baldrames, Blocos, Sapatas, Radier)',
         unidade: 'm³',
-        qtdCalculada: escavacao,
+        qtdCalculada: escavFund,
         margemPerda: perda,
         qtdComPerda: comPerda,
         produtividade: 1.5,
@@ -1601,16 +1220,60 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 2. Reaterro e Compactação
-    const reaprov = this.fundacoes().reduce((acc, i) => acc + i.reaproveitamento, 0);
-    if (reaprov > 0) {
-      const perda = margens.fundacoes;
-      const comPerda = reaprov * (1 + perda / 100);
+    // Escavação em Tubulões
+    const escavTub = this.tubuloes().reduce((acc, i) => acc + i.escavacao, 0);
+    if (escavTub > 0) {
+      const perda = p.perdaEscavacaoTubulao;
+      const comPerda = escavTub * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Fundações Profundas',
+        servico: 'Escavação e abertura de fuste/base de tubulões a céu aberto',
+        unidade: 'm³',
+        qtdCalculada: escavTub,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 2.8,
+        duracaoHoras: comPerda * 2.8
+      });
+    }
+
+    // 2. Lastro de Concreto Magro / Brita
+    const lastroFund =
+      this.baldrame().reduce((acc, i) => acc + i.lastro, 0) +
+      this.blocos().reduce((acc, i) => acc + i.lastro, 0) +
+      this.sapatas().reduce((acc, i) => acc + i.lastro, 0) +
+      this.radier().reduce((acc, i) => acc + i.lastro, 0);
+
+    if (lastroFund > 0) {
+      const perda = p.perdaLastroFundacao;
+      const comPerda = lastroFund * (1 + perda / 100);
       lista.push({
         disciplina: 'Fundações',
-        servico: 'Reaterro e compactação com solo local',
+        servico: 'Lastro de concreto magro / brita sob fundações',
         unidade: 'm³',
-        qtdCalculada: reaprov,
+        qtdCalculada: lastroFund,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 1.2,
+        duracaoHoras: comPerda * 1.2
+      });
+    }
+
+    // 3. Reaterro e Compactação
+    const reaterroFund =
+      this.baldrame().reduce((acc, i) => acc + i.reaterro, 0) +
+      this.blocos().reduce((acc, i) => acc + i.reaterro, 0) +
+      this.sapatas().reduce((acc, i) => acc + i.reaterro, 0) +
+      this.radier().reduce((acc, i) => acc + i.reaterro, 0);
+
+    if (reaterroFund > 0) {
+      const perda = p.perdaReaterroFundacao;
+      const comPerda = reaterroFund * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Fundações',
+        servico: 'Reaterro e compactação mecanizada de valas e cavas',
+        unidade: 'm³',
+        qtdCalculada: reaterroFund,
         margemPerda: perda,
         qtdComPerda: comPerda,
         produtividade: 0.8,
@@ -1618,31 +1281,54 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 3. Bota-fora
-    const botaFora = this.fundacoes().reduce((acc, i) => acc + i.botaFora, 0);
-    if (botaFora > 0) {
+    // 4. Bota-fora
+    const botaForaFund =
+      this.baldrame().reduce((acc, i) => acc + i.botaFora, 0) +
+      this.blocos().reduce((acc, i) => acc + i.botaFora, 0) +
+      this.sapatas().reduce((acc, i) => acc + i.botaFora, 0) +
+      this.radier().reduce((acc, i) => acc + i.botaFora, 0);
+
+    if (botaForaFund > 0) {
+      const perda = p.perdaBotaForaFundacao;
+      const comPerda = botaForaFund * (1 + perda / 100);
       lista.push({
         disciplina: 'Fundações',
-        servico: 'Bota-fora / remoção de terra excedente',
+        servico: 'Bota-fora / remoção e transporte de terra excedente (Fundações diretas)',
         unidade: 'm³',
-        qtdCalculada: botaFora,
-        margemPerda: 0,
-        qtdComPerda: botaFora,
+        qtdCalculada: botaForaFund,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
         produtividade: 0.3,
-        duracaoHoras: botaFora * 0.3
+        duracaoHoras: comPerda * 0.3
       });
     }
 
-    // 4. Concreto em Fundações
-    const concFund = this.fundacoes().reduce((acc, i) => acc + i.concreto, 0);
-    if (concFund > 0) {
-      const perda = margens.fundacoes;
-      const comPerda = concFund * (1 + perda / 100);
+    const botaForaTub = this.tubuloes().reduce((acc, i) => acc + i.botaFora, 0);
+    if (botaForaTub > 0) {
+      const perda = p.perdaBotaForaTubulao;
+      const comPerda = botaForaTub * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Fundações Profundas',
+        servico: 'Bota-fora e descarte de solo escavado de tubulões',
+        unidade: 'm³',
+        qtdCalculada: botaForaTub,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 0.35,
+        duracaoHoras: comPerda * 0.35
+      });
+    }
+
+    // 5. Concreto em Fundações
+    const concBaldrame = this.baldrame().reduce((acc, i) => acc + i.concreto, 0);
+    if (concBaldrame > 0) {
+      const perda = p.perdaConcretoFundacao;
+      const comPerda = concBaldrame * (1 + perda / 100);
       lista.push({
         disciplina: 'Fundações',
-        servico: 'Concreto usinado fck ≥ 25 MPa em fundações',
+        servico: 'Concreto usinado fck ≥ 25 MPa em Vigas Baldrame',
         unidade: 'm³',
-        qtdCalculada: concFund,
+        qtdCalculada: concBaldrame,
         margemPerda: perda,
         qtdComPerda: comPerda,
         produtividade: 2.2,
@@ -1650,14 +1336,83 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 5. Forma em Fundações
-    const formaFund = this.fundacoes().reduce((acc, i) => acc + i.forma, 0);
+    const concBlocos = this.blocos().reduce((acc, i) => acc + i.concreto, 0);
+    if (concBlocos > 0) {
+      const perda = p.perdaConcretoFundacao;
+      const comPerda = concBlocos * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Fundações',
+        servico: 'Concreto usinado fck ≥ 25 MPa em Blocos de Coroamento',
+        unidade: 'm³',
+        qtdCalculada: concBlocos,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 2.2,
+        duracaoHoras: comPerda * 2.2
+      });
+    }
+
+    const concSapatas = this.sapatas().reduce((acc, i) => acc + i.concreto, 0);
+    if (concSapatas > 0) {
+      const perda = p.perdaConcretoFundacao;
+      const comPerda = concSapatas * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Fundações',
+        servico: 'Concreto usinado fck ≥ 25 MPa em Sapatas',
+        unidade: 'm³',
+        qtdCalculada: concSapatas,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 2.2,
+        duracaoHoras: comPerda * 2.2
+      });
+    }
+
+    const concRadier = this.radier().reduce((acc, i) => acc + i.concreto, 0);
+    if (concRadier > 0) {
+      const perda = p.perdaConcretoFundacao;
+      const comPerda = concRadier * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Fundações',
+        servico: 'Concreto usinado fck ≥ 25 MPa em Radier',
+        unidade: 'm³',
+        qtdCalculada: concRadier,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 2.0,
+        duracaoHoras: comPerda * 2.0
+      });
+    }
+
+    const concTub = this.tubuloes().reduce((acc, i) => acc + i.concreto, 0);
+    if (concTub > 0) {
+      const perda = p.perdaConcretoTubulao;
+      const comPerda = concTub * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Fundações Profundas',
+        servico: 'Concreto usinado fck ≥ 25 MPa em Tubulões',
+        unidade: 'm³',
+        qtdCalculada: concTub,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 2.5,
+        duracaoHoras: comPerda * 2.5
+      });
+    }
+
+    // 6. Formas em Fundações
+    const formaFund =
+      this.baldrame().reduce((acc, i) => acc + i.forma, 0) +
+      this.blocos().reduce((acc, i) => acc + i.forma, 0) +
+      this.sapatas().reduce((acc, i) => acc + i.forma, 0) +
+      this.radier().reduce((acc, i) => acc + i.forma, 0);
+
     if (formaFund > 0) {
-      const perda = margens.fundacoes;
+      const perda = p.perdaFormaFundacao;
       const comPerda = formaFund * (1 + perda / 100);
       lista.push({
         disciplina: 'Fundações',
-        servico: 'Forma de madeira / tábua para fundações',
+        servico: 'Forma de madeira / tábuas e sarrafos para fundações diretas',
         unidade: 'm²',
         qtdCalculada: formaFund,
         margemPerda: perda,
@@ -1667,14 +1422,20 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 6. Aço em Fundações
-    const acoFund = this.fundacoes().reduce((acc, i) => acc + i.aco, 0);
+    // 7. Aço em Fundações
+    const acoFund =
+      this.baldrame().reduce((acc, i) => acc + i.aco, 0) +
+      this.blocos().reduce((acc, i) => acc + i.aco, 0) +
+      this.sapatas().reduce((acc, i) => acc + i.aco, 0) +
+      this.radier().reduce((acc, i) => acc + i.aco, 0) +
+      this.tubuloes().reduce((acc, i) => acc + i.aco, 0);
+
     if (acoFund > 0) {
-      const perda = margens.fundacoes;
+      const perda = p.perdaAcoFundacao;
       const comPerda = acoFund * (1 + perda / 100);
       lista.push({
         disciplina: 'Fundações',
-        servico: 'Armadura de aço CA-50/60 em fundações',
+        servico: 'Armadura de aço CA-50/60 em elementos de fundação',
         unidade: 'kg',
         qtdCalculada: acoFund,
         margemPerda: perda,
@@ -1684,16 +1445,16 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 7. Concreto em Estrutura
-    const concEst = this.estrutura().reduce((acc, i) => acc + i.concreto, 0);
-    if (concEst > 0) {
-      const perda = margens.estrutura;
-      const comPerda = concEst * (1 + perda / 100);
+    // 8. Superestrutura - Concreto
+    const concPilares = this.pilares().reduce((acc, i) => acc + i.concreto, 0);
+    if (concPilares > 0) {
+      const perda = p.perdaConcretoEstrutura;
+      const comPerda = concPilares * (1 + perda / 100);
       lista.push({
         disciplina: 'Estrutura',
-        servico: 'Concreto usinado fck ≥ 30 MPa em superestrutura',
+        servico: 'Concreto usinado fck ≥ 30 MPa em Pilares',
         unidade: 'm³',
-        qtdCalculada: concEst,
+        qtdCalculada: concPilares,
         margemPerda: perda,
         qtdComPerda: comPerda,
         produtividade: 2.5,
@@ -1701,14 +1462,50 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 8. Forma em Estrutura
-    const formaEst = this.estrutura().reduce((acc, i) => acc + i.forma, 0);
+    const concVigas = this.vigas().reduce((acc, i) => acc + i.concreto, 0);
+    if (concVigas > 0) {
+      const perda = p.perdaConcretoEstrutura;
+      const comPerda = concVigas * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Estrutura',
+        servico: 'Concreto usinado fck ≥ 30 MPa em Vigas Superiores',
+        unidade: 'm³',
+        qtdCalculada: concVigas,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 2.5,
+        duracaoHoras: comPerda * 2.5
+      });
+    }
+
+    const concLajes = this.lajes().reduce((acc, i) => acc + i.concreto, 0);
+    if (concLajes > 0) {
+      const perda = p.perdaConcretoEstrutura;
+      const comPerda = concLajes * (1 + perda / 100);
+      lista.push({
+        disciplina: 'Estrutura',
+        servico: 'Concreto usinado fck ≥ 30 MPa em Lajes',
+        unidade: 'm³',
+        qtdCalculada: concLajes,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 2.2,
+        duracaoHoras: comPerda * 2.2
+      });
+    }
+
+    // 9. Superestrutura - Formas
+    const formaEst =
+      this.pilares().reduce((acc, i) => acc + i.forma, 0) +
+      this.vigas().reduce((acc, i) => acc + i.forma, 0) +
+      this.lajes().reduce((acc, i) => acc + i.forma, 0);
+
     if (formaEst > 0) {
-      const perda = margens.estrutura;
+      const perda = p.perdaFormaEstrutura;
       const comPerda = formaEst * (1 + perda / 100);
       lista.push({
         disciplina: 'Estrutura',
-        servico: 'Forma compensada resinada para pilares/vigas/lajes',
+        servico: 'Forma em compensado resinado / plastificado para superestrutura',
         unidade: 'm²',
         qtdCalculada: formaEst,
         margemPerda: perda,
@@ -1718,29 +1515,38 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 9. Cimbramento
-    const cimbramento = this.estrutura().reduce((acc, i) => acc + i.cimbramento, 0);
-    if (cimbramento > 0) {
+    // 10. Superestrutura - Escoramento / Cimbramento
+    const escoramentoTotal =
+      this.vigas().reduce((acc, i) => acc + i.escoramento, 0) +
+      this.lajes().reduce((acc, i) => acc + i.escoramento, 0);
+
+    if (escoramentoTotal > 0) {
+      const perda = p.perdaEscoramentoEstrutura;
+      const comPerda = escoramentoTotal * (1 + perda / 100);
       lista.push({
         disciplina: 'Estrutura',
-        servico: 'Cimbramento e escoramento metálico/madeira',
+        servico: 'Escoramento / cimbramento metálico e torres para vigas e lajes',
         unidade: 'm³',
-        qtdCalculada: cimbramento,
-        margemPerda: 0,
-        qtdComPerda: cimbramento,
-        produtividade: 0.4,
-        duracaoHoras: cimbramento * 0.4
+        qtdCalculada: escoramentoTotal,
+        margemPerda: perda,
+        qtdComPerda: comPerda,
+        produtividade: 0.35,
+        duracaoHoras: comPerda * 0.35
       });
     }
 
-    // 10. Aço em Estrutura
-    const acoEst = this.estrutura().reduce((acc, i) => acc + i.aco, 0);
+    // 11. Superestrutura - Aço & Solda
+    const acoEst =
+      this.pilares().reduce((acc, i) => acc + i.aco, 0) +
+      this.vigas().reduce((acc, i) => acc + i.aco, 0) +
+      this.lajes().reduce((acc, i) => acc + i.aco, 0);
+
     if (acoEst > 0) {
-      const perda = margens.estrutura;
+      const perda = p.perdaAcoEstrutura;
       const comPerda = acoEst * (1 + perda / 100);
       lista.push({
         disciplina: 'Estrutura',
-        servico: 'Armadura de aço CA-50 corte/dobra/montagem',
+        servico: 'Armadura de aço CA-50 corte/dobra/montagem em pilares/vigas/lajes',
         unidade: 'kg',
         qtdCalculada: acoEst,
         margemPerda: perda,
@@ -1748,9 +1554,29 @@ export class LevantamentoQuantitativosComponent {
         produtividade: 0.09,
         duracaoHoras: comPerda * 0.09
       });
+
+      const soldaTotal =
+        this.pilares().reduce((acc, i) => acc + i.solda, 0) +
+        this.vigas().reduce((acc, i) => acc + i.solda, 0) +
+        this.lajes().reduce((acc, i) => acc + i.solda, 0);
+
+      if (soldaTotal > 0) {
+        const perdaSolda = p.perdaSoldaEstrutura;
+        const comPerdaSolda = soldaTotal * (1 + perdaSolda / 100);
+        lista.push({
+          disciplina: 'Estrutura',
+          servico: 'Solda, amarração e emendas de armaduras estruturais',
+          unidade: 'h',
+          qtdCalculada: soldaTotal,
+          margemPerda: perdaSolda,
+          qtdComPerda: comPerdaSolda,
+          produtividade: 1.0,
+          duracaoHoras: comPerdaSolda
+        });
+      }
     }
 
-    // 11. Itens Arquitetônicos agrupados por tipo
+    // 12. Arquitetônico
     const arqItens = this.arquitetonico();
     const gruposArq = new Map<string, number>();
     let totalEncunhamento = 0;
@@ -1762,7 +1588,7 @@ export class LevantamentoQuantitativosComponent {
     });
 
     gruposArq.forEach((areaLiquida, tipo) => {
-      const perda = margens.arquitetonico;
+      const perda = p.perdaArquitetonico;
       const comPerda = areaLiquida * (1 + perda / 100);
       let prod = 0.8;
       if (tipo.startsWith('alvenaria')) prod = 0.9;
@@ -1794,7 +1620,7 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // 12. Esquadrias agrupadas
+    // 13. Esquadrias
     const esqItens = this.esquadrias();
     const gruposEsq = new Map<string, { un: number; area: number }>();
     esqItens.forEach(item => {
@@ -1808,16 +1634,16 @@ export class LevantamentoQuantitativosComponent {
         servico: this.formatarNomeEsquadria(tipo) + ` (${val.area.toFixed(1)} m²)`,
         unidade: 'un',
         qtdCalculada: val.un,
-        margemPerda: margens.esquadrias,
+        margemPerda: p.perdaEsquadrias,
         qtdComPerda: val.un,
         produtividade: 1.6,
         duracaoHoras: val.un * 1.6
       });
     });
 
-    // 13. Cobertura agrupada
+    // 14. Cobertura
     this.cobertura().forEach(item => {
-      const perda = margens.cobertura;
+      const perda = p.perdaCobertura;
       const comPerda = item.total * (1 + perda / 100);
       lista.push({
         disciplina: 'Cobertura',
@@ -1831,9 +1657,9 @@ export class LevantamentoQuantitativosComponent {
       });
     });
 
-    // 14. Pergolados
+    // 15. Pergolados
     this.pergolados().forEach(item => {
-      const perda = margens.paisagismo;
+      const perda = p.perdaPaisagismo;
       const comPerda = item.total * (1 + perda / 100);
       lista.push({
         disciplina: 'Paisagismo',
@@ -1847,12 +1673,73 @@ export class LevantamentoQuantitativosComponent {
       });
     });
 
-    // 15. Instalações
+    // 16. Instalações Prediais - 4 Sistemas
+    // 16.1 Distribuição Elétrica
+    this.distribuicaoEletrica().forEach(item => {
+      const prod = item.unidade === 'm' ? 0.35 : 0.45;
+      lista.push({
+        disciplina: 'Instalações - Elétrica (Distribuição)',
+        servico: `[${item.categoria}] ${item.especificacao}${item.local ? ' (' + item.local + ')' : ''}`,
+        unidade: item.unidade,
+        qtdCalculada: item.quantidade,
+        margemPerda: item.margemPerda,
+        qtdComPerda: item.quantidadeComPerda,
+        produtividade: prod,
+        duracaoHoras: item.quantidadeComPerda * prod
+      });
+    });
+
+    // 16.2 Prumadas Elétricas
+    this.prumadasEletricas().forEach(item => {
+      const prod = item.unidade === 'm' ? 0.40 : 0.50;
+      lista.push({
+        disciplina: 'Instalações - Elétrica (Prumadas)',
+        servico: `[${item.categoria}] ${item.especificacao}${item.local ? ' (' + item.local + ')' : ''}`,
+        unidade: item.unidade,
+        qtdCalculada: item.quantidade,
+        margemPerda: item.margemPerda,
+        qtdComPerda: item.quantidadeComPerda,
+        produtividade: prod,
+        duracaoHoras: item.quantidadeComPerda * prod
+      });
+    });
+
+    // 16.3 Esgoto e Pluvial
+    this.esgotoPluvial().forEach(item => {
+      const prod = item.unidade === 'm' ? 0.50 : 0.40;
+      lista.push({
+        disciplina: 'Instalações - Esgoto & Pluvial',
+        servico: `[${item.categoria}] ${item.especificacao}${item.local ? ' (' + item.local + ')' : ''}`,
+        unidade: item.unidade,
+        qtdCalculada: item.quantidade,
+        margemPerda: item.margemPerda,
+        qtdComPerda: item.quantidadeComPerda,
+        produtividade: prod,
+        duracaoHoras: item.quantidadeComPerda * prod
+      });
+    });
+
+    // 16.4 Hidráulica
+    this.hidraulica().forEach(item => {
+      const prod = item.unidade === 'm' ? 0.45 : 0.35;
+      lista.push({
+        disciplina: 'Instalações - Hidráulica',
+        servico: `[${item.categoria}] ${item.especificacao}${item.local ? ' (' + item.local + ')' : ''}`,
+        unidade: item.unidade,
+        qtdCalculada: item.quantidade,
+        margemPerda: item.margemPerda,
+        qtdComPerda: item.quantidadeComPerda,
+        produtividade: prod,
+        duracaoHoras: item.quantidadeComPerda * prod
+      });
+    });
+
+    // Compatibilidade com itens legados de instalação se existirem
     this.instalacoes().forEach(item => {
-      const perda = margens.instalacoes;
+      const perda = p.perdaInstalacoes;
       const comPerda = item.qtd * (1 + perda / 100);
       lista.push({
-        disciplina: 'Instalações',
+        disciplina: 'Instalações (Geral)',
         servico: `[${item.disciplina.toUpperCase()}] ${item.item}`,
         unidade: item.unidade,
         qtdCalculada: item.qtd,
@@ -1863,9 +1750,9 @@ export class LevantamentoQuantitativosComponent {
       });
     });
 
-    // 16. Paisagismo
+    // 17. Paisagismo
     this.paisagismo().forEach(item => {
-      const perda = margens.paisagismo;
+      const perda = p.perdaPaisagismo;
       const comPerda = item.qtd * (1 + perda / 100);
       lista.push({
         disciplina: 'Paisagismo',
@@ -1886,13 +1773,25 @@ export class LevantamentoQuantitativosComponent {
   readonly regrasAuditoria = computed<RegraAuditoria[]>(() => {
     const regras: RegraAuditoria[] = [];
 
-    const f = this.fundacoes();
-    const e = this.estrutura();
+    const bal = this.baldrame();
+    const blo = this.blocos();
+    const sap = this.sapatas();
+    const rad = this.radier();
+    const tub = this.tubuloes();
+    const pil = this.pilares();
+    const vig = this.vigas();
+    const laj = this.lajes();
     const a = this.arquitetonico();
     const q = this.esquadrias();
     const c = this.cobertura();
+    const distEl = this.distribuicaoEletrica();
+    const prumEl = this.prumadasEletricas();
+    const esgPlu = this.esgotoPluvial();
+    const hidr = this.hidraulica();
     const i = this.instalacoes();
-    const cfg = this.parametros();
+
+    const totalFundacoes = bal.length + blo.length + sap.length + rad.length + tub.length;
+    const totalEstruturas = pil.length + vig.length + laj.length;
 
     // Regra 1: Alvenaria vs. Desconto de Vãos
     const temAlvenaria = a.some(item => item.tipo.startsWith('alvenaria'));
@@ -1934,39 +1833,31 @@ export class LevantamentoQuantitativosComponent {
     }
 
     // Regra 3: Fundações vs. Profundidade de Escavação
-    const temFundacaoSemProf = f.some(item => item.profundidade <= 0);
-    if (f.length > 0 && temFundacaoSemProf) {
-      regras.push({
-        id: 'r3',
-        titulo: 'Profundidade de Escavação em Fundações',
-        status: 'alerta',
-        mensagem: 'Existem elementos de fundação sem profundidade de escavação informada. O volume de escavação e reaterro pode estar subdimensionado.'
-      });
-    } else if (f.length > 0) {
+    if (totalFundacoes > 0) {
+      const escavTotal = this.totalEscavacaoGeral();
       regras.push({
         id: 'r3',
         titulo: 'Escavação e Movimentação de Terra',
         status: 'ok',
-        mensagem: `Volume escavado de ${this.totalEscavacaoGeral().toFixed(1)} m³ calculado com sucesso para todas as fundações.`
+        mensagem: `Volume escavado de ${escavTotal.toFixed(2)} m³ calculado com precisão de Sienge para os ${totalFundacoes} elementos de fundação.`
       });
     }
 
-    // Regra 4: Estrutura vs. Forma e Cimbramento
-    const temLajesOuVigas = e.some(item => item.tipo === 'viga' || item.tipo === 'laje');
-    const totalCimbramento = e.reduce((acc, item) => acc + item.cimbramento, 0);
-    if (temLajesOuVigas && totalCimbramento === 0) {
+    // Regra 4: Estrutura vs. Forma e Escoramento
+    const totalEscoramento = this.totalEscoramentoGeral();
+    if ((vig.length > 0 || laj.length > 0) && totalEscoramento === 0) {
       regras.push({
         id: 'r4',
         titulo: 'Cimbramento e Escoramento de Vigas/Lajes',
         status: 'alerta',
-        mensagem: 'Vigas ou lajes lançadas sem cimbramento computado. Verifique as alturas e escoramentos de laje.'
+        mensagem: 'Vigas ou lajes lançadas sem escoramento computado. Verifique as alturas e escoramentos de laje/viga.'
       });
-    } else if (temLajesOuVigas) {
+    } else if (vig.length > 0 || laj.length > 0) {
       regras.push({
         id: 'r4',
-        titulo: 'Cimbramento de Estruturas',
+        titulo: 'Escoramento de Estruturas',
         status: 'ok',
-        mensagem: `Cimbramento de ${totalCimbramento.toFixed(1)} m³ devidamente dimensionado para as vigas e lajes.`
+        mensagem: `Escoramento de ${totalEscoramento.toFixed(2)} m³ devidamente dimensionado para as vigas e lajes.`
       });
     }
 
@@ -1989,39 +1880,42 @@ export class LevantamentoQuantitativosComponent {
       });
     }
 
-    // Regra 6: Instalações vs. Peças e Metais Sanitários
-    const temTuboHidro = i.some(item => item.disciplina === 'hidrossanitario');
-    const temPecasSanitarias = i.some(item => item.disciplina === 'pecas-sanitarias');
-    if (temTuboHidro && !temPecasSanitarias) {
+    // Regra 6: Instalações Prediais - Eletrodutos vs. Cabos
+    const totalElItens = distEl.length + prumEl.length;
+    const temEletroduto = distEl.some(item => item.categoria.includes('Eletroduto')) || prumEl.some(item => item.categoria.includes('Eletroduto'));
+    const temFiosCabos = distEl.some(item => item.categoria.includes('Fios')) || prumEl.some(item => item.categoria.includes('Fios'));
+
+    if (totalElItens > 0 && temEletroduto && !temFiosCabos) {
       regras.push({
         id: 'r6',
-        titulo: 'Louças e Metais Sanitários',
+        titulo: 'Instalações Elétricas: Eletrodutos e Condutores',
         status: 'alerta',
-        mensagem: 'Tubulações hidrossanitárias foram lançadas, mas nenhuma louça ou metal sanitário (bacias, lavatórios, registros) foi cadastrado.'
+        mensagem: 'Eletrodutos ou canaletas foram lançados, mas nenhum circuito de fios/cabos elétricos foi cadastrado ainda.'
       });
-    } else if (temTuboHidro && temPecasSanitarias) {
+    } else if (totalElItens > 0 && temEletroduto && temFiosCabos) {
       regras.push({
         id: 'r6',
-        titulo: 'Equipamentos Hidrossanitários',
+        titulo: 'Instalações Elétricas Completas',
         status: 'ok',
-        mensagem: 'Tubulações e aparelhos hidrossanitários devidamente contemplados.'
+        mensagem: 'Infraestrutura de tubulação elétrica e condutores devidamente lançados com perdas setoriais.'
       });
     }
 
-    // Regra 7: Reaproveitamento de Solo vs. Bota-fora
-    if (cfg.reaproveitamentoSolo > 85 || cfg.reaproveitamentoSolo < 40) {
+    // Regra 7: Instalações Prediais - Esgoto vs. Hidráulica
+    const totalHidroItens = esgPlu.length + hidr.length + i.length;
+    if (hidr.length > 0 && esgPlu.length === 0) {
       regras.push({
         id: 'r7',
-        titulo: 'Percentual de Reaproveitamento de Solo',
+        titulo: 'Instalações Hidrossanitárias: Esgoto & Pluvial',
         status: 'alerta',
-        mensagem: `O reaproveitamento de solo está configurado em ${cfg.reaproveitamentoSolo}%. Valores muito fora da faixa de 60% a 80% requerem conferência com o laudo de sondagem.`
+        mensagem: 'Tubulação hidráulica de água fria/quente lançada, mas o sistema de esgoto e pluvial ainda não possui itens.'
       });
-    } else {
+    } else if (hidr.length > 0 && esgPlu.length > 0) {
       regras.push({
         id: 'r7',
-        titulo: 'Reaproveitamento de Solo',
+        titulo: 'Instalações Hidrossanitárias Integradas',
         status: 'ok',
-        mensagem: `Reaproveitamento de solo dentro da faixa técnica usual (${cfg.reaproveitamentoSolo}%).`
+        mensagem: 'Sistemas de água, esgoto e pluvial devidamente cadastrados com cálculo de conexões e perdas.'
       });
     }
 
@@ -2035,25 +1929,30 @@ export class LevantamentoQuantitativosComponent {
     this.parametros.update(p => ({ ...p, [chave]: val }));
   }
 
-  atualizarMargemPerda(chave: keyof MargensPerda, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const val = parseFloat(input.value) || 0;
-    this.margensPerda.update(m => ({ ...m, [chave]: val }));
-  }
-
   // ==================== SESSÃO JSON E EXPORTAÇÃO CSV ====================
   salvarSessaoJson(): void {
     const estado = {
-      versao: '1.0',
+      versao: '2.1-sienge-12sistemas',
       dataExportacao: new Date().toISOString(),
       parametros: this.parametros(),
       margensPerda: this.margensPerda(),
-      fundacoes: this.fundacoes(),
-      estrutura: this.estrutura(),
+      perdasCategorias: this.perdasCategorias(),
+      baldrame: this.baldrame(),
+      blocos: this.blocos(),
+      sapatas: this.sapatas(),
+      radier: this.radier(),
+      tubuloes: this.tubuloes(),
+      pilares: this.pilares(),
+      vigas: this.vigas(),
+      lajes: this.lajes(),
       arquitetonico: this.arquitetonico(),
       esquadrias: this.esquadrias(),
       cobertura: this.cobertura(),
       pergolados: this.pergolados(),
+      distribuicaoEletrica: this.distribuicaoEletrica(),
+      prumadasEletricas: this.prumadasEletricas(),
+      esgotoPluvial: this.esgotoPluvial(),
+      hidraulica: this.hidraulica(),
       instalacoes: this.instalacoes(),
       paisagismo: this.paisagismo()
     };
@@ -2083,12 +1982,23 @@ export class LevantamentoQuantitativosComponent {
 
         if (dados.parametros) this.parametros.set(dados.parametros);
         if (dados.margensPerda) this.margensPerda.set(dados.margensPerda);
-        if (dados.fundacoes) this.fundacoes.set(dados.fundacoes);
-        if (dados.estrutura) this.estrutura.set(dados.estrutura);
+        if (dados.perdasCategorias) this.perdasCategorias.set(dados.perdasCategorias);
+        if (dados.baldrame) this.baldrame.set(dados.baldrame);
+        if (dados.blocos) this.blocos.set(dados.blocos);
+        if (dados.sapatas) this.sapatas.set(dados.sapatas);
+        if (dados.radier) this.radier.set(dados.radier);
+        if (dados.tubuloes) this.tubuloes.set(dados.tubuloes);
+        if (dados.pilares) this.pilares.set(dados.pilares);
+        if (dados.vigas) this.vigas.set(dados.vigas);
+        if (dados.lajes) this.lajes.set(dados.lajes);
         if (dados.arquitetonico) this.arquitetonico.set(dados.arquitetonico);
         if (dados.esquadrias) this.esquadrias.set(dados.esquadrias);
         if (dados.cobertura) this.cobertura.set(dados.cobertura);
         if (dados.pergolados) this.pergolados.set(dados.pergolados);
+        if (dados.distribuicaoEletrica) this.distribuicaoEletrica.set(dados.distribuicaoEletrica);
+        if (dados.prumadasEletricas) this.prumadasEletricas.set(dados.prumadasEletricas);
+        if (dados.esgotoPluvial) this.esgotoPluvial.set(dados.esgotoPluvial);
+        if (dados.hidraulica) this.hidraulica.set(dados.hidraulica);
         if (dados.instalacoes) this.instalacoes.set(dados.instalacoes);
         if (dados.paisagismo) this.paisagismo.set(dados.paisagismo);
 
@@ -2135,6 +2045,894 @@ export class LevantamentoQuantitativosComponent {
     this.exibirNotificacao('Planilha CSV exportada com sucesso!');
   }
 
+  // =========================================================================
+  // EXPORTAÇÃO EM PDF WHITE-LABEL (MotorPdfService)
+  // =========================================================================
+  async exportarPDF(): Promise<void> {
+    const consolidado = this.resumoConsolidado();
+    if (this.totalItensLancados() === 0 && consolidado.length === 0) {
+      this.exibirNotificacao('Não há itens cadastrados para exportar no relatório PDF.');
+      return;
+    }
+
+    this.gerandoPdf.set(true);
+
+    try {
+      const dataHoje = new Date().toLocaleDateString('pt-BR');
+      const nomeEmpreendimento = this.projetoAtualNome() || 'Levantamento de Quantitativos de Obras';
+
+      const fmt = (v: number, dec: number = 2) =>
+        (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+
+      const secoesSistemasHtml: string[] = [];
+
+      // 1. Baldrame
+      const itensBaldrame = this.baldrame();
+      if (itensBaldrame.length > 0) {
+        const totConc = itensBaldrame.reduce((a, b) => a + b.concreto, 0);
+        const totForma = itensBaldrame.reduce((a, b) => a + b.forma, 0);
+        const totEscav = itensBaldrame.reduce((a, b) => a + b.escavacao, 0);
+        const totLastro = itensBaldrame.reduce((a, b) => a + b.lastro, 0);
+        const totReaterro = itensBaldrame.reduce((a, b) => a + b.reaterro, 0);
+        const totAco = itensBaldrame.reduce((a, b) => a + b.aco, 0);
+        const totQtd = itensBaldrame.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensBaldrame.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Baldrame'}</strong></td>
+            <td class="td-center">${fmt(i.largura)} × ${fmt(i.altura)} × ${fmt(i.comprimento)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.forma)}</td>
+            <td class="td-right">${fmt(i.escavacao)}</td>
+            <td class="td-right">${fmt(i.lastro)}</td>
+            <td class="td-right">${fmt(i.reaterro)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">1. Vigas Baldrame (Fundação Superficial)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Viga / Identificação</th>
+                  <th class="th-center" style="width: 17%;">Seção (L×H×C)</th>
+                  <th class="th-center" style="width: 5%;">Qtd</th>
+                  <th class="th-right" style="width: 9%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 9%;">Formas (m²)</th>
+                  <th class="th-right" style="width: 9%;">Escavação (m³)</th>
+                  <th class="th-right" style="width: 9%;">Lastro (m³)</th>
+                  <th class="th-right" style="width: 10%;">Reaterro (m³)</th>
+                  <th class="th-right" style="width: 10%;">Aço CA-50 (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL BALDRAME</strong></td>
+                  <td class="td-center">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totForma)} m²</td>
+                  <td class="td-right">${fmt(totEscav)} m³</td>
+                  <td class="td-right">${fmt(totLastro)} m³</td>
+                  <td class="td-right">${fmt(totReaterro)} m³</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 2. Blocos de Fundação
+      const itensBlocos = this.blocos();
+      if (itensBlocos.length > 0) {
+        const totConc = itensBlocos.reduce((a, b) => a + b.concreto, 0);
+        const totForma = itensBlocos.reduce((a, b) => a + b.forma, 0);
+        const totEscav = itensBlocos.reduce((a, b) => a + b.escavacao, 0);
+        const totLastro = itensBlocos.reduce((a, b) => a + b.lastro, 0);
+        const totReaterro = itensBlocos.reduce((a, b) => a + b.reaterro, 0);
+        const totAco = itensBlocos.reduce((a, b) => a + b.aco, 0);
+        const totQtd = itensBlocos.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensBlocos.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Bloco'}</strong></td>
+            <td class="td-center">${fmt(i.largura)} × ${fmt(i.altura)} × ${fmt(i.comprimento)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.forma)}</td>
+            <td class="td-right">${fmt(i.escavacao)}</td>
+            <td class="td-right">${fmt(i.lastro)}</td>
+            <td class="td-right">${fmt(i.reaterro)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">2. Blocos de Fundação (Coroamento de Estacas)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Bloco / Identificação</th>
+                  <th class="th-center" style="width: 17%;">Dimensões (L×H×C)</th>
+                  <th class="th-center" style="width: 5%;">Qtd</th>
+                  <th class="th-right" style="width: 9%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 9%;">Formas (m²)</th>
+                  <th class="th-right" style="width: 9%;">Escavação (m³)</th>
+                  <th class="th-right" style="width: 9%;">Lastro (m³)</th>
+                  <th class="th-right" style="width: 10%;">Reaterro (m³)</th>
+                  <th class="th-right" style="width: 10%;">Aço CA-50 (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL BLOCOS</strong></td>
+                  <td class="td-center">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totForma)} m²</td>
+                  <td class="td-right">${fmt(totEscav)} m³</td>
+                  <td class="td-right">${fmt(totLastro)} m³</td>
+                  <td class="td-right">${fmt(totReaterro)} m³</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 3. Sapatas Isoladas
+      const itensSapatas = this.sapatas();
+      if (itensSapatas.length > 0) {
+        const totConc = itensSapatas.reduce((a, b) => a + b.concreto, 0);
+        const totForma = itensSapatas.reduce((a, b) => a + b.forma, 0);
+        const totEscav = itensSapatas.reduce((a, b) => a + b.escavacao, 0);
+        const totLastro = itensSapatas.reduce((a, b) => a + b.lastro, 0);
+        const totAco = itensSapatas.reduce((a, b) => a + b.aco, 0);
+        const totQtd = itensSapatas.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensSapatas.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Sapata'}</strong></td>
+            <td class="td-center">${fmt(i.larguraBase)} × ${fmt(i.comprimentoBase)} m</td>
+            <td class="td-center">${fmt(i.larguraFuste)} × ${fmt(i.comprimentoFuste)} m</td>
+            <td class="td-center">${fmt(i.alturaTronco)} / ${fmt(i.alturaBase)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.forma)}</td>
+            <td class="td-right">${fmt(i.escavacao)}</td>
+            <td class="td-right">${fmt(i.lastro)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">3. Sapatas Isoladas (Fundação Direta)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 18%;">Identificação</th>
+                  <th class="th-center" style="width: 12%;">Base (Lb×Cb)</th>
+                  <th class="th-center" style="width: 12%;">Fuste (Lf×Cf)</th>
+                  <th class="th-center" style="width: 10%;">Alturas (H/B)</th>
+                  <th class="th-center" style="width: 5%;">Qtd</th>
+                  <th class="th-right" style="width: 9%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 9%;">Formas (m²)</th>
+                  <th class="th-right" style="width: 8%;">Escavação (m³)</th>
+                  <th class="th-right" style="width: 8%;">Lastro (m³)</th>
+                  <th class="th-right" style="width: 9%;">Aço CA-50 (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL SAPATAS</strong></td>
+                  <td class="td-center" colspan="3">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totForma)} m²</td>
+                  <td class="td-right">${fmt(totEscav)} m³</td>
+                  <td class="td-right">${fmt(totLastro)} m³</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 4. Radier
+      const itensRadier = this.radier();
+      if (itensRadier.length > 0) {
+        const totConc = itensRadier.reduce((a, b) => a + b.concreto, 0);
+        const totForma = itensRadier.reduce((a, b) => a + b.forma, 0);
+        const totEscav = itensRadier.reduce((a, b) => a + b.escavacao, 0);
+        const totLastro = itensRadier.reduce((a, b) => a + b.lastro, 0);
+        const totAco = itensRadier.reduce((a, b) => a + b.aco, 0);
+        const totQtd = itensRadier.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensRadier.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Radier'}</strong></td>
+            <td class="td-center">${fmt(i.largura)} × ${fmt(i.altura)} × ${fmt(i.comprimento)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.forma)}</td>
+            <td class="td-right">${fmt(i.escavacao)}</td>
+            <td class="td-right">${fmt(i.lastro)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">4. Radier (Laje Geral de Fundação)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 24%;">Identificação</th>
+                  <th class="th-center" style="width: 18%;">Dimensões (L×H×C)</th>
+                  <th class="th-center" style="width: 6%;">Qtd</th>
+                  <th class="th-right" style="width: 11%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 10%;">Formas (m²)</th>
+                  <th class="th-right" style="width: 10%;">Escavação (m³)</th>
+                  <th class="th-right" style="width: 10%;">Lastro (m³)</th>
+                  <th class="th-right" style="width: 11%;">Aço CA-50 (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL RADIER</strong></td>
+                  <td class="td-center">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totForma)} m²</td>
+                  <td class="td-right">${fmt(totEscav)} m³</td>
+                  <td class="td-right">${fmt(totLastro)} m³</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 5. Tubulões
+      const itensTubuloes = this.tubuloes();
+      if (itensTubuloes.length > 0) {
+        const totConc = itensTubuloes.reduce((a, b) => a + b.concreto, 0);
+        const totEscav = itensTubuloes.reduce((a, b) => a + b.escavacao, 0);
+        const totBotaFora = itensTubuloes.reduce((a, b) => a + b.botaFora, 0);
+        const totAco = itensTubuloes.reduce((a, b) => a + b.aco, 0);
+        const totQtd = itensTubuloes.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensTubuloes.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Tubulão'}</strong></td>
+            <td class="td-center">Ø ${fmt(i.diametroFuste)} × ${fmt(i.alturaFuste)} m</td>
+            <td class="td-center">Ø ${fmt(i.diametroBase)} × ${fmt(i.alturaBase)} m</td>
+            <td class="td-center">${fmt(i.alturaB)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.escavacao)}</td>
+            <td class="td-right">${fmt(i.botaFora)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">5. Tubulões a Céu Aberto (Fundação Profunda)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 20%;">Identificação</th>
+                  <th class="th-center" style="width: 15%;">Fuste (Df × Hf)</th>
+                  <th class="th-center" style="width: 15%;">Base (Db × Hb)</th>
+                  <th class="th-center" style="width: 9%;">Rodapé (b)</th>
+                  <th class="th-center" style="width: 5%;">Qtd</th>
+                  <th class="th-right" style="width: 12%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 12%;">Escavação (m³)</th>
+                  <th class="th-right" style="width: 12%;">Bota-Fora (m³)</th>
+                  <th class="th-right" style="width: 12%;">Aço CA-50 (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL TUBULÕES</strong></td>
+                  <td class="td-center" colspan="3">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totEscav)} m³</td>
+                  <td class="td-right">${fmt(totBotaFora)} m³</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 6. Pilares
+      const itensPilares = this.pilares();
+      if (itensPilares.length > 0) {
+        const totConc = itensPilares.reduce((a, b) => a + b.concreto, 0);
+        const totForma = itensPilares.reduce((a, b) => a + b.forma, 0);
+        const totAco = itensPilares.reduce((a, b) => a + b.aco, 0);
+        const totSolda = itensPilares.reduce((a, b) => a + b.solda, 0);
+        const totQtd = itensPilares.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensPilares.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Pilar'}</strong></td>
+            <td class="td-center">${fmt(i.largura)} × ${fmt(i.comprimento)} m</td>
+            <td class="td-center">${fmt(i.altura)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.forma)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+            <td class="td-right">${fmt(i.solda, 1)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">6. Pilares (Superestrutura de Concreto Armado)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Identificação do Pilar</th>
+                  <th class="th-center" style="width: 17%;">Seção (L × C)</th>
+                  <th class="th-center" style="width: 11%;">Altura (H)</th>
+                  <th class="th-center" style="width: 6%;">Qtd</th>
+                  <th class="th-right" style="width: 11%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 11%;">Formas (m²)</th>
+                  <th class="th-right" style="width: 11%;">Aço CA-50 (kg)</th>
+                  <th class="th-right" style="width: 8%;">Solda (h)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL PILARES</strong></td>
+                  <td class="td-center" colspan="2">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totForma)} m²</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                  <td class="td-right">${fmt(totSolda, 1)} h</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 7. Vigas Superiores
+      const itensVigas = this.vigas();
+      if (itensVigas.length > 0) {
+        const totConc = itensVigas.reduce((a, b) => a + b.concreto, 0);
+        const totForma = itensVigas.reduce((a, b) => a + b.forma, 0);
+        const totEscor = itensVigas.reduce((a, b) => a + b.escoramento, 0);
+        const totAco = itensVigas.reduce((a, b) => a + b.aco, 0);
+        const totSolda = itensVigas.reduce((a, b) => a + b.solda, 0);
+        const totQtd = itensVigas.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensVigas.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Viga'}</strong></td>
+            <td class="td-center">${fmt(i.largura)} × ${fmt(i.altura)} m</td>
+            <td class="td-center">${fmt(i.comprimento)} m</td>
+            <td class="td-center">${fmt(i.alturaFundoViga)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.forma)}</td>
+            <td class="td-right">${fmt(i.escoramento)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+            <td class="td-right">${fmt(i.solda, 1)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">7. Vigas Superiores (Superestrutura)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Identificação da Viga</th>
+                  <th class="th-center" style="width: 14%;">Seção (L × H)</th>
+                  <th class="th-center" style="width: 11%;">Compr. (C)</th>
+                  <th class="th-center" style="width: 10%;">Fundo (Hfv)</th>
+                  <th class="th-center" style="width: 5%;">Qtd</th>
+                  <th class="th-right" style="width: 9%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 9%;">Formas (m²)</th>
+                  <th class="th-right" style="width: 10%;">Escoramento (m³)</th>
+                  <th class="th-right" style="width: 10%;">Aço CA-50 (kg)</th>
+                  <th class="th-right" style="width: 7%;">Solda (h)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL VIGAS</strong></td>
+                  <td class="td-center" colspan="3">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totForma)} m²</td>
+                  <td class="td-right">${fmt(totEscor)} m³</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                  <td class="td-right">${fmt(totSolda, 1)} h</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 8. Lajes Maciças
+      const itensLajes = this.lajes();
+      if (itensLajes.length > 0) {
+        const totConc = itensLajes.reduce((a, b) => a + b.concreto, 0);
+        const totForma = itensLajes.reduce((a, b) => a + b.forma, 0);
+        const totEscor = itensLajes.reduce((a, b) => a + b.escoramento, 0);
+        const totAco = itensLajes.reduce((a, b) => a + b.aco, 0);
+        const totSolda = itensLajes.reduce((a, b) => a + b.solda, 0);
+        const totQtd = itensLajes.reduce((a, b) => a + b.qtd, 0);
+
+        const rows = itensLajes.map(i => `
+          <tr>
+            <td><strong>${i.nome || 'Laje'}</strong></td>
+            <td class="td-center">${fmt(i.largura)} × ${fmt(i.altura)} × ${fmt(i.comprimento)} m</td>
+            <td class="td-center">${fmt(i.peDireito)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.concreto)}</td>
+            <td class="td-right">${fmt(i.forma)}</td>
+            <td class="td-right">${fmt(i.escoramento)}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.aco)}</td>
+            <td class="td-right">${fmt(i.solda, 1)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">8. Lajes Maciças (Superestrutura)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Identificação da Laje</th>
+                  <th class="th-center" style="width: 17%;">Dimensões (L×H×C)</th>
+                  <th class="th-center" style="width: 11%;">Pé-Direito</th>
+                  <th class="th-center" style="width: 5%;">Qtd</th>
+                  <th class="th-right" style="width: 10%;">Concreto (m³)</th>
+                  <th class="th-right" style="width: 10%;">Formas (m²)</th>
+                  <th class="th-right" style="width: 10%;">Escoramento (m³)</th>
+                  <th class="th-right" style="width: 10%;">Aço CA-50 (kg)</th>
+                  <th class="th-right" style="width: 7%;">Solda (h)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+                <tr class="highlight-gray" style="font-weight: 700;">
+                  <td><strong>TOTAL LAJES</strong></td>
+                  <td class="td-center" colspan="2">-</td>
+                  <td class="td-center">${totQtd} un</td>
+                  <td class="td-right">${fmt(totConc)} m³</td>
+                  <td class="td-right">${fmt(totForma)} m²</td>
+                  <td class="td-right">${fmt(totEscor)} m³</td>
+                  <td class="td-right" style="color: var(--p4-navy); font-weight: 800;">${fmt(totAco)} kg</td>
+                  <td class="td-right">${fmt(totSolda, 1)} h</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 9. Distribuição Elétrica
+      const itensDistEl = this.distribuicaoEletrica();
+      if (itensDistEl.length > 0) {
+        const rows = itensDistEl.map(i => `
+          <tr>
+            <td style="font-weight: 600; color: var(--p4-navy);">${i.categoria}</td>
+            <td><strong>${i.especificacao}</strong></td>
+            <td>${i.local || '-'}</td>
+            <td class="td-right">${fmt(i.quantidade)}</td>
+            <td class="td-center">${i.unidade}</td>
+            <td class="td-center">${i.margemPerda}%</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.quantidadeComPerda)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">9. Instalações Prediais — Distribuição Elétrica</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Categoria</th>
+                  <th style="width: 32%;">Especificação / Insumo</th>
+                  <th style="width: 18%;">Local / Circuito</th>
+                  <th class="th-right" style="width: 10%;">Qtd. Calc.</th>
+                  <th class="th-center" style="width: 5%;">Un.</th>
+                  <th class="th-center" style="width: 5%;">Perda</th>
+                  <th class="th-right" style="width: 10%;">Qtd. c/ Perda</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 10. Prumadas Elétricas
+      const itensPrumEl = this.prumadasEletricas();
+      if (itensPrumEl.length > 0) {
+        const rows = itensPrumEl.map(i => `
+          <tr>
+            <td style="font-weight: 600; color: var(--p4-navy);">${i.categoria}</td>
+            <td><strong>${i.especificacao}</strong></td>
+            <td>${i.local || '-'}</td>
+            <td class="td-right">${fmt(i.quantidade)}</td>
+            <td class="td-center">${i.unidade}</td>
+            <td class="td-center">${i.margemPerda}%</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.quantidadeComPerda)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">10. Instalações Prediais — Prumadas Elétricas</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Categoria</th>
+                  <th style="width: 32%;">Especificação / Insumo</th>
+                  <th style="width: 18%;">Local / Pavimento</th>
+                  <th class="th-right" style="width: 10%;">Qtd. Calc.</th>
+                  <th class="th-center" style="width: 5%;">Un.</th>
+                  <th class="th-center" style="width: 5%;">Perda</th>
+                  <th class="th-right" style="width: 10%;">Qtd. c/ Perda</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 11. Esgoto e Pluvial
+      const itensEsgPlu = this.esgotoPluvial();
+      if (itensEsgPlu.length > 0) {
+        const rows = itensEsgPlu.map(i => `
+          <tr>
+            <td style="font-weight: 600; color: var(--p4-navy);">${i.categoria}</td>
+            <td><strong>${i.especificacao}</strong></td>
+            <td>${i.local || '-'}</td>
+            <td class="td-right">${fmt(i.quantidade)}</td>
+            <td class="td-center">${i.unidade}</td>
+            <td class="td-center">${i.margemPerda}%</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.quantidadeComPerda)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">11. Instalações Prediais — Esgoto Sanitário & Águas Pluviais</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Categoria</th>
+                  <th style="width: 32%;">Especificação / Insumo</th>
+                  <th style="width: 18%;">Local / Ramal</th>
+                  <th class="th-right" style="width: 10%;">Qtd. Calc.</th>
+                  <th class="th-center" style="width: 5%;">Un.</th>
+                  <th class="th-center" style="width: 5%;">Perda</th>
+                  <th class="th-right" style="width: 10%;">Qtd. c/ Perda</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 12. Hidráulica
+      const itensHidr = this.hidraulica();
+      if (itensHidr.length > 0) {
+        const rows = itensHidr.map(i => `
+          <tr>
+            <td style="font-weight: 600; color: var(--p4-navy);">${i.categoria}</td>
+            <td><strong>${i.especificacao}</strong></td>
+            <td>${i.local || '-'}</td>
+            <td class="td-right">${fmt(i.quantidade)}</td>
+            <td class="td-center">${i.unidade}</td>
+            <td class="td-center">${i.margemPerda}%</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.quantidadeComPerda)}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">12. Instalações Prediais — Água Fria & Água Quente (Hidráulica)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">Categoria</th>
+                  <th style="width: 32%;">Especificação / Insumo</th>
+                  <th style="width: 18%;">Local / Ponto</th>
+                  <th class="th-right" style="width: 10%;">Qtd. Calc.</th>
+                  <th class="th-center" style="width: 5%;">Un.</th>
+                  <th class="th-center" style="width: 5%;">Perda</th>
+                  <th class="th-right" style="width: 10%;">Qtd. c/ Perda</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // Outras Disciplinas se existirem itens:
+      // Arquitetônico
+      const itensArq = this.arquitetonico();
+      if (itensArq.length > 0) {
+        const rows = itensArq.map(i => `
+          <tr>
+            <td><strong>${this.formatarNomeServico(i.tipo)}</strong></td>
+            <td class="td-center">${fmt(i.comprimento)} × ${fmt(i.altura)} m</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right">${fmt(i.desconto)} m²</td>
+            <td class="td-right">${fmt(i.areaBruta)} m²</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.areaLiquida)} m²</td>
+            <td class="td-right">${fmt(i.encunhamento)} m</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">Arquitetônico (Alvenarias & Revestimentos)</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 32%;">Serviço / Elemento</th>
+                  <th class="th-center" style="width: 16%;">Dimensões (C × H)</th>
+                  <th class="th-center" style="width: 6%;">Qtd</th>
+                  <th class="th-right" style="width: 12%;">Descontos (m²)</th>
+                  <th class="th-right" style="width: 12%;">Área Bruta (m²)</th>
+                  <th class="th-right" style="width: 12%;">Área Líquida (m²)</th>
+                  <th class="th-right" style="width: 10%;">Encunhamento (m)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // Esquadrias
+      const itensEsq = this.esquadrias();
+      if (itensEsq.length > 0) {
+        const rows = itensEsq.map(i => `
+          <tr>
+            <td><strong>${this.formatarNomeEsquadria(i.tipo)}</strong></td>
+            <td class="td-center">${fmt(i.largura)} × ${fmt(i.altura)} m</td>
+            <td class="td-center">${i.qtd} un</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.area)} m²</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">Esquadrias & Serralheria</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Tipologia da Esquadria</th>
+                  <th class="th-center" style="width: 25%;">Vão de Abertura (L × H)</th>
+                  <th class="th-center" style="width: 15%;">Quantidade</th>
+                  <th class="th-right" style="width: 15%;">Área Total (m²)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // Cobertura, Pergolados, Paisagismo
+      const itensCob = this.cobertura();
+      if (itensCob.length > 0) {
+        const rows = itensCob.map(i => `
+          <tr>
+            <td><strong>${this.formatarNomeCobertura(i.tipo)}</strong></td>
+            <td class="td-center">${fmt(i.dimensao)} ${i.unidade}</td>
+            <td class="td-center">${i.qtd}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(i.total)} ${i.unidade}</td>
+          </tr>
+        `).join('');
+
+        secoesSistemasHtml.push(`
+          <div class="doc-section">
+            <div class="doc-section-title">Cobertura & Estruturas de Telhado</div>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Tipo de Cobertura</th>
+                  <th class="th-center" style="width: 25%;">Dimensão Unitária</th>
+                  <th class="th-center" style="width: 15%;">Quantidade</th>
+                  <th class="th-right" style="width: 15%;">Total Calculado</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `);
+      }
+
+      // 3. Resumo Consolidado e Produtividade (Linhas do computed)
+      let totalHorasEquipe = 0;
+      const rowsConsolidado = consolidado.map(c => {
+        totalHorasEquipe += c.duracaoHoras;
+        return `
+          <tr>
+            <td style="font-weight: 700; color: var(--p4-navy);">${c.disciplina}</td>
+            <td><strong>${c.servico}</strong></td>
+            <td class="td-center font-mono">${c.unidade}</td>
+            <td class="td-right">${fmt(c.qtdCalculada)}</td>
+            <td class="td-center" style="color: var(--p4-amber); font-weight: 600;">${c.margemPerda}%</td>
+            <td class="td-right font-bold" style="color: var(--p4-ink);">${fmt(c.qtdComPerda)}</td>
+            <td class="td-right">${fmt(c.produtividade)} h/${c.unidade}</td>
+            <td class="td-right font-bold" style="color: var(--p4-navy);">${fmt(c.duracaoHoras, 1)} h</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 4. Bloco de Autoauditoria
+      const regras = this.regrasAuditoria();
+      const rowsAuditoria = regras.map(r => `
+        <tr class="${r.status === 'ok' ? 'highlight-emerald' : 'highlight-amber'}">
+          <td class="td-center" style="font-weight: 800; font-size: 7pt;">${r.status === 'ok' ? 'CONFORME' : 'ALERTA'}</td>
+          <td><strong>${r.titulo}</strong></td>
+          <td style="font-size: 7.2pt;">${r.mensagem}</td>
+        </tr>
+      `).join('');
+
+      // MONTAGEM DO CORPO DO DOCUMENTO
+      const corpoHtml = `
+        <!-- IDENTIFICAÇÃO DO PROJETO & RESUMO EXECUTIVO -->
+        <div class="doc-card-info">
+          <div class="doc-grid-4">
+            <div class="doc-info-item">
+              <span class="doc-info-label">Empreendimento</span>
+              <span class="doc-info-value">${nomeEmpreendimento}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Data de Emissão</span>
+              <span class="doc-info-value">${dataHoje}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Base de Perdas / Rendimentos</span>
+              <span class="doc-info-value">SINAPI / TCPO / Sienge</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Normas Regulamentares</span>
+              <span class="doc-info-value">NBR 12.721 • NBR 6118 • NBR 6122</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INDICADORES GERAIS DE VOLUME E MATERIAIS -->
+        <div class="doc-kpi-grid">
+          <div class="doc-kpi-card navy">
+            <div class="doc-kpi-label">Volume de Concreto</div>
+            <div class="doc-kpi-val">${fmt(this.totalConcretoGeral())} m³</div>
+          </div>
+          <div class="doc-kpi-card navy">
+            <div class="doc-kpi-label">Área de Formas</div>
+            <div class="doc-kpi-val">${fmt(this.totalFormaGeral())} m²</div>
+          </div>
+          <div class="doc-kpi-card navy">
+            <div class="doc-kpi-label">Armaduras de Aço CA-50</div>
+            <div class="doc-kpi-val">${fmt(this.totalAcoGeral())} kg</div>
+          </div>
+          <div class="doc-kpi-card emerald">
+            <div class="doc-kpi-label">Horas Estimadas de Equipe</div>
+            <div class="doc-kpi-val">${fmt(totalHorasEquipe, 1)} h</div>
+          </div>
+        </div>
+
+        <!-- 2. SEÇÕES DETALHADAS POR SISTEMA CONSTRUTIVO / INSTALAÇÃO COM ITENS LANÇADOS -->
+        ${secoesSistemasHtml.join('')}
+
+        <!-- 3. SEÇÃO FINAL: RESUMO CONSOLIDADO E PRODUTIVIDADE -->
+        <div class="doc-section">
+          <div class="doc-section-title">Resumo Consolidado de Quantitativos, Perdas & Produtividade</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 15%;">Disciplina</th>
+                <th style="width: 31%;">Serviço / Insumo</th>
+                <th class="th-center" style="width: 5%;">Un.</th>
+                <th class="th-right" style="width: 9%;">Qtd. Calc.</th>
+                <th class="th-center" style="width: 6%;">Perda</th>
+                <th class="th-right" style="width: 10%;">Qtd. c/ Perda</th>
+                <th class="th-right" style="width: 11%;">Produtividade</th>
+                <th class="th-right" style="width: 13%;">Duração Equipe</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsConsolidado}
+              <tr class="highlight-gray" style="font-weight: 700;">
+                <td colspan="7"><strong>TOTAL GERAL DE HORAS ESTIMADAS DE MÃO DE OBRA (EQUIPE)</strong></td>
+                <td class="td-right" style="color: var(--p4-navy); font-weight: 800; font-size: 8.5pt;">${fmt(totalHorasEquipe, 1)} h</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4. BLOCO DE AUTOAUDITORIA EXECUTIVA -->
+        <div class="doc-section">
+          <div class="doc-section-title">Checklist & Relatório de Autoauditoria Executiva</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th class="th-center" style="width: 10%;">Status</th>
+                <th style="width: 32%;">Item / Regra de Auditoria</th>
+                <th style="width: 58%;">Parecer Técnico & Diretriz de Verificação</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsAuditoria}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- NOTA LEGAL METODOLÓGICA -->
+        <div class="doc-legal-note">
+          <strong>Nota de Responsabilidade Técnica:</strong> O presente Memorial de Levantamento de Quantitativos e Dimensionamento de Insumos foi elaborado com base nas normas ABNT NBR 12.721 (Avaliação de custos unitários e preparo de orçamento), NBR 6118 (Projeto de estruturas de concreto), NBR 6122 (Projeto e execução de fundações), NBR 5410 / NBR 5626 (Instalações elétricas e prediais de água) e índices de consumo da base SINAPI / TCPO / Sienge. Todos os quantitativos e taxas de perda devem ser verificados e validados pelo Responsável Técnico da obra antes da emissão das ordens de compra e cronograma executivo.
+        </div>
+      `;
+
+      await this.motorPdfService.gerarDocumento(
+        {
+          tituloDocumento: 'Memorial de Levantamento de Quantitativos',
+          subtituloDocumento: 'Engenharia de Custos • Orçamento & Produtividade de Obras',
+          nomeAgente: 'Agente de Levantamento de Quantitativos'
+        },
+        corpoHtml
+      );
+    } catch (err) {
+      console.error('Erro ao gerar memorial de quantitativos em PDF:', err);
+      this.motorPdfService.exibirToast('Ocorreu um erro ao emitir o relatório em PDF. Verifique seus dados e tente novamente.', 'erro');
+    } finally {
+      this.gerandoPdf.set(false);
+    }
+  }
+
   exibirNotificacao(texto: string): void {
     this.mensagemNotificacao.set(texto);
     setTimeout(() => {
@@ -2142,20 +2940,6 @@ export class LevantamentoQuantitativosComponent {
         this.mensagemNotificacao.set(null);
       }
     }, 5000);
-  }
-
-  // Formatadores visuais de rótulos
-  formatarNomeTipo(tipo: string): string {
-    const mapa: Record<string, string> = {
-      'sapata-isolada': 'Sapata Isolada',
-      'sapata-corrida': 'Sapata Corrida',
-      'baldrame': 'Viga Baldrame',
-      'bloco': 'Bloco de Fundação',
-      'pilar': 'Pilar',
-      'viga': 'Viga de Concreto',
-      'laje': 'Laje Maciça/Nervurada'
-    };
-    return mapa[tipo] || tipo;
   }
 
   formatarNomeServico(tipo: string): string {
@@ -2198,5 +2982,210 @@ export class LevantamentoQuantitativosComponent {
       'trelica': 'Treliça / brise de sombreamento'
     };
     return mapa[tipo] || tipo;
+  }
+
+  // =========================================================================
+  // GESTÃO DE PROJETOS SALVOS NA NUVEM (SUPABASE)
+  // =========================================================================
+
+  exibirToast(texto: string, tipo: 'sucesso' | 'erro' | 'info' = 'sucesso'): void {
+    this.toastMensagem.set({ texto, tipo });
+    setTimeout(() => {
+      this.toastMensagem.set(null);
+    }, 3500);
+  }
+
+  obterNomeProjetoSugerido(): string {
+    if (this.projetoAtualNome()?.trim()) {
+      return this.projetoAtualNome().trim();
+    }
+    const total = this.totalItensLancados();
+    const dataHoje = new Date().toLocaleDateString('pt-BR');
+    return `Levantamento de Quantitativos (${total} itens) — ${dataHoje}`;
+  }
+
+  serializarDadosFormulario(): any {
+    return {
+      versao: '2.1-sienge-12sistemas',
+      dataSalvamento: new Date().toISOString(),
+      parametros: this.parametros(),
+      margensPerda: this.margensPerda(),
+      perdasCategorias: this.perdasCategorias(),
+      baldrame: this.baldrame(),
+      blocos: this.blocos(),
+      sapatas: this.sapatas(),
+      radier: this.radier(),
+      tubuloes: this.tubuloes(),
+      pilares: this.pilares(),
+      vigas: this.vigas(),
+      lajes: this.lajes(),
+      arquitetonico: this.arquitetonico(),
+      esquadrias: this.esquadrias(),
+      cobertura: this.cobertura(),
+      pergolados: this.pergolados(),
+      distribuicaoEletrica: this.distribuicaoEletrica(),
+      prumadasEletricas: this.prumadasEletricas(),
+      esgotoPluvial: this.esgotoPluvial(),
+      hidraulica: this.hidraulica(),
+      instalacoes: this.instalacoes(),
+      paisagismo: this.paisagismo(),
+      abaAtiva: this.abaAtiva()
+    };
+  }
+
+  deserializarDadosFormulario(dados: any): void {
+    if (!dados) return;
+    if (dados.parametros) this.parametros.set(dados.parametros);
+    if (dados.margensPerda) this.margensPerda.set(dados.margensPerda);
+    if (dados.perdasCategorias) this.perdasCategorias.set(dados.perdasCategorias);
+    if (dados.baldrame) this.baldrame.set(dados.baldrame);
+    if (dados.blocos) this.blocos.set(dados.blocos);
+    if (dados.sapatas) this.sapatas.set(dados.sapatas);
+    if (dados.radier) this.radier.set(dados.radier);
+    if (dados.tubuloes) this.tubuloes.set(dados.tubuloes);
+    if (dados.pilares) this.pilares.set(dados.pilares);
+    if (dados.vigas) this.vigas.set(dados.vigas);
+    if (dados.lajes) this.lajes.set(dados.lajes);
+    if (dados.arquitetonico) this.arquitetonico.set(dados.arquitetonico);
+    if (dados.esquadrias) this.esquadrias.set(dados.esquadrias);
+    if (dados.cobertura) this.cobertura.set(dados.cobertura);
+    if (dados.pergolados) this.pergolados.set(dados.pergolados);
+    if (dados.distribuicaoEletrica) this.distribuicaoEletrica.set(dados.distribuicaoEletrica);
+    if (dados.prumadasEletricas) this.prumadasEletricas.set(dados.prumadasEletricas);
+    if (dados.esgotoPluvial) this.esgotoPluvial.set(dados.esgotoPluvial);
+    if (dados.hidraulica) this.hidraulica.set(dados.hidraulica);
+    if (dados.instalacoes) this.instalacoes.set(dados.instalacoes);
+    if (dados.paisagismo) this.paisagismo.set(dados.paisagismo);
+    if (dados.abaAtiva) this.abaAtiva.set(dados.abaAtiva);
+  }
+
+  clicarSalvarProjeto(): void {
+    if (this.projetoAtualId()) {
+      this.executarAtualizarProjeto();
+    } else {
+      const sugerido = this.obterNomeProjetoSugerido();
+      this.modalSalvarNomeInput.set(sugerido);
+      this.modalSalvarAberto.set(true);
+    }
+  }
+
+  clicarSalvarComoNovo(): void {
+    const sugerido = `${this.obterNomeProjetoSugerido()} (Cópia)`;
+    this.modalSalvarNomeInput.set(sugerido);
+    this.modalSalvarAberto.set(true);
+  }
+
+  async confirmarSalvarNovoProjeto(): Promise<void> {
+    const nome = this.modalSalvarNomeInput().trim();
+    if (!nome) {
+      this.exibirToast('Digite um nome para identificar o projeto.', 'erro');
+      return;
+    }
+
+    this.salvandoProjeto.set(true);
+    try {
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.salvarProjeto('quantitativos', nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao salvar: ${res.error.message}`, 'erro');
+      } else {
+        this.projetoAtualId.set(res.id || null);
+        this.projetoAtualNome.set(nome);
+        this.modalSalvarAberto.set(false);
+        this.exibirToast(`Projeto "${nome}" salvo com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao salvar projeto: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async executarAtualizarProjeto(): Promise<void> {
+    const id = this.projetoAtualId();
+    if (!id) return;
+
+    this.salvandoProjeto.set(true);
+    try {
+      const nome = this.projetoAtualNome() || this.obterNomeProjetoSugerido();
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.atualizarProjeto(id, nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao atualizar: ${res.error.message}`, 'erro');
+      } else {
+        this.exibirToast(`Projeto "${nome}" atualizado com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao atualizar: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async abrirModalMeusProjetos(): Promise<void> {
+    this.modalProjetosAberto.set(true);
+    this.carregandoProjetos.set(true);
+    try {
+      const lista = await this.supabaseService.listarMeusProjetos('quantitativos');
+      this.listaProjetosSalvos.set(lista);
+    } catch (err) {
+      console.error('Erro ao listar projetos de quantitativos:', err);
+    } finally {
+      this.carregandoProjetos.set(false);
+    }
+  }
+
+  abrirProjetoSalvo(proj: any): void {
+    try {
+      this.deserializarDadosFormulario(proj.dados_formulario);
+      this.projetoAtualId.set(proj.id);
+      this.projetoAtualNome.set(proj.nome_projeto);
+      this.modalProjetosAberto.set(false);
+      this.exibirToast(`Projeto "${proj.nome_projeto}" carregado com sucesso!`, 'sucesso');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      this.exibirToast(`Erro ao carregar projeto: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  async confirmarExcluirProjeto(proj: any, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (!confirm(`Deseja realmente excluir o projeto "${proj.nome_projeto}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const res = await this.supabaseService.excluirProjeto(proj.id);
+      if (res.error) {
+        this.exibirToast(`Erro ao excluir: ${res.error.message}`, 'erro');
+      } else {
+        if (this.projetoAtualId() === proj.id) {
+          this.projetoAtualId.set(null);
+          this.projetoAtualNome.set('');
+        }
+        this.listaProjetosSalvos.update(l => l.filter(p => p.id !== proj.id));
+        this.exibirToast(`Projeto "${proj.nome_projeto}" excluído.`, 'info');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao excluir projeto: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  formatarDataProjeto(dataIso: string): string {
+    if (!dataIso) return '-';
+    try {
+      const d = new Date(dataIso);
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dataIso;
+    }
   }
 }

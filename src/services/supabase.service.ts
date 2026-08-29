@@ -3,6 +3,24 @@ import { createClient, SupabaseClient, Session } from '@supabase/supabase-js';
 import { environment } from '../environments/environment';
 import { gerarCodigoVerificacaoCertificado } from '../app/services/certificado-pdf.service';
 
+export interface DadosDocumentaisTecnicos {
+  full_name: string;
+  professional_title?: string;
+  categoria_profissional?: string;
+  crea_cau?: string;
+  company_name?: string;
+  company_position?: string;
+  company_cnpj?: string;
+  company_address?: string;
+  company_phone?: string;
+  company_email?: string;
+  company_site?: string;
+  social_network_label?: string;
+  social_network_url?: string;
+  company_logo_url?: string | null;
+  dados_documentais_confirmados?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
   public readonly client: SupabaseClient;
@@ -186,15 +204,27 @@ export class SupabaseService {
 
   async listarProfissionaisComPermissoes(): Promise<any[]> {
     try {
-      const { data: pessoas, error: erroPessoas } = await this.client
-        .from('profissionais')
-        .select('*')
-        .order('full_name', { ascending: true });
-      if (erroPessoas) {
-        console.warn('Erro ao buscar profissionais:', erroPessoas.message);
-        return [];
+      let pessoas: any[] = [];
+      // Tenta consultar a função RPC com rastreio de último acesso (last_sign_in_at do Supabase Auth) e contagem de reenvios
+      const { data: pessoasRpc, error: erroRpc } = await this.client.rpc('listar_profissionais_com_ultimo_acesso');
+      
+      if (!erroRpc && pessoasRpc && Array.isArray(pessoasRpc)) {
+        pessoas = pessoasRpc;
+      } else {
+        // Fallback para consulta direta na tabela profissionais caso a RPC não esteja disponível
+        const { data: pessoasDireto, error: erroPessoas } = await this.client
+          .from('profissionais')
+          .select('*')
+          .order('full_name', { ascending: true });
+        
+        if (erroPessoas) {
+          console.warn('Erro ao buscar profissionais:', erroPessoas.message);
+          return [];
+        }
+        pessoas = pessoasDireto || [];
       }
 
+      // Buscar permissões modulares
       const { data: permissoes, error: erroPermissoes } = await this.client
         .from('permissoes_acesso')
         .select('*');
@@ -202,10 +232,44 @@ export class SupabaseService {
         console.warn('Aviso ao buscar permissões_acesso:', erroPermissoes.message);
       }
 
-      return (pessoas || []).map((p: any) => ({
-        ...p,
-        permissoes: (permissoes || []).filter((perm: any) => perm.profissional_id === p.id),
-      }));
+      // Se a RPC não retornou total_reenvios (ex: fallback direto), tentar buscar contagem em reenvios_convite
+      let mapaReenvios: Record<string, { total: number; ultimo?: string }> = {};
+      try {
+        const { data: reenviosData } = await this.client
+          .from('reenvios_convite')
+          .select('profissional_id, enviado_em')
+          .order('enviado_em', { ascending: true });
+
+        if (reenviosData && Array.isArray(reenviosData)) {
+          reenviosData.forEach((r: any) => {
+            if (r.profissional_id) {
+              if (!mapaReenvios[r.profissional_id]) {
+                mapaReenvios[r.profissional_id] = { total: 0, ultimo: r.enviado_em };
+              }
+              mapaReenvios[r.profissional_id].total += 1;
+              mapaReenvios[r.profissional_id].ultimo = r.enviado_em;
+            }
+          });
+        }
+      } catch {
+        // Tabela reenvios_convite pode não estar criada ainda
+      }
+
+      return (pessoas || []).map((p: any) => {
+        const infoReenvio = mapaReenvios[p.id];
+        const totalReenvios = p.total_reenvios !== undefined && p.total_reenvios !== null
+          ? Number(p.total_reenvios)
+          : (infoReenvio ? infoReenvio.total : 0);
+
+        const ultimoReenvio = p.ultimo_reenvio_em || infoReenvio?.ultimo || null;
+
+        return {
+          ...p,
+          total_reenvios: totalReenvios,
+          ultimo_reenvio_em: ultimoReenvio,
+          permissoes: (permissoes || []).filter((perm: any) => perm.profissional_id === p.id),
+        };
+      });
     } catch (e: any) {
       console.warn('Erro ao listar profissionais com permissões:', e?.message || e);
       return [];
@@ -433,6 +497,122 @@ export class SupabaseService {
     }
   }
 
+  async reenviarConviteUsuarioViaFunction(dados: {
+    userId?: string;
+    email?: string;
+    templateChave?: string;
+  }): Promise<{
+    sucesso: boolean;
+    error: Error | null;
+    senhaProvisoria?: string;
+    email?: string;
+    nome?: string;
+    userId?: string;
+  }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('reenviar-convite-usuario', {
+        body: {
+          userId: dados.userId,
+          email: dados.email,
+          template_chave: dados.templateChave,
+        },
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro ao invocar função reenviar-convite-usuario';
+        if (data?.error) msg = data.error;
+        return { sucesso: false, error: new Error(msg) };
+      }
+
+      if (data?.error) {
+        return { sucesso: false, error: new Error(data.error) };
+      }
+
+      return {
+        sucesso: Boolean(data?.sucesso),
+        senhaProvisoria: data?.senhaProvisoria,
+        email: data?.email,
+        nome: data?.nome,
+        userId: data?.userId,
+        error: null,
+      };
+    } catch (e: any) {
+      return { sucesso: false, error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async reenviarConvitesLoteViaFunction(dados: {
+    profissionalIds: string[];
+    templateChave?: string;
+  }): Promise<{
+    sucesso: boolean;
+    error: Error | null;
+    totalProcessados: number;
+    totalSucesso: number;
+    totalFalhas: number;
+    resultados: Array<{
+      userId: string;
+      email: string;
+      nome: string;
+      sucesso: boolean;
+      senhaProvisoria?: string;
+      error?: string;
+      reenvioId?: string;
+    }>;
+  }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('reenviar-convite-usuario', {
+        body: {
+          profissionalIds: dados.profissionalIds,
+          template_chave: dados.templateChave,
+        },
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro ao invocar função reenviar-convite-usuario em lote';
+        if (data?.error) msg = data.error;
+        return {
+          sucesso: false,
+          error: new Error(msg),
+          totalProcessados: dados.profissionalIds.length,
+          totalSucesso: 0,
+          totalFalhas: dados.profissionalIds.length,
+          resultados: [],
+        };
+      }
+
+      if (data?.error && !data.resultados) {
+        return {
+          sucesso: false,
+          error: new Error(data.error),
+          totalProcessados: dados.profissionalIds.length,
+          totalSucesso: 0,
+          totalFalhas: dados.profissionalIds.length,
+          resultados: [],
+        };
+      }
+
+      const resultados = Array.isArray(data?.resultados) ? data.resultados : [];
+      return {
+        sucesso: Boolean(data?.sucesso),
+        totalProcessados: data?.totalProcessados || dados.profissionalIds.length,
+        totalSucesso: data?.totalSucesso || resultados.filter((r: any) => r.sucesso).length,
+        totalFalhas: data?.totalFalhas || resultados.filter((r: any) => !r.sucesso).length,
+        resultados,
+        error: null,
+      };
+    } catch (e: any) {
+      return {
+        sucesso: false,
+        error: e instanceof Error ? e : new Error(String(e)),
+        totalProcessados: dados.profissionalIds.length,
+        totalSucesso: 0,
+        totalFalhas: dados.profissionalIds.length,
+        resultados: [],
+      };
+    }
+  }
+
   // ----------------------------------------------------
   // PERFIS DE ACESSO (MOLDES DE PERMISSÃO)
   // ----------------------------------------------------
@@ -570,6 +750,7 @@ export class SupabaseService {
   async atualizarProfissionalAdmin(
     id: string,
     dados: {
+      full_name?: string;
       nivel_atual?: string;
       licenca_tipo?: string | null;
       licenca_validade?: string | null;
@@ -577,6 +758,7 @@ export class SupabaseService {
   ): Promise<{ error: Error | null }> {
     try {
       const updatePayload: Record<string, any> = {};
+      if (dados.full_name !== undefined) updatePayload.full_name = dados.full_name;
       if (dados.nivel_atual !== undefined) updatePayload.nivel_atual = dados.nivel_atual;
       if (dados.licenca_tipo !== undefined) updatePayload.licenca_tipo = dados.licenca_tipo;
       if (dados.licenca_validade !== undefined) updatePayload.licenca_validade = dados.licenca_validade;
@@ -591,11 +773,273 @@ export class SupabaseService {
     }
   }
 
+  async atualizarNomeUsuarioAdmin(id: string, novoNome: string): Promise<{ error: Error | null }> {
+    try {
+      const nomeLimpo = (novoNome || '').trim();
+      if (!id) return { error: new Error('ID do usuário não fornecido.') };
+      if (!nomeLimpo) return { error: new Error('O nome do usuário não pode ficar vazio.') };
+
+      const { error } = await this.client
+        .from('profissionais')
+        .update({
+          full_name: nomeLimpo,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
   async atualizarNivelProfissional(
     id: string,
     nivelAtual: string
   ): Promise<{ error: Error | null }> {
     return this.atualizarProfissionalAdmin(id, { nivel_atual: nivelAtual });
+  }
+
+  // ----------------------------------------------------
+  // MÉTODOS DE DADOS PARA DOCUMENTOS TÉCNICOS & LAUDOS
+  // ----------------------------------------------------
+
+  async salvarDadosDocumentaisUsuario(
+    dados: Partial<DadosDocumentaisTecnicos>,
+    confirmar: boolean = false
+  ): Promise<{ error: Error | null; confirmados?: boolean }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Sessão inválida ou não autenticado.') };
+
+      // 1. Verificar se o registro já está travado no banco (checagem de segurança preventiva)
+      const { data: usuarioAtual, error: erroConsulta } = await this.client
+        .from('profissionais')
+        .select('id, dados_documentais_confirmados')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (erroConsulta) {
+        return { error: erroConsulta };
+      }
+
+      if (usuarioAtual?.dados_documentais_confirmados === true) {
+        return {
+          error: new Error('Seus dados para documentos técnicos já foram confirmados e estão bloqueados para edição. Solicite alteração a um administrador caso precise corrigir.')
+        };
+      }
+
+      // 2. Montar payload do update
+      const updatePayload: Record<string, any> = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (dados.full_name !== undefined) updatePayload.full_name = dados.full_name.trim();
+      if (dados.professional_title !== undefined) updatePayload.professional_title = dados.professional_title.trim();
+      if (dados.categoria_profissional !== undefined) updatePayload.categoria_profissional = dados.categoria_profissional.trim();
+      if (dados.crea_cau !== undefined) updatePayload.crea_cau = dados.crea_cau.trim();
+      if (dados.company_name !== undefined) updatePayload.company_name = dados.company_name.trim();
+      if (dados.company_position !== undefined) updatePayload.company_position = dados.company_position.trim();
+      if (dados.company_cnpj !== undefined) updatePayload.company_cnpj = dados.company_cnpj.trim();
+      if (dados.company_address !== undefined) updatePayload.company_address = dados.company_address.trim();
+      if (dados.company_phone !== undefined) updatePayload.company_phone = dados.company_phone.trim();
+      if (dados.company_email !== undefined) updatePayload.company_email = dados.company_email.trim();
+      if (dados.company_site !== undefined) updatePayload.company_site = dados.company_site.trim();
+      if (dados.social_network_label !== undefined) updatePayload.social_network_label = dados.social_network_label.trim();
+      if (dados.social_network_url !== undefined) updatePayload.social_network_url = dados.social_network_url.trim();
+      if (dados.company_logo_url !== undefined) updatePayload.company_logo_url = dados.company_logo_url;
+
+      if (confirmar || dados.dados_documentais_confirmados === true) {
+        updatePayload.dados_documentais_confirmados = true;
+      }
+
+      // 3. Execução protegida no banco: só atualiza se dados_documentais_confirmados for false
+      const { data, error } = await this.client
+        .from('profissionais')
+        .update(updatePayload)
+        .eq('id', session.user.id)
+        .eq('dados_documentais_confirmados', false)
+        .select('id, dados_documentais_confirmados');
+
+      if (error) {
+        return { error };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          error: new Error('Não foi possível salvar os dados. Os dados documentais já estavam confirmados ou foram bloqueados.')
+        };
+      }
+
+      return { error: null, confirmados: Boolean(data[0]?.dados_documentais_confirmados) };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async solicitarAlteracaoDadosDocumentais(
+    motivo: string,
+    dadosAtuais?: Partial<DadosDocumentaisTecnicos>
+  ): Promise<{ sucesso: boolean; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { sucesso: false, error: new Error('Sessão expirada. Faça login novamente.') };
+
+      const perfil = await this.obterMeuPerfilCompleto();
+      const nomeSolicitante = perfil?.full_name || session.user.user_metadata?.full_name || 'Membro da Comunidade';
+      const emailSolicitante = session.user.email || perfil?.email || 'E-mail não identificado';
+
+      const d = { ...perfil, ...dadosAtuais };
+
+      const dadosFormatadosHtml = `
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; color: #334155;">
+          <tbody>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b; width: 35%;">Nome para Documentos:</td>
+              <td style="padding: 8px 0; font-weight: 600; color: #1e293b;">${d.full_name || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Título Profissional:</td>
+              <td style="padding: 8px 0;">${d.professional_title || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Categoria Profissional:</td>
+              <td style="padding: 8px 0;">${d.categoria_profissional || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Registro CREA / CAU:</td>
+              <td style="padding: 8px 0;">${d.crea_cau || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Nome da Empresa:</td>
+              <td style="padding: 8px 0; font-weight: 600; color: #1e293b;">${d.company_name || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Cargo:</td>
+              <td style="padding: 8px 0;">${d.company_position || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">CNPJ da Empresa:</td>
+              <td style="padding: 8px 0;">${d.company_cnpj || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Endereço:</td>
+              <td style="padding: 8px 0;">${d.company_address || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Telefone:</td>
+              <td style="padding: 8px 0;">${d.company_phone || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">E-mail Institucional:</td>
+              <td style="padding: 8px 0;">${d.company_email || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Site:</td>
+              <td style="padding: 8px 0;">${d.company_site || '—'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Rede Social:</td>
+              <td style="padding: 8px 0;">${d.social_network_label ? `${d.social_network_label}: ${d.social_network_url || ''}` : (d.social_network_url || '—')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Logomarca:</td>
+              <td style="padding: 8px 0;">${d.company_logo_url ? `<a href="${d.company_logo_url}" target="_blank" style="color: #132A41; font-weight: bold;">Visualizar Logo Cadastrada</a>` : 'Não enviada'}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+      const htmlConteudo = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+          <div style="background-color: #132A41; padding: 24px; text-align: center; border-bottom: 3px solid #B5642A;">
+            <h2 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800;">AMORIM ACADEMY</h2>
+            <p style="margin: 4px 0 0 0; color: #B5642A; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase;">Solicitação de Alteração de Dados Documentais</p>
+          </div>
+          
+          <div style="padding: 28px 24px;">
+            <p style="margin: 0 0 16px 0; font-size: 15px; color: #1e293b;">
+              O membro <strong>${nomeSolicitante}</strong> (<code>${emailSolicitante}</code>) solicitou a alteração dos seus <strong>Dados para Documentos Técnicos</strong> que estavam confirmados/travados.
+            </p>
+            
+            <div style="margin: 20px 0; padding: 16px 20px; background-color: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #B5642A; border-radius: 8px;">
+              <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: bold; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;">Motivo informado pelo membro:</p>
+              <p style="margin: 0; font-size: 14px; color: #78350f; font-weight: 600; white-space: pre-wrap; line-height: 1.5;">${motivo}</p>
+            </div>
+
+            <div style="margin: 24px 0; padding: 18px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+              <h4 style="margin: 0 0 12px 0; font-size: 13px; font-weight: bold; color: #132A41; text-transform: uppercase; letter-spacing: 0.5px;">
+                📋 Dados Documentais Atuais Cadastrados:
+              </h4>
+              ${dadosFormatadosHtml}
+            </div>
+
+            <div style="margin: 24px 0 10px 0; padding: 14px 16px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
+              <p style="margin: 0; font-size: 13px; color: #475569;">
+                Para aplicar as alterações, acesse a área <strong>Admin → Usuários</strong> na plataforma e edite os dados do usuário.
+              </p>
+            </div>
+          </div>
+          
+          <div style="background-color: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+            Plataforma Amorim Academy · Notificação Automática de Suporte
+          </div>
+        </div>
+      `;
+
+      const resultado = await this.enviarEmailViaFunction({
+        tipo: 'personalizado',
+        destinatarios: ['emanoel.s.amorim@gmail.com'],
+        assunto: `Solicitação de alteração de dados documentais — ${nomeSolicitante}`,
+        html: htmlConteudo,
+        nome: nomeSolicitante,
+      });
+
+      return {
+        sucesso: resultado.sucesso,
+        error: resultado.error
+      };
+    } catch (e: any) {
+      return { sucesso: false, error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async atualizarDadosDocumentaisAdmin(
+    userId: string,
+    dados: Partial<DadosDocumentaisTecnicos> & { dados_documentais_confirmados?: boolean }
+  ): Promise<{ error: Error | null }> {
+    try {
+      if (!userId) return { error: new Error('ID do usuário não informado.') };
+
+      const updatePayload: Record<string, any> = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (dados.full_name !== undefined) updatePayload.full_name = dados.full_name.trim();
+      if (dados.professional_title !== undefined) updatePayload.professional_title = dados.professional_title.trim();
+      if (dados.categoria_profissional !== undefined) updatePayload.categoria_profissional = dados.categoria_profissional.trim();
+      if (dados.crea_cau !== undefined) updatePayload.crea_cau = dados.crea_cau.trim();
+      if (dados.company_name !== undefined) updatePayload.company_name = dados.company_name.trim();
+      if (dados.company_position !== undefined) updatePayload.company_position = dados.company_position.trim();
+      if (dados.company_cnpj !== undefined) updatePayload.company_cnpj = dados.company_cnpj.trim();
+      if (dados.company_address !== undefined) updatePayload.company_address = dados.company_address.trim();
+      if (dados.company_phone !== undefined) updatePayload.company_phone = dados.company_phone.trim();
+      if (dados.company_email !== undefined) updatePayload.company_email = dados.company_email.trim();
+      if (dados.company_site !== undefined) updatePayload.company_site = dados.company_site.trim();
+      if (dados.social_network_label !== undefined) updatePayload.social_network_label = dados.social_network_label.trim();
+      if (dados.social_network_url !== undefined) updatePayload.social_network_url = dados.social_network_url.trim();
+      if (dados.company_logo_url !== undefined) updatePayload.company_logo_url = dados.company_logo_url;
+      if (dados.dados_documentais_confirmados !== undefined) updatePayload.dados_documentais_confirmados = dados.dados_documentais_confirmados;
+
+      const { error } = await this.client
+        .from('profissionais')
+        .update(updatePayload)
+        .eq('id', userId);
+
+      return { error };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
   }
 
   // ----------------------------------------------------
@@ -2970,7 +3414,7 @@ export class SupabaseService {
   }
 
   async uploadImagemPerfil(
-    tipo: 'avatar' | 'banner',
+    tipo: 'avatar' | 'banner' | 'logo',
     file: File
   ): Promise<{ error: Error | null; url?: string | null }> {
     try {
@@ -2985,12 +3429,13 @@ export class SupabaseService {
         };
       }
 
-      // Validação de tamanho: Avatar máx 2MB, Banner máx 5MB
+      // Validação de tamanho: Avatar máx 2MB, Banner máx 5MB, Logo máx 5MB
       const maxBytes = tipo === 'avatar' ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
       const limiteTexto = tipo === 'avatar' ? '2 MB' : '5 MB';
       if (file.size > maxBytes) {
+        const rotulo = tipo === 'avatar' ? 'a foto de perfil' : (tipo === 'banner' ? 'o banner' : 'a logomarca da empresa');
         return {
-          error: new Error(`O arquivo excede o limite máximo permitido de ${limiteTexto} para ${tipo === 'avatar' ? 'a foto de perfil' : 'o banner'}.`)
+          error: new Error(`O arquivo excede o limite máximo permitido de ${limiteTexto} para ${rotulo}.`)
         };
       }
 
@@ -2999,7 +3444,7 @@ export class SupabaseService {
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-zA-Z0-9._-]/g, '_');
 
-      const subpasta = tipo === 'avatar' ? 'avatares' : 'banners';
+      const subpasta = tipo === 'avatar' ? 'avatares' : (tipo === 'banner' ? 'banners' : 'logos');
       const path = `perfil/${subpasta}/${session.user.id}_${Date.now()}_${cleanName}`;
 
       // Upload para o bucket materiais-comunidade
@@ -4088,14 +4533,25 @@ export class SupabaseService {
     return this.listarCubPorEstado();
   }
 
-  async obterCubEstado(uf: string, padrao = 'R8-N'): Promise<any | null> {
+  async obterCubEstado(
+    uf: string,
+    tipologia = 'Padrão Residenciais',
+    padrao = 'Padrão Normal',
+    subtipo?: string
+  ): Promise<any | null> {
     try {
-      const { data, error } = await this.client
+      let query = this.client
         .from('cub_por_estado')
-        .select('valor_m2, mes_referencia, ano_referencia, sinduscon_responsavel, nome_estado, uf, padrao')
+        .select('valor_m2, mes_referencia, ano_referencia, sinduscon_responsavel, nome_estado, uf, tipologia, padrao, subtipo')
         .eq('uf', uf)
-        .eq('padrao', padrao)
-        .maybeSingle();
+        .eq('tipologia', tipologia)
+        .eq('padrao', padrao);
+
+      if (subtipo) {
+        query = query.eq('subtipo', subtipo);
+      }
+
+      const { data, error } = await query.maybeSingle();
       if (error) {
         console.warn('Aviso ao obter CUB do estado:', error.message);
         return null;
@@ -4310,6 +4766,121 @@ export class SupabaseService {
         .eq('padrao_sistema', false);
 
       return { error: error ? new Error(error.message) : null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  // =========================================================================
+  // PROJETOS SALVOS DOS AGENTES (Canteiro, Reajuste, Viabilidade e Quantitativos)
+  // =========================================================================
+
+  async salvarProjeto(
+    tipoAgente: 'canteiro' | 'reajuste' | 'viabilidade' | 'quantitativos' | string,
+    nomeProjeto: string,
+    dadosFormulario: any
+  ): Promise<{ error: Error | null; id?: string }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) {
+        return { error: new Error('Você precisa estar autenticado para salvar projetos.') };
+      }
+
+      const { data, error } = await this.client
+        .from('projetos_salvos')
+        .insert({
+          profissional_id: session.user.id,
+          tipo_agente: tipoAgente,
+          nome_projeto: nomeProjeto.trim(),
+          dados_formulario: dadosFormulario
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        return { error: new Error(error.message) };
+      }
+
+      return { error: null, id: data?.id };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async atualizarProjeto(
+    id: string,
+    nomeProjeto: string,
+    dadosFormulario: any
+  ): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) {
+        return { error: new Error('Você precisa estar autenticado para atualizar projetos.') };
+      }
+
+      const { error } = await this.client
+        .from('projetos_salvos')
+        .update({
+          nome_projeto: nomeProjeto.trim(),
+          dados_formulario: dadosFormulario
+        })
+        .eq('id', id)
+        .eq('profissional_id', session.user.id);
+
+      if (error) {
+        return { error: new Error(error.message) };
+      }
+
+      return { error: null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async listarMeusProjetos(
+    tipoAgente: 'canteiro' | 'reajuste' | 'viabilidade' | 'quantitativos' | string
+  ): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+
+      const { data, error } = await this.client
+        .from('projetos_salvos')
+        .select('id, profissional_id, tipo_agente, nome_projeto, dados_formulario, criado_em, atualizado_em')
+        .eq('tipo_agente', tipoAgente)
+        .eq('profissional_id', session.user.id)
+        .order('atualizado_em', { ascending: false });
+
+      if (error) {
+        console.warn('Erro ao listar projetos salvos:', error.message);
+        return [];
+      }
+
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar projetos salvos:', e);
+      return [];
+    }
+  }
+
+  async excluirProjeto(id: string): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) {
+        return { error: new Error('Você precisa estar autenticado para excluir projetos.') };
+      }
+
+      const { error } = await this.client
+        .from('projetos_salvos')
+        .delete()
+        .eq('id', id)
+        .eq('profissional_id', session.user.id);
+
+      if (error) {
+        return { error: new Error(error.message) };
+      }
+
+      return { error: null };
     } catch (e: any) {
       return { error: e instanceof Error ? e : new Error(String(e)) };
     }

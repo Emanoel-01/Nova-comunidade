@@ -75,6 +75,12 @@ export function gerarTemplateEmailAmorimTech(options: TemplateEmailOptions): { a
         ` : ''}
       </div>
 
+      <div style="margin: 20px 0; padding: 14px 16px; background-color: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #B5642A; border-radius: 8px;">
+        <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">
+          <strong>Aviso importante:</strong> Quando for completar seu perfil, você vai encontrar uma seção de <strong>Dados para Documentos Técnicos</strong> (nome completo para laudos, empresa, CNPJ, CREA/CAU, logo, etc.). Preencha com atenção: depois de confirmados, esses dados só podem ser alterados por um administrador.
+        </p>
+      </div>
+
       <div style="margin: 28px 0 20px 0; text-align: center;">
         <a href="${urlAcesso}" target="_blank" style="background-color: #132A41; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(19, 42, 65, 0.15);">
           Acessar a Plataforma →

@@ -1,11 +1,10 @@
-import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { SupabaseService } from '../../../../services/supabase.service';
+import { MotorPdfService } from '../../../services/motor-pdf.service';
 import {
   coeficientesDB,
   etapasDB,
-  custosDB,
   CoeficienteItem,
   EtapaCustoItem
 } from './custos-viabilidade.data';
@@ -76,6 +75,54 @@ export interface MonthFlowItem {
 
           <!-- Ações Rápidas & Relatório -->
           <div class="flex flex-wrap items-center gap-2.5 shrink-0 self-start md:self-auto">
+            <!-- Projetos Salvos -->
+            <button
+              type="button"
+              (click)="abrirModalMeusProjetos()"
+              class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition-all cursor-pointer shadow-2xs"
+              title="Ver meus estudos de viabilidade salvos"
+            >
+              <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              <span>Meus Projetos</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="clicarSalvarProjeto()"
+              [disabled]="salvandoProjeto()"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              [title]="projetoAtualId() ? 'Atualizar estudo salvo' : 'Salvar estudo de viabilidade'"
+            >
+              @if (salvandoProjeto()) {
+                <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Salvando...</span>
+              } @else {
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                <span>{{ projetoAtualId() ? 'Salvar Alterações' : 'Salvar' }}</span>
+              }
+            </button>
+
+            @if (projetoAtualId()) {
+              <button
+                type="button"
+                (click)="clicarSalvarComoNovo()"
+                class="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition-all cursor-pointer"
+                title="Salvar como um novo projeto"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Como Novo</span>
+              </button>
+            }
+
             <!-- Seletor de Cenário -->
             <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80">
               <button
@@ -310,11 +357,25 @@ export interface MonthFlowItem {
               <!-- Destaque do Custo CUB Base -->
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div>
-                  <div class="font-bold text-slate-900">
-                    {{ params().tipo }} — {{ params().padrao }} ({{ params().indice }})
+                  <div class="font-bold text-slate-900 flex items-center gap-2">
+                    <span>{{ params().tipo }} — {{ params().padrao }} ({{ params().indice }})</span>
+                    @if (params().isPlaceholder) {
+                      <span class="text-[10px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md border border-amber-300" title="Valor estimado com base na média regional até publicação pelo Sinduscon">
+                        Estimativa
+                      </span>
+                    }
                   </div>
-                  <div class="text-slate-500 text-[11px]">
-                    Custo Unitário Básico Sinduscon/{{ estado() }}
+                  <div class="text-slate-500 text-[11px] flex items-center gap-1.5 mt-0.5">
+                    <span>Custo Unitário Básico Sinduscon/{{ estado() }}</span>
+                    @if (carregandoCub()) {
+                      <span class="inline-flex items-center text-[10px] text-indigo-600">
+                        <svg class="animate-spin -ml-1 mr-1 h-3 w-3 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        atualizando...
+                      </span>
+                    }
                   </div>
                 </div>
                 <div class="text-right">
@@ -1299,10 +1360,8 @@ export interface MonthFlowItem {
         </div>
       }
 
-    </div>
-
-    <!-- ======================================================= -->
-    <!-- MODAL DE RELATÓRIO EXECUTIVO (LAUDO / IMPRESSÃO)         -->
+      <!-- ======================================================= -->
+      <!-- MODAL DE RELATÓRIO EXECUTIVO (LAUDO / IMPRESSÃO)         -->
     <!-- ======================================================= -->
     @if (modalRelatorioAberto()) {
       <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
@@ -1482,9 +1541,273 @@ export interface MonthFlowItem {
         </div>
       </div>
     }
+
+      <!-- MODAL: SALVAR PROJETO -->
+      @if (modalSalvarAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-slate-900">Salvar Estudo de Viabilidade</h4>
+                  <p class="text-xs text-slate-500">Dê um nome para identificar este estudo econômico</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="modalSalvarAberto.set(false)"
+                class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-700">Nome do Empreendimento / Estudo</label>
+              <input
+                type="text"
+                [value]="modalSalvarNomeInput()"
+                (input)="modalSalvarNomeInput.set($any($event.target).value)"
+                (keydown.enter)="confirmarSalvarNovoProjeto()"
+                placeholder="Ex: Residencial Acácias — Estudo CUB R-8"
+                class="w-full bg-slate-50 text-xs sm:text-sm font-semibold text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-amber-600 focus:bg-white outline-hidden transition-all"
+                autofocus
+              />
+              <p class="text-[11px] text-slate-400">Texto livre para localização em sua lista de projetos.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="modalSalvarAberto.set(false)"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="confirmarSalvarNovoProjeto()"
+                [disabled]="salvandoProjeto() || !modalSalvarNomeInput().trim()"
+                class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                @if (salvandoProjeto()) {
+                  <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Salvando...</span>
+                } @else {
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Salvar Projeto</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL: MEUS PROJETOS SALVOS -->
+      @if (modalProjetosAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-xl w-full border border-slate-200 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+            <!-- Header do Modal -->
+            <div class="flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-slate-900">Meus Projetos Salvos (Viabilidade)</h4>
+                  <p class="text-xs text-slate-500">Selecione um estudo de viabilidade para carregar e continuar analisando</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="modalProjetosAberto.set(false)"
+                class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Lista de Projetos com Scroll -->
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-[160px]">
+              @if (carregandoProjetos()) {
+                <div class="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <svg class="animate-spin w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span class="text-xs font-semibold">Carregando seus estudos salvos...</span>
+                </div>
+              } @else if (listaProjetosSalvos().length === 0) {
+                <div class="py-12 flex flex-col items-center justify-center gap-2 text-slate-400 text-center">
+                  <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p class="text-xs font-bold text-slate-600">Nenhum estudo salvo ainda</p>
+                  <p class="text-[11px] text-slate-400 max-w-xs">Preencha as premissas econômicas e clique em "Salvar" para armazenar seus estudos de viabilidade.</p>
+                </div>
+              } @else {
+                @for (proj of listaProjetosSalvos(); track proj.id) {
+                  <div
+                    class="p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group"
+                    [class]="projetoAtualId() === proj.id
+                      ? 'border-amber-600 bg-amber-50/40 ring-1 ring-amber-600/20'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 bg-white'"
+                  >
+                    <div class="space-y-1 min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <h5 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          {{ proj.nome_projeto }}
+                        </h5>
+                        @if (projetoAtualId() === proj.id) {
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white shrink-0">
+                            Aberto
+                          </span>
+                        }
+                      </div>
+                      <p class="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Atualizado em: {{ formatarDataProjeto(proj.atualizado_em) }}</span>
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        (click)="abrirProjetoSalvo(proj)"
+                        class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>Abrir</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="confirmarExcluirProjeto(proj, $event)"
+                        class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Excluir estudo salvo"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Rodapé do Modal -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                (click)="modalProjetosAberto.set(false)"
+                class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TOAST DE FEEDBACK -->
+      @if (toastMensagem()) {
+        <div class="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div
+            class="px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-3 text-xs font-semibold"
+            [class]="toastMensagem()?.tipo === 'sucesso'
+              ? 'bg-emerald-900/95 text-emerald-100 border-emerald-700/60 shadow-emerald-950/30'
+              : toastMensagem()?.tipo === 'erro'
+                ? 'bg-rose-900/95 text-rose-100 border-rose-700/60 shadow-rose-950/30'
+                : 'bg-slate-900/95 text-slate-100 border-slate-700/60 shadow-slate-950/30'"
+          >
+            @if (toastMensagem()?.tipo === 'sucesso') {
+              <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            } @else if (toastMensagem()?.tipo === 'erro') {
+              <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            } @else {
+              <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+            <span>{{ toastMensagem()?.texto }}</span>
+          </div>
+        </div>
+      }
+
+    </div>
   `
 })
-export class CustosViabilidadeComponent {
+export class CustosViabilidadeComponent implements OnInit {
+  private readonly supabaseService = inject(SupabaseService);
+  private readonly motorPdfService = inject(MotorPdfService);
+
+  // Controle de Projetos Salvos
+  readonly projetoAtualId = signal<string | null>(null);
+  readonly projetoAtualNome = signal<string>('');
+  readonly salvandoProjeto = signal<boolean>(false);
+  readonly modalSalvarAberto = signal<boolean>(false);
+  readonly modalSalvarNomeInput = signal<string>('');
+  readonly modalProjetosAberto = signal<boolean>(false);
+  readonly carregandoProjetos = signal<boolean>(false);
+  readonly listaProjetosSalvos = signal<any[]>([]);
+  readonly toastMensagem = signal<{ texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null>(null);
+
+  // Dados de CUB carregados do Supabase
+  readonly cubLista = signal<any[]>([]);
+  readonly carregandoCub = signal<boolean>(false);
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const perfil = await this.motorPdfService.obterPerfilDocumental();
+      if (perfil) {
+        if (perfil.full_name) this.responsavelTecnico.set(perfil.full_name);
+        if (perfil.crea_cau) this.creaCau.set(perfil.crea_cau);
+      }
+    } catch (e) {
+      console.warn('Carregamento de perfil para custos:', e);
+    }
+
+    await this.carregarDadosCub();
+  }
+
+  async carregarDadosCub(): Promise<void> {
+    this.carregandoCub.set(true);
+    try {
+      const lista = await this.supabaseService.listarCubPorEstado();
+      this.cubLista.set(lista || []);
+    } catch (e) {
+      console.warn('Erro ao carregar dados de CUB:', e);
+    } finally {
+      this.carregandoCub.set(false);
+    }
+  }
+
   readonly abaAtiva = signal<AbaViabilidade>('premissas');
   readonly cenarioAtivo = signal<'pessimistic' | 'realistic' | 'optimistic'>('realistic');
   readonly modalRelatorioAberto = signal<boolean>(false);
@@ -1540,47 +1863,161 @@ export class CustosViabilidadeComponent {
     }))
   );
 
-  // Estados disponíveis
-  readonly states = computed(() => Object.keys(custosDB).sort());
+  // Estados disponíveis (carregados do Supabase ou fallback padrão)
+  readonly states = computed(() => {
+    const lista = this.cubLista();
+    if (!lista || lista.length === 0) {
+      return [
+        'Acre', 'Alagoas', 'Amapá', 'Amazonas', 'Bahia', 'Ceará', 'Distrito Federal',
+        'Espírito Santo', 'Goiás', 'Maranhão', 'Mato Grosso', 'Mato Grosso do Sul',
+        'Minas Gerais', 'Pará', 'Paraíba', 'Paraná', 'Pernambuco', 'Piauí',
+        'Rio de Janeiro', 'Rio Grande do Norte', 'Rio Grande do Sul', 'Rondônia',
+        'Roraima', 'Santa Catarina', 'São Paulo', 'Sergipe', 'Tocantins'
+      ].sort();
+    }
+    const setEstados = new Set<string>();
+    for (const item of lista) {
+      const nome = item.nome_estado || item.uf;
+      if (nome) setEstados.add(nome);
+    }
+    return Array.from(setEstados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  });
 
   // Parâmetros do Estado e Índice
   readonly params = computed(() => {
     const estado = this.estado();
     const indice = this.indice();
-    const dataEstado = custosDB[estado]?.data;
-    if (!dataEstado) {
-      return { estado, tipo: 'Padrão Residenciais', padrao: 'Padrão Normal', indice, custoBaseM2: 2611.19, refMes: 'Março', refAno: 2025 };
+    const lista = this.cubLista();
+
+    if (!lista || lista.length === 0) {
+      return {
+        estado,
+        tipo: 'Padrão Residenciais',
+        padrao: 'Padrão Normal',
+        indice,
+        custoBaseM2: 2611.19,
+        refMes: 'Março',
+        refAno: 2025,
+        isPlaceholder: false
+      };
     }
-    for (const tipo of Object.keys(dataEstado)) {
-      for (const padrao of Object.keys(dataEstado[tipo])) {
-        if (dataEstado[tipo][padrao][indice]) {
-          return {
-            estado,
-            tipo,
-            padrao,
-            indice,
-            custoBaseM2: dataEstado[tipo][padrao][indice] || 0,
-            refMes: custosDB[estado]?.mes || 'Março',
-            refAno: custosDB[estado]?.ano || 2025
-          };
-        }
+
+    const registrosEstado = lista.filter(
+      item => (item.nome_estado && item.nome_estado.toLowerCase() === estado.toLowerCase()) ||
+              (item.uf && item.uf.toLowerCase() === estado.toLowerCase())
+    );
+
+    const mesesNomes = [
+      '', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    const formatarMes = (item: any): string => {
+      if (item.mes_referencia && typeof item.mes_referencia === 'number' && mesesNomes[item.mes_referencia]) {
+        return mesesNomes[item.mes_referencia];
+      }
+      if (typeof item.mes_referencia === 'string' && isNaN(Number(item.mes_referencia))) {
+        return item.mes_referencia;
+      }
+      if (item.mes_ano_referencia) {
+        return item.mes_ano_referencia;
+      }
+      return 'Atual';
+    };
+
+    if (registrosEstado.length > 0) {
+      // Procura primeiro pelo subtipo (ex: R-8, PP-4, CAL-8)
+      let match = registrosEstado.find(
+        r => (r.subtipo && r.subtipo.trim().toUpperCase() === indice.trim().toUpperCase()) ||
+             (r.padrao && r.padrao.trim().toUpperCase() === indice.trim().toUpperCase())
+      );
+
+      if (!match) {
+        match = registrosEstado[0];
+      }
+
+      if (match) {
+        const tipoStr = match.tipologia || 'Padrão Residenciais';
+        const padraoStr = match.padrao || 'Padrão Normal';
+        const subtipoStr = match.subtipo || indice;
+        const valorM2 = Number(match.valor_m2) || 2611.19;
+        const refAno = match.ano_referencia || 2025;
+        const refMes = formatarMes(match);
+        const isPlaceholder = !!(match.sinduscon_responsavel && match.sinduscon_responsavel.includes('Estimativa'));
+
+        return {
+          estado,
+          tipo: tipoStr,
+          padrao: padraoStr,
+          indice: subtipoStr,
+          custoBaseM2: valorM2,
+          refMes,
+          refAno,
+          isPlaceholder
+        };
       }
     }
-    return { estado, tipo: 'Padrão Residenciais', padrao: 'Padrão Normal', indice, custoBaseM2: 2611.19, refMes: 'Março', refAno: 2025 };
+
+    return {
+      estado,
+      tipo: 'Padrão Residenciais',
+      padrao: 'Padrão Normal',
+      indice,
+      custoBaseM2: 2611.19,
+      refMes: 'Março',
+      refAno: 2025,
+      isPlaceholder: false
+    };
   });
 
   readonly availableIndices = computed(() => {
     const estado = this.estado();
-    const dataEstado = custosDB[estado]?.data;
-    if (!dataEstado) return [];
+    const lista = this.cubLista();
+    if (!lista || lista.length === 0) {
+      // Fallback default de opções
+      return [
+        { group: 'Padrão Residenciais - Padrão Baixo', value: 'R-1' },
+        { group: 'Padrão Residenciais - Padrão Baixo', value: 'PP-4' },
+        { group: 'Padrão Residenciais - Padrão Baixo', value: 'R-8' },
+        { group: 'Padrão Residenciais - Padrão Baixo', value: 'PIS' },
+        { group: 'Padrão Residenciais - Padrão Normal', value: 'R-1' },
+        { group: 'Padrão Residenciais - Padrão Normal', value: 'PP-4' },
+        { group: 'Padrão Residenciais - Padrão Normal', value: 'R-8' },
+        { group: 'Padrão Residenciais - Padrão Normal', value: 'R-16' },
+        { group: 'Padrão Residenciais - Padrão Alto', value: 'R-1' },
+        { group: 'Padrão Residenciais - Padrão Alto', value: 'R-8' },
+        { group: 'Padrão Residenciais - Padrão Alto', value: 'R-16' },
+        { group: 'Padrão Comerciais - Padrão Normal', value: 'CAL-8' },
+        { group: 'Padrão Comerciais - Padrão Normal', value: 'CSL-8' },
+        { group: 'Padrão Comerciais - Padrão Normal', value: 'CSL-16' },
+        { group: 'Padrão Comerciais - Padrão Alto', value: 'CAL-8' },
+        { group: 'Padrão Comerciais - Padrão Alto', value: 'CSL-8' },
+        { group: 'Padrão Comerciais - Padrão Alto', value: 'CSL-16' },
+        { group: 'Padrão Galpão Industrial - Padrão Normal', value: 'RP1Q' },
+        { group: 'Padrão Galpão Industrial - Padrão Normal', value: 'G1' }
+      ];
+    }
+
+    const registrosEstado = lista.filter(
+      item => (item.nome_estado && item.nome_estado.toLowerCase() === estado.toLowerCase()) ||
+              (item.uf && item.uf.toLowerCase() === estado.toLowerCase())
+    );
+
+    if (registrosEstado.length === 0) {
+      return [{ group: 'Padrão Residenciais - Padrão Normal', value: 'R-8' }];
+    }
+
     const indices: { group: string; value: string }[] = [];
-    Object.keys(dataEstado).forEach(tipo => {
-      Object.keys(dataEstado[tipo]).forEach(padrao => {
-        Object.keys(dataEstado[tipo][padrao]).forEach(indice => {
-          indices.push({ group: `${tipo} - ${padrao}`, value: indice });
-        });
+    registrosEstado.forEach(reg => {
+      const tipo = reg.tipologia || 'Padrão Residenciais';
+      const padrao = reg.padrao || 'Padrão Normal';
+      const subtipo = reg.subtipo || reg.padrao || 'R-8';
+      indices.push({
+        group: `${tipo} - ${padrao}`,
+        value: subtipo
       });
     });
+
     return indices;
   });
 
@@ -1593,7 +2030,9 @@ export class CustosViabilidadeComponent {
         group = { name: index.group, items: [] };
         groups.push(group);
       }
-      group.items.push({ value: index.value });
+      if (!group.items.some(i => i.value === index.value)) {
+        group.items.push({ value: index.value });
+      }
     });
     return groups;
   });
@@ -1774,26 +2213,44 @@ export class CustosViabilidadeComponent {
     const currentParams = this.params();
     const totalAreaEquivalente = this.areaTotals().totalAreaEquivalente;
     const baseCustoTotalComBDI = this.costCalculations().baseCustoTotalComBDI;
-    if (!currentParams.tipo || !currentParams.padrao || !currentParams.indice || totalAreaEquivalente === 0) return [];
+    const lista = this.cubLista();
+    if (!currentParams.tipo || !currentParams.padrao || !currentParams.indice || totalAreaEquivalente === 0 || !lista || lista.length === 0) return [];
 
-    return Object.keys(custosDB)
-      .map(estado => {
-        const stateCubValue = custosDB[estado]?.data?.[currentParams.tipo!]?.[currentParams.padrao!]?.[currentParams.indice!];
-        if (stateCubValue) {
-          const stateCost = totalAreaEquivalente * stateCubValue * (1 + ((this.bdi() || 0) / 100));
-          const difference = stateCost - baseCustoTotalComBDI;
-          const percentageDiff = baseCustoTotalComBDI > 0 ? (difference / baseCustoTotalComBDI) : 0;
-          return {
-            estado,
-            costo: stateCost,
-            diferenca: difference,
-            percentual: percentageDiff
-          };
-        }
-        return null;
-      })
-      .filter((item): item is { estado: string; costo: number; diferenca: number; percentual: number } => item !== null && item.estado !== currentParams.estado)
-      .sort((a, b) => a.costo - b.costo);
+    const estadosMap = new Map<string, number>();
+
+    // Agrupa por estado encontrando a melhor correspondência para o índice/subtipo atual
+    lista.forEach(reg => {
+      const nomeEst = reg.nome_estado || reg.uf;
+      if (!nomeEst || nomeEst.toLowerCase() === currentParams.estado.toLowerCase()) return;
+
+      const subtipoReg = (reg.subtipo || reg.padrao || '').trim().toUpperCase();
+      const indiceAlvo = currentParams.indice.trim().toUpperCase();
+
+      if (subtipoReg === indiceAlvo) {
+        estadosMap.set(nomeEst, Number(reg.valor_m2) || 0);
+      } else if (!estadosMap.has(nomeEst) && reg.valor_m2) {
+        // Fallback para caso o estado só tenha padrão genérico (ex: R-8)
+        estadosMap.set(nomeEst, Number(reg.valor_m2) || 0);
+      }
+    });
+
+    const resultados: { estado: string; costo: number; diferenca: number; percentual: number }[] = [];
+
+    estadosMap.forEach((stateCubValue, estado) => {
+      if (stateCubValue > 0) {
+        const stateCost = totalAreaEquivalente * stateCubValue * (1 + ((this.bdi() || 0) / 100));
+        const difference = stateCost - baseCustoTotalComBDI;
+        const percentageDiff = baseCustoTotalComBDI > 0 ? (difference / baseCustoTotalComBDI) : 0;
+        resultados.push({
+          estado,
+          costo: stateCost,
+          diferenca: difference,
+          percentual: percentageDiff
+        });
+      }
+    });
+
+    return resultados.sort((a, b) => a.costo - b.costo);
   });
 
   readonly financialMetrics = computed(() => {
@@ -1952,133 +2409,19 @@ export class CustosViabilidadeComponent {
     this.gerandoPdf.set(true);
 
     try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 14;
-      const contentWidth = pageWidth - margin * 2;
-      let currentY = 14;
-
-      const navyPrimary: [number, number, number] = [19, 42, 65]; // #132A41
-      const copperAccent: [number, number, number] = [181, 100, 42]; // #B5642A
-      const slateDark: [number, number, number] = [30, 41, 59]; // #1E293B
-      const textWhite: [number, number, number] = [255, 255, 255];
-      const bgCellLight: [number, number, number] = [248, 250, 252];
-      const bgCellEmerald: [number, number, number] = [236, 253, 245];
-      const borderGray: [number, number, number] = [226, 232, 240];
-
-      // 1. Cabeçalho Institucional Faixa Navy + Linha Copper
-      doc.setFillColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.rect(margin, currentY, contentWidth, 20, 'F');
-
-      doc.setFillColor(copperAccent[0], copperAccent[1], copperAccent[2]);
-      doc.rect(margin, currentY + 20, contentWidth, 1.5, 'F');
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12.5);
-      doc.setTextColor(textWhite[0], textWhite[1], textWhite[2]);
-      doc.text('RELATÓRIO EXECUTIVO DE VIABILIDADE IMOBILIÁRIA', margin + 6, currentY + 8.5);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(203, 213, 225);
-      doc.text(
-        'AMORIMTECH • ENGENHARIA DE CUSTOS & AVALIAÇÕES (NBR 12.721 / CUB-SINDUSCON)',
-        margin + 6,
-        currentY + 15
-      );
-
-      currentY += 26;
-
-      // 2. Dados Cadastrais & Identificação do Projeto
       const nomeProj = (this.nomeProjeto() || 'Residencial Padrão').trim();
       const estadoProj = this.estado() || 'Brasil';
       const tipologia = `${this.params().tipo} (${this.params().padrao} - ${this.params().indice})`;
       const cubRef = `R$ ${this.formatarMoeda(this.params().custoBaseM2)}/m² (${this.params().refMes}/${this.params().refAno})`;
-      const cenarioStr = `${this.currentScenarioMultipliers().name} (Venda: ${this.currentScenarioMultipliers().sales}x | Custo: ${this.currentScenarioMultipliers().cost}x)`;
+      const multipliers = this.currentScenarioMultipliers();
+      const cenarioStr = `${multipliers.name} (Venda: ${multipliers.sales}x | Custo: ${multipliers.cost}x)`;
       const regimeStr = `${this.regimeTributario().toUpperCase()} (${this.aliquotaImposto().toFixed(2)}%)`;
-
-      const infoCadastrais = [
-        ['EMPREENDIMENTO:', nomeProj, 'LOCALIZAÇÃO:', estadoProj],
-        ['TIPOLOGIA CUB:', tipologia, 'CUB DE REFERÊNCIA:', cubRef],
-        ['CENÁRIO ADOTADO:', cenarioStr, 'REGIME TRIBUTÁRIO:', regimeStr],
-        ['DATA DE EMISSÃO:', new Date().toLocaleDateString('pt-BR'), 'BDI ADOTADO:', `${(this.bdi() || 0).toFixed(2)}%`]
-      ];
-
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        styles: {
-          fontSize: 7.5,
-          cellPadding: 2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 36 },
-          1: { cellWidth: 55 },
-          2: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 38 },
-          3: { cellWidth: 53 }
-        },
-        body: infoCadastrais
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 5;
-
-      // 3. Síntese das Áreas (NBR 12.721)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('1. SÍNTESE DE ÁREAS (NBR 12.721)', margin, currentY);
-      currentY += 2.5;
+      const dataHoje = new Date().toLocaleDateString('pt-BR');
 
       const areaBruta = this.areaTotals().totalAreaBruta;
       const areaEquiv = this.areaTotals().totalAreaEquivalente;
       const areaPriv = this.areaVendavel();
       const eficiencia = areaBruta > 0 ? ((areaPriv / areaBruta) * 100).toFixed(1) : '0.0';
-
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        headStyles: {
-          fillColor: navyPrimary,
-          textColor: textWhite,
-          fontStyle: 'bold',
-          fontSize: 7.5,
-          halign: 'center'
-        },
-        styles: {
-          fontSize: 8,
-          cellPadding: 2.2,
-          lineColor: borderGray,
-          textColor: slateDark,
-          halign: 'center'
-        },
-        head: [['ÁREA BRUTA TOTAL', 'ÁREA EQUIVALENTE (NBR 12.721)', 'ÁREA VENDÁVEL PRIVATIVA', 'EFICIÊNCIA PRIVATIVA']],
-        body: [
-          [
-            `${areaBruta.toFixed(2)} m²`,
-            `${areaEquiv.toFixed(2)} m²`,
-            `${areaPriv.toFixed(2)} m²`,
-            `${eficiencia}%`
-          ]
-        ]
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 5;
-
-      // 4. Demonstrativo Financeiro Consolidado
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('2. DEMONSTRATIVO FINANCEIRO CONSOLIDADO', margin, currentY);
-      currentY += 2.5;
 
       const kpi = this.kpis();
       const vgv = kpi.scenarioVgvTotal;
@@ -2093,99 +2436,6 @@ export class CustosViabilidadeComponent {
 
       const formatM2 = (val: number) => (areaPriv > 0 ? `R$ ${this.formatarMoeda(val / areaPriv)}` : '-');
 
-      const corpoFinanceiro: any[] = [
-        [
-          { content: 'Valor Geral de Vendas (VGV)', styles: { fontStyle: 'bold' } },
-          { content: `R$ ${this.formatarMoeda(vgv)}`, styles: { fontStyle: 'bold', halign: 'right' } },
-          { content: formatM2(vgv), styles: { halign: 'right' } },
-          { content: '100,0%', styles: { fontStyle: 'bold', halign: 'right' } }
-        ],
-        [
-          '(-) Custo Direto de Obra (CUB + Extracontratuais)',
-          { content: `R$ ${this.formatarMoeda(cObra)}`, styles: { halign: 'right' } },
-          { content: formatM2(cObra), styles: { halign: 'right' } },
-          { content: `${this.getPercVgv(cObra)}%`, styles: { halign: 'right' } }
-        ],
-        [
-          '(-) Terreno / Permuta',
-          { content: `R$ ${this.formatarMoeda(cTerreno)}`, styles: { halign: 'right' } },
-          { content: formatM2(cTerreno), styles: { halign: 'right' } },
-          { content: `${this.getPercVgv(cTerreno)}%`, styles: { halign: 'right' } }
-        ],
-        [
-          '(-) Despesas Comerciais & Projetos',
-          { content: `R$ ${this.formatarMoeda(cComProj)}`, styles: { halign: 'right' } },
-          { content: formatM2(cComProj), styles: { halign: 'right' } },
-          { content: `${this.getPercVgv(cComProj)}%`, styles: { halign: 'right' } }
-        ],
-        [
-          `(-) Tributação (${this.regimeTributario().toUpperCase()})`,
-          { content: `R$ ${this.formatarMoeda(cImpostos)}`, styles: { halign: 'right' } },
-          { content: formatM2(cImpostos), styles: { halign: 'right' } },
-          { content: `${this.getPercVgv(cImpostos)}%`, styles: { halign: 'right' } }
-        ]
-      ];
-
-      if (cFinanc > 0) {
-        corpoFinanceiro.push([
-          '(-) Custos Financeiros / Juros',
-          { content: `R$ ${this.formatarMoeda(cFinanc)}`, styles: { halign: 'right' } },
-          { content: formatM2(cFinanc), styles: { halign: 'right' } },
-          { content: `${this.getPercVgv(cFinanc)}%`, styles: { halign: 'right' } }
-        ]);
-      }
-
-      corpoFinanceiro.push(
-        [
-          { content: '(=) CUSTO TOTAL DO EMPREENDIMENTO', styles: { fontStyle: 'bold', fillColor: bgCellLight } },
-          { content: `R$ ${this.formatarMoeda(cTotal)}`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellLight } },
-          { content: formatM2(cTotal), styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellLight } },
-          { content: `${this.getPercVgv(cTotal)}%`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellLight } }
-        ],
-        [
-          { content: '(=) LUCRO LÍQUIDO REAL PROJETADO', styles: { fontStyle: 'bold', fillColor: bgCellEmerald, textColor: [6, 78, 59] } },
-          { content: `R$ ${this.formatarMoeda(lucroLiq)}`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellEmerald, textColor: [6, 78, 59] } },
-          { content: formatM2(lucroLiq), styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellEmerald, textColor: [6, 78, 59] } },
-          { content: `${margemLiqPerc}%`, styles: { fontStyle: 'bold', halign: 'right', fillColor: bgCellEmerald, textColor: [6, 78, 59] } }
-        ]
-      );
-
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        headStyles: {
-          fillColor: navyPrimary,
-          textColor: textWhite,
-          fontStyle: 'bold',
-          fontSize: 7.5,
-          halign: 'left'
-        },
-        styles: {
-          fontSize: 7.5,
-          cellPadding: 2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        columnStyles: {
-          0: { cellWidth: 84 },
-          1: { cellWidth: 36 },
-          2: { cellWidth: 34 },
-          3: { cellWidth: 28 }
-        },
-        head: [['INDICADOR ECONÔMICO', 'VALOR TOTAL (R$)', 'R$ / m² PRIV.', '% s/ VGV']],
-        body: corpoFinanceiro
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 5;
-
-      // 5. Indicadores de Rentabilidade & Retorno
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('3. INDICADORES DE RENTABILIDADE & RETORNO', margin, currentY);
-      currentY += 2.5;
-
       const metrics = this.financialMetrics();
       const tirStr = `${(metrics.tir * 100).toFixed(1)}% a.a.`;
       const vplStr = `R$ ${this.formatarMoeda(metrics.vpl)}`;
@@ -2194,105 +2444,609 @@ export class CustosViabilidadeComponent {
       const lucroM2Str = `R$ ${this.formatarMoeda(kpi.lucroPorM2Privativo)}/m²`;
       const prazosStr = `${this.prazoConstrucaoMeses()}m obra / ${this.prazoVendasMeses()}m vendas`;
 
-      const tabelaRetorno = [
-        ['MARGEM LÍQUIDA:', `${margemLiqPerc}%`, 'MARGEM BRUTA:', margemBrutaStr],
-        ['LUCRO / m² PRIVATIVO:', lucroM2Str, 'TIR PROJETADA:', tirStr],
-        ['VPL (TMA 12% a.a.):', vplStr, 'EXPOSIÇÃO MÁXIMA CAIXA:', expStr],
-        ['PRAZO ESTIMADO:', prazosStr, 'TMA APLICADA:', `${(this.tmaAnual() || 12).toFixed(1)}% a.a.`]
-      ];
+      // 1. Linhas da Tabela de Áreas NBR 12.721
+      const areasFiltradas = this.areas().filter(a => (a.area || 0) > 0);
+      const areasList = areasFiltradas.length > 0 ? areasFiltradas : this.areas();
+      const areasRows = areasList.map(a => {
+        const qty = a.nome === 'TIPO' && a.qty >= 1 ? a.qty : 1;
+        const bruta = (a.area || 0) * qty;
+        const equiv = (a.area || 0) * a.coef * qty;
+        return `
+          <tr>
+            <td><strong>${a.nome}</strong></td>
+            <td class="td-center font-mono">${a.coef.toFixed(2)}</td>
+            <td class="td-right font-mono">${(a.area || 0).toFixed(2)}</td>
+            <td class="td-center font-mono">${qty}</td>
+            <td class="td-right font-mono">${bruta.toFixed(2)} m²</td>
+            <td class="td-right font-mono font-bold" style="color: var(--p4-navy, #132A41);">${equiv.toFixed(2)} m²</td>
+          </tr>
+        `;
+      }).join('');
 
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        styles: {
-          fontSize: 7.5,
-          cellPadding: 2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 42 },
-          1: { cellWidth: 49 },
-          2: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 45 },
-          3: { cellWidth: 46 }
-        },
-        body: tabelaRetorno
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 5;
-
-      // 6. Nota Metodológica Legal & Responsabilidade Técnica
-      const notaLegal =
-        'Nota Metodológica: Estudo paramétrico fundamentado na NBR 12.721 (Avaliação de custos unitários e preparo de orçamento para incorporação de edifício) e índices do Custo Unitário Básico (CUB/m²) divulgados pelos respectivos Sinduscons estaduais. Os valores extracontratuais, tributários e comerciais devem ser confirmados com os projetos executivos de engenharia e sondagem geológica.';
-
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(6.5);
-      doc.setTextColor(100, 116, 139);
-      const splitNota = doc.splitTextToSize(notaLegal, contentWidth);
-      doc.text(splitNota, margin, currentY);
-      currentY += splitNota.length * 2.8 + 8;
-
-      // 7. Espaço de Assinatura Profissional
-      const respTecnico = this.responsavelTecnico() || 'Engenheiro / Arquiteto Responsável';
-      const creaCauReg = this.creaCau() || 'CREA / CAU nº 000000/D';
-
-      doc.setDrawColor(71, 85, 105);
-      doc.setLineWidth(0.4);
-      const lineXStart = pageWidth / 2 - 45;
-      const lineXEnd = pageWidth / 2 + 45;
-      doc.line(lineXStart, currentY, lineXEnd, currentY);
-
-      currentY += 3.5;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text(respTecnico, pageWidth / 2, currentY, { align: 'center' });
-
-      currentY += 3;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(slateDark[0], slateDark[1], slateDark[2]);
-      doc.text(`Responsável Técnico • ${creaCauReg}`, pageWidth / 2, currentY, { align: 'center' });
-
-      // 8. Rodapé com Numeração em Todas as Páginas
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(148, 163, 184);
-
-        // Linha divisória de rodapé
-        doc.setDrawColor(226, 232, 240);
-        doc.setLineWidth(0.3);
-        doc.line(margin, 287, pageWidth - margin, 287);
-
-        doc.text(
-          'AmorimTech • Agente Técnico de Viabilidade Imobiliária (NBR 12.721 & CUB)',
-          margin,
-          291
-        );
-        doc.text(
-          `Página ${i} de ${totalPages}`,
-          pageWidth - margin,
-          291,
-          { align: 'right' }
-        );
+      // 2. Terreno
+      const tipoT = this.tipoTerreno();
+      let tipoTerrenoLabel = 'Compra Direta';
+      let tipoTerrenoDetalhe = `Valor de Aquisição: R$ ${this.formatarMoeda(this.custoTerreno())}`;
+      if (tipoT === 'permuta_financeira') {
+        tipoTerrenoLabel = 'Permuta Financeira';
+        tipoTerrenoDetalhe = `${(this.permutaFinanceiraPerc() || 0).toFixed(1)}% sobre o VGV Total`;
+      } else if (tipoT === 'permuta_fisica') {
+        tipoTerrenoLabel = 'Permuta Física';
+        tipoTerrenoDetalhe = `${(this.permutaFisicaPerc() || 0).toFixed(1)}% em Unidades / Área`;
       }
 
-      // 9. Download do Documento PDF
-      const nomeSanitizado = (this.nomeProjeto() || 'Residencial_Padrao')
-        .trim()
-        .replace(/[^a-zA-Z0-9]/g, '_')
-        .replace(/_+/g, '_')
-        .substring(0, 35);
-      const dataStr = new Date().toISOString().split('T')[0];
-      const nomeArquivo = `Viabilidade_${nomeSanitizado}_${dataStr}.pdf`;
+      // 5. Matriz de Sensibilidade Bidirecional
+      let sensibilidadeTableHtml = '';
+      const matrix = this.sensitivityMatrix();
+      if (matrix) {
+        const headerCols = matrix.variacoesCusto.map(vc => `
+          <th class="th-center" style="font-size: 6.8pt; padding: 4px 6px;">
+            ${vc > 0 ? '+' : ''}${(vc * 100).toFixed(0)}% Custo
+          </th>
+        `).join('');
 
-      doc.save(nomeArquivo);
+        const bodyRows = matrix.rows.map(row => {
+          const cells = row.cells.map(cell => {
+            const isBase = row.varPreco === 0 && cell.varCusto === 0;
+            const bgStyle = isBase
+              ? 'background-color: #FEF3C7; font-weight: 700; border: 1.5px solid #D97706;'
+              : cell.margemLiquida >= 0.20
+                ? 'background-color: #ECFDF5;'
+                : cell.margemLiquida >= 0.10
+                  ? 'background-color: #F0FDF4;'
+                  : cell.margemLiquida >= 0
+                    ? 'background-color: #FFFBEB;'
+                    : 'background-color: #FEF2F2; color: #991B1B;';
+            return `
+              <td class="td-center" style="padding: 4px 6px; ${bgStyle}">
+                <div style="font-weight: 700; font-size: 7.2pt;">${(cell.margemLiquida * 100).toFixed(1)}%</div>
+                <div style="font-size: 6.2pt; color: #64748B;">R$ ${this.formatarMoeda(cell.lucroLiquido)}</div>
+              </td>
+            `;
+          }).join('');
+
+          return `
+            <tr>
+              <td style="background-color: #F8FAFC; font-weight: 600; font-size: 7.2pt; white-space: nowrap; padding: 4px 6px;">
+                <strong>R$ ${this.formatarMoeda(row.precoM2)}/m²</strong>
+                <span style="font-size: 6.2pt; color: #64748B; display: block;">(${row.varPreco > 0 ? '+' : ''}${(row.varPreco * 100).toFixed(0)}% Preço)</span>
+              </td>
+              ${cells}
+            </tr>
+          `;
+        }).join('');
+
+        sensibilidadeTableHtml = `
+          <table class="doc-table" style="font-size: 7pt; width: 100%; border-collapse: collapse; margin: 6px 0 10px 0;">
+            <thead>
+              <tr>
+                <th style="width: 25%; font-size: 6.8pt; padding: 4px 6px;">Preço / Custo Obra</th>
+                ${headerCols}
+              </tr>
+            </thead>
+            <tbody>
+              ${bodyRows}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // 6. Fluxo de Caixa Mensal
+      const fluxoCaixaRows = metrics.meses.map(m => `
+        <tr>
+          <td class="td-center font-bold" style="color: var(--p4-navy, #132A41); padding: 3px 5px;">Mês ${m.mes}</td>
+          <td class="td-right" style="color: var(--p4-green, #16A34A); font-weight: ${m.receita > 0 ? '600' : 'normal'}; padding: 3px 5px;">
+            ${m.receita > 0 ? `R$ ${this.formatarMoeda(m.receita)}` : '-'}
+          </td>
+          <td class="td-right" style="color: var(--p4-red, #C75D45); padding: 3px 5px;">
+            ${m.custoObra > 0 ? `R$ ${this.formatarMoeda(m.custoObra)}` : '-'}
+          </td>
+          <td class="td-right" style="padding: 3px 5px;">
+            ${(m.custoTerreno + m.custoProjetos + m.custoComercialImpostos + m.custoFinanciamento) > 0
+              ? `R$ ${this.formatarMoeda(m.custoTerreno + m.custoProjetos + m.custoComercialImpostos + m.custoFinanciamento)}`
+              : '-'}
+          </td>
+          <td class="td-right font-bold" style="color: var(--p4-red, #C75D45); padding: 3px 5px;">
+            R$ ${this.formatarMoeda(m.totalSaidas)}
+          </td>
+          <td class="td-right font-bold" style="color: ${m.fluxoLiquido >= 0 ? 'var(--p4-green, #16A34A)' : 'var(--p4-red, #C75D45)'}; padding: 3px 5px;">
+            R$ ${this.formatarMoeda(m.fluxoLiquido)}
+          </td>
+          <td class="td-right font-bold" style="color: ${m.saldoAcumulado >= 0 ? 'var(--p4-green, #16A34A)' : 'var(--p4-red, #C75D45)'}; padding: 3px 5px;">
+            R$ ${this.formatarMoeda(m.saldoAcumulado)}
+          </td>
+          <td class="td-center font-bold" style="color: var(--p4-navy, #132A41); padding: 3px 5px;">
+            ${m.percentualObraAcum.toFixed(1)}%
+          </td>
+        </tr>
+      `).join('');
+
+      // 7. Benchmarking Nacional
+      const benchmarkingRows = this.stateComparison().slice(0, 12).map(item => {
+        const isPos = item.diferenca > 0;
+        return `
+          <tr>
+            <td><strong>${item.estado}</strong></td>
+            <td class="td-right font-mono font-bold">R$ ${this.formatarMoeda(item.costo)}</td>
+            <td class="td-right font-mono" style="color: ${isPos ? 'var(--p4-red, #C75D45)' : 'var(--p4-green, #16A34A)'};">
+              ${isPos ? '+' : ''}R$ ${this.formatarMoeda(item.diferenca)}
+            </td>
+            <td class="td-center font-bold" style="color: ${isPos ? 'var(--p4-red, #C75D45)' : 'var(--p4-green, #16A34A)'};">
+              ${isPos ? '+' : ''}${(item.percentual * 100).toFixed(1)}%
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // 8. Engenharia de Valor & Distribuição de Etapas
+      const etapasRows = this.etapasObra().map(et => {
+        const custoEtapa = kpi.scenarioCustoCUB * et.perc;
+        const m2Etapa = areaEquiv > 0 ? custoEtapa / areaEquiv : 0;
+        return `
+          <tr>
+            <td><strong>${et.nome}</strong></td>
+            <td class="td-center font-mono font-bold">${(et.perc * 100).toFixed(2)}%</td>
+            <td class="td-right font-mono">R$ ${this.formatarMoeda(custoEtapa)}</td>
+            <td class="td-right font-mono">R$ ${this.formatarMoeda(m2Etapa)}/m²</td>
+          </tr>
+        `;
+      }).join('');
+
+      const corpoHtml = `
+        <!-- IDENTIFICAÇÃO DO PROJETO & PREMISSAS GERAIS -->
+        <div class="doc-card-info">
+          <div class="doc-grid-4">
+            <div class="doc-info-item">
+              <span class="doc-info-label">Empreendimento</span>
+              <span class="doc-info-value">${nomeProj}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Localização</span>
+              <span class="doc-info-value">${estadoProj}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Tipologia NBR 12.721</span>
+              <span class="doc-info-value">${tipologia}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">CUB de Referência</span>
+              <span class="doc-info-value">${cubRef}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Cenário Adotado</span>
+              <span class="doc-info-value">${cenarioStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Regime Tributário</span>
+              <span class="doc-info-value">${regimeStr}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">BDI Adotado</span>
+              <span class="doc-info-value">${(this.bdi() || 0).toFixed(2)}% (R$ ${this.formatarMoeda(this.params().custoBaseM2 * (1 + (this.bdi() || 0) / 100))}/m²)</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Data de Emissão</span>
+              <span class="doc-info-value">${dataHoje}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. PREMISSAS, NBR 12.721 & CUB SINDUSCON -->
+        <div class="doc-section">
+          <div class="doc-section-title">1. Premissas, Quadro de Áreas NBR 12.721 & Receitas</div>
+          
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 28%;">Pavimento / Ambiente</th>
+                <th class="th-center" style="width: 12%;">Coef. NBR</th>
+                <th class="th-right" style="width: 15%;">Área Unit. (m²)</th>
+                <th class="th-center" style="width: 10%;">Qtd</th>
+                <th class="th-right" style="width: 17%;">Área Bruta (m²)</th>
+                <th class="th-right" style="width: 18%;">Área Eq. (m²)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${areasRows}
+            </tbody>
+            <tfoot>
+              <tr class="highlight-gray">
+                <td colspan="4" style="font-weight: 700; text-transform: uppercase;">Totais Globais NBR 12.721:</td>
+                <td class="td-right font-bold">${areaBruta.toFixed(2)} m²</td>
+                <td class="td-right font-bold" style="color: var(--p4-navy, #132A41);">${areaEquiv.toFixed(2)} m²</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Síntese de Eficiência e Receitas -->
+          <table class="doc-table" style="margin-top: 4px;">
+            <tbody>
+              <tr>
+                <td style="width: 25%; font-weight:700; background-color:#F8FAFC;">Área Vendável Privativa:</td>
+                <td class="td-right" style="width: 25%; font-weight:700; color: var(--p4-green, #16A34A);">${areaPriv.toFixed(2)} m²</td>
+                <td style="width: 25%; font-weight:700; background-color:#F8FAFC;">Eficiência Privativa (Priv/Bruta):</td>
+                <td class="td-right" style="width: 25%; font-weight:700; color: var(--p4-copper, #B5642A);">${eficiencia}%</td>
+              </tr>
+              <tr>
+                <td style="font-weight:700; background-color:#F8FAFC;">Preço Médio de Venda:</td>
+                <td class="td-right">R$ ${this.formatarMoeda(this.precoM2())}/m² priv.</td>
+                <td style="font-weight:700; background-color:#F8FAFC;">Receitas Extras / Vagas:</td>
+                <td class="td-right">R$ ${this.formatarMoeda(this.receitasExtras())}</td>
+              </tr>
+              <tr class="highlight-emerald">
+                <td colspan="2" style="font-weight: 700;">VALOR GERAL DE VENDAS (VGV TOTAL PROJETADO):</td>
+                <td colspan="2" class="td-right font-bold" style="font-size: 8.5pt;">R$ ${this.formatarMoeda(vgv)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. TERRENO & CUSTOS EXTRACONTRATUAIS -->
+        <div class="doc-section">
+          <div class="doc-section-title">2. Terreno & Custos Extracontratuais (Fora do CUB)</div>
+          
+          <!-- 2.1 Terreno -->
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 38%;">Aquisição do Terreno</th>
+                <th style="width: 24%;">Parâmetro Adotado</th>
+                <th class="th-right" style="width: 20%;">Valor Total (R$)</th>
+                <th class="th-right" style="width: 18%;">% s/ VGV</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>${tipoTerrenoLabel}</strong></td>
+                <td>${tipoTerrenoDetalhe}</td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(cTerreno)}</td>
+                <td class="td-right">${this.getPercVgv(cTerreno)}%</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 2.2 Custos Extracontratuais -->
+          <table class="doc-table" style="margin-top: 4px;">
+            <thead>
+              <tr>
+                <th style="width: 44%;">Custos Extracontratuais (Fora da NBR 12.721)</th>
+                <th class="th-right" style="width: 20%;">Valor Total (R$)</th>
+                <th class="th-right" style="width: 18%;">R$ / m² Priv.</th>
+                <th class="th-right" style="width: 18%;">% s/ VGV</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Fundações Especiais / Contenções / Estacas</td>
+                <td class="td-right">R$ ${this.formatarMoeda(this.custoFundacoesEspeciais() * multipliers.cost)}</td>
+                <td class="td-right">${formatM2(this.custoFundacoesEspeciais() * multipliers.cost)}</td>
+                <td class="td-right">${this.getPercVgv(this.custoFundacoesEspeciais() * multipliers.cost)}%</td>
+              </tr>
+              <tr>
+                <td>Elevadores & Equipamentos Especiais</td>
+                <td class="td-right">R$ ${this.formatarMoeda(this.custoElevadores() * multipliers.cost)}</td>
+                <td class="td-right">${formatM2(this.custoElevadores() * multipliers.cost)}</td>
+                <td class="td-right">${this.getPercVgv(this.custoElevadores() * multipliers.cost)}%</td>
+              </tr>
+              <tr>
+                <td>Instalações Especiais (Gerador, Pressurização, Climatização)</td>
+                <td class="td-right">R$ ${this.formatarMoeda(this.custoInstalacoesEspeciais() * multipliers.cost)}</td>
+                <td class="td-right">${formatM2(this.custoInstalacoesEspeciais() * multipliers.cost)}</td>
+                <td class="td-right">${this.getPercVgv(this.custoInstalacoesEspeciais() * multipliers.cost)}%</td>
+              </tr>
+              <tr>
+                <td>Lazer, Decoração & Mobiliário de Áreas Comuns</td>
+                <td class="td-right">R$ ${this.formatarMoeda(this.custoLazerDecoracao() * multipliers.cost)}</td>
+                <td class="td-right">${formatM2(this.custoLazerDecoracao() * multipliers.cost)}</td>
+                <td class="td-right">${this.getPercVgv(this.custoLazerDecoracao() * multipliers.cost)}%</td>
+              </tr>
+              <tr>
+                <td>Paisagismo & Urbanização Externa</td>
+                <td class="td-right">R$ ${this.formatarMoeda(this.custoPaisagismoUrbanizacao() * multipliers.cost)}</td>
+                <td class="td-right">${formatM2(this.custoPaisagismoUrbanizacao() * multipliers.cost)}</td>
+                <td class="td-right">${this.getPercVgv(this.custoPaisagismoUrbanizacao() * multipliers.cost)}%</td>
+              </tr>
+              <tr class="highlight-gray">
+                <td><strong>TOTAL CUSTOS EXTRACONTRATUAIS</strong></td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(kpi.scenarioCustosExtracontratuais)}</td>
+                <td class="td-right font-bold">${formatM2(kpi.scenarioCustosExtracontratuais)}</td>
+                <td class="td-right font-bold">${this.getPercVgv(kpi.scenarioCustosExtracontratuais)}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. COMERCIAL, INCORPORAÇÃO & TRIBUTOS -->
+        <div class="doc-section">
+          <div class="doc-section-title">3. Despesas Comerciais, Projetos & Regime Tributário</div>
+          
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 38%;">Despesa / Tributo</th>
+                <th style="width: 20%;">Base / Alíquota</th>
+                <th class="th-right" style="width: 22%;">Valor Total (R$)</th>
+                <th class="th-right" style="width: 20%;">% s/ VGV</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Projetos, Sondagens & Licenciamento</td>
+                <td>${(this.custoProjetos() || 0).toFixed(1)}% s/ Obra</td>
+                <td class="td-right">R$ ${this.formatarMoeda(kpi.custoProjetosValor)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.custoProjetosValor)}%</td>
+              </tr>
+              <tr>
+                <td>Comissão de Corretagem</td>
+                <td>${(this.custoCorretagem() || 0).toFixed(1)}% s/ VGV</td>
+                <td class="td-right">R$ ${this.formatarMoeda(kpi.custoCorretagemValor)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.custoCorretagemValor)}%</td>
+              </tr>
+              <tr>
+                <td>Marketing & Propaganda</td>
+                <td>${(this.custoMarketing() || 0).toFixed(1)}% s/ VGV</td>
+                <td class="td-right">R$ ${this.formatarMoeda(kpi.custoMarketingValor)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.custoMarketingValor)}%</td>
+              </tr>
+              <tr>
+                <td>Despesas Legais & Cartório</td>
+                <td>${(this.custoDespesasLegais() || 0).toFixed(1)}% s/ VGV</td>
+                <td class="td-right">R$ ${this.formatarMoeda(kpi.custoDespesasLegaisValor)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.custoDespesasLegaisValor)}%</td>
+              </tr>
+              <tr>
+                <td>Tributos da Incorporação (${this.regimeTributario().toUpperCase()})</td>
+                <td>${this.aliquotaImposto().toFixed(2)}% s/ VGV</td>
+                <td class="td-right font-bold" style="color: var(--p4-blue, #2C5AA0);">R$ ${this.formatarMoeda(cImpostos)}</td>
+                <td class="td-right">${this.getPercVgv(cImpostos)}%</td>
+              </tr>
+              ${cFinanc > 0 ? `
+                <tr>
+                  <td>Custos Financeiros / Juros</td>
+                  <td>Taxa / Encargos</td>
+                  <td class="td-right">R$ ${this.formatarMoeda(cFinanc)}</td>
+                  <td class="td-right">${this.getPercVgv(cFinanc)}%</td>
+                </tr>
+              ` : ''}
+              <tr class="highlight-gray">
+                <td colspan="2"><strong>TOTAL COMERCIAL, PROJETOS & TRIBUTOS</strong></td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(cComProj + cImpostos + cFinanc)}</td>
+                <td class="td-right font-bold">${this.getPercVgv(cComProj + cImpostos + cFinanc)}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4. DEMONSTRAÇÃO DE RESULTADOS (DRE DO EMPREENDIMENTO) -->
+        <div class="doc-section">
+          <div class="doc-section-title">4. Demonstração de Resultados do Exercício (DRE Imobiliário)</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 48%;">Rubrica / Conta Contábil</th>
+                <th class="th-right" style="width: 22%;">Valor Total (R$)</th>
+                <th class="th-right" style="width: 18%;">R$ / m² Priv.</th>
+                <th class="th-right" style="width: 12%;">% s/ VGV</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-emerald">
+                <td><strong>(+) VALOR GERAL DE VENDAS (VGV TOTAL)</strong></td>
+                <td class="td-right"><strong>R$ ${this.formatarMoeda(vgv)}</strong></td>
+                <td class="td-right">${formatM2(vgv)}</td>
+                <td class="td-right"><strong>100,0%</strong></td>
+              </tr>
+              <tr>
+                <td style="padding-left: 14px;">(-) Custo Base de Construção (CUB NBR 12.721 c/ BDI)</td>
+                <td class="td-right" style="color: var(--p4-red, #C75D45);">R$ ${this.formatarMoeda(kpi.scenarioCustoCUB)}</td>
+                <td class="td-right">${formatM2(kpi.scenarioCustoCUB)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.scenarioCustoCUB)}%</td>
+              </tr>
+              <tr>
+                <td style="padding-left: 14px;">(-) Custos Extracontratuais (Fundações, Elevadores, Lazer, etc.)</td>
+                <td class="td-right" style="color: var(--p4-red, #C75D45);">R$ ${this.formatarMoeda(kpi.scenarioCustosExtracontratuais)}</td>
+                <td class="td-right">${formatM2(kpi.scenarioCustosExtracontratuais)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.scenarioCustosExtracontratuais)}%</td>
+              </tr>
+              <tr class="highlight-gray">
+                <td><strong>(=) CUSTO TOTAL DIRETO DE OBRA</strong></td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(cObra)}</td>
+                <td class="td-right font-bold">${formatM2(cObra)}</td>
+                <td class="td-right font-bold">${this.getPercVgv(cObra)}%</td>
+              </tr>
+              <tr>
+                <td style="padding-left: 14px;">(-) Terreno / Permuta</td>
+                <td class="td-right">R$ ${this.formatarMoeda(cTerreno)}</td>
+                <td class="td-right">${formatM2(cTerreno)}</td>
+                <td class="td-right">${this.getPercVgv(cTerreno)}%</td>
+              </tr>
+              <tr>
+                <td style="padding-left: 14px;">(-) Projetos, Sondagens & Licenciamento</td>
+                <td class="td-right">R$ ${this.formatarMoeda(kpi.custoProjetosValor)}</td>
+                <td class="td-right">${formatM2(kpi.custoProjetosValor)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.custoProjetosValor)}%</td>
+              </tr>
+              <tr style="background-color: #EEF2FF;">
+                <td style="font-weight: 700; color: var(--p4-navy, #132A41);">(=) LUCRO BRUTO OPERACIONAL</td>
+                <td class="td-right font-bold" style="color: var(--p4-navy, #132A41);">R$ ${this.formatarMoeda(kpi.scenarioLucroBruto)}</td>
+                <td class="td-right font-bold" style="color: var(--p4-navy, #132A41);">${formatM2(kpi.scenarioLucroBruto)}</td>
+                <td class="td-right font-bold" style="color: var(--p4-navy, #132A41);">${margemBrutaStr}</td>
+              </tr>
+              <tr>
+                <td style="padding-left: 14px;">(-) Despesas Comerciais (Corretagem + Marketing + Legais)</td>
+                <td class="td-right">R$ ${this.formatarMoeda(kpi.totalCustosComerciais)}</td>
+                <td class="td-right">${formatM2(kpi.totalCustosComerciais)}</td>
+                <td class="td-right">${this.getPercVgv(kpi.totalCustosComerciais)}%</td>
+              </tr>
+              <tr>
+                <td style="padding-left: 14px;">(-) Tributos da Incorporação (${this.regimeTributario().toUpperCase()})</td>
+                <td class="td-right">R$ ${this.formatarMoeda(cImpostos)}</td>
+                <td class="td-right">${formatM2(cImpostos)}</td>
+                <td class="td-right">${this.getPercVgv(cImpostos)}%</td>
+              </tr>
+              ${cFinanc > 0 ? `
+                <tr>
+                  <td style="padding-left: 14px;">(-) Custos Financeiros / Juros</td>
+                  <td class="td-right">R$ ${this.formatarMoeda(cFinanc)}</td>
+                  <td class="td-right">${formatM2(cFinanc)}</td>
+                  <td class="td-right">${this.getPercVgv(cFinanc)}%</td>
+                </tr>
+              ` : ''}
+              <tr class="highlight-gray">
+                <td><strong>(=) CUSTO TOTAL GLOBAL DO EMPREENDIMENTO</strong></td>
+                <td class="td-right font-bold" style="color: var(--p4-red, #C75D45);">R$ ${this.formatarMoeda(cTotal)}</td>
+                <td class="td-right font-bold">${formatM2(cTotal)}</td>
+                <td class="td-right font-bold">${this.getPercVgv(cTotal)}%</td>
+              </tr>
+              <tr class="highlight-emerald" style="border-top: 2px solid var(--p4-green, #2E7D5B);">
+                <td style="font-size: 8.5pt;"><strong>(=) LUCRO LÍQUIDO FINAL (RESULTADO REAL)</strong></td>
+                <td class="td-right font-bold" style="font-size: 8.5pt;"><strong>R$ ${this.formatarMoeda(lucroLiq)}</strong></td>
+                <td class="td-right font-bold" style="font-size: 8.5pt;"><strong>${formatM2(lucroLiq)}</strong></td>
+                <td class="td-right font-bold" style="font-size: 8.5pt;"><strong>${margemLiqPerc}%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Indicadores de Rentabilidade -->
+          <div class="doc-kpi-grid">
+            <div class="doc-kpi-card emerald">
+              <div class="doc-kpi-label">Margem Líquida</div>
+              <div class="doc-kpi-val">${margemLiqPerc}%</div>
+            </div>
+            <div class="doc-kpi-card navy">
+              <div class="doc-kpi-label">TIR Projetada</div>
+              <div class="doc-kpi-val">${tirStr}</div>
+            </div>
+            <div class="doc-kpi-card">
+              <div class="doc-kpi-label">VPL (TMA ${(this.tmaAnual() || 12).toFixed(1)}%)</div>
+              <div class="doc-kpi-val" style="font-size: 8.5pt;">${vplStr}</div>
+            </div>
+            <div class="doc-kpi-card">
+              <div class="doc-kpi-label">Exposição Máx. Caixa</div>
+              <div class="doc-kpi-val" style="font-size: 8.5pt; color: var(--p4-red, #C75D45);">${expStr}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. MATRIZ DE SENSIBILIDADE -->
+        <div class="doc-section">
+          <div class="doc-section-title">5. Matriz de Sensibilidade Bidirecional (Preço vs. Custo)</div>
+          <p style="font-size: 7.2pt; color: #64748B; margin: 0 0 6px 0;">Impacto de variações simultâneas no Preço de Venda e no Custo Direto de Obra sobre a Margem Líquida (%) e Lucro Real (R$). A célula em destaque amarelo representa o Cenário Base.</p>
+          ${sensibilidadeTableHtml}
+        </div>
+
+        <!-- 6. CURVA S & FLUXO DE CAIXA MENSAL -->
+        <div class="doc-section">
+          <div class="doc-section-title">6. Cronograma Físico-Financeiro, Curva S & Fluxo de Caixa Mensal</div>
+          <table class="doc-table" style="font-size: 6.8pt; line-height: 1.2;">
+            <thead>
+              <tr>
+                <th class="th-center" style="width: 8%;">Mês</th>
+                <th class="th-right" style="width: 14%;">Entradas (R$)</th>
+                <th class="th-right" style="width: 14%;">Custo Obra (R$)</th>
+                <th class="th-right" style="width: 15%;">Terreno + Taxas (R$)</th>
+                <th class="th-right" style="width: 15%;">Total Saídas (R$)</th>
+                <th class="th-right" style="width: 15%;">Fluxo Líquido (R$)</th>
+                <th class="th-right" style="width: 15%;">Saldo Acum. (R$)</th>
+                <th class="th-center" style="width: 9%;">Obra (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${fluxoCaixaRows}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 7. BENCHMARKING DO CUB NACIONAL -->
+        <div class="doc-section">
+          <div class="doc-section-title">7. Benchmarking do CUB Nacional (Sinduscon Brasil)</div>
+          <p style="font-size: 7.2pt; color: #64748B; margin: 0 0 6px 0;">Comparativo do custo direto desta mesma tipologia (${this.params().tipo} - ${this.params().padrao}) em diferentes estados da federação.</p>
+          
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 30%;">Estado (UF)</th>
+                <th class="th-right" style="width: 25%;">Custo Estimado c/ BDI (R$)</th>
+                <th class="th-right" style="width: 25%;">Diferença vs ${estadoProj}</th>
+                <th class="th-center" style="width: 20%;">Variação (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${benchmarkingRows}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 8. ENGENHARIA DE VALOR & OTIMIZAÇÃO DE CUSTOS -->
+        <div class="doc-section">
+          <div class="doc-section-title">8. Engenharia de Valor & Otimização Construtiva</div>
+          
+          <!-- 8.1 Distribuição por Etapas -->
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 45%;">Etapa Construtiva</th>
+                <th class="th-center" style="width: 15%;">Peso (%)</th>
+                <th class="th-right" style="width: 22%;">Custo Estimado (R$)</th>
+                <th class="th-right" style="width: 18%;">R$ / m² Eq.</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${etapasRows}
+            </tbody>
+            <tfoot>
+              <tr class="highlight-gray">
+                <td><strong>TOTAL CUSTO CUB DA OBRA</strong></td>
+                <td class="td-center font-bold">100,0%</td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(kpi.scenarioCustoCUB)}</td>
+                <td class="td-right font-bold">R$ ${this.formatarMoeda(areaEquiv > 0 ? kpi.scenarioCustoCUB / areaEquiv : 0)}/m²</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- 8.2 Oportunidades de Otimização -->
+          <div style="background-color: #F8FAFC; border: 1px solid var(--p4-rule, #CBD5E1); border-radius: 6px; padding: 10px 12px; margin-top: 8px;">
+            <div style="font-family: 'Poppins', sans-serif; font-size: 8pt; font-weight: 700; color: var(--p4-navy, #132A41); margin-bottom: 6px; text-transform: uppercase;">
+              Diretrizes Técnicas de Redução de Desperdício e Engenharia de Valor
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 7.2pt; color: #334155; line-height: 1.45;">
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 4px; padding: 6px 8px;">
+                <strong style="color: var(--p4-copper, #B5642A); display: block; margin-bottom: 2px;">1. Superestrutura & Alvenaria</strong>
+                Avaliar lajes nervuradas com cubetas plásticas ou alvenaria de vedação com bloco cerâmico de precisão para reduzir consumo de concreto e espessura de argamassa/reboco.
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 4px; padding: 6px 8px;">
+                <strong style="color: var(--p4-navy, #132A41); display: block; margin-bottom: 2px;">2. Revestimentos & Pisos</strong>
+                Padronizar modulação de porcelanatos nos banheiros, cozinhas e sacadas para limitar perda por corte e desperdício de peças a menos de 5%.
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 4px; padding: 6px 8px;">
+                <strong style="color: var(--p4-green, #16A34A); display: block; margin-bottom: 2px;">3. Esquadrias & Vidros</strong>
+                Fechamento de pacotes em lote único com linhas padronizadas de alumínio anodizado garantindo ganhos de escala de 10% a 15% junto a fornecedores certificados.
+              </div>
+              <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 4px; padding: 6px 8px;">
+                <strong style="color: var(--p4-blue, #2C5AA0); display: block; margin-bottom: 2px;">4. Fundações & Contenções</strong>
+                Compatibilização de sondagens SPT e CPTu com modelos de interação solo-estrutura para otimização de estacas e blocos de coroamento.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOTA METODOLÓGICA LEGAL -->
+        <div class="doc-legal-note" style="margin-top: 14px; font-size: 7pt; color: #64748B; border-top: 1px solid var(--p4-rule, #CBD5E1); padding-top: 6px;">
+          <strong>Nota Metodológica:</strong> Estudo paramétrico de viabilidade fundamentado na NBR 12.721 (Avaliação de custos unitários e preparo de orçamento para incorporação de edifício) e índices do Custo Unitário Básico (CUB/m²) divulgados pelos respectivos Sinduscons estaduais. Os valores extracontratuais, tributários e comerciais devem ser confirmados com os projetos executivos de engenharia e sondagem geológica.
+        </div>
+      `;
+
+      await this.motorPdfService.gerarDocumento(
+        {
+          tituloDocumento: 'Relatório Executivo de Viabilidade Imobiliária',
+          subtituloDocumento: 'Engenharia de Custos & Avaliações • NBR 12.721 / CUB-Sinduscon',
+          nomeAgente: 'Agente de Custos e Viabilidade'
+        },
+        corpoHtml
+      );
     } catch (err) {
       console.error('Erro ao gerar relatório de viabilidade em PDF:', err);
+      this.motorPdfService.exibirToast('Ocorreu um erro ao emitir o relatório em PDF. Verifique seus dados e tente novamente.', 'erro');
     } finally {
       this.gerandoPdf.set(false);
     }
@@ -2323,5 +3077,227 @@ export class CustosViabilidadeComponent {
       rate = newRate;
     }
     return rate > -1 ? rate : null;
+  }
+
+  // =========================================================================
+  // GESTÃO DE PROJETOS SALVOS (Viabilidade Imobiliária)
+  // =========================================================================
+
+  exibirToast(texto: string, tipo: 'sucesso' | 'erro' | 'info' = 'sucesso'): void {
+    this.toastMensagem.set({ texto, tipo });
+    setTimeout(() => {
+      this.toastMensagem.set(null);
+    }, 3500);
+  }
+
+  obterNomeProjetoSugerido(): string {
+    const nome = this.nomeProjeto()?.trim() || 'Residencial';
+    const ind = this.indice() || 'R-8';
+    return `${nome} (${ind})`;
+  }
+
+  serializarDadosFormulario(): any {
+    return {
+      nomeProjeto: this.nomeProjeto(),
+      responsavelTecnico: this.responsavelTecnico(),
+      creaCau: this.creaCau(),
+      estado: this.estado(),
+      indice: this.indice(),
+      bdi: this.bdi(),
+      areaVendavel: this.areaVendavel(),
+      precoM2: this.precoM2(),
+      receitasExtras: this.receitasExtras(),
+      tipoTerreno: this.tipoTerreno(),
+      custoTerreno: this.custoTerreno(),
+      permutaFisicaPerc: this.permutaFisicaPerc(),
+      permutaFinanceiraPerc: this.permutaFinanceiraPerc(),
+      custoFundacoesEspeciais: this.custoFundacoesEspeciais(),
+      custoElevadores: this.custoElevadores(),
+      custoInstalacoesEspeciais: this.custoInstalacoesEspeciais(),
+      custoLazerDecoracao: this.custoLazerDecoracao(),
+      custoPaisagismoUrbanizacao: this.custoPaisagismoUrbanizacao(),
+      custoProjetos: this.custoProjetos(),
+      custoMarketing: this.custoMarketing(),
+      custoCorretagem: this.custoCorretagem(),
+      custoDespesasLegais: this.custoDespesasLegais(),
+      custoFinanciamento: this.custoFinanciamento(),
+      regimeTributario: this.regimeTributario(),
+      prazoConstrucaoMeses: this.prazoConstrucaoMeses(),
+      prazoVendasMeses: this.prazoVendasMeses(),
+      tmaAnual: this.tmaAnual(),
+      areas: this.areas(),
+      abaAtiva: this.abaAtiva(),
+      cenarioAtivo: this.cenarioAtivo()
+    };
+  }
+
+  deserializarDadosFormulario(dados: any): void {
+    if (!dados) return;
+
+    if (dados.nomeProjeto !== undefined) this.nomeProjeto.set(dados.nomeProjeto);
+    if (dados.responsavelTecnico !== undefined) this.responsavelTecnico.set(dados.responsavelTecnico);
+    if (dados.creaCau !== undefined) this.creaCau.set(dados.creaCau);
+    if (dados.estado !== undefined) this.estado.set(dados.estado);
+    if (dados.indice !== undefined) this.indice.set(dados.indice);
+    if (dados.bdi !== undefined) this.bdi.set(dados.bdi);
+    if (dados.areaVendavel !== undefined) this.areaVendavel.set(dados.areaVendavel);
+    if (dados.precoM2 !== undefined) this.precoM2.set(dados.precoM2);
+    if (dados.receitasExtras !== undefined) this.receitasExtras.set(dados.receitasExtras);
+
+    if (dados.tipoTerreno !== undefined) this.tipoTerreno.set(dados.tipoTerreno);
+    if (dados.custoTerreno !== undefined) this.custoTerreno.set(dados.custoTerreno);
+    if (dados.permutaFisicaPerc !== undefined) this.permutaFisicaPerc.set(dados.permutaFisicaPerc);
+    if (dados.permutaFinanceiraPerc !== undefined) this.permutaFinanceiraPerc.set(dados.permutaFinanceiraPerc);
+
+    if (dados.custoFundacoesEspeciais !== undefined) this.custoFundacoesEspeciais.set(dados.custoFundacoesEspeciais);
+    if (dados.custoElevadores !== undefined) this.custoElevadores.set(dados.custoElevadores);
+    if (dados.custoInstalacoesEspeciais !== undefined) this.custoInstalacoesEspeciais.set(dados.custoInstalacoesEspeciais);
+    if (dados.custoLazerDecoracao !== undefined) this.custoLazerDecoracao.set(dados.custoLazerDecoracao);
+    if (dados.custoPaisagismoUrbanizacao !== undefined) this.custoPaisagismoUrbanizacao.set(dados.custoPaisagismoUrbanizacao);
+
+    if (dados.custoProjetos !== undefined) this.custoProjetos.set(dados.custoProjetos);
+    if (dados.custoMarketing !== undefined) this.custoMarketing.set(dados.custoMarketing);
+    if (dados.custoCorretagem !== undefined) this.custoCorretagem.set(dados.custoCorretagem);
+    if (dados.custoDespesasLegais !== undefined) this.custoDespesasLegais.set(dados.custoDespesasLegais);
+    if (dados.custoFinanciamento !== undefined) this.custoFinanciamento.set(dados.custoFinanciamento);
+
+    if (dados.regimeTributario !== undefined) this.regimeTributario.set(dados.regimeTributario);
+    if (dados.prazoConstrucaoMeses !== undefined) this.prazoConstrucaoMeses.set(dados.prazoConstrucaoMeses);
+    if (dados.prazoVendasMeses !== undefined) this.prazoVendasMeses.set(dados.prazoVendasMeses);
+    if (dados.tmaAnual !== undefined) this.tmaAnual.set(dados.tmaAnual);
+
+    if (dados.areas !== undefined) this.areas.set(dados.areas);
+    if (dados.abaAtiva !== undefined) this.abaAtiva.set(dados.abaAtiva);
+    if (dados.cenarioAtivo !== undefined) this.cenarioAtivo.set(dados.cenarioAtivo);
+  }
+
+  clicarSalvarProjeto(): void {
+    if (this.projetoAtualId()) {
+      this.executarAtualizarProjeto();
+    } else {
+      const sugerido = this.obterNomeProjetoSugerido();
+      this.modalSalvarNomeInput.set(sugerido);
+      this.modalSalvarAberto.set(true);
+    }
+  }
+
+  clicarSalvarComoNovo(): void {
+    const sugerido = `${this.obterNomeProjetoSugerido()} (Cópia)`;
+    this.modalSalvarNomeInput.set(sugerido);
+    this.modalSalvarAberto.set(true);
+  }
+
+  async confirmarSalvarNovoProjeto(): Promise<void> {
+    const nome = this.modalSalvarNomeInput().trim();
+    if (!nome) {
+      this.exibirToast('Digite um nome para o estudo de viabilidade.', 'erro');
+      return;
+    }
+
+    this.salvandoProjeto.set(true);
+    try {
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.salvarProjeto('viabilidade', nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao salvar: ${res.error.message}`, 'erro');
+      } else {
+        this.projetoAtualId.set(res.id || null);
+        this.projetoAtualNome.set(nome);
+        this.modalSalvarAberto.set(false);
+        this.exibirToast(`Estudo "${nome}" salvo com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao salvar estudo: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async executarAtualizarProjeto(): Promise<void> {
+    const id = this.projetoAtualId();
+    if (!id) return;
+
+    this.salvandoProjeto.set(true);
+    try {
+      const nome = this.projetoAtualNome() || this.obterNomeProjetoSugerido();
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.atualizarProjeto(id, nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao atualizar: ${res.error.message}`, 'erro');
+      } else {
+        this.exibirToast(`Estudo "${nome}" atualizado com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao atualizar estudo: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async abrirModalMeusProjetos(): Promise<void> {
+    this.modalProjetosAberto.set(true);
+    this.carregandoProjetos.set(true);
+    try {
+      const lista = await this.supabaseService.listarMeusProjetos('viabilidade');
+      this.listaProjetosSalvos.set(lista);
+    } catch (err) {
+      console.error('Erro ao listar estudos salvos:', err);
+    } finally {
+      this.carregandoProjetos.set(false);
+    }
+  }
+
+  abrirProjetoSalvo(proj: any): void {
+    try {
+      this.deserializarDadosFormulario(proj.dados_formulario);
+      this.projetoAtualId.set(proj.id);
+      this.projetoAtualNome.set(proj.nome_projeto);
+      this.modalProjetosAberto.set(false);
+      this.exibirToast(`Estudo "${proj.nome_projeto}" carregado com sucesso!`, 'sucesso');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      this.exibirToast(`Erro ao carregar estudo: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  async confirmarExcluirProjeto(proj: any, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (!confirm(`Deseja realmente excluir o estudo de viabilidade "${proj.nome_projeto}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const res = await this.supabaseService.excluirProjeto(proj.id);
+      if (res.error) {
+        this.exibirToast(`Erro ao excluir: ${res.error.message}`, 'erro');
+      } else {
+        if (this.projetoAtualId() === proj.id) {
+          this.projetoAtualId.set(null);
+          this.projetoAtualNome.set('');
+        }
+        this.listaProjetosSalvos.update(l => l.filter(p => p.id !== proj.id));
+        this.exibirToast(`Estudo "${proj.nome_projeto}" excluído.`, 'info');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao excluir estudo: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  formatarDataProjeto(dataIso: string): string {
+    if (!dataIso) return '-';
+    try {
+      const d = new Date(dataIso);
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dataIso;
+    }
   }
 }

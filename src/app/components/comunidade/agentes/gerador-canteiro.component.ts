@@ -1,8 +1,7 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { SupabaseService } from '../../../../services/supabase.service';
+import { MotorPdfService } from '../../../services/motor-pdf.service';
 import {
   FormPlanoCanteiro,
   PlanoCanteiroResultado,
@@ -64,8 +63,56 @@ type TabResultado = 'memorial' | 'otimizacoes' | 'dimensionamento' | 'layout_zon
           </p>
         </div>
 
-        @if (resultadoPlano()) {
-          <div class="flex flex-wrap items-center gap-2.5 relative z-10 shrink-0">
+        <!-- AÇÕES DO CABEÇALHO -->
+        <div class="flex flex-wrap items-center gap-2.5 relative z-10 shrink-0">
+          <button
+            type="button"
+            (click)="abrirModalMeusProjetos()"
+            class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-white/15 shadow-2xs"
+            title="Ver meus projetos salvos"
+          >
+            <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            <span>Meus Projetos Salvos</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="clicarSalvarProjeto()"
+            [disabled]="salvandoProjeto()"
+            class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-900/30 disabled:opacity-50"
+            [title]="projetoAtualId() ? 'Atualizar projeto salvo' : 'Salvar projeto atual'"
+          >
+            @if (salvandoProjeto()) {
+              <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Salvando...</span>
+            } @else {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              <span>{{ projetoAtualId() ? 'Salvar Alterações' : 'Salvar Projeto' }}</span>
+            }
+          </button>
+
+          @if (projetoAtualId()) {
+            <button
+              type="button"
+              (click)="clicarSalvarComoNovo()"
+              class="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
+              title="Salvar como um novo projeto"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Como Novo</span>
+            </button>
+          }
+
+          @if (resultadoPlano()) {
             <button
               type="button"
               (click)="novoPlano()"
@@ -96,8 +143,8 @@ type TabResultado = 'memorial' | 'otimizacoes' | 'dimensionamento' | 'layout_zon
                 <span>Exportar Relatório PDF</span>
               }
             </button>
-          </div>
-        }
+          }
+        </div>
       </div>
 
       <!-- CORPO PRINCIPAL: WIZARD OU RESULTADO -->
@@ -573,12 +620,21 @@ type TabResultado = 'memorial' | 'otimizacoes' | 'dimensionamento' | 'layout_zon
               <!-- Card Informativo de Responsabilidade Técnica -->
               <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3.5">
                 <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow-2xs">
-                  EA
+                  {{ iniciaisResponsavel() }}
                 </div>
                 <div class="space-y-0.5 text-xs">
-                  <p class="font-bold text-slate-900">Responsável Técnico & Diretor de Engenharia</p>
+                  <p class="font-bold text-slate-900">
+                    Responsável Técnico & {{ perfilProfissional()?.company_position || 'Direção Técnica' }}
+                  </p>
                   <p class="text-slate-600 text-[11px]">
-                    <strong>Emanoel S. Amorim</strong> • Arquiteto e Urbanista • CAU nº A133593-6 • Especialista em Engenharia Diagnóstica e Construção 4.0.
+                    <strong>{{ perfilProfissional()?.full_name || 'Profissional Responsável' }}</strong>
+                    • {{ perfilProfissional()?.professional_title || perfilProfissional()?.categoria_profissional || 'Responsável Técnico' }}
+                    @if (perfilProfissional()?.crea_cau) {
+                      • {{ perfilProfissional()?.crea_cau }}
+                    }
+                    @if (perfilProfissional()?.company_name) {
+                      • {{ perfilProfissional()?.company_name }}
+                    }
                   </p>
                 </div>
               </div>
@@ -1148,11 +1204,230 @@ type TabResultado = 'memorial' | 'otimizacoes' | 'dimensionamento' | 'layout_zon
 
       }
 
+      <!-- MODAL: SALVAR PROJETO -->
+      @if (modalSalvarAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-slate-900">Salvar Projeto</h4>
+                  <p class="text-xs text-slate-500">Dê um nome para identificar este estudo de canteiro</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="modalSalvarAberto.set(false)"
+                class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-700">Nome do Projeto</label>
+              <input
+                type="text"
+                [value]="modalSalvarNomeInput()"
+                (input)="modalSalvarNomeInput.set($any($event.target).value)"
+                (keydown.enter)="confirmarSalvarNovoProjeto()"
+                placeholder="Ex: Canteiro Residencial Acácias — Fase Estrutura"
+                class="w-full bg-slate-50 text-xs sm:text-sm font-semibold text-slate-900 rounded-xl p-3 border border-slate-200 focus:border-indigo-600 focus:bg-white outline-hidden transition-all"
+                autofocus
+              />
+              <p class="text-[11px] text-slate-400">Texto livre para localização em sua lista de projetos.</p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                (click)="modalSalvarAberto.set(false)"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                (click)="confirmarSalvarNovoProjeto()"
+                [disabled]="salvandoProjeto() || !modalSalvarNomeInput().trim()"
+                class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                @if (salvandoProjeto()) {
+                  <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Salvando...</span>
+                } @else {
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Salvar Projeto</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL: MEUS PROJETOS SALVOS -->
+      @if (modalProjetosAberto()) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-xl w-full border border-slate-200 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+            <!-- Header do Modal -->
+            <div class="flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-slate-900">Meus Projetos Salvos (Canteiro)</h4>
+                  <p class="text-xs text-slate-500">Selecione um projeto para carregar e continuar editando</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="modalProjetosAberto.set(false)"
+                class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Lista de Projetos com Scroll -->
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-[160px]">
+              @if (carregandoProjetos()) {
+                <div class="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <svg class="animate-spin w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span class="text-xs font-semibold">Carregando seus projetos...</span>
+                </div>
+              } @else if (listaProjetosSalvos().length === 0) {
+                <div class="py-12 flex flex-col items-center justify-center gap-2 text-slate-400 text-center">
+                  <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                  <p class="text-xs font-bold text-slate-600">Nenhum projeto salvo ainda</p>
+                  <p class="text-[11px] text-slate-400 max-w-xs">Preencha os dados e clique em "Salvar Projeto" para criar seu acervo de estudos técnicos.</p>
+                </div>
+              } @else {
+                @for (proj of listaProjetosSalvos(); track proj.id) {
+                  <div
+                    class="p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group"
+                    [class]="projetoAtualId() === proj.id
+                      ? 'border-indigo-600 bg-indigo-50/40 ring-1 ring-indigo-600/20'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/60 bg-white'"
+                  >
+                    <div class="space-y-1 min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <h5 class="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          {{ proj.nome_projeto }}
+                        </h5>
+                        @if (projetoAtualId() === proj.id) {
+                          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white shrink-0">
+                            Aberto
+                          </span>
+                        }
+                      </div>
+                      <p class="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Atualizado em: {{ formatarDataProjeto(proj.atualizado_em) }}</span>
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        (click)="abrirProjetoSalvo(proj)"
+                        class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>Abrir</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="confirmarExcluirProjeto(proj, $event)"
+                        class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Excluir projeto salvo"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Rodapé do Modal -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                (click)="modalProjetosAberto.set(false)"
+                class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TOAST DE FEEDBACK -->
+      @if (toastMensagem()) {
+        <div class="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div
+            class="px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-3 text-xs font-semibold"
+            [class]="toastMensagem()?.tipo === 'sucesso'
+              ? 'bg-emerald-900/95 text-emerald-100 border-emerald-700/60 shadow-emerald-950/30'
+              : toastMensagem()?.tipo === 'erro'
+                ? 'bg-rose-900/95 text-rose-100 border-rose-700/60 shadow-rose-950/30'
+                : 'bg-slate-900/95 text-slate-100 border-slate-700/60 shadow-slate-950/30'"
+          >
+            @if (toastMensagem()?.tipo === 'sucesso') {
+              <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            } @else if (toastMensagem()?.tipo === 'erro') {
+              <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            } @else {
+              <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+            <span>{{ toastMensagem()?.texto }}</span>
+          </div>
+        </div>
+      }
+
     </div>
   `
 })
 export class GeradorCanteiroComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly motorPdfService = inject(MotorPdfService);
 
   readonly etapaAtual = signal<number>(1);
   readonly isDragging = signal<boolean>(false);
@@ -1161,6 +1436,26 @@ export class GeradorCanteiroComponent implements OnInit {
   readonly gerandoPdf = signal<boolean>(false);
   readonly copiadoMemorial = signal<boolean>(false);
   readonly tabAtiva = signal<TabResultado>('memorial');
+  readonly perfilProfissional = signal<any>(null);
+
+  // Controle de Projetos Salvos
+  readonly projetoAtualId = signal<string | null>(null);
+  readonly projetoAtualNome = signal<string>('');
+  readonly salvandoProjeto = signal<boolean>(false);
+  readonly modalSalvarAberto = signal<boolean>(false);
+  readonly modalSalvarNomeInput = signal<string>('');
+  readonly modalProjetosAberto = signal<boolean>(false);
+  readonly carregandoProjetos = signal<boolean>(false);
+  readonly listaProjetosSalvos = signal<any[]>([]);
+  readonly toastMensagem = signal<{ texto: string; tipo: 'sucesso' | 'erro' | 'info' } | null>(null);
+
+  readonly iniciaisResponsavel = computed(() => {
+    const nome = this.perfilProfissional()?.full_name?.trim();
+    if (!nome) return 'RT';
+    const partes = nome.split(/\s+/).filter(Boolean);
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  });
 
   // Opções de formulário
   readonly tiposObra = TIPOS_OBRA_OPCOES;
@@ -1198,8 +1493,15 @@ export class GeradorCanteiroComponent implements OnInit {
   // Resultado
   readonly resultadoPlano = signal<PlanoCanteiroResultado | null>(null);
 
-  ngOnInit(): void {
-    // Carregamento inicial limpo
+  async ngOnInit(): Promise<void> {
+    try {
+      const perfil = await this.motorPdfService.obterPerfilDocumental();
+      if (perfil) {
+        this.perfilProfissional.set(perfil);
+      }
+    } catch (e) {
+      console.warn('Carregamento antecipado de perfil:', e);
+    }
   }
 
   voltarParaLista(): void {
@@ -1299,6 +1601,11 @@ export class GeradorCanteiroComponent implements OnInit {
     this.statusProgressoGeracao.set('Analisando geometria do terreno e acessos viários...');
 
     try {
+      if (!this.perfilProfissional()) {
+        const p = await this.motorPdfService.obterPerfilDocumental();
+        if (p) this.perfilProfissional.set(p);
+      }
+
       await new Promise(r => setTimeout(r, 600));
       this.statusProgressoGeracao.set('Dimensionando áreas de vivência conforme NR-18 e NBR 12.284...');
 
@@ -1308,7 +1615,14 @@ export class GeradorCanteiroComponent implements OnInit {
       await new Promise(r => setTimeout(r, 500));
       this.statusProgressoGeracao.set('Formatando Memorial Descritivo com responsabilidade técnica...');
 
-      const resultado = gerarPlanoCanteiroCompleto(this.form());
+      const perfil = this.perfilProfissional();
+      const resultado = gerarPlanoCanteiroCompleto(this.form(), {
+        nome: perfil?.full_name,
+        titulo: perfil?.professional_title || perfil?.categoria_profissional,
+        registro: perfil?.crea_cau,
+        empresa: perfil?.company_name
+      });
+
       this.resultadoPlano.set(resultado);
       this.tabAtiva.set('memorial');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1339,7 +1653,7 @@ export class GeradorCanteiroComponent implements OnInit {
     }
   }
 
-  // Exportação em PDF com identidade visual AmorimTech / Amorim Academy
+  // Exportação em PDF com identidade visual e White-Label via MotorPdfService
   async exportarPDF(): Promise<void> {
     const res = this.resultadoPlano();
     if (!res) return;
@@ -1347,76 +1661,11 @@ export class GeradorCanteiroComponent implements OnInit {
     this.gerandoPdf.set(true);
 
     try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      const navyPrimary: [number, number, number] = [19, 42, 65]; // #132A41
-      const copperAccent: [number, number, number] = [181, 100, 42]; // #B5642A
-      const slateDark: [number, number, number] = [30, 41, 59]; // #1E293B
-      const textWhite: [number, number, number] = [255, 255, 255];
-      const bgCellLight: [number, number, number] = [248, 250, 252];
-      const borderGray: [number, number, number] = [226, 232, 240];
-
-      const margin = 14;
-      let currentY = 16;
-
-      // 1. Cabeçalho Institucional
-      doc.setFillColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.rect(margin, currentY, 182, 22, 'F');
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.setTextColor(textWhite[0], textWhite[1], textWhite[2]);
-      doc.text('PLANO DE IMPLANTAÇÃO DE CANTEIRO DE OBRAS (NR-18)', margin + 6, currentY + 9);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(203, 213, 225);
-      doc.text('AMORIMTECH • ENGENHARIA DIAGNÓSTICA & GESTÃO DA CONSTRUÇÃO 4.0', margin + 6, currentY + 16);
-
-      currentY += 27;
-
-      // 2. Dados do Projeto e Identificação
-      const infoProjeto = [
-        ['EMPREENDIMENTO:', this.form().nomeProjeto || 'Obra de Edificação', 'TIPO DE OBRA:', this.getNomeTipo(this.form().tipoObra)],
-        ['PORTE ESTIMADO:', this.getNomePorte(this.form().porteObra), 'EFETIVO DE PICO:', this.getTextoTrabalhadores(this.form().trabalhadoresPico)],
-        ['PERFIL DE ANÁLISE:', this.getNomePerfil(this.form().perfilAnalise), 'DATA DE EMISSÃO:', new Date().toLocaleDateString('pt-BR')],
-        ['RESPONSÁVEL TÉCNICO:', 'Emanoel S. Amorim', 'REGISTRO:', 'CAU nº A133593-6']
-      ];
-
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        styles: {
-          fontSize: 8,
-          cellPadding: 2.2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 38 },
-          1: { cellWidth: 53 },
-          2: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 38 },
-          3: { cellWidth: 53 }
-        },
-        body: infoProjeto
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 6;
-
-      // 3. Tabela de Dimensionamento das Áreas de Vivência (NR-18)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('1. DIMENSIONAMENTO REGULAMENTAR DE INSTALAÇÕES E ÁREAS DE VIVÊNCIA (NR-18)', margin, currentY);
-      currentY += 3;
-
       const dim = res.dimensionamentoNormativo;
-      const tabelaVivencia = [
+      const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+      // 1. Tabela de Dimensionamento de Vivência (NR-18)
+      const tabelaVivenciaHtml = [
         ['Bacias Sanitárias com Trinco', '1 a cada 20 trabalhadores', `${dim.sanitariosBacias} unid.`, 'Cabines individuais (0,80x1,20m) c/ porta e lixeira'],
         ['Lavatórios com Água e Sabão', '1 a cada 20 trabalhadores', `${dim.lavatorios} unid.`, 'Sabonete líquido e toalhas de papel descartáveis'],
         ['Mictórios com Descarga', '1 a cada 20 trabalhadores', `${dim.mictorios} unid.`, 'Tipo cuba individual ou calha coletiva lavável'],
@@ -1425,153 +1674,343 @@ export class GeradorCanteiroComponent implements OnInit {
         ['Vestiário com Armários Duplos', '1,50 m² por trabalhador', `${dim.areaVestiarioM2} m²`, 'Armários com compartimento duplo e tranca'],
         ['Bebedouros de Jato Inclinado', '1 a cada 25 trabalhadores', `${dim.bebedourosJatoInclinado} unid.`, 'Água potável e fresca (proibido copo coletivo)'],
         ['Ambulatório de 1º Socorros', 'Obrigatório p/ > 50 operários', dim.necessitaAmbulatorio ? 'Projetado (8,0 m²)' : 'Dispensado', 'Maca, pia e armário para socorro imediato']
-      ];
+      ].map(([inst, param, qtd, exig]) => `
+        <tr>
+          <td><strong>${inst}</strong></td>
+          <td>${param}</td>
+          <td class="td-center font-bold" style="color: var(--p4-navy, #132A41); font-weight:700;">${qtd}</td>
+          <td>${exig}</td>
+        </tr>
+      `).join('');
 
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        headStyles: {
-          fillColor: navyPrimary,
-          textColor: textWhite,
-          fontStyle: 'bold',
-          fontSize: 8,
-          halign: 'left'
+      // 2. Matriz de Otimizações Logísticas e Segurança
+      const otimizacoesRows = [
+        ...res.otimizacoesLayout.eficienciaEspacial.map(o => `
+          <tr>
+            <td><strong style="color: var(--p4-copper, #B5642A);">Espacial</strong></td>
+            <td>${o.problema}</td>
+            <td>${o.solucao}</td>
+            <td>${o.beneficio}</td>
+          </tr>
+        `),
+        ...res.otimizacoesLayout.fluxoMateriais.map(o => `
+          <tr>
+            <td><strong style="color: var(--p4-navy, #132A41);">Logística</strong></td>
+            <td>${o.problema}</td>
+            <td>${o.solucao}</td>
+            <td>${o.beneficio}</td>
+          </tr>
+        `),
+        ...res.otimizacoesLayout.seguranca.map(o => `
+          <tr>
+            <td><strong style="color: var(--p4-green, #16A34A);">Segurança</strong></td>
+            <td>${o.problema}</td>
+            <td>${o.solucao}</td>
+            <td>${o.beneficio}</td>
+          </tr>
+        `)
+      ].join('');
+
+      // 3. Resíduos Sólidos PGRCC
+      const residuosRows = [
+        ['Classe A (Inertes / Alvenaria / Concreto)', dim.residuosPGRCC.classeA],
+        ['Classe B (Recicláveis / Plásticos / Papel / Metais)', dim.residuosPGRCC.classeB],
+        ['Classe C (Sem tecnologia de reciclagem)', dim.residuosPGRCC.classeC],
+        ['Classe D (Perigosos / Tintas / Solventes / Óleos)', dim.residuosPGRCC.classeD]
+      ].map(([classe, desc]) => `
+        <tr>
+          <td style="width: 32%; background-color: #F8FAFC; font-weight: 700; color: var(--p4-navy, #132A41);">${classe}</td>
+          <td>${desc}</td>
+        </tr>
+      `).join('');
+
+      // 4. Layout e Zoneamento do Canteiro
+      const zonasRows = (res.zonasCanteiro || []).map(z => `
+        <tr>
+          <td class="td-center" style="font-weight: 700; color: ${z.cor || '#132A41'}; background-color: ${z.corBg || '#F8FAFC'}; font-size: 8pt; vertical-align: middle;">
+            ${z.sigla}
+          </td>
+          <td>
+            <strong style="color: var(--p4-navy, #132A41); font-size: 7.8pt;">${z.nome}</strong>
+            <div style="font-size: 7pt; color: #64748B; margin-top: 1px; line-height: 1.35;">${z.descricao}</div>
+          </td>
+          <td class="td-center font-bold" style="font-size: 7.8pt; color: var(--p4-navy, #132A41); vertical-align: middle;">
+            ~${z.dimensaoEstimadaM2} m²
+          </td>
+          <td style="font-size: 7.5pt; color: #334155; line-height: 1.35;">
+            ${z.posicionamentoRecomendado}
+          </td>
+          <td style="font-size: 7.5pt; color: #334155; line-height: 1.35;">
+            ${z.requisitosNR}
+          </td>
+        </tr>
+      `).join('');
+
+      // 5. Memorial Técnico convertido de Markdown para HTML estruturado
+      const memorialHtml = this.converterMarkdownParaHtml(res.memorialDescritivo || '');
+
+      const corpoHtml = `
+        <!-- IDENTIFICAÇÃO DO PROJETO -->
+        <div class="doc-card-info">
+          <div class="doc-grid-4">
+            <div class="doc-info-item">
+              <span class="doc-info-label">Empreendimento</span>
+              <span class="doc-info-value">${this.form().nomeProjeto || 'Obra de Edificação'}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Tipo de Obra</span>
+              <span class="doc-info-value">${this.getNomeTipo(this.form().tipoObra)}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Porte Estimado</span>
+              <span class="doc-info-value">${this.getNomePorte(this.form().porteObra)}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Efetivo de Pico</span>
+              <span class="doc-info-value">${this.getTextoTrabalhadores(this.form().trabalhadoresPico)}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Perfil de Análise</span>
+              <span class="doc-info-value">${this.getNomePerfil(this.form().perfilAnalise)}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Data de Emissão</span>
+              <span class="doc-info-value">${dataHoje}</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Norma Regulamentadora</span>
+              <span class="doc-info-value">NR-18 / NBR 12.284</span>
+            </div>
+            <div class="doc-info-item">
+              <span class="doc-info-label">Enquadramento PGRCC</span>
+              <span class="doc-info-value">Resolução CONAMA 307</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. DIMENSIONAMENTO REGULAMENTAR DE ÁREAS DE VIVÊNCIA (NR-18) -->
+        <div class="doc-section">
+          <div class="doc-section-title">1. Dimensionamento Regulamentar de Instalações e Vivência (NR-18)</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 28%;">Instalação Provisória</th>
+                <th style="width: 22%;">Parâmetro NR-18</th>
+                <th class="th-center" style="width: 14%;">Quantitativo</th>
+                <th style="width: 36%;">Exigência Construtiva & Conforto</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tabelaVivenciaHtml}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. MATRIZ DE OTIMIZAÇÕES LOGÍSTICAS E SEGURANÇA DO TRABALHO -->
+        <div class="doc-section">
+          <div class="doc-section-title">2. Matriz de Otimizações Logísticas e Segurança do Trabalho</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th class="th-copper" style="width: 13%;">Dimensão</th>
+                <th class="th-copper" style="width: 28%;">Desafio Identificado</th>
+                <th class="th-copper" style="width: 31%;">Solução Técnica Proposta</th>
+                <th class="th-copper" style="width: 28%;">Benefício Construtivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${otimizacoesRows}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. GESTÃO E SEGREGAÇÃO DE RESÍDUOS SÓLIDOS (PGRCC / CONAMA 307) -->
+        <div class="doc-section">
+          <div class="doc-section-title">3. Gestão e Segregação de Resíduos da Construção Civil (PGRCC)</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 32%;">Classificação do Resíduo (CONAMA 307)</th>
+                <th>Diretriz de Acondicionamento, Transporte e Destinação Final</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${residuosRows}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4. LAYOUT & ZONEAMENTO DO CANTEIRO DE OBRAS -->
+        <div class="doc-section">
+          <div class="doc-section-title">4. Layout & Zoneamento do Canteiro de Obras (Zonas Funcionais)</div>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width: 8%;" class="th-center">Zona</th>
+                <th style="width: 24%;">Zona Funcional & Descrição</th>
+                <th class="th-center" style="width: 12%;">Área Est.</th>
+                <th style="width: 28%;">Posicionamento Recomendado</th>
+                <th style="width: 28%;">Requisito Normativo (NR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${zonasRows}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5. MEMORIAL DESCRITIVO TÉCNICO DE IMPLANTAÇÃO -->
+        <div class="doc-section">
+          <div class="doc-section-title">5. Memorial Descritivo Técnico de Implantação</div>
+          <div style="background-color: #F8FAFC; border: 1px solid var(--p4-rule, #CBD5E1); border-radius: 6px; padding: 12px 14px; margin-bottom: 8px;">
+            ${memorialHtml}
+          </div>
+        </div>
+
+        <!-- NOTA LEGAL METODOLÓGICA -->
+        <div class="doc-legal-note">
+          <strong>Nota de Responsabilidade Técnica:</strong> O presente Plano de Implantação de Canteiro de Obras fundamenta-se nas exigências técnicas da Norma Regulamentadora nº 18 (Condições de Segurança e Saúde no Trabalho na Indústria da Construção), Portaria MTP nº 4.219/2022, NBR 12.284 e Resolução CONAMA 307. O dimensionamento final deve ser validado pelo Responsável Técnico em campo e constar no Programa de Gerenciamento de Riscos (PGR) da obra.
+        </div>
+      `;
+
+      await this.motorPdfService.gerarDocumento(
+        {
+          tituloDocumento: 'Plano de Implantação de Canteiro de Obras (NR-18)',
+          subtituloDocumento: 'Dimensionamento de Vivência • Logística Lean • PGRCC',
+          nomeAgente: 'Gerador de Plano de Canteiro de Obras'
         },
-        styles: {
-          fontSize: 7.5,
-          cellPadding: 2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        head: [['Instalação Provisória', 'Parâmetro NR-18', 'Quantitativo', 'Exigência Construtiva']],
-        body: tabelaVivencia
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 6;
-
-      // 4. Matriz de Otimizações de Layout
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('2. MATRIZ DE OTIMIZAÇÕES LOGÍSTICAS E SEGURANÇA DO TRABALHO', margin, currentY);
-      currentY += 3;
-
-      const matrizData = [
-        ...res.otimizacoesLayout.eficienciaEspacial.map(o => ['Espacial', o.problema, o.solucao, o.beneficio]),
-        ...res.otimizacoesLayout.fluxoMateriais.map(o => ['Logística', o.problema, o.solucao, o.beneficio]),
-        ...res.otimizacoesLayout.seguranca.map(o => ['Segurança', o.problema, o.solucao, o.beneficio])
-      ];
-
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        headStyles: {
-          fillColor: copperAccent,
-          textColor: textWhite,
-          fontStyle: 'bold',
-          fontSize: 8,
-          halign: 'left'
-        },
-        styles: {
-          fontSize: 7,
-          cellPadding: 2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 20 },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 60 },
-          3: { cellWidth: 52 }
-        },
-        head: [['Dimensão', 'Desafio Identificado', 'Solução Técnica Proposta', 'Benefício']],
-        body: matrizData
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 6;
-
-      // Nova Página se necessário
-      if (currentY > 230) {
-        doc.addPage();
-        currentY = 20;
-      }
-
-      // 5. Segregação de Resíduos PGRCC (CONAMA 307)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('3. GESTÃO E SEGREGAÇÃO DE RESÍDUOS SÓLIDOS (PGRCC / CONAMA 307)', margin, currentY);
-      currentY += 3;
-
-      const residuosData = [
-        ['Classe A (Inertes)', dim.residuosPGRCC.classeA],
-        ['Classe B (Recicláveis)', dim.residuosPGRCC.classeB],
-        ['Classe C (Sem Reciclagem)', dim.residuosPGRCC.classeC],
-        ['Classe D (Perigosos)', dim.residuosPGRCC.classeD]
-      ];
-
-      autoTable(doc, {
-        startY: currentY,
-        margin: { left: margin, right: margin },
-        theme: 'grid',
-        styles: {
-          fontSize: 7.5,
-          cellPadding: 2,
-          lineColor: borderGray,
-          textColor: slateDark
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', fillColor: bgCellLight, cellWidth: 45 },
-          1: { cellWidth: 137 }
-        },
-        body: residuosData
-      });
-
-      currentY = (doc as any).lastAutoTable.finalY + 12;
-
-      // Assinatura Técnica
-      if (currentY > 250) {
-        doc.addPage();
-        currentY = 30;
-      }
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('Emanoel S. Amorim', 105, currentY, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      doc.text('Arquiteto e Urbanista • CAU nº A133593-6', 105, currentY + 4, { align: 'center' });
-      doc.text('Especialista em Engenharia Diagnóstica e Gestão da Construção 4.0', 105, currentY + 8, { align: 'center' });
-
-      // Numeração de Páginas
-      const totalPages = (doc as any).internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(148, 163, 184);
-        doc.text(
-          `Plano de Canteiro de Obras • AmorimTech • Página ${i} de ${totalPages}`,
-          105,
-          290,
-          { align: 'center' }
-        );
-      }
-
-      const nomeLimpo = (this.form().nomeProjeto || 'Plano_Canteiro_Obras')
-        .replace(/[^a-zA-Z0-9_-]/g, '_')
-        .toLowerCase();
-      doc.save(`${nomeLimpo}_plano_canteiro_nr18.pdf`);
+        corpoHtml
+      );
     } catch (err) {
-      console.error('Erro ao gerar PDF:', err);
-      alert('Erro ao gerar relatório em PDF. Tente novamente.');
+      console.error('Erro ao gerar PDF de Canteiro de Obras:', err);
+      this.motorPdfService.exibirToast('Ocorreu um erro ao emitir o relatório em PDF. Verifique seus dados e tente novamente.', 'erro');
     } finally {
       this.gerandoPdf.set(false);
     }
+  }
+
+  // Parser robusto de Markdown para HTML estruturado para o design system do PDF
+  converterMarkdownParaHtml(markdown: string): string {
+    if (!markdown) return '';
+
+    const lines = markdown.split('\n');
+    const result: string[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // 1. Linha vazia
+      if (!trimmed) {
+        i++;
+        continue;
+      }
+
+      // 2. Linha horizontal '---' ou '***'
+      if (/^---+\s*$/.test(trimmed) || /^\*\*\*+\s*$/.test(trimmed)) {
+        result.push('<hr style="border: none; border-top: 1px solid var(--p4-rule, #CBD5E1); margin: 12px 0;" />');
+        i++;
+        continue;
+      }
+
+      // 3. Tabela Markdown (| col 1 | col 2 |)
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        const tableLines: string[] = [];
+        while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+          tableLines.push(lines[i].trim());
+          i++;
+        }
+
+        if (tableLines.length >= 2) {
+          const headerCells = tableLines[0]
+            .slice(1, -1)
+            .split('|')
+            .map(c => this.formatarTextoInline(c.trim()));
+
+          // Se a segunda linha for o separador (| :--- | :--- |)
+          const startIndex = /^\|?\s*:?-+:?\s*(\|?\s*:?-+:?\s*)+\|?$/.test(tableLines[1]) ? 2 : 1;
+
+          const thead = `<thead><tr>${headerCells.map(h => `<th style="padding: 5px 8px; font-size: 7.5pt; font-weight: 700; text-align: left;">${h}</th>`).join('')}</tr></thead>`;
+
+          const bodyRows: string[] = [];
+          for (let r = startIndex; r < tableLines.length; r++) {
+            const cells = tableLines[r]
+              .slice(1, -1)
+              .split('|')
+              .map(c => this.formatarTextoInline(c.trim()));
+            bodyRows.push(`<tr>${cells.map(c => `<td style="padding: 5px 8px; font-size: 7.5pt; vertical-align: top;">${c}</td>`).join('')}</tr>`);
+          }
+
+          const tbody = `<tbody>${bodyRows.join('')}</tbody>`;
+          result.push(`<table class="doc-table" style="margin: 8px 0; width: 100%; border-collapse: collapse;">${thead}${tbody}</table>`);
+          continue;
+        }
+      }
+
+      // 4. Cabeçalho H2 (## Titulo)
+      if (trimmed.startsWith('## ')) {
+        const title = this.formatarTextoInline(trimmed.substring(3).trim());
+        result.push(`<div class="doc-section-title" style="margin-top: 14px; margin-bottom: 6px; font-size: 8.5pt; letter-spacing: 0.2px;">${title}</div>`);
+        i++;
+        continue;
+      }
+
+      // 5. Cabeçalho H3 (### Titulo)
+      if (trimmed.startsWith('### ')) {
+        const title = this.formatarTextoInline(trimmed.substring(4).trim());
+        result.push(`<h4 style="font-family: 'Poppins', sans-serif; font-size: 8pt; font-weight: 700; color: var(--p4-navy, #132A41); margin: 10px 0 4px 0;">${title}</h4>`);
+        i++;
+        continue;
+      }
+
+      // 6. Cabeçalho H4 (#### Titulo)
+      if (trimmed.startsWith('#### ')) {
+        const title = this.formatarTextoInline(trimmed.substring(5).trim());
+        result.push(`<h5 style="font-size: 7.8pt; font-weight: 700; color: var(--p4-copper, #B5642A); margin: 6px 0 2px 0;">${title}</h5>`);
+        i++;
+        continue;
+      }
+
+      // 7. Lista numerada (1. item, 2. item)
+      if (/^\d+\.\s+/.test(trimmed)) {
+        const items: string[] = [];
+        while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
+          const itemText = lines[i].trim().replace(/^\d+\.\s+/, '');
+          items.push(this.formatarTextoInline(itemText));
+          i++;
+        }
+        result.push(`<ol style="margin: 4px 0 8px 18px; padding-left: 0; font-size: 7.8pt; line-height: 1.5; color: #1E293B;">${items.map(it => `<li style="margin-bottom: 3px;">${it}</li>`).join('')}</ol>`);
+        continue;
+      }
+
+      // 8. Lista com marcadores (- item ou * item)
+      if (/^[-*]\s+/.test(trimmed)) {
+        const items: string[] = [];
+        while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
+          const itemText = lines[i].trim().replace(/^[-*]\s+/, '');
+          items.push(this.formatarTextoInline(itemText));
+          i++;
+        }
+        result.push(`<ul style="margin: 4px 0 8px 18px; padding-left: 0; font-size: 7.8pt; line-height: 1.5; color: #1E293B;">${items.map(it => `<li style="margin-bottom: 3px;">${it}</li>`).join('')}</ul>`);
+        continue;
+      }
+
+      // 9. Parágrafo simples
+      const formatted = this.formatarTextoInline(trimmed);
+      result.push(`<p style="margin: 0 0 6px 0; line-height: 1.5; font-size: 7.8pt; color: #1E293B; text-align: justify;">${formatted}</p>`);
+      i++;
+    }
+
+    return result.join('\n');
+  }
+
+  formatarTextoInline(text: string): string {
+    if (!text) return '';
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code style="background-color: #F1F5F9; padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 7.5pt;">$1</code>');
   }
 
   // Helpers de Formatação
@@ -1593,5 +2032,180 @@ export class GeradorCanteiroComponent implements OnInit {
   getNomePerfil(perfil: PerfilAnaliseIA): string {
     const p = this.perfisAnalise.find(x => x.id === perfil);
     return p ? p.nome : perfil;
+  }
+
+  // =========================================================================
+  // GESTÃO DE PROJETOS SALVOS (Canteiro)
+  // =========================================================================
+
+  exibirToast(texto: string, tipo: 'sucesso' | 'erro' | 'info' = 'sucesso'): void {
+    this.toastMensagem.set({ texto, tipo });
+    setTimeout(() => {
+      this.toastMensagem.set(null);
+    }, 3500);
+  }
+
+  obterNomeProjetoSugerido(): string {
+    return this.form().nomeProjeto?.trim() || 'Plano de Canteiro de Obras';
+  }
+
+  serializarDadosFormulario(): any {
+    return {
+      form: this.form(),
+      resultadoPlano: this.resultadoPlano(),
+      etapaAtual: this.etapaAtual(),
+      tabAtiva: this.tabAtiva()
+    };
+  }
+
+  deserializarDadosFormulario(dados: any): void {
+    if (!dados) return;
+    if (dados.form) {
+      this.form.set(dados.form);
+    } else {
+      this.form.set(dados);
+    }
+    if (dados.resultadoPlano !== undefined) {
+      this.resultadoPlano.set(dados.resultadoPlano);
+    }
+    if (dados.etapaAtual !== undefined) {
+      this.etapaAtual.set(dados.etapaAtual);
+    }
+    if (dados.tabAtiva !== undefined) {
+      this.tabAtiva.set(dados.tabAtiva);
+    }
+  }
+
+  clicarSalvarProjeto(): void {
+    if (this.projetoAtualId()) {
+      this.executarAtualizarProjeto();
+    } else {
+      const sugerido = this.obterNomeProjetoSugerido();
+      this.modalSalvarNomeInput.set(sugerido);
+      this.modalSalvarAberto.set(true);
+    }
+  }
+
+  clicarSalvarComoNovo(): void {
+    const sugerido = `${this.obterNomeProjetoSugerido()} (Cópia)`;
+    this.modalSalvarNomeInput.set(sugerido);
+    this.modalSalvarAberto.set(true);
+  }
+
+  async confirmarSalvarNovoProjeto(): Promise<void> {
+    const nome = this.modalSalvarNomeInput().trim();
+    if (!nome) {
+      this.exibirToast('Digite um nome para identificar o projeto.', 'erro');
+      return;
+    }
+
+    this.salvandoProjeto.set(true);
+    try {
+      // Sincroniza o nome do form caso esteja genérico
+      this.atualizarCampo('nomeProjeto', nome);
+
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.salvarProjeto('canteiro', nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao salvar: ${res.error.message}`, 'erro');
+      } else {
+        this.projetoAtualId.set(res.id || null);
+        this.projetoAtualNome.set(nome);
+        this.modalSalvarAberto.set(false);
+        this.exibirToast(`Projeto "${nome}" salvo com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao salvar projeto: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async executarAtualizarProjeto(): Promise<void> {
+    const id = this.projetoAtualId();
+    if (!id) return;
+
+    this.salvandoProjeto.set(true);
+    try {
+      const nome = this.projetoAtualNome() || this.obterNomeProjetoSugerido();
+      const dados = this.serializarDadosFormulario();
+      const res = await this.supabaseService.atualizarProjeto(id, nome, dados);
+
+      if (res.error) {
+        this.exibirToast(`Erro ao atualizar: ${res.error.message}`, 'erro');
+      } else {
+        this.exibirToast(`Projeto "${nome}" atualizado com sucesso!`, 'sucesso');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao atualizar: ${err?.message || err}`, 'erro');
+    } finally {
+      this.salvandoProjeto.set(false);
+    }
+  }
+
+  async abrirModalMeusProjetos(): Promise<void> {
+    this.modalProjetosAberto.set(true);
+    this.carregandoProjetos.set(true);
+    try {
+      const lista = await this.supabaseService.listarMeusProjetos('canteiro');
+      this.listaProjetosSalvos.set(lista);
+    } catch (err) {
+      console.error('Erro ao listar projetos de canteiro:', err);
+    } finally {
+      this.carregandoProjetos.set(false);
+    }
+  }
+
+  abrirProjetoSalvo(proj: any): void {
+    try {
+      this.deserializarDadosFormulario(proj.dados_formulario);
+      this.projetoAtualId.set(proj.id);
+      this.projetoAtualNome.set(proj.nome_projeto);
+      this.modalProjetosAberto.set(false);
+      this.exibirToast(`Projeto "${proj.nome_projeto}" carregado com sucesso!`, 'sucesso');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      this.exibirToast(`Erro ao carregar projeto: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  async confirmarExcluirProjeto(proj: any, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (!confirm(`Deseja realmente excluir o projeto "${proj.nome_projeto}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const res = await this.supabaseService.excluirProjeto(proj.id);
+      if (res.error) {
+        this.exibirToast(`Erro ao excluir: ${res.error.message}`, 'erro');
+      } else {
+        if (this.projetoAtualId() === proj.id) {
+          this.projetoAtualId.set(null);
+          this.projetoAtualNome.set('');
+        }
+        this.listaProjetosSalvos.update(l => l.filter(p => p.id !== proj.id));
+        this.exibirToast(`Projeto "${proj.nome_projeto}" excluído.`, 'info');
+      }
+    } catch (err: any) {
+      this.exibirToast(`Erro ao excluir projeto: ${err?.message || err}`, 'erro');
+    }
+  }
+
+  formatarDataProjeto(dataIso: string): string {
+    if (!dataIso) return '-';
+    try {
+      const d = new Date(dataIso);
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dataIso;
+    }
   }
 }
