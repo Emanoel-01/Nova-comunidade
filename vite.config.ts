@@ -246,6 +246,22 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      sourcemap: false,
+      rollupOptions: {
+        onwarn(warning, defaultHandler) {
+          if (
+            warning.code === 'THIS_IS_UNDEFINED' ||
+            warning.code === 'SOURCEMAP_ERROR' ||
+            warning.code === 'CIRCULAR_DEPENDENCY' ||
+            (warning.message && warning.message.includes("Can't resolve original location of error"))
+          ) {
+            return;
+          }
+          defaultHandler(warning);
+        },
+      },
+    },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
