@@ -1184,7 +1184,42 @@ export class SupabaseService {
     }
   }
 
-  async criarFeedPost(conteudo: string, tag?: string): Promise<{ data?: any; error: Error | null }> {
+  async uploadFotoFeed(file: File): Promise<{ url?: string; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) {
+        return { error: new Error('Não autenticado.') };
+      }
+
+      const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
+      const uniqueName = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2, 11);
+      const nomeArquivo = `${Date.now()}-${uniqueName}.${ext}`;
+      const caminho = `${session.user.id}/${nomeArquivo}`;
+
+      const { error: uploadError } = await this.client.storage
+        .from('feed-fotos')
+        .upload(caminho, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        return { error: new Error(uploadError.message || 'Erro no upload da foto.') };
+      }
+
+      const { data: pubData } = this.client.storage
+        .from('feed-fotos')
+        .getPublicUrl(caminho);
+
+      return { url: pubData?.publicUrl || '', error: null };
+    } catch (err: any) {
+      return { error: err instanceof Error ? err : new Error(String(err)) };
+    }
+  }
+
+  async criarFeedPost(conteudo: string, tag?: string, fotosUrls?: string[]): Promise<{ data?: any; error: Error | null }> {
     try {
       const session = await this.getSession();
       if (!session?.user) return { error: new Error('Não autenticado.') };
@@ -1194,7 +1229,8 @@ export class SupabaseService {
           autor_id: session.user.id,
           conteudo,
           tag: tag || null,
-          tipo: 'post'
+          tipo: 'post',
+          fotos_urls: fotosUrls && fotosUrls.length > 0 ? fotosUrls : null,
         })
         .select()
         .single();
@@ -3729,6 +3765,68 @@ export class SupabaseService {
       }
     } catch (e: any) {
       return { error: e };
+    }
+  }
+
+  async gerarAnaliseEvte(
+    tipologiasIds: string[],
+    restricoes: Record<string, any>
+  ): Promise<{ data?: any; error: Error | null; codigo?: string; usoAtual?: number; limite?: number }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('evte-analise', {
+        body: { tipologiasIds, restricoes },
+      });
+      if (error) {
+        // Tenta extrair a mensagem estruturada do corpo do erro, quando disponível
+        const contexto = (error as any)?.context;
+        if (contexto && typeof contexto.json === 'function') {
+          try {
+            const corpo = await contexto.json();
+            return { error: new Error(corpo.error || error.message), codigo: corpo.codigo, usoAtual: corpo.usoAtual, limite: corpo.limite };
+          } catch {
+            // segue para o retorno genérico abaixo
+          }
+        }
+        return { error };
+      }
+      return { data, error: null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarHistoricoEvte(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('evte_analises')
+        .select('*')
+        .order('criado_em', { ascending: false })
+        .limit(20);
+      if (error) {
+        console.warn('Erro ao listar histórico EVTE:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar histórico EVTE:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTipologiasPrediais(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('tipologias_prediais')
+        .select('*')
+        .order('numero', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar tipologias prediais:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar tipologias prediais:', e?.message || e);
+      return [];
     }
   }
 
