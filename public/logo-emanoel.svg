@@ -1,10 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2380 573" width="2380" height="573">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2205 573" width="2205" height="573">
+  <rect width="2205" height="573" fill="#ffffff" />
+  
   <!-- Icon squircle -->
   <rect x="110" y="70" width="433" height="433" rx="115" ry="115" fill="#0b145a" />
   <text x="326" y="345" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="230" font-weight="900" text-anchor="middle" letter-spacing="-4">EA</text>
-
+  
   <!-- Typography -->
   <text x="640" y="275" fill="#0b145a" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="190" font-weight="900" letter-spacing="-3">Emanoel Amorim</text>
-
+  
   <text x="645" y="445" fill="#8892a4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="115" font-weight="700" letter-spacing="18">ECOSSISTEMA DIGITAL</text>
 </svg>
