@@ -260,10 +260,20 @@ export interface BlogPost {
 
                 <div class="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-4">
                   <div class="space-y-2">
-                    <div class="flex items-center gap-2.5">
+                    <div class="flex items-center gap-2.5 flex-wrap">
                       <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200/60">
                         {{ post.categoria }}
                       </span>
+                      @if (post.video_url && obterVideoEmbed(post.video_url); as cardVideo) {
+                        @if (cardVideo.plataforma === 'instagram') {
+                          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 inline-flex items-center gap-1">
+                            <svg class="w-3 h-3 text-fuchsia-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                            <span>Instagram</span>
+                          </span>
+                        }
+                      }
                       <span class="text-xs text-slate-400">
                         {{ post.criado_em | date:'dd/MM/yyyy' }}
                       </span>
@@ -509,25 +519,44 @@ export interface BlogPost {
                 </div>
               }
 
-              <!-- Vídeo Embutido (YouTube ou Vimeo) -->
+              <!-- Vídeo / Post Embutido (YouTube, Vimeo ou Instagram) -->
               @if (postSelecionado()?.video_url && obterVideoEmbed(postSelecionado()?.video_url); as videoInfo) {
-                <div class="space-y-3 pt-4 border-t border-slate-100">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full" [class]="videoInfo.plataforma === 'youtube' ? 'bg-red-500' : 'bg-sky-500'"></span>
-                    <h3 class="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider">
-                      Vídeo Explicativo
-                    </h3>
+                @if (videoInfo.plataforma === 'instagram') {
+                  <div class="space-y-3 pt-4 border-t border-slate-100">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-fuchsia-500"></span>
+                      <h3 class="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider">
+                        Publicado no Instagram
+                      </h3>
+                    </div>
+                    <div class="flex justify-center">
+                      <blockquote
+                        class="instagram-media"
+                        [attr.data-instgrm-permalink]="videoInfo.permalink"
+                        data-instgrm-version="14"
+                        style="background:#FFF; border:0; border-radius:1rem; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.08); margin:0; max-width:540px; min-width:326px; padding:0; width:100%;"
+                      ></blockquote>
+                    </div>
                   </div>
+                } @else {
+                  <div class="space-y-3 pt-4 border-t border-slate-100">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full" [class]="videoInfo.plataforma === 'youtube' ? 'bg-red-500' : 'bg-sky-500'"></span>
+                      <h3 class="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider">
+                        Vídeo Explicativo
+                      </h3>
+                    </div>
 
-                  <div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-950">
-                    <iframe
-                      [src]="sanitizarUrlVideo(videoInfo.embedUrl)"
-                      class="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowfullscreen
-                    ></iframe>
+                    <div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-950">
+                      <iframe
+                        [src]="sanitizarUrlVideo(videoInfo.embedUrl)"
+                        class="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                      ></iframe>
+                    </div>
                   </div>
-                </div>
+                }
               }
             </div>
 
@@ -622,6 +651,40 @@ export class BlogComponent implements OnInit {
 
   sanitizarUrlVideo(url: string): SafeResourceUrl {
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  private scriptInstagramCarregado = false;
+
+  private carregarScriptInstagram(): void {
+    if (typeof window === 'undefined') return;
+
+    if (this.scriptInstagramCarregado || (window as any).instgrm || document.getElementById('instagram-embed-script')) {
+      this.scriptInstagramCarregado = true;
+      setTimeout(() => {
+        (window as any).instgrm?.Embeds?.process();
+      }, 50);
+      return;
+    }
+
+    this.scriptInstagramCarregado = true;
+    const script = document.createElement('script');
+    script.id = 'instagram-embed-script';
+    script.src = 'https://www.instagram.com/embed.js';
+    script.async = true;
+    script.onload = () => {
+      setTimeout(() => {
+        (window as any).instgrm?.Embeds?.process();
+      }, 50);
+    };
+    document.head.appendChild(script);
+  }
+
+  private processarEmbedInstagramSeNecessario(post: BlogPost | null): void {
+    if (!post?.video_url) return;
+    const info = this.obterVideoEmbed(post.video_url);
+    if (info?.plataforma === 'instagram') {
+      this.carregarScriptInstagram();
+    }
   }
 
   readonly termoBusca = signal('');
@@ -834,6 +897,7 @@ export class BlogComponent implements OnInit {
           if (this.postSelecionado()?.id !== post.id) {
             this.postSelecionado.set(post);
             this.atualizarSeoPost(post);
+            this.processarEmbedInstagramSeNecessario(post);
             // Registra visualização não-bloqueante via URL direta
             this.supabaseService.registrarVisualizacaoPost(post.id);
           }
@@ -954,6 +1018,7 @@ export class BlogComponent implements OnInit {
   abrirLeitura(post: BlogPost): void {
     this.postSelecionado.set(post);
     this.atualizarSeoPost(post);
+    this.processarEmbedInstagramSeNecessario(post);
     // Registra visualização não-bloqueante no clique do post
     this.supabaseService.registrarVisualizacaoPost(post.id);
     this.router.navigate([], {
