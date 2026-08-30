@@ -1,14 +1,15 @@
 /**
- * Utilitário de detecção e formatação de URLs de embed para vídeos (YouTube e Vimeo) no Blog
+ * Utilitário de detecção e formatação de URLs de embed para vídeos e posts (YouTube, Vimeo e Instagram) no Blog
  */
 
 export interface VideoEmbedInfo {
-  plataforma: 'youtube' | 'vimeo';
-  embedUrl: string;
+  plataforma: 'youtube' | 'vimeo' | 'instagram';
+  embedUrl: string; // vazio ou irrelevante para 'instagram'
+  permalink?: string; // usado só para 'instagram' — a URL original do post, limpa
 }
 
 /**
- * Detecta se a URL fornecida é um link do YouTube ou do Vimeo e retorna a URL pronta para iframe embed.
+ * Detecta se a URL fornecida é um link do YouTube, Vimeo ou Instagram e retorna os dados de embed.
  * Retorna null se a URL for vazia ou se não corresponder a nenhuma das plataformas suportadas.
  */
 export function detectarVideoEmbed(url: string | null | undefined): VideoEmbedInfo | null {
@@ -35,6 +36,18 @@ export function detectarVideoEmbed(url: string | null | undefined): VideoEmbedIn
     return {
       plataforma: 'vimeo',
       embedUrl: `https://player.vimeo.com/video/${id}`
+    };
+  }
+
+  // 3. Instagram (posts, reels, tv)
+  const instagramMatch = texto.match(/instagram\.com\/(?:p|reel|tv)\/([a-zA-Z0-9_-]+)/i);
+  if (instagramMatch) {
+    // normaliza para a URL canônica do post, sem parâmetros extras
+    const path = texto.match(/instagram\.com\/(p|reel|tv)\/[a-zA-Z0-9_-]+/i)?.[0];
+    return {
+      plataforma: 'instagram',
+      embedUrl: '',
+      permalink: `https://www.${path}/`
     };
   }
 
