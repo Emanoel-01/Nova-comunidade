@@ -190,11 +190,11 @@ function staticPrerenderPlugin(): Plugin {
         }
       }
 
-      // Atualizar / gerar sitemap.xml com entradas dinâmicas do blog se houver
+      // Atualizar / gerar sitemap.xml com entradas dinâmicas do blog e pré-renderizar páginas estáticas de cada post
       try {
         const supabaseUrl = 'https://kvesxatnmgvflqzuqgrz.supabase.co';
         const supabaseKey = 'sb_publishable_w1BVDyfby4kHakiBvO05ZA_R9Xgk3mu';
-        const res = await fetch(`${supabaseUrl}/rest/v1/blog_posts?publicado=eq.true&select=id,titulo,slug,criado_em,atualizado_em`, {
+        const res = await fetch(`${supabaseUrl}/rest/v1/blog_posts?publicado=eq.true&select=id,titulo,slug,resumo,imagem_capa_url,criado_em,atualizado_em`, {
           headers: {
             apikey: supabaseKey,
             Authorization: `Bearer ${supabaseKey}`,
@@ -202,28 +202,108 @@ function staticPrerenderPlugin(): Plugin {
         });
 
         if (res.ok) {
-          const posts = (await res.json()) as Array<{ id: string; titulo?: string; slug?: string; criado_em?: string; atualizado_em?: string }>;
+          const posts = (await res.json()) as Array<{
+            id: string;
+            titulo?: string;
+            slug?: string;
+            resumo?: string | null;
+            imagem_capa_url?: string | null;
+            criado_em?: string;
+            atualizado_em?: string;
+          }>;
           const sitemapDistPath = path.join(distDir, 'sitemap.xml');
           let sitemapXml = fs.existsSync(sitemapDistPath)
             ? fs.readFileSync(sitemapDistPath, 'utf-8')
             : fs.readFileSync(path.join(process.cwd(), 'public', 'sitemap.xml'), 'utf-8');
 
           if (Array.isArray(posts) && posts.length > 0) {
+            // 1. Atualizar sitemap.xml com URLs próprias /blog/:slug
             const blogEntries = posts
               .map((p) => {
                 const routeSlug = p.slug || p.id;
                 const lastmod = (p.atualizado_em || p.criado_em || new Date().toISOString()).split('T')[0];
-                return `  <url>\n    <loc>${baseUrl}/blog?post=${encodeURIComponent(routeSlug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`;
+                return `  <url>\n    <loc>${baseUrl}/blog/${encodeURIComponent(routeSlug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`;
               })
               .join('\n');
 
             sitemapXml = sitemapXml.replace('</urlset>', `${blogEntries}\n</urlset>`);
             fs.writeFileSync(sitemapDistPath, sitemapXml, 'utf-8');
             console.log(`[sitemap] Adicionados ${posts.length} posts do blog ao sitemap.xml.`);
+
+            // 2. Pré-renderizar página estática em HTML para cada post publicado
+            for (const post of posts) {
+              const routeSlug = post.slug || post.id;
+              const fullCanonicalUrl = `${baseUrl}/blog/${encodeURIComponent(routeSlug)}`;
+              const postTitle = `${post.titulo || 'Artigo'} | Blog AmorimTech`;
+              const postDesc = post.resumo || 'Artigo técnico sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.';
+
+              const postSchema = {
+                '@context': 'https://schema.org',
+                '@type': 'BlogPosting',
+                headline: post.titulo || '',
+                description: post.resumo || undefined,
+                image: post.imagem_capa_url || undefined,
+                datePublished: post.criado_em,
+                dateModified: post.atualizado_em || post.criado_em,
+                url: fullCanonicalUrl,
+                publisher: {
+                  '@type': 'Organization',
+                  '@id': 'https://emanoelamorim.com/#organization',
+                  name: 'AmorimTech',
+                },
+              };
+
+              let postHtml = templateHtml;
+
+              // Atualizar <title>
+              if (/<title>.*?<\/title>/i.test(postHtml)) {
+                postHtml = postHtml.replace(/<title>.*?<\/title>/i, `<title>${postTitle}</title>`);
+              } else {
+                postHtml = postHtml.replace('</head>', `  <title>${postTitle}</title>\n</head>`);
+              }
+
+              const schemaTag = `\n    <!-- Schema.org Specific Route Data -->\n    <script type="application/ld+json" id="dynamic-jsonld">\n${JSON.stringify(postSchema, null, 2)}\n    </script>`;
+
+              const imageTags = post.imagem_capa_url
+                ? `\n    <meta property="og:image" content="${post.imagem_capa_url}">\n    <meta name="twitter:image" content="${post.imagem_capa_url}">`
+                : '';
+
+              const escapedTitle = postTitle.replace(/"/g, '&quot;');
+              const escapedDesc = postDesc.replace(/"/g, '&quot;');
+
+              const seoTags = `
+    <!-- SEO Meta Tags Prerendered (Blog Post) -->
+    <meta name="description" content="${escapedDesc}">
+    <link rel="canonical" href="${fullCanonicalUrl}">
+    <meta property="og:title" content="${escapedTitle}">
+    <meta property="og:description" content="${escapedDesc}">
+    <meta property="og:url" content="${fullCanonicalUrl}">
+    <meta property="og:type" content="article">${imageTags}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${escapedTitle}">
+    <meta name="twitter:description" content="${escapedDesc}">${schemaTag}
+  `;
+
+              // Remover meta tags pré-existentes
+              postHtml = postHtml.replace(/<meta\s+name="description"[^>]*>/gi, '');
+              postHtml = postHtml.replace(/<link\s+rel="canonical"[^>]*>/gi, '');
+              postHtml = postHtml.replace(/<meta\s+property="og:[^"]*"[^>]*>/gi, '');
+              postHtml = postHtml.replace(/<meta\s+name="twitter:[^"]*"[^>]*>/gi, '');
+              postHtml = postHtml.replace(/<script\s+type="application\/ld\+json"\s+id="dynamic-jsonld"[^>]*>[\s\S]*?<\/script>/gi, '');
+
+              // Injetar antes de </head>
+              postHtml = postHtml.replace('</head>', `${seoTags}\n</head>`);
+
+              const targetDir = path.join(distDir, 'blog', routeSlug);
+              fs.mkdirSync(targetDir, { recursive: true });
+              const targetFile = path.join(targetDir, 'index.html');
+              fs.writeFileSync(targetFile, postHtml, 'utf-8');
+              console.log(`[prerender] Rota /blog/${routeSlug} renderizada em dist/blog/${routeSlug}/index.html`);
+            }
           }
         }
       } catch (err) {
-        console.warn('[sitemap] Não foi possível consultar posts do blog dinamicamente:', err);
+        console.warn('[sitemap/prerender] Não foi possível consultar posts do blog dinamicamente:', err);
       }
     },
   };

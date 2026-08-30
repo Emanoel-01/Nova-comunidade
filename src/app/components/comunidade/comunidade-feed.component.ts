@@ -47,12 +47,62 @@ import { SupabaseService } from '../../../services/supabase.service';
           </div>
         }
 
-        <!-- Área expandida com tags e botão Publicar -->
+        <!-- Prévia das Fotos Selecionadas (antes de publicar) -->
+        @if (fotosPendentes().length > 0) {
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            @for (foto of fotosPendentes(); track foto.previewUrl; let idx = $index) {
+              <div class="relative aspect-square rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs group">
+                <img
+                  [src]="foto.previewUrl"
+                  class="w-full h-full object-cover"
+                  alt="Prévia da foto selecionada"
+                />
+                <button
+                  type="button"
+                  (click)="removerFotoPendente(idx)"
+                  class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/70 hover:bg-rose-600 text-white flex items-center justify-center text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                  title="Remover foto"
+                >
+                  ✕
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Área expandida com tags, upload de fotos e botão Publicar -->
         @if (caixaExpandida()) {
           <div class="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 animate-fadeIn">
             
-            <!-- Seleção de Tipo de Post / Tags -->
+            <!-- Input de Arquivo Oculto -->
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              #inputFotoFeed
+              (change)="onSelecionarFotos($event)"
+            />
+
+            <!-- Botão Anexar Fotos e Seleção de Tags -->
             <div class="flex items-center gap-1.5 flex-wrap">
+              <!-- Botão de Anexar Fotos -->
+              <button
+                type="button"
+                (click)="inputFotoFeed.click()"
+                [disabled]="fotosPendentes().length >= 4"
+                [class]="fotosPendentes().length >= 4
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 cursor-pointer'"
+                class="px-3 py-1 rounded-full text-xs border transition-colors flex items-center gap-1 font-medium"
+                [title]="fotosPendentes().length >= 4 ? 'Máximo de 4 fotos por post atingido' : 'Adicionar fotos ao post (máx. 4)'"
+              >
+                <span>📷</span>
+                <span>{{ fotosPendentes().length >= 4 ? 'Limite de fotos (4/4)' : 'Adicionar fotos' + (fotosPendentes().length > 0 ? ' (' + fotosPendentes().length + '/4)' : '') }}</span>
+              </button>
+
+              <span class="text-slate-300 mx-0.5 hidden sm:inline">|</span>
+
               <span class="text-[11px] font-bold text-slate-400 mr-1 hidden sm:inline">Tipo:</span>
               
               <button
@@ -105,15 +155,15 @@ import { SupabaseService } from '../../../services/supabase.service';
               <button
                 type="button"
                 (click)="publicarPost()"
-                [disabled]="!novoPostTexto().trim() || publicando()"
-                [class]="novoPostTexto().trim() && !publicando()
+                [disabled]="!novoPostTexto().trim() || publicando() || enviandoFotos()"
+                [class]="novoPostTexto().trim() && !publicando() && !enviandoFotos()
                   ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs cursor-pointer'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'"
                 class="px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                @if (publicando()) {
+                @if (publicando() || enviandoFotos()) {
                   <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  <span>Publicando...</span>
+                  <span>{{ enviandoFotos() ? 'Enviando fotos...' : 'Publicando...' }}</span>
                 } @else {
                   <span>Publicar</span>
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,6 +274,24 @@ import { SupabaseService } from '../../../services/supabase.service';
               <div class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                 {{ post.conteudo }}
               </div>
+
+              <!-- Fotos do Post Publicado (Galeria) -->
+              @if (post.fotos_urls && post.fotos_urls.length > 0) {
+                <div
+                  class="grid gap-1.5 rounded-2xl overflow-hidden"
+                  [class]="post.fotos_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'"
+                >
+                  @for (foto of post.fotos_urls; track foto) {
+                    <img
+                      [src]="foto"
+                      class="w-full h-full object-cover max-h-80"
+                      loading="lazy"
+                      referrerpolicy="no-referrer"
+                      alt="Foto anexada à publicação"
+                    />
+                  }
+                </div>
+              }
 
               <!-- Rodapé do Post (Curtir, Comentar) -->
               <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-4">
@@ -358,6 +426,8 @@ export class ComunidadeFeedComponent implements OnInit {
   readonly caixaExpandida = signal<boolean>(false);
   readonly tagSelecionada = signal<string>('Dica técnica');
   readonly novoPostTexto = signal<string>('');
+  readonly fotosPendentes = signal<{ file: File; previewUrl: string }[]>([]);
+  readonly enviandoFotos = signal<boolean>(false);
 
   readonly comentariosAbertos = signal<string[]>([]);
   readonly comentarioInputs = signal<{ [postId: string]: string }>({});
@@ -468,14 +538,90 @@ export class ComunidadeFeedComponent implements OnInit {
     this.novoPostTexto.set(target.value);
   }
 
+  onSelecionarFotos(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const files = Array.from(input.files);
+    const espacoDisponivel = 4 - this.fotosPendentes().length;
+
+    if (espacoDisponivel <= 0) {
+      this.erroFeedback.set('Máximo de 4 fotos por post.');
+      input.value = '';
+      return;
+    }
+
+    if (files.length > espacoDisponivel) {
+      this.erroFeedback.set('Máximo de 4 fotos por post.');
+    }
+
+    const arquivosParaAdicionar = files.slice(0, espacoDisponivel);
+    const novasFotos = arquivosParaAdicionar.map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file)
+    }));
+
+    this.fotosPendentes.update(atuais => [...atuais, ...novasFotos]);
+    input.value = '';
+  }
+
+  removerFotoPendente(index: number): void {
+    const lista = this.fotosPendentes();
+    if (index >= 0 && index < lista.length) {
+      const item = lista[index];
+      if (item?.previewUrl) {
+        try {
+          URL.revokeObjectURL(item.previewUrl);
+        } catch {}
+      }
+      this.fotosPendentes.update(fotos => fotos.filter((_, i) => i !== index));
+    }
+  }
+
+  private limparFotosPendentes(): void {
+    for (const item of this.fotosPendentes()) {
+      if (item?.previewUrl) {
+        try {
+          URL.revokeObjectURL(item.previewUrl);
+        } catch {}
+      }
+    }
+    this.fotosPendentes.set([]);
+  }
+
   async publicarPost(): Promise<void> {
     const texto = this.novoPostTexto().trim();
-    if (!texto || this.publicando()) return;
+    if (!texto || this.publicando() || this.enviandoFotos()) return;
 
     this.publicando.set(true);
     this.erroFeedback.set(null);
 
-    const { error } = await this.supabaseService.criarFeedPost(texto, this.tagSelecionada());
+    let fotosUrls: string[] = [];
+
+    // Se houver fotos selecionadas, faz upload antes
+    if (this.fotosPendentes().length > 0) {
+      this.enviandoFotos.set(true);
+      try {
+        for (const item of this.fotosPendentes()) {
+          const { url, error: uploadErr } = await this.supabaseService.uploadFotoFeed(item.file);
+          if (uploadErr || !url) {
+            this.erroFeedback.set('Erro ao enviar uma das fotos: ' + (uploadErr?.message || 'Falha no envio da imagem.'));
+            this.publicando.set(false);
+            this.enviandoFotos.set(false);
+            return;
+          }
+          fotosUrls.push(url);
+        }
+      } catch (err: any) {
+        this.erroFeedback.set('Erro ao enviar fotos: ' + (err?.message || 'Falha inesperada.'));
+        this.publicando.set(false);
+        this.enviandoFotos.set(false);
+        return;
+      }
+      this.enviandoFotos.set(false);
+    }
+
+    const { error } = await this.supabaseService.criarFeedPost(texto, this.tagSelecionada(), fotosUrls);
 
     if (error) {
       this.erroFeedback.set('Erro ao publicar: ' + (error.message || 'Verifique sua conexão.'));
@@ -484,6 +630,7 @@ export class ComunidadeFeedComponent implements OnInit {
     }
 
     this.novoPostTexto.set('');
+    this.limparFotosPendentes();
     this.caixaExpandida.set(false);
     await this.carregarPosts();
     this.publicando.set(false);
@@ -491,6 +638,7 @@ export class ComunidadeFeedComponent implements OnInit {
 
   cancelarCriacao(): void {
     this.novoPostTexto.set('');
+    this.limparFotosPendentes();
     this.caixaExpandida.set(false);
     this.erroFeedback.set(null);
   }

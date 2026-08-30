@@ -4,7 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { extrairVimeoId, montarUrlPlayerVimeo } from '../../utils/vimeo.util';
 
-export type CategoriaMaterialAdmin = 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books' | 'Vídeos';
+export type CategoriaMaterialAdmin = 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books' | 'Vídeos' | 'Skills Claude';
 
 interface MaterialAdminItem {
   id: string;
@@ -785,7 +785,8 @@ export class AdminMateriaisComponent implements OnInit {
     'Modelos de Laudo',
     'Checklists',
     'E-books',
-    'Vídeos'
+    'Vídeos',
+    'Skills Claude'
   ];
 
   // Modal e Formulário
@@ -916,6 +917,8 @@ export class AdminMateriaisComponent implements OnInit {
         return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'Vídeos':
         return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'Skills Claude':
+        return 'bg-violet-50 text-violet-700 border-violet-200';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }

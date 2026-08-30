@@ -40,6 +40,10 @@ export const routes: Routes = [
     component: BlogComponent,
   },
   {
+    path: 'blog/:slug',
+    component: BlogComponent,
+  },
+  {
     path: 'comunidade',
     component: ComunidadeComponent,
   },

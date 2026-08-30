@@ -10,7 +10,8 @@ export type CategoriaMaterial =
   | 'Modelos de Laudo'
   | 'Checklists'
   | 'E-books'
-  | 'Vídeos';
+  | 'Vídeos'
+  | 'Skills Claude';
 
 @Component({
   selector: 'app-comunidade-materiais',
@@ -111,6 +112,8 @@ export type CategoriaMaterial =
               <span>📚</span>
             } @else if (cat === 'Vídeos') {
               <span>🎬</span>
+            } @else if (cat === 'Skills Claude') {
+              <span>⚡</span>
             }
             <span>{{ cat }}</span>
             <span
@@ -464,7 +467,8 @@ export class ComunidadeMateriaisComponent implements OnInit {
     'Modelos de Laudo',
     'Checklists',
     'E-books',
-    'Vídeos'
+    'Vídeos',
+    'Skills Claude'
   ];
 
   readonly categoriaSelecionada = signal<CategoriaMaterial>('Todos');
@@ -610,6 +614,8 @@ export class ComunidadeMateriaisComponent implements OnInit {
         return 'bg-amber-50 text-amber-700 border-amber-100';
       case 'Vídeos':
         return 'bg-indigo-50 text-indigo-700 border-indigo-100';
+      case 'Skills Claude':
+        return 'bg-violet-50 text-violet-700 border-violet-100';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }

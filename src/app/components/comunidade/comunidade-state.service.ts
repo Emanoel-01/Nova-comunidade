@@ -72,12 +72,12 @@ export interface PerfilUsuario {
 // ---------------------------
 // ÁREA 1: MATERIAIS
 // ---------------------------
-export type CategoriaMaterial = 'Todos' | 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books';
+export type CategoriaMaterial = 'Todos' | 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books' | 'Vídeos' | 'Skills Claude';
 
 export interface MaterialItem {
   id: string;
   titulo: string;
-  categoria: 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books';
+  categoria: 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books' | 'Vídeos' | 'Skills Claude';
   descricao: string;
   formato: string;
   tamanho: string;
