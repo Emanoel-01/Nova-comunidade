@@ -326,15 +326,15 @@ export interface AdminNewsletterAssinante {
                 }
               </div>
 
-              <!-- SEÇÃO B: Vídeo do Post (YouTube ou Vimeo) -->
+              <!-- SEÇÃO B: Vídeo ou Post (YouTube, Vimeo ou Instagram) -->
               <div class="space-y-2 sm:col-span-3 pt-3 border-t border-orange-100">
-                <label class="block text-xs font-bold text-slate-700">Link do Vídeo (YouTube ou Vimeo)</label>
+                <label class="block text-xs font-bold text-slate-700">Link de Vídeo ou Post (YouTube, Vimeo ou Instagram)</label>
                 <input
                   type="text"
                   #videoInput
                   [value]="formPost.video_url"
                   (input)="formPost.video_url = videoInput.value"
-                  placeholder="Ex: https://www.youtube.com/watch?v=... ou https://vimeo.com/..."
+                  placeholder="Ex: https://www.youtube.com/watch?v=..., https://vimeo.com/... ou https://www.instagram.com/p/..."
                   class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
                 />
 
@@ -342,29 +342,41 @@ export interface AdminNewsletterAssinante {
                   @if (obterInfoVideo(formPost.video_url); as videoInfo) {
                     <div class="space-y-1.5 pt-1">
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-700">Prévia do Vídeo</span>
+                        <span class="text-xs font-bold text-slate-700">Prévia do Embed</span>
                         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
-                          [class]="videoInfo.plataforma === 'youtube' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-sky-50 text-sky-700 border border-sky-200'">
+                          [class]="videoInfo.plataforma === 'youtube' ? 'bg-red-50 text-red-700 border border-red-200' : videoInfo.plataforma === 'vimeo' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200'">
                           {{ videoInfo.plataforma }}
                         </span>
                       </div>
-                      <div class="p-2 bg-white rounded-2xl border border-slate-200 max-w-lg">
-                        <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-950 shadow-inner">
-                          <iframe
-                            [src]="sanitizarUrlVideo(videoInfo.embedUrl)"
-                            class="w-full h-full border-0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen
-                          ></iframe>
+
+                      @if (videoInfo.plataforma === 'instagram') {
+                        <div class="p-3.5 bg-fuchsia-50 rounded-2xl border border-fuchsia-200 text-fuchsia-900 text-xs flex items-center justify-between gap-2 max-w-lg">
+                          <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-fuchsia-600 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                            <span>Post/Reel do Instagram reconhecido (embed oficial com fotos/vídeo na leitura pública).</span>
+                          </div>
                         </div>
-                      </div>
+                      } @else {
+                        <div class="p-2 bg-white rounded-2xl border border-slate-200 max-w-lg">
+                          <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-950 shadow-inner">
+                            <iframe
+                              [src]="sanitizarUrlVideo(videoInfo.embedUrl)"
+                              class="w-full h-full border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowfullscreen
+                            ></iframe>
+                          </div>
+                        </div>
+                      }
                     </div>
                   } @else {
                     <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                       <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
-                      <span>Link não reconhecido — use um link do YouTube ou Vimeo.</span>
+                      <span>Link não reconhecido — use um link do YouTube, Vimeo ou Instagram.</span>
                     </div>
                   }
                 }
