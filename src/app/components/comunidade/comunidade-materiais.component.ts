@@ -70,7 +70,7 @@ export type CategoriaMaterial =
           <div class="flex items-center gap-3 flex-wrap">
             <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
               <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-                {{ materiais().length }}
+                {{ totalMateriaisVisiveis() }}
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Recursos no Acervo</div>
@@ -168,8 +168,13 @@ export type CategoriaMaterial =
                   </span>
 
                   <div class="flex items-center gap-2">
+                    @if (item.pago) {
+                      <span class="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200/60 text-[11px] font-bold">
+                        {{ temAcessoAoItem(item) ? 'Liberado' : (item.exibir_valor !== false ? formatarPreco(item.valor) : 'Avulso') }}
+                      </span>
+                    }
                     <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold uppercase">
-                      {{ item.formato || 'PDF' }}
+                      {{ item.tipo_arquivo_real || item.formato || 'PDF' }}
                     </span>
                     <span class="text-[11px] text-slate-400 font-medium">
                       {{ item.tamanho || 'Arquivo' }}
@@ -189,7 +194,7 @@ export type CategoriaMaterial =
 
                 <!-- Player de Vídeo Vimeo Embutido quando categoria === 'Vídeos' -->
                 @if (item.categoria === 'Vídeos') {
-                  @if (temAcesso()) {
+                  @if (temAcessoAoItem(item)) {
                     @let videoUrl = getVimeoUrl(item.url_arquivo);
                     @if (videoUrl) {
                       <div class="space-y-1.5 pt-2">
@@ -213,9 +218,14 @@ export type CategoriaMaterial =
                       </div>
                     }
                   } @else {
-                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-500 text-xs flex items-center gap-2">
-                      <span>🔒</span>
-                      <span>Vídeo bloqueado — exclusivo para membros autorizados.</span>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-500 text-xs flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2">
+                        <span>🔒</span>
+                        <span>Vídeo bloqueado — exclusivo para membros autorizados.</span>
+                      </div>
+                      @if (item.pago && item.exibir_valor !== false) {
+                        <span class="font-bold text-indigo-600">{{ formatarPreco(item.valor) }}</span>
+                      }
                     </div>
                   }
                 }
@@ -227,9 +237,15 @@ export type CategoriaMaterial =
                   <div class="flex items-start gap-2.5 text-xs text-amber-900">
                     <span class="text-base shrink-0">🔒</span>
                     <div class="space-y-1">
-                      <strong class="font-bold block">Acesso Restrito a Membros</strong>
+                      <strong class="font-bold block">
+                        {{ item.pago ? 'Material com Aquisição Individual' : 'Acesso Restrito a Membros' }}
+                      </strong>
                       <span class="text-amber-800 leading-normal block">
-                        Este material é exclusivo para membros com acesso liberado. Fale com o Admin da Comunidade para solicitar liberação deste módulo.
+                        @if (item.pago && item.exibir_valor !== false) {
+                          Este material técnico está disponível para aquisição avulsa por <strong>{{ formatarPreco(item.valor) }}</strong>. Solicite liberação ao administrador da plataforma.
+                        } @else {
+                          Este material é exclusivo para membros com acesso liberado. Fale com o Admin da Comunidade para solicitar liberação deste módulo ou item.
+                        }
                       </span>
                     </div>
                   </div>
@@ -254,29 +270,40 @@ export type CategoriaMaterial =
                   </div>
 
                   @if (item.categoria === 'Vídeos') {
-                    @if (temAcesso()) {
+                    @if (temAcessoAoItem(item)) {
                       <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
                         <span>▶ Assistir</span>
                       </span>
                     } @else {
-                      <button
-                        type="button"
-                        (click)="toggleAcessoBloqueado(item.id)"
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer border border-slate-200"
-                      >
-                        <span>🔒</span>
-                        <span>Acesso Restrito</span>
-                      </button>
+                      @if (item.pago && item.exibir_valor !== false) {
+                        <button
+                          type="button"
+                          (click)="toggleAcessoBloqueado(item.id)"
+                          class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer border border-indigo-200"
+                        >
+                          <span>💳</span>
+                          <span>Comprar por {{ formatarPreco(item.valor) }}</span>
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          (click)="toggleAcessoBloqueado(item.id)"
+                          class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer border border-slate-200"
+                        >
+                          <span>🔒</span>
+                          <span>Acesso Restrito</span>
+                        </button>
+                      }
                     }
                   } @else {
-                    @if (temAcesso()) {
+                    @if (temAcessoAoItem(item)) {
                       <div class="flex items-center gap-2">
-                        @if (isPdf(item)) {
+                        @if (podeVisualizar(item)) {
                           <button
                             type="button"
                             (click)="abrirVisualizador(item)"
                             class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 cursor-pointer shadow-2xs"
-                            title="Visualizar documento embutido"
+                            title="Visualizar arquivo embutido"
                           >
                             <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -304,14 +331,25 @@ export type CategoriaMaterial =
                         </button>
                       </div>
                     } @else {
-                      <button
-                        type="button"
-                        (click)="toggleAcessoBloqueado(item.id)"
-                        class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer border border-slate-200"
-                      >
-                        <span>🔒</span>
-                        <span>Acesso Restrito</span>
-                      </button>
+                      @if (item.pago && item.exibir_valor !== false) {
+                        <button
+                          type="button"
+                          (click)="toggleAcessoBloqueado(item.id)"
+                          class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 cursor-pointer border border-indigo-200"
+                        >
+                          <span>💳</span>
+                          <span>Comprar por {{ formatarPreco(item.valor) }}</span>
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          (click)="toggleAcessoBloqueado(item.id)"
+                          class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer border border-slate-200"
+                        >
+                          <span>🔒</span>
+                          <span>Acesso Restrito</span>
+                        </button>
+                      }
                     }
                   }
                 </div>
@@ -322,7 +360,7 @@ export type CategoriaMaterial =
         </div>
       }
 
-      <!-- MODAL VISUALIZADOR DE PDF EMBUTIDO -->
+      <!-- MODAL VISUALIZADOR EMBUTIDO (PDF / IMAGEM) -->
       @if (materialVisualizando() && urlVisualizacaoSegura()) {
         <div class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn">
           <div class="bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-scaleUp">
@@ -330,9 +368,15 @@ export type CategoriaMaterial =
             <!-- Barra Superior do Visualizador -->
             <div class="px-5 py-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-4 shrink-0 text-white">
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center font-black text-xs shrink-0">
-                  PDF
-                </div>
+                @if (isImagem(materialVisualizando())) {
+                  <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-black text-xs shrink-0 uppercase">
+                    IMG
+                  </div>
+                } @else {
+                  <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center font-black text-xs shrink-0 uppercase">
+                    PDF
+                  </div>
+                }
                 <div class="truncate">
                   <h4 class="text-sm font-bold text-white truncate">
                     {{ materialVisualizando()?.titulo }}
@@ -370,14 +414,25 @@ export type CategoriaMaterial =
               </div>
             </div>
 
-            <!-- Corpo do Visualizador com iFrame -->
-            <div class="flex-1 bg-slate-950 relative w-full h-full">
-              <iframe
-                [src]="urlVisualizacaoSegura()"
-                class="w-full h-full border-0 bg-slate-900"
-                title="Visualizador de PDF"
-              ></iframe>
-            </div>
+            <!-- Corpo do Visualizador (Imagem ou iFrame) -->
+            @if (isImagem(materialVisualizando())) {
+              <div class="flex-1 bg-slate-950 flex items-center justify-center p-4 overflow-auto">
+                <img
+                  [src]="urlVisualizacaoSegura()"
+                  [alt]="materialVisualizando()?.titulo || 'Imagem do material'"
+                  class="max-h-full max-w-full object-contain rounded-xl shadow-2xl border border-slate-800"
+                  referrerpolicy="no-referrer"
+                />
+              </div>
+            } @else {
+              <div class="flex-1 bg-slate-950 relative w-full h-full">
+                <iframe
+                  [src]="urlVisualizacaoSegura()"
+                  class="w-full h-full border-0 bg-slate-900"
+                  title="Visualizador de PDF"
+                ></iframe>
+              </div>
+            }
 
           </div>
         </div>
@@ -392,6 +447,7 @@ export class ComunidadeMateriaisComponent implements OnInit {
 
   readonly materiais = signal<any[]>([]);
   readonly temAcesso = signal<boolean>(false);
+  readonly itensLiberadosIndividualmente = signal<string[]>([]);
   readonly carregando = signal<boolean>(true);
   readonly processandoDownload = signal<string | null>(null);
 
@@ -413,9 +469,32 @@ export class ComunidadeMateriaisComponent implements OnInit {
 
   readonly categoriaSelecionada = signal<CategoriaMaterial>('Todos');
 
+  temAcessoAoItem(material: any): boolean {
+    if (!material) return false;
+    return this.temAcesso() || this.itensLiberadosIndividualmente().includes(material.id);
+  }
+
+  readonly totalMateriaisVisiveis = computed(() => {
+    return this.materiais().filter(item => {
+      if (item.pago && item.exibir_valor === false && !this.temAcessoAoItem(item)) {
+        return false;
+      }
+      return true;
+    }).length;
+  });
+
   readonly materiaisFiltrados = computed(() => {
     const cat = this.categoriaSelecionada();
-    const lista = this.materiais();
+    let lista = this.materiais();
+
+    // Filtra itens pagos com exibir_valor = false caso o usuário não tenha acesso
+    lista = lista.filter(item => {
+      if (item.pago && item.exibir_valor === false && !this.temAcessoAoItem(item)) {
+        return false;
+      }
+      return true;
+    });
+
     if (cat === 'Todos') return lista;
     return lista.filter(m => m.categoria === cat);
   });
@@ -437,7 +516,11 @@ export class ComunidadeMateriaisComponent implements OnInit {
       const acesso = await this.supabaseService.temPermissaoModulo('comunidade', 'materiais');
       this.temAcesso.set(acesso);
 
-      // 2. Carrega acervo de materiais ativos
+      // 2. Carrega acessos individuais a itens liberados para o usuário
+      const acessosIndividuais = await this.supabaseService.listarAcessosItemDoUsuario('material');
+      this.itensLiberadosIndividualmente.set(acessosIndividuais);
+
+      // 3. Carrega acervo de materiais ativos
       const lista = await this.supabaseService.listarMateriais();
       this.materiais.set(lista);
     } catch (e) {
@@ -448,20 +531,56 @@ export class ComunidadeMateriaisComponent implements OnInit {
   }
 
   contarPorCategoria(cat: CategoriaMaterial): number {
-    if (cat === 'Todos') return this.materiais().length;
-    return this.materiais().filter(m => m.categoria === cat).length;
+    const listaVisivel = this.materiais().filter(item => {
+      if (item.pago && item.exibir_valor === false && !this.temAcessoAoItem(item)) {
+        return false;
+      }
+      return true;
+    });
+    if (cat === 'Todos') return listaVisivel.length;
+    return listaVisivel.filter(m => m.categoria === cat).length;
+  }
+
+  formatarPreco(valor: any): string {
+    if (valor === null || valor === undefined || valor === '') return 'R$ 0,00';
+    const num = typeof valor === 'number' ? valor : parseFloat(String(valor).replace(',', '.'));
+    if (isNaN(num)) return 'R$ 0,00';
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  isImagem(material: any): boolean {
+    if (!material) return false;
+    const tipo = (material.tipo_arquivo_real || '').toLowerCase().trim();
+    const formatosImagem = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
+    if (tipo && formatosImagem.includes(tipo)) return true;
+    const formato = (material.formato || '').toLowerCase().trim();
+    if (formatosImagem.includes(formato) || formato.includes('imagem') || formato.includes('image') || formato === 'png' || formato === 'jpg' || formato === 'jpeg') return true;
+    if (material.url_arquivo) {
+      const urlSemParams = material.url_arquivo.split('?')[0].toLowerCase();
+      return formatosImagem.some(ext => urlSemParams.endsWith('.' + ext));
+    }
+    return false;
   }
 
   isPdf(material: any): boolean {
-    if (!material?.url_arquivo) return false;
+    if (!material) return false;
+    const tipo = (material.tipo_arquivo_real || '').toLowerCase().trim();
+    if (tipo === 'pdf') return true;
     const formato = (material.formato || '').toUpperCase();
     if (formato.includes('PDF')) return true;
-    const urlSemParams = material.url_arquivo.split('?')[0].toLowerCase();
-    return urlSemParams.endsWith('.pdf');
+    if (material.url_arquivo) {
+      const urlSemParams = material.url_arquivo.split('?')[0].toLowerCase();
+      return urlSemParams.endsWith('.pdf');
+    }
+    return false;
+  }
+
+  podeVisualizar(material: any): boolean {
+    return this.isPdf(material) || this.isImagem(material);
   }
 
   abrirVisualizador(material: any): void {
-    if (!this.temAcesso() || !material?.url_arquivo) return;
+    if (!this.temAcessoAoItem(material) || !material?.url_arquivo) return;
     this.materialVisualizando.set(material);
     this.urlVisualizacaoSegura.set(
       this.sanitizer.bypassSecurityTrustResourceUrl(material.url_arquivo)
@@ -501,15 +620,22 @@ export class ComunidadeMateriaisComponent implements OnInit {
       this.materialBloqueadoAberto.set(null);
     } else {
       this.materialBloqueadoAberto.set(materialId);
+      const item = this.materiais().find(m => m.id === materialId);
       this.tipoFeedback.set('alerta');
-      this.mensagemFeedback.set(
-        'Este material é exclusivo para membros com acesso liberado. Fale com o Admin da Comunidade para solicitar liberação deste módulo.'
-      );
+      if (item?.pago && item?.exibir_valor !== false) {
+        this.mensagemFeedback.set(
+          `Material disponível para aquisição avulsa por ${this.formatarPreco(item.valor)}. Solicite liberação ao administrador.`
+        );
+      } else {
+        this.mensagemFeedback.set(
+          'Este material é exclusivo para membros com acesso liberado. Fale com o Admin da Comunidade para solicitar liberação.'
+        );
+      }
     }
   }
 
   async baixarMaterial(material: any): Promise<void> {
-    if (!this.temAcesso() || this.processandoDownload()) return;
+    if (!this.temAcessoAoItem(material) || this.processandoDownload()) return;
 
     this.processandoDownload.set(material.id);
     this.mensagemFeedback.set(null);

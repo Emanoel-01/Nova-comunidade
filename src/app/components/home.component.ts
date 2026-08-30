@@ -6,6 +6,7 @@ import { TrajetoriaPortfolioComponent } from './trajetoria-portfolio.component';
 import { HallFamaComponent } from './hall-fama.component';
 import { SupabaseService } from '../../services/supabase.service';
 import { SeoService } from '../services/seo.service';
+import { REGRAS_PONTUACAO } from '../utils/gamificacao.util';
 
 export interface Depoimento {
   name: string;
@@ -543,7 +544,7 @@ interface Institution {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           <!-- Coluna Esquerda: Componente Hall da Fama -->
           <div class="lg:col-span-8">
-            <app-hall-fama></app-hall-fama>
+            <app-hall-fama [modoCompacto]="true"></app-hall-fama>
           </div>
 
           <!-- Coluna Direita: Como Ganhar Pontos? -->
@@ -556,39 +557,24 @@ interface Institution {
                 Participe ativamente e suba de nível no ecossistema.
               </p>
 
-              <ul class="space-y-3 text-xs sm:text-sm text-slate-700">
-                <li class="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                  <span class="flex items-center gap-2 font-medium"><span>📖</span> Ler um artigo do blog</span>
-                  <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs">+5 pts</span>
-                </li>
-                <li class="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                  <span class="flex items-center gap-2 font-medium"><span>👍</span> Curtir um artigo</span>
-                  <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs">+3 pts</span>
-                </li>
-                <li class="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                  <span class="flex items-center gap-2 font-medium"><span>💬</span> Comentar em artigo</span>
-                  <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs">+10 pts</span>
-                </li>
-                <li class="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                  <span class="flex items-center gap-2 font-medium"><span>📥</span> Baixar um material</span>
-                  <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs">+5 pts</span>
-                </li>
-                <li class="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                  <span class="flex items-center gap-2 font-medium"><span>🗣️</span> Criar post no fórum</span>
-                  <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs">+20 pts</span>
-                </li>
-                <li class="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                  <span class="flex items-center gap-2 font-medium"><span>✍️</span> Responder no fórum</span>
-                  <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs">+10 pts</span>
-                </li>
-                <li class="flex items-center justify-between">
-                  <span class="flex items-center gap-2 font-medium"><span>📝</span> Criar post na comunidade</span>
-                  <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs">+15 pts</span>
-                </li>
+              <ul class="space-y-2.5 text-xs text-slate-700 max-h-[380px] overflow-y-auto pr-1">
+                @for (regra of regrasPontuacao; track regra.id) {
+                  <li class="flex items-center justify-between py-1.5 border-b border-slate-200/60 last:border-0">
+                    <span class="flex items-center gap-2 font-medium truncate pr-2" [title]="regra.descricao">
+                      <span>{{ regra.icone }}</span>
+                      <span class="truncate">{{ regra.acao }}</span>
+                    </span>
+                    @if (regra.emBreve) {
+                      <span class="font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-md text-[10px] shrink-0">Em breve</span>
+                    } @else {
+                      <span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs font-mono shrink-0">{{ regra.pontosTexto }}</span>
+                    }
+                  </li>
+                }
               </ul>
             </div>
 
-            <div class="mt-6 pt-5 border-t border-slate-200">
+            <div class="mt-5 pt-4 border-t border-slate-200">
               <a
                 routerLink="/comunidade"
                 class="w-full inline-flex items-center justify-center gap-2 py-3 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs sm:text-sm transition-colors shadow-sm cursor-pointer min-h-[44px]"
@@ -675,6 +661,7 @@ export class HomeComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly seoService = inject(SeoService);
 
+  readonly regrasPontuacao = REGRAS_PONTUACAO;
   readonly ecossistemaSection = viewChild<ElementRef<HTMLElement>>('ecossistemaSection');
   readonly showTrajetoriaModal = signal<boolean>(false);
 

@@ -3,12 +3,26 @@ import { createClient, SupabaseClient, Session } from '@supabase/supabase-js';
 import { environment } from '../environments/environment';
 import { gerarCodigoVerificacaoCertificado } from '../app/services/certificado-pdf.service';
 
+export interface DocumentoCredito {
+  id: string;
+  projeto_credito_id: string;
+  profissional_id: string;
+  documento_id: string;
+  nome_arquivo: string;
+  caminho_storage: string;
+  tamanho_bytes?: number;
+  tipo_mime?: string;
+  enviado_em: string;
+}
+
 export interface DadosDocumentaisTecnicos {
   full_name: string;
   professional_title?: string;
   categoria_profissional?: string;
   crea_cau?: string;
   company_name?: string;
+  razao_social?: string;
+  cpf_responsavel?: string;
   company_position?: string;
   company_cnpj?: string;
   company_address?: string;
@@ -839,6 +853,8 @@ export class SupabaseService {
       if (dados.categoria_profissional !== undefined) updatePayload.categoria_profissional = dados.categoria_profissional.trim();
       if (dados.crea_cau !== undefined) updatePayload.crea_cau = dados.crea_cau.trim();
       if (dados.company_name !== undefined) updatePayload.company_name = dados.company_name.trim();
+      if (dados.razao_social !== undefined) updatePayload.razao_social = dados.razao_social.trim();
+      if (dados.cpf_responsavel !== undefined) updatePayload.cpf_responsavel = dados.cpf_responsavel.trim();
       if (dados.company_position !== undefined) updatePayload.company_position = dados.company_position.trim();
       if (dados.company_cnpj !== undefined) updatePayload.company_cnpj = dados.company_cnpj.trim();
       if (dados.company_address !== undefined) updatePayload.company_address = dados.company_address.trim();
@@ -1020,6 +1036,8 @@ export class SupabaseService {
       if (dados.categoria_profissional !== undefined) updatePayload.categoria_profissional = dados.categoria_profissional.trim();
       if (dados.crea_cau !== undefined) updatePayload.crea_cau = dados.crea_cau.trim();
       if (dados.company_name !== undefined) updatePayload.company_name = dados.company_name.trim();
+      if (dados.razao_social !== undefined) updatePayload.razao_social = dados.razao_social.trim();
+      if (dados.cpf_responsavel !== undefined) updatePayload.cpf_responsavel = dados.cpf_responsavel.trim();
       if (dados.company_position !== undefined) updatePayload.company_position = dados.company_position.trim();
       if (dados.company_cnpj !== undefined) updatePayload.company_cnpj = dados.company_cnpj.trim();
       if (dados.company_address !== undefined) updatePayload.company_address = dados.company_address.trim();
@@ -1635,8 +1653,31 @@ export class SupabaseService {
   }
 
   // ----------------------------------------------------
-  // ACERVO DE MATERIAIS REAL
+  // ACERVO DE MATERIAIS REAL & ACESSOS POR ITEM
   // ----------------------------------------------------
+
+  async listarAcessosItemDoUsuario(tipoItem: 'material' | 'agente'): Promise<string[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+      const meuId = session.user.id;
+
+      const { data, error } = await this.client
+        .from('acessos_item')
+        .select('item_id')
+        .eq('profissional_id', meuId)
+        .eq('tipo_item', tipoItem);
+
+      if (error) {
+        console.warn(`Erro ao listar acessos do item (${tipoItem}):`, error.message);
+        return [];
+      }
+      return (data || []).map((r: any) => r.item_id).filter(Boolean);
+    } catch (e: any) {
+      console.warn(`Exceção ao listar acessos do item (${tipoItem}):`, e?.message || e);
+      return [];
+    }
+  }
 
   async listarMateriais(): Promise<any[]> {
     try {
@@ -1644,6 +1685,7 @@ export class SupabaseService {
         .from('materiais')
         .select('*')
         .eq('ativo', true)
+        .or('exclusivo_curso.is.null,exclusivo_curso.eq.false')
         .order('criado_em', { ascending: false });
       if (error) {
         console.warn('Erro ao listar materiais:', error.message);
@@ -1681,6 +1723,12 @@ export class SupabaseService {
     tamanho?: string;
     url_arquivo?: string;
     ativo?: boolean;
+    pago?: boolean;
+    exibir_valor?: boolean;
+    valor?: number | null;
+    sku?: string | null;
+    tipo_arquivo_real?: string | null;
+    exclusivo_curso?: boolean;
   }): Promise<{ error: Error | null; data?: any }> {
     try {
       const payload: any = {
@@ -1692,6 +1740,13 @@ export class SupabaseService {
         url_arquivo: material.url_arquivo || '',
         ativo: material.ativo !== undefined ? material.ativo : true,
       };
+      if (material.pago !== undefined) payload.pago = material.pago;
+      if (material.exibir_valor !== undefined) payload.exibir_valor = material.exibir_valor;
+      if (material.valor !== undefined) payload.valor = material.valor;
+      if (material.sku !== undefined) payload.sku = material.sku;
+      if (material.tipo_arquivo_real !== undefined) payload.tipo_arquivo_real = material.tipo_arquivo_real;
+      if (material.exclusivo_curso !== undefined) payload.exclusivo_curso = material.exclusivo_curso;
+
       const { data, error } = await this.client.from('materiais').insert(payload).select().single();
       return { error, data };
     } catch (e: any) {
@@ -1709,6 +1764,11 @@ export class SupabaseService {
       tamanho: string;
       url_arquivo: string;
       ativo: boolean;
+      pago: boolean;
+      exibir_valor: boolean;
+      valor: number | null;
+      sku: string | null;
+      tipo_arquivo_real: string | null;
     }>
   ): Promise<{ error: Error | null }> {
     try {
@@ -1767,7 +1827,7 @@ export class SupabaseService {
   async uploadArquivoMaterial(
     file: File,
     categoria: string = 'Geral'
-  ): Promise<{ error: Error | null; signedUrl?: string | null; path?: string; formato?: string; tamanho?: string }> {
+  ): Promise<{ error: Error | null; signedUrl?: string | null; path?: string; formato?: string; tamanho?: string; tipoArquivoReal?: string }> {
     try {
       const session = await this.getSession();
       if (!session?.user) return { error: new Error('Não autenticado.') };
@@ -1814,7 +1874,8 @@ export class SupabaseService {
       }
 
       // Detecta formato a partir da extensão
-      const ext = file.name.split('.').pop()?.toUpperCase() || 'ARQUIVO';
+      const rawExt = file.name.split('.').pop() || '';
+      const ext = rawExt.toUpperCase() || 'ARQUIVO';
 
       // Formata tamanho em KB ou MB
       let tamanhoStr = '';
@@ -1829,7 +1890,8 @@ export class SupabaseService {
         signedUrl: signedData?.signedUrl || null,
         path,
         formato: ext,
-        tamanho: tamanhoStr
+        tamanho: tamanhoStr,
+        tipoArquivoReal: rawExt.toLowerCase()
       };
     } catch (err: any) {
       return { error: err };
@@ -2707,6 +2769,11 @@ export class SupabaseService {
     carga_horaria_certificado?: string | null;
     instrutor_nome?: string | null;
     instrutor_qualificacao?: string | null;
+    tem_avaliacao_por_modulo?: boolean;
+    nota_minima_avaliacao_modulo?: number;
+    nota_minima_avaliacao_final?: number;
+    tem_prazo?: boolean;
+    prazo_dias?: number;
   }): Promise<{ error: Error | null; data?: any }> {
     try {
       const payload: any = {
@@ -2720,6 +2787,11 @@ export class SupabaseService {
       if (curso.carga_horaria_certificado !== undefined) payload.carga_horaria_certificado = curso.carga_horaria_certificado;
       if (curso.instrutor_nome !== undefined) payload.instrutor_nome = curso.instrutor_nome;
       if (curso.instrutor_qualificacao !== undefined) payload.instrutor_qualificacao = curso.instrutor_qualificacao;
+      if (curso.tem_avaliacao_por_modulo !== undefined) payload.tem_avaliacao_por_modulo = curso.tem_avaliacao_por_modulo;
+      if (curso.nota_minima_avaliacao_modulo !== undefined) payload.nota_minima_avaliacao_modulo = curso.nota_minima_avaliacao_modulo;
+      if (curso.nota_minima_avaliacao_final !== undefined) payload.nota_minima_avaliacao_final = curso.nota_minima_avaliacao_final;
+      if (curso.tem_prazo !== undefined) payload.tem_prazo = curso.tem_prazo;
+      if (curso.prazo_dias !== undefined) payload.prazo_dias = curso.prazo_dias;
 
       const { data, error } = await this.client.from('cursos').insert(payload).select().single();
       return { error, data };
@@ -2755,6 +2827,8 @@ export class SupabaseService {
     duracao?: string;
     vimeo_id?: string;
     ordem: number;
+    exige_avaliacao?: boolean;
+    trava_proximo_modulo?: boolean;
   }): Promise<{ error: Error | null; data?: any }> {
     try {
       const payload: any = {
@@ -2765,6 +2839,8 @@ export class SupabaseService {
       if (modulo.descricao !== undefined) payload.descricao = modulo.descricao;
       if (modulo.duracao !== undefined) payload.duracao = modulo.duracao;
       if (modulo.vimeo_id !== undefined) payload.vimeo_id = modulo.vimeo_id;
+      if (modulo.exige_avaliacao !== undefined) payload.exige_avaliacao = modulo.exige_avaliacao;
+      if (modulo.trava_proximo_modulo !== undefined) payload.trava_proximo_modulo = modulo.trava_proximo_modulo;
 
       const { data, error } = await this.client.from('cursos_modulos').insert(payload).select().single();
       return { error, data };
@@ -2775,7 +2851,15 @@ export class SupabaseService {
 
   async atualizarModuloCurso(
     id: string,
-    dados: Partial<{ titulo: string; descricao: string; duracao: string; vimeo_id: string; ordem: number }>
+    dados: Partial<{
+      titulo: string;
+      descricao: string;
+      duracao: string;
+      vimeo_id: string;
+      ordem: number;
+      exige_avaliacao: boolean;
+      trava_proximo_modulo: boolean;
+    }>
   ): Promise<{ error: Error | null }> {
     try {
       const { error } = await this.client.from('cursos_modulos').update(dados).eq('id', id);
@@ -2787,6 +2871,9 @@ export class SupabaseService {
 
   async excluirModuloCurso(id: string): Promise<{ error: Error | null }> {
     try {
+      await this.client.from('cursos_modulos_materiais').delete().eq('modulo_id', id);
+      await this.client.from('cursos_modulos_avaliacoes').delete().eq('modulo_id', id);
+      await this.client.from('cursos_progresso_modulo').delete().eq('modulo_id', id);
       const { error } = await this.client.from('cursos_modulos').delete().eq('id', id);
       return { error };
     } catch (e: any) {
@@ -2973,11 +3060,54 @@ export class SupabaseService {
           avaliacaoAprovado: matricula?.avaliacao_aprovado || false,
           certificadoEmitidoEm: matricula?.certificado_emitido_em || null,
           codigo_verificacao: matricula?.codigo_verificacao || null,
+          prazo_final_calculado: matricula?.prazo_final_calculado || null,
+          tem_prazo: c.tem_prazo || false,
+          prazo_dias: c.prazo_dias || null,
+          tem_avaliacao_por_modulo: c.tem_avaliacao_por_modulo || false,
+          nota_minima_avaliacao_modulo: c.nota_minima_avaliacao_modulo != null ? Number(c.nota_minima_avaliacao_modulo) : 70,
+          nota_minima_avaliacao_final: c.nota_minima_avaliacao_final != null ? Number(c.nota_minima_avaliacao_final) : 70,
         };
       });
     } catch (e: any) {
       console.warn('Exceção ao listar cursos para aluno:', e?.message || e);
       return [];
+    }
+  }
+
+  async buscarProgressoModulos(matriculaId: string): Promise<any[]> {
+    try {
+      if (!matriculaId) return [];
+      const { data, error } = await this.client
+        .from('cursos_progresso_modulo')
+        .select('*')
+        .eq('matricula_id', matriculaId);
+
+      if (error) {
+        console.warn('Aviso ao buscar progresso dos módulos:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao buscar progresso dos módulos:', e?.message || e);
+      return [];
+    }
+  }
+
+  async moduloEstaLiberado(matriculaId: string, moduloId: string): Promise<boolean> {
+    try {
+      if (!matriculaId || !moduloId) return true;
+      const { data, error } = await this.client.rpc('modulo_curso_liberado', {
+        p_matricula_id: matriculaId,
+        p_modulo_id: moduloId
+      });
+
+      if (!error && typeof data === 'boolean') {
+        return data;
+      }
+      return true;
+    } catch (e: any) {
+      console.warn('Exceção ao consultar liberação do módulo via RPC:', e?.message || e);
+      return true;
     }
   }
 
@@ -2995,23 +3125,268 @@ export class SupabaseService {
         .maybeSingle();
 
       const modulosAtuais: string[] = existente?.modulos_concluidos || [];
-      if (modulosAtuais.includes(moduloId)) {
-        return { error: null };
-      }
-      const novosModulos = [...modulosAtuais, moduloId];
+      const novosModulos = modulosAtuais.includes(moduloId) ? modulosAtuais : [...modulosAtuais, moduloId];
 
-      const { error } = await this.client
+      const { data: upsertData, error } = await this.client
         .from('cursos_matriculas')
         .upsert({
           curso_id: cursoId,
           profissional_id: meuId,
           modulos_concluidos: novosModulos,
           atualizado_em: new Date().toISOString(),
-        }, { onConflict: 'curso_id,profissional_id' });
+        }, { onConflict: 'curso_id,profissional_id' })
+        .select('id')
+        .single();
+
+      if (error) {
+        return { error };
+      }
+
+      const matId = existente?.id || upsertData?.id;
+      if (matId) {
+        // Registra também na nova tabela cursos_progresso_modulo
+        await this.client
+          .from('cursos_progresso_modulo')
+          .upsert({
+            matricula_id: matId,
+            modulo_id: moduloId,
+            concluido: true,
+            concluido_em: new Date().toISOString(),
+          }, { onConflict: 'matricula_id,modulo_id' });
+      }
+
+      return { error: null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarMateriaisDoModulo(moduloId: string): Promise<any[]> {
+    try {
+      if (!moduloId) return [];
+
+      const res = await this.client
+        .from('cursos_modulos_materiais')
+        .select('*, material:materiais(*)')
+        .eq('modulo_id', moduloId);
+
+      if (!res.error && res.data && res.data.length > 0 && res.data[0].material) {
+        return res.data;
+      }
+
+      // Fallback em caso de foreign key não resolvida no Supabase schema cache
+      const { data: vinculos, error: errVinculos } = await this.client
+        .from('cursos_modulos_materiais')
+        .select('*')
+        .eq('modulo_id', moduloId);
+
+      if (errVinculos || !vinculos || vinculos.length === 0) return [];
+
+      const matIds = vinculos.map((v: any) => v.material_id).filter(Boolean);
+      if (matIds.length === 0) return [];
+
+      const { data: mats } = await this.client
+        .from('materiais')
+        .select('*')
+        .in('id', matIds);
+
+      const matsMap = new Map<string, any>();
+      (mats || []).forEach((m: any) => matsMap.set(m.id, m));
+
+      return vinculos.map((v: any) => ({
+        ...v,
+        material: matsMap.get(v.material_id) || null
+      }));
+    } catch (e: any) {
+      console.warn('Exceção ao listar materiais do módulo:', e?.message || e);
+      return [];
+    }
+  }
+
+  async vincularMaterialAoModulo(
+    moduloId: string,
+    materialId: string,
+    obrigatorio: boolean = false
+  ): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const { data, error } = await this.client
+        .from('cursos_modulos_materiais')
+        .upsert({
+          modulo_id: moduloId,
+          material_id: materialId,
+          obrigatorio: !!obrigatorio,
+        }, { onConflict: 'modulo_id,material_id' })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async desvincularMaterialDoModulo(moduloId: string, materialId: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('cursos_modulos_materiais')
+        .delete()
+        .eq('modulo_id', moduloId)
+        .eq('material_id', materialId);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async buscarAvaliacaoModulo(moduloId: string): Promise<any[]> {
+    try {
+      if (!moduloId) return [];
+      const { data, error } = await this.client
+        .from('cursos_modulos_avaliacoes')
+        .select('*')
+        .eq('modulo_id', moduloId)
+        .order('ordem', { ascending: true });
+
+      if (error) {
+        console.warn('Aviso ao buscar avaliação do módulo:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao buscar avaliação do módulo:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarAvaliacoesDoModulo(moduloId: string): Promise<any[]> {
+    return this.buscarAvaliacaoModulo(moduloId);
+  }
+
+  async salvarQuestoesAvaliacaoModulo(moduloId: string, questoes: any[]): Promise<{ error: Error | null }> {
+    try {
+      if (!moduloId) return { error: new Error('Módulo não informado.') };
+
+      // Deleta as anteriores
+      await this.client
+        .from('cursos_modulos_avaliacoes')
+        .delete()
+        .eq('modulo_id', moduloId);
+
+      if (questoes.length === 0) {
+        return { error: null };
+      }
+
+      const payload = questoes.map((q, idx) => ({
+        modulo_id: moduloId,
+        pergunta: q.pergunta?.trim() || '',
+        alternativas: q.alternativas && typeof q.alternativas === 'object' ? q.alternativas : [],
+        resposta_correta: q.resposta_correta,
+        ordem: q.ordem !== undefined ? q.ordem : (idx + 1)
+      }));
+
+      const { error } = await this.client
+        .from('cursos_modulos_avaliacoes')
+        .insert(payload);
 
       return { error };
     } catch (e: any) {
       return { error: e };
+    }
+  }
+
+  async submeterAvaliacaoModulo(
+    matriculaId: string,
+    moduloId: string,
+    respostas: Record<string, any>,
+    cursoId?: string
+  ): Promise<{
+    error: Error | null;
+    nota: number;
+    aprovado: boolean;
+    totalQuestoes: number;
+    acertos: number;
+    notaMinimaExigida: number;
+  }> {
+    try {
+      const questoes = await this.buscarAvaliacaoModulo(moduloId);
+      if (questoes.length === 0) {
+        if (cursoId) {
+          await this.marcarModuloConcluido(cursoId, moduloId);
+        }
+        return {
+          error: null,
+          nota: 100,
+          aprovado: true,
+          totalQuestoes: 0,
+          acertos: 0,
+          notaMinimaExigida: 70
+        };
+      }
+
+      let acertos = 0;
+      questoes.forEach(q => {
+        const respUser = respostas[q.id];
+        if (respUser !== undefined && respUser !== null) {
+          if (String(respUser).trim().toLowerCase() === String(q.resposta_correta).trim().toLowerCase()) {
+            acertos++;
+          }
+        }
+      });
+
+      const totalQuestoes = questoes.length;
+      const nota = Math.round((acertos / totalQuestoes) * 100);
+
+      let notaMinima = 70;
+      if (cursoId) {
+        const { data: curso } = await this.client
+          .from('cursos')
+          .select('nota_minima_avaliacao_modulo')
+          .eq('id', cursoId)
+          .maybeSingle();
+        if (curso?.nota_minima_avaliacao_modulo != null) {
+          notaMinima = Number(curso.nota_minima_avaliacao_modulo);
+        }
+      }
+
+      const aprovado = nota >= notaMinima;
+
+      // Upsert no progresso do módulo
+      const { error } = await this.client
+        .from('cursos_progresso_modulo')
+        .upsert({
+          matricula_id: matriculaId,
+          modulo_id: moduloId,
+          concluido: aprovado,
+          nota_avaliacao: nota,
+          aprovado_avaliacao: aprovado,
+          respostas_avaliacao: respostas,
+          concluido_em: aprovado ? new Date().toISOString() : null,
+        }, { onConflict: 'matricula_id,modulo_id' });
+
+      if (error) {
+        console.warn('Erro ao atualizar cursos_progresso_modulo:', error.message);
+      }
+
+      if (aprovado && cursoId) {
+        await this.marcarModuloConcluido(cursoId, moduloId);
+      }
+
+      return {
+        error: null,
+        nota,
+        aprovado,
+        totalQuestoes,
+        acertos,
+        notaMinimaExigida: notaMinima
+      };
+    } catch (e: any) {
+      return {
+        error: e,
+        nota: 0,
+        aprovado: false,
+        totalQuestoes: 0,
+        acertos: 0,
+        notaMinimaExigida: 70
+      };
     }
   }
 
@@ -3282,17 +3657,20 @@ export class SupabaseService {
     try {
       const res = await this.client
         .from('blog_posts')
-        .select('*, autor:profissionais!blog_posts_autor_id_fkey(id, full_name)')
+        .select('*, autor:profissionais!blog_posts_autor_id_fkey(id, full_name), blog_post_tags(blog_tags(id, nome, slug))')
         .order('criado_em', { ascending: false });
 
-      if (!res.error && res.data) return res.data;
+      const bruto = (!res.error && res.data) ? res.data : (
+        await this.client
+          .from('blog_posts')
+          .select('*, autor:profissionais(id, full_name), blog_post_tags(blog_tags(id, nome, slug))')
+          .order('criado_em', { ascending: false })
+      ).data || [];
 
-      const resFallback = await this.client
-        .from('blog_posts')
-        .select('*, autor:profissionais(id, full_name)')
-        .order('criado_em', { ascending: false });
-
-      return resFallback.data || [];
+      return bruto.map((post: any) => ({
+        ...post,
+        tags: (post.blog_post_tags || []).map((pt: any) => pt.blog_tags).filter(Boolean),
+      }));
     } catch (e: any) {
       console.warn('Exceção ao listar posts (admin):', e?.message || e);
       return [];
@@ -3301,19 +3679,86 @@ export class SupabaseService {
 
   async listarPostsPublicados(): Promise<any[]> {
     try {
+      const session = await this.getSession();
+      const meuId = session?.user?.id;
       const { data, error } = await this.client
         .from('blog_posts')
-        .select('*')
+        .select('*, blog_post_tags(blog_tags(id, nome, slug)), blog_curtidas(profissional_id)')
         .eq('publicado', true)
         .order('criado_em', { ascending: false });
       if (error) {
         console.warn('Erro ao listar posts publicados:', error.message);
         return [];
       }
-      return data || [];
+      // Achata blog_post_tags(blog_tags(...)) em post.tags: [{id,nome,slug}]
+      // e blog_curtidas em post.totalCurtidas / post.curtidoPorMim
+      return (data || []).map((post: any) => {
+        const curtidas = post.blog_curtidas || [];
+        return {
+          ...post,
+          tags: (post.blog_post_tags || []).map((pt: any) => pt.blog_tags).filter(Boolean),
+          totalCurtidas: curtidas.length,
+          curtidoPorMim: meuId ? curtidas.some((c: any) => c.profissional_id === meuId) : false,
+        };
+      });
     } catch (e: any) {
       console.warn('Exceção ao listar posts publicados:', e?.message || e);
       return [];
+    }
+  }
+
+  async toggleCurtidaBlogPost(postId: string, curtidoAtualmente: boolean): Promise<{ error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return { error: new Error('Não autenticado.') };
+      if (curtidoAtualmente) {
+        const { error } = await this.client
+          .from('blog_curtidas')
+          .delete()
+          .eq('post_id', postId)
+          .eq('profissional_id', session.user.id);
+        return { error };
+      } else {
+        const { error } = await this.client
+          .from('blog_curtidas')
+          .insert({
+            post_id: postId,
+            profissional_id: session.user.id
+          });
+        return { error };
+      }
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async listarTodasTags(): Promise<{ id: string; nome: string; slug: string }[]> {
+    try {
+      const { data, error } = await this.client
+        .from('blog_tags')
+        .select('id, nome, slug')
+        .order('nome', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar tags:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar tags:', e?.message || e);
+      return [];
+    }
+  }
+
+  async definirTagsDoPost(postId: string, tagIds: string[]): Promise<{ error: Error | null }> {
+    try {
+      const del = await this.client.from('blog_post_tags').delete().eq('post_id', postId);
+      if (del.error) return { error: del.error };
+      if (tagIds.length === 0) return { error: null };
+      const payload = tagIds.map(tagId => ({ post_id: postId, tag_id: tagId }));
+      const ins = await this.client.from('blog_post_tags').insert(payload);
+      return { error: ins.error };
+    } catch (e: any) {
+      return { error: e };
     }
   }
 
@@ -3323,12 +3768,29 @@ export class SupabaseService {
     conteudo: string;
     categoria: string;
     imagem_capa_url?: string;
+    galeria_urls?: string[];
+    video_url?: string | null;
+    data_agendada?: string | null;
+    tagIds?: string[];
   }): Promise<{ error: Error | null; data?: any }> {
     try {
+      const { tagIds, ...postSemTags } = post;
       const session = await this.getSession();
-      const payload = { ...post, autor_id: session?.user?.id || null, publicado: false };
+      const payload: Record<string, any> = {
+        ...postSemTags,
+        autor_id: session?.user?.id || null,
+        publicado: false,
+      };
       const { data, error } = await this.client.from('blog_posts').insert(payload).select().single();
-      return { error, data };
+      if (error || !data) return { error, data };
+
+      if (tagIds && tagIds.length > 0) {
+        const tagResult = await this.definirTagsDoPost(data.id, tagIds);
+        if (tagResult.error) {
+          console.warn('Post criado, mas houve erro ao gravar tags:', tagResult.error.message);
+        }
+      }
+      return { error: null, data };
     } catch (e: any) {
       return { error: e };
     }
@@ -3342,13 +3804,71 @@ export class SupabaseService {
       conteudo: string;
       categoria: string;
       imagem_capa_url: string;
+      galeria_urls: string[];
+      video_url: string | null;
+      data_agendada: string | null;
       publicado: boolean;
+      tagIds: string[];
     }>
   ): Promise<{ error: Error | null }> {
     try {
+      const { tagIds, ...dadosSemTags } = dados;
       const { error } = await this.client
         .from('blog_posts')
-        .update({ ...dados, atualizado_em: new Date().toISOString() })
+        .update({ ...dadosSemTags, atualizado_em: new Date().toISOString() })
+        .eq('id', id);
+      if (error) return { error };
+
+      if (tagIds !== undefined) {
+        const tagResult = await this.definirTagsDoPost(id, tagIds);
+        if (tagResult.error) return { error: tagResult.error };
+      }
+      return { error: null };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async agendarPost(id: string, dataAgendada: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('blog_posts')
+        .update({
+          data_agendada: dataAgendada,
+          publicado: false,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async cancelarAgendamento(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('blog_posts')
+        .update({
+          data_agendada: null,
+          publicado: false,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async publicarAgora(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('blog_posts')
+        .update({
+          publicado: true,
+          atualizado_em: new Date().toISOString(),
+        })
         .eq('id', id);
       return { error };
     } catch (e: any) {
@@ -4434,6 +4954,133 @@ export class SupabaseService {
     }
   }
 
+  async uploadDocumentoCredito(
+    projetoId: string,
+    documentoId: string,
+    file: File
+  ): Promise<{ data: DocumentoCredito | null; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) {
+        return { data: null, error: new Error('Usuário não autenticado.') };
+      }
+
+      const maxBytes = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxBytes) {
+        return { data: null, error: new Error('O arquivo excede o limite máximo permitido de 10 MB.') };
+      }
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const cleanDocId = documentoId.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const path = `${session.user.id}/${projetoId}/${cleanDocId}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await this.client.storage
+        .from('documentos-credito')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        return { data: null, error: uploadError };
+      }
+
+      const { data, error: dbError } = await this.client
+        .from('documentos_credito')
+        .insert({
+          projeto_credito_id: projetoId,
+          profissional_id: session.user.id,
+          documento_id: documentoId,
+          nome_arquivo: file.name,
+          caminho_storage: path,
+          tamanho_bytes: file.size,
+          tipo_mime: file.type || 'application/octet-stream',
+          enviado_em: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        return { data: null, error: dbError };
+      }
+
+      return { data, error: null };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async listarDocumentosCredito(projetoId: string): Promise<DocumentoCredito[]> {
+    try {
+      const { data, error } = await this.client
+        .from('documentos_credito')
+        .select('*')
+        .eq('projeto_credito_id', projetoId)
+        .order('enviado_em', { ascending: false });
+
+      if (error) {
+        console.warn('Aviso ao listar documentos de crédito:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar documentos de crédito:', e?.message || e);
+      return [];
+    }
+  }
+
+  async excluirDocumentoCredito(id: string, caminhoStorage?: string): Promise<{ error: Error | null }> {
+    try {
+      if (caminhoStorage) {
+        await this.client.storage
+          .from('documentos-credito')
+          .remove([caminhoStorage]);
+      } else {
+        const { data: doc } = await this.client
+          .from('documentos_credito')
+          .select('caminho_storage')
+          .eq('id', id)
+          .maybeSingle();
+        if (doc?.caminho_storage) {
+          await this.client.storage
+            .from('documentos-credito')
+            .remove([doc.caminho_storage]);
+        }
+      }
+
+      const { error } = await this.client
+        .from('documentos_credito')
+        .delete()
+        .eq('id', id);
+
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async baixarArquivoDocumentoCredito(caminhoStorage: string): Promise<{ data: Blob | null; error: Error | null }> {
+    try {
+      const { data, error } = await this.client.storage
+        .from('documentos-credito')
+        .download(caminhoStorage);
+      return { data, error };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async obterUrlAssinadaDocumentoCredito(caminhoStorage: string, segundosExpiracao: number = 3600): Promise<{ url: string | null; error: Error | null }> {
+    try {
+      const { data, error } = await this.client.storage
+        .from('documentos-credito')
+        .createSignedUrl(caminhoStorage, segundosExpiracao);
+      return { url: data?.signedUrl || null, error };
+    } catch (e: any) {
+      return { url: null, error: e };
+    }
+  }
+
   async solicitarAssessoriaCredito(dados: {
     projetoId: string;
     nome: string;
@@ -4885,6 +5532,448 @@ export class SupabaseService {
       return { error: e instanceof Error ? e : new Error(String(e)) };
     }
   }
+
+  // =========================================================================
+  // MÓDULO LICITAÇÃO IA (Lei 14.133/2021) — Pacotes A/B, Análises e Chat
+  // =========================================================================
+
+  async obterStatusPacotesLicitacao(profissionalId?: string): Promise<{
+    temPacoteA: boolean;
+    temPacoteB: boolean;
+    pacotesAtivos: any[];
+    limiteAnalisesMes: number;
+    analisesUsadasMes: number;
+    analisesRestantesMes: number;
+    limiteMensagensChatMes: number;
+    mensagensChatUsadasMes: number;
+    mensagensChatRestantesMes: number;
+    error: Error | null;
+  }> {
+    try {
+      let targetId = profissionalId;
+      if (!targetId) {
+        const session = await this.getSession();
+        targetId = session?.user?.id;
+      }
+
+      if (!targetId) {
+        return {
+          temPacoteA: false,
+          temPacoteB: false,
+          pacotesAtivos: [],
+          limiteAnalisesMes: 0,
+          analisesUsadasMes: 0,
+          analisesRestantesMes: 0,
+          limiteMensagensChatMes: 35,
+          mensagensChatUsadasMes: 0,
+          mensagensChatRestantesMes: 35,
+          error: null,
+        };
+      }
+
+      const hojeStr = new Date().toISOString().split('T')[0];
+      const { data: pacotes, error: pacotesErr } = await this.client
+        .from('pacotes_licitacao')
+        .select('*')
+        .eq('profissional_id', targetId)
+        .eq('ativo', true);
+
+      if (pacotesErr) {
+        console.warn('Aviso ao consultar pacotes_licitacao:', pacotesErr.message);
+      }
+
+      const pacotesValidos = (pacotes || []).filter(p => !p.data_expiracao || p.data_expiracao >= hojeStr);
+      const temA = pacotesValidos.some(p => p.pacote === 'A');
+      const temB = pacotesValidos.some(p => p.pacote === 'B');
+
+      const limiteAnalises = (temA && temB) ? 10 : (temA ? 5 : (temB ? 5 : 0));
+      const limiteChat = 35;
+
+      // Contagem de análises no mês corrente
+      let analisesUsadas = 0;
+      try {
+        const { data: rpcCount, error: rpcErr } = await this.client.rpc('contar_analises_licitacao_mes_atual', {
+          p_profissional_id: targetId,
+        });
+        if (!rpcErr && typeof rpcCount === 'number') {
+          analisesUsadas = rpcCount;
+        } else {
+          const inicioMes = new Date();
+          inicioMes.setDate(1);
+          inicioMes.setHours(0, 0, 0, 0);
+
+          const { count } = await this.client
+            .from('analises_licitacao')
+            .select('id', { count: 'exact', head: true })
+            .eq('profissional_id', targetId)
+            .gte('criado_em', inicioMes.toISOString());
+
+          if (count !== null) analisesUsadas = count;
+        }
+      } catch (e) {
+        console.warn('Erro ao contar análises de licitação:', e);
+      }
+
+      // Contagem de mensagens de chat no mês corrente (apenas papel 'usuario')
+      let mensagensChatUsadas = 0;
+      try {
+        const { data: rpcChatCount, error: rpcChatErr } = await this.client.rpc('contar_mensagens_chat_licitacao_mes_atual', {
+          p_profissional_id: targetId,
+        });
+        if (!rpcChatErr && typeof rpcChatCount === 'number') {
+          mensagensChatUsadas = rpcChatCount;
+        } else {
+          const inicioMes = new Date();
+          inicioMes.setDate(1);
+          inicioMes.setHours(0, 0, 0, 0);
+
+          const { count } = await this.client
+            .from('chat_licitacao_mensagens')
+            .select('id', { count: 'exact', head: true })
+            .eq('profissional_id', targetId)
+            .eq('papel', 'usuario')
+            .gte('criado_em', inicioMes.toISOString());
+
+          if (count !== null) mensagensChatUsadas = count;
+        }
+      } catch (e) {
+        console.warn('Erro ao contar mensagens de chat licitação:', e);
+      }
+
+      return {
+        temPacoteA: temA,
+        temPacoteB: temB,
+        pacotesAtivos: pacotesValidos,
+        limiteAnalisesMes: limiteAnalises,
+        analisesUsadasMes: analisesUsadas,
+        analisesRestantesMes: Math.max(0, limiteAnalises - analisesUsadas),
+        limiteMensagensChatMes: limiteChat,
+        mensagensChatUsadasMes: mensagensChatUsadas,
+        mensagensChatRestantesMes: Math.max(0, limiteChat - mensagensChatUsadas),
+        error: null,
+      };
+    } catch (e: any) {
+      return {
+        temPacoteA: false,
+        temPacoteB: false,
+        pacotesAtivos: [],
+        limiteAnalisesMes: 0,
+        analisesUsadasMes: 0,
+        analisesRestantesMes: 0,
+        limiteMensagensChatMes: 35,
+        mensagensChatUsadasMes: 0,
+        mensagensChatRestantesMes: 35,
+        error: e,
+      };
+    }
+  }
+
+  async executarAnaliseLicitacaoViaFunction(dados: {
+    tipo: 'edital' | 'documentacao';
+    nomeEdital?: string;
+    textoEdital?: string;
+    arquivos?: Array<{ nome: string; url?: string; caminhoStorage?: string; tipoMime?: string; itemId?: string; descricao?: string }>;
+    analisePreviaId?: string;
+  }): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('analisar-licitacao', {
+        body: dados,
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro ao processar análise de licitação';
+        try {
+          if ((error as any).context?.json) {
+            const errJson = await (error as any).context.json();
+            if (errJson?.error) msg = errJson.error;
+          }
+        } catch (_) {}
+        return { error: new Error(msg) };
+      }
+
+      return { data, error: null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async enviarMensagemChatLicitacaoViaFunction(dados: {
+    sessaoId: string;
+    mensagem: string;
+    analiseLicitacaoId?: string;
+  }): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const { data, error } = await this.client.functions.invoke('chat-licitacao', {
+        body: dados,
+      });
+
+      if (error) {
+        let msg = error.message || 'Erro no chat especialista de licitação';
+        try {
+          if ((error as any).context?.json) {
+            const errJson = await (error as any).context.json();
+            if (errJson?.error) msg = errJson.error;
+          }
+        } catch (_) {}
+        return { error: new Error(msg) };
+      }
+
+      return { data, error: null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async analisarLicitacaoComIA(dados: {
+    tipo: 'edital' | 'documentacao';
+    nomeEdital?: string;
+    textoEdital?: string;
+    caminhoStorageEdital?: string;
+    arquivosEdital?: Array<{ nomeArquivo?: string; nome?: string; caminhoStorage: string }>;
+    linkEdital?: string;
+    itensMarcados?: string[];
+    documentosHospedados?: Array<{ itemId: string; nomeArquivo: string; caminhoStorage: string }>;
+    analisePreviaId?: string;
+  }): Promise<{ data?: any; analiseId?: string; error: string | null }> {
+    try {
+      const arquivosMapeados: Array<{ nome: string; caminhoStorage?: string; itemId?: string }> = [];
+      if (dados.arquivosEdital && dados.arquivosEdital.length > 0) {
+        dados.arquivosEdital.forEach((ae, idx) => {
+          arquivosMapeados.push({
+            nome: ae.nomeArquivo || ae.nome || `Edital Arquivo ${idx + 1}`,
+            caminhoStorage: ae.caminhoStorage
+          });
+        });
+      } else if (dados.caminhoStorageEdital) {
+        arquivosMapeados.push({
+          nome: dados.nomeEdital || 'Edital',
+          caminhoStorage: dados.caminhoStorageEdital
+        });
+      }
+      if (dados.documentosHospedados) {
+        dados.documentosHospedados.forEach(d => {
+          arquivosMapeados.push({
+            nome: d.nomeArquivo,
+            caminhoStorage: d.caminhoStorage,
+            itemId: d.itemId
+          });
+        });
+      }
+
+      const res = await this.executarAnaliseLicitacaoViaFunction({
+        tipo: dados.tipo,
+        nomeEdital: dados.nomeEdital,
+        textoEdital: dados.textoEdital,
+        arquivos: arquivosMapeados.length > 0 ? arquivosMapeados : undefined,
+        analisePreviaId: dados.analisePreviaId
+      });
+
+      if (res.error) {
+        return { error: res.error.message || 'Erro na análise de licitação' };
+      }
+
+      return {
+        data: res.data?.resultado_analise || res.data,
+        analiseId: res.data?.analise_id || res.data?.id,
+        error: null
+      };
+    } catch (e: any) {
+      return { error: e?.message || String(e) };
+    }
+  }
+
+  async consultarChatLicitacaoComIA(dados: {
+    mensagem: string;
+    sessaoId: string;
+    editalNome?: string;
+    historicoMensagens?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    contextoAdicional?: string;
+  }): Promise<{ resposta?: string; error: string | null }> {
+    try {
+      const res = await this.enviarMensagemChatLicitacaoViaFunction({
+        sessaoId: dados.sessaoId,
+        mensagem: dados.mensagem,
+        analiseLicitacaoId: undefined
+      });
+
+      if (res.error) {
+        return { error: res.error.message || 'Erro no chat especialista de licitação' };
+      }
+
+      const respostaTexto = res.data?.resposta || res.data?.conteudo || res.data?.message || 'Resposta processada.';
+      return { resposta: respostaTexto, error: null };
+    } catch (e: any) {
+      return { error: e?.message || String(e) };
+    }
+  }
+
+  async listarAnalisesLicitacao(profissionalId?: string): Promise<any[]> {
+    try {
+      let targetId = profissionalId;
+      if (!targetId) {
+        const session = await this.getSession();
+        targetId = session?.user?.id;
+      }
+      if (!targetId) return [];
+
+      const { data, error } = await this.client
+        .from('analises_licitacao')
+        .select('*')
+        .eq('profissional_id', targetId)
+        .order('criado_em', { ascending: false });
+
+      if (error) {
+        console.warn('Erro ao listar análises de licitação:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar análises de licitação:', e);
+      return [];
+    }
+  }
+
+  async listarMensagensChatLicitacao(sessaoId: string): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+
+      const { data, error } = await this.client
+        .from('chat_licitacao_mensagens')
+        .select('*')
+        .eq('sessao_id', sessaoId)
+        .eq('profissional_id', session.user.id)
+        .order('criado_em', { ascending: true });
+
+      if (error) {
+        console.warn('Erro ao listar mensagens do chat de licitação:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar histórico do chat:', e);
+      return [];
+    }
+  }
+
+  async uploadArquivoLicitacao(
+    arquivo: File,
+    subpasta: string = 'geral'
+  ): Promise<{ caminhoStorage: string | null; urlAssinada: string | null; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) {
+        return { caminhoStorage: null, urlAssinada: null, error: new Error('Sessão expirada. Faça login novamente.') };
+      }
+
+      const ext = arquivo.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const cleanSubpasta = subpasta.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanFileName = arquivo.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const caminho = `${session.user.id}/licitacao/${cleanSubpasta}/${Date.now()}-${cleanFileName}`;
+
+      const { error: uploadError } = await this.client.storage
+        .from('documentos-credito')
+        .upload(caminho, arquivo, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        return { caminhoStorage: null, urlAssinada: null, error: new Error(uploadError.message) };
+      }
+
+      const { url } = await this.obterUrlAssinadaDocumentoCredito(caminho, 86400); // 24h
+      return { caminhoStorage: caminho, urlAssinada: url, error: null };
+    } catch (e: any) {
+      return { caminhoStorage: null, urlAssinada: null, error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async excluirArquivoLicitacao(caminhoStorage: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.storage
+        .from('documentos-credito')
+        .remove([caminhoStorage]);
+
+      return { error: error ? new Error(error.message) : null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+
+  async salvarDocumentoGeradoLicitacao(dados: {
+    analiseId?: string;
+    tipoDoc: 'declaracao' | 'declaracoes_lote' | 'capa_proposta' | 'envelope';
+    titulo: string;
+    nomeArquivo: string;
+    formato: 'docx' | 'pdf';
+    conteudoTexto?: string;
+    meta?: any;
+  }): Promise<{ data?: any; error: Error | null }> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) {
+        return { error: new Error('Sessão expirada. Faça login novamente.') };
+      }
+
+      const payload = {
+        profissional_id: session.user.id,
+        analise_licitacao_id: dados.analiseId || null,
+        tipo_documento: dados.tipoDoc,
+        titulo: dados.titulo,
+        nome_arquivo: dados.nomeArquivo,
+        formato: dados.formato,
+        conteudo_texto: dados.conteudoTexto || null,
+        meta_dados: dados.meta || null,
+        criado_em: new Date().toISOString()
+      };
+
+      const { data, error } = await this.client
+        .from('documentos_gerados_licitacao')
+        .insert(payload)
+        .select('*')
+        .single();
+
+      if (error) {
+        // Não travar o fluxo se a tabela ainda não tiver sido criada ou falhar; retornar registro em memória
+        console.warn('Aviso ao persistir documento gerado no Supabase:', error.message);
+        return { data: { id: crypto.randomUUID(), ...payload }, error: null };
+      }
+
+      return { data, error: null };
+    } catch (e: any) {
+      console.warn('Exceção ao salvar documento gerado de licitação:', e);
+      return { error: null };
+    }
+  }
+
+  async listarDocumentosGeradosLicitacao(analiseId?: string): Promise<any[]> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user) return [];
+
+      let query = this.client
+        .from('documentos_gerados_licitacao')
+        .select('*')
+        .eq('profissional_id', session.user.id);
+
+      if (analiseId) {
+        query = query.eq('analise_licitacao_id', analiseId);
+      }
+
+      const { data, error } = await query.order('criado_em', { ascending: false });
+
+      if (error) {
+        console.warn('Aviso ao listar documentos gerados da licitação:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar documentos gerados da licitação:', e);
+      return [];
+    }
+  }
 }
+
 
 

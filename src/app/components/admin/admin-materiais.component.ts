@@ -15,6 +15,11 @@ interface MaterialAdminItem {
   tamanho?: string;
   url_arquivo?: string;
   ativo: boolean;
+  pago?: boolean;
+  exibir_valor?: boolean;
+  valor?: number | null;
+  sku?: string | null;
+  tipo_arquivo_real?: string | null;
   criado_em?: string;
   downloads_count?: number;
 }
@@ -33,7 +38,7 @@ interface MaterialAdminItem {
             Gestão do Acervo de Materiais & Downloads
           </h3>
           <p class="text-xs sm:text-sm text-slate-500">
-            Cadastre novos arquivos técnicos, edite recursos existentes e controle disponibilidade para membros.
+            Cadastre novos arquivos técnicos, configure venda avulsa, edite recursos e controle disponibilidade.
           </p>
         </div>
 
@@ -159,7 +164,7 @@ interface MaterialAdminItem {
               type="text"
               [value]="termoBusca()"
               (input)="onBuscaInput($event)"
-              placeholder="Buscar por título ou descrição..."
+              placeholder="Buscar por título, SKU ou descrição..."
               class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
             />
             <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +204,8 @@ interface MaterialAdminItem {
                 <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
                   <th class="py-3.5 px-4">Material / Recurso</th>
                   <th class="py-3.5 px-4">Categoria</th>
-                  <th class="py-3.5 px-4">Formato / Tamanho</th>
+                  <th class="py-3.5 px-4">Formato / Tipo</th>
+                  <th class="py-3.5 px-4">Acesso / Valor</th>
                   <th class="py-3.5 px-4 text-center">Downloads</th>
                   <th class="py-3.5 px-4 text-center">Status</th>
                   <th class="py-3.5 px-4 text-right">Ações</th>
@@ -212,8 +218,15 @@ interface MaterialAdminItem {
                     <!-- Coluna 1: Título & Descrição -->
                     <td class="py-4 px-4 max-w-md">
                       <div class="space-y-1">
-                        <div class="font-bold text-slate-900 text-sm">
-                          {{ item.titulo }}
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="font-bold text-slate-900 text-sm">
+                            {{ item.titulo }}
+                          </span>
+                          @if (item.sku) {
+                            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px]">
+                              SKU: {{ item.sku }}
+                            </span>
+                          }
                         </div>
                         @if (item.descricao) {
                           <p class="text-slate-500 text-xs line-clamp-2 leading-relaxed">
@@ -249,7 +262,7 @@ interface MaterialAdminItem {
                             <span>Link do arquivo</span>
                           </a>
                         } @else {
-                          <span class="text-[11px] text-amber-600 font-medium">⚠️ Sem URL direta (solicitação manual)</span>
+                          <span class="text-[11px] text-amber-600 font-medium">⚠️ Sem URL direta</span>
                         }
                       </div>
                     </td>
@@ -267,8 +280,8 @@ interface MaterialAdminItem {
                     <!-- Coluna 3: Formato e Tamanho -->
                     <td class="py-4 px-4 whitespace-nowrap">
                       <div class="space-y-0.5">
-                        <div class="font-bold text-slate-800 uppercase text-xs">
-                          {{ item.formato || 'PDF' }}
+                        <div class="font-bold text-slate-800 uppercase text-xs flex items-center gap-1">
+                          <span>{{ item.tipo_arquivo_real || item.formato || 'PDF' }}</span>
                         </div>
                         <div class="text-slate-400 text-[11px]">
                           {{ item.tamanho || '—' }}
@@ -276,7 +289,26 @@ interface MaterialAdminItem {
                       </div>
                     </td>
 
-                    <!-- Coluna 4: Downloads -->
+                    <!-- Coluna 4: Acesso / Valor -->
+                    <td class="py-4 px-4 whitespace-nowrap">
+                      @if (item.pago) {
+                        <div class="space-y-1">
+                          <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px] inline-flex items-center gap-1">
+                            <span>💳</span>
+                            <span>{{ formatarPreco(item.valor) }}</span>
+                          </span>
+                          @if (item.exibir_valor === false) {
+                            <div class="text-[10px] text-slate-400">Oculto sem acesso</div>
+                          }
+                        </div>
+                      } @else {
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-semibold text-[11px]">
+                          Incluso no Módulo
+                        </span>
+                      }
+                    </td>
+
+                    <!-- Coluna 5: Downloads -->
                     <td class="py-4 px-4 text-center whitespace-nowrap">
                       <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
                         <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,7 +318,7 @@ interface MaterialAdminItem {
                       </div>
                     </td>
 
-                    <!-- Coluna 5: Status (Toggle Ativo/Inativo) -->
+                    <!-- Coluna 6: Status (Toggle Ativo/Inativo) -->
                     <td class="py-4 px-4 text-center whitespace-nowrap">
                       <button
                         type="button"
@@ -303,7 +335,7 @@ interface MaterialAdminItem {
                       </button>
                     </td>
 
-                    <!-- Coluna 6: Ações (Editar / Excluir com 2 cliques) -->
+                    <!-- Coluna 7: Ações (Editar / Excluir com 2 cliques) -->
                     <td class="py-4 px-4 text-right whitespace-nowrap">
                       <div class="flex items-center justify-end gap-1.5">
                         
@@ -370,7 +402,7 @@ interface MaterialAdminItem {
       <!-- MODAL DE CADASTRO / EDIÇÃO DE MATERIAL -->
       @if (modalAberto()) {
         <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 space-y-6 my-8 animate-scaleUp">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-xl w-full p-6 sm:p-8 space-y-6 my-8 animate-scaleUp max-h-[90vh] overflow-y-auto">
             
             <!-- Topo do Modal -->
             <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -429,16 +461,90 @@ interface MaterialAdminItem {
 
                 <div class="space-y-1.5">
                   <label class="block text-xs font-bold text-slate-700">
-                    Formato do Recurso
+                    Formato / Extensão Real
                   </label>
-                  <input
-                    type="text"
-                    [value]="formFormato()"
-                    (input)="formFormato.set($any($event.target).value)"
-                    [placeholder]="formCategoria() === 'Vídeos' ? 'Ex: VÍDEO, MP4' : 'Ex: XLSX, PDF, DOCX, ZIP'"
-                    class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium uppercase"
-                  />
+                  <div class="flex gap-2">
+                    <input
+                      type="text"
+                      [value]="formFormato()"
+                      (input)="formFormato.set($any($event.target).value)"
+                      [placeholder]="formCategoria() === 'Vídeos' ? 'Ex: VÍDEO' : 'Ex: XLSX, PDF'"
+                      class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium uppercase"
+                    />
+                    <input
+                      type="text"
+                      [value]="formTipoArquivoReal()"
+                      (input)="formTipoArquivoReal.set($any($event.target).value)"
+                      placeholder="ext (ex: pdf)"
+                      class="w-24 px-2.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-slate-700 lowercase"
+                      title="Extensão real do arquivo (ex: pdf, xlsx, docx, png)"
+                    />
+                  </div>
                 </div>
+              </div>
+
+              <!-- Configuração de Material Pago / Venda Avulsa -->
+              <div class="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-3.5">
+                <div class="flex items-center justify-between">
+                  <label class="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      [checked]="formPago()"
+                      (change)="formPago.set($any($event.target).checked)"
+                      class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                    />
+                    <div>
+                      <span class="text-xs font-bold text-slate-800 block">Material Vendável / Avulso</span>
+                      <span class="text-[11px] text-slate-500 block">Permite liberar acesso individual via acessos_item ou compra</span>
+                    </div>
+                  </label>
+                </div>
+
+                @if (formPago()) {
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 border-t border-indigo-100/80 animate-fadeIn">
+                    <div class="space-y-1">
+                      <label class="block text-xs font-bold text-slate-700">
+                        Valor (R$)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        [value]="formValor()"
+                        (input)="onValorInput($event)"
+                        placeholder="Ex: 49.90"
+                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                      />
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="block text-xs font-bold text-slate-700">
+                        Código SKU (Identificador)
+                      </label>
+                      <input
+                        type="text"
+                        [value]="formSku()"
+                        (input)="formSku.set($any($event.target).value)"
+                        placeholder="Ex: MAT-LAUDO-01"
+                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                      />
+                    </div>
+
+                    <div class="sm:col-span-2 pt-1">
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          [checked]="formExibirValor()"
+                          (change)="formExibirValor.set($any($event.target).checked)"
+                          class="rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span class="text-xs font-medium text-slate-700">
+                          Exibir valor e botão de aquisição para membros sem acesso (se desmarcado, fica oculto para quem não comprou)
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                }
               </div>
 
               <!-- Tamanho & Status -->
@@ -520,7 +626,7 @@ interface MaterialAdminItem {
                   <!-- Opção 1: Upload Direto para o Bucket materiais-comunidade -->
                   <div class="space-y-2">
                     <label class="block text-xs font-bold text-slate-700">
-                      Upload Direto de Arquivo (Storage Supabase)
+                      Upload Direto de Arquivo (Sem Restrição de Extensão)
                     </label>
 
                     <div class="p-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition-colors">
@@ -546,7 +652,6 @@ interface MaterialAdminItem {
                               <input
                                 type="file"
                                 (change)="onFileSelected($event)"
-                                accept=".pdf,.xlsx,.xls,.docx,.doc,.csv,.png,.jpg,.jpeg,.zip"
                                 class="hidden"
                               />
                             </label>
@@ -563,12 +668,11 @@ interface MaterialAdminItem {
                               <input
                                 type="file"
                                 (change)="onFileSelected($event)"
-                                accept=".pdf,.xlsx,.xls,.docx,.doc,.csv,.png,.jpg,.jpeg,.zip"
                                 class="hidden"
                               />
                             </label>
                             <p class="text-[11px] text-slate-400 mt-1.5">
-                              Formatos aceitos: PDF, XLSX, XLS, DOCX, CSV, Imagens (máx. 20 MB)
+                              Todos os formatos suportados: PDF, Planilhas, Imagens, Documentos, Compactados (máx. 20 MB)
                             </p>
                           </div>
                         }
@@ -599,7 +703,7 @@ interface MaterialAdminItem {
                       type="url"
                       [value]="formUrlArquivo()"
                       (input)="formUrlArquivo.set($any($event.target).value)"
-                      placeholder="https://drive.google.com/... ou URL gerada no upload"
+                      placeholder="https://... ou URL gerada no upload"
                       class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
                     />
                     <p class="text-[11px] text-slate-400">
@@ -692,9 +796,14 @@ export class AdminMateriaisComponent implements OnInit {
   readonly formDescricao = signal<string>('');
   readonly formCategoria = signal<string>('Planilhas');
   readonly formFormato = signal<string>('XLSX');
+  readonly formTipoArquivoReal = signal<string>('');
   readonly formTamanho = signal<string>('');
   readonly formUrlArquivo = signal<string>('');
   readonly formAtivo = signal<boolean>(true);
+  readonly formPago = signal<boolean>(false);
+  readonly formExibirValor = signal<boolean>(true);
+  readonly formValor = signal<number | null>(null);
+  readonly formSku = signal<string>('');
 
   // Upload Direto para Bucket Storage
   readonly uploadandoArquivo = signal<boolean>(false);
@@ -725,7 +834,8 @@ export class AdminMateriaisComponent implements OnInit {
     if (termo) {
       lista = lista.filter(m =>
         m.titulo.toLowerCase().includes(termo) ||
-        (m.descricao && m.descricao.toLowerCase().includes(termo))
+        (m.descricao && m.descricao.toLowerCase().includes(termo)) ||
+        (m.sku && m.sku.toLowerCase().includes(termo))
       );
     }
 
@@ -734,6 +844,23 @@ export class AdminMateriaisComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.carregarMateriais();
+  }
+
+  formatarPreco(valor: any): string {
+    if (valor === null || valor === undefined || valor === '') return 'R$ 0,00';
+    const num = typeof valor === 'number' ? valor : parseFloat(String(valor).replace(',', '.'));
+    if (isNaN(num)) return 'R$ 0,00';
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  onValorInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    if (val === '' || val === null || val === undefined) {
+      this.formValor.set(null);
+    } else {
+      const parsed = parseFloat(val);
+      this.formValor.set(isNaN(parsed) ? null : parsed);
+    }
   }
 
   async carregarMateriais(): Promise<void> {
@@ -828,6 +955,9 @@ export class AdminMateriaisComponent implements OnInit {
         if (res.formato) {
           this.formFormato.set(res.formato);
         }
+        if (res.tipoArquivoReal) {
+          this.formTipoArquivoReal.set(res.tipoArquivoReal);
+        }
         if (res.tamanho) {
           this.formTamanho.set(res.tamanho);
         }
@@ -852,9 +982,14 @@ export class AdminMateriaisComponent implements OnInit {
     this.formDescricao.set('');
     this.formCategoria.set('Planilhas');
     this.formFormato.set('XLSX');
+    this.formTipoArquivoReal.set('');
     this.formTamanho.set('');
     this.formUrlArquivo.set('');
     this.formAtivo.set(true);
+    this.formPago.set(false);
+    this.formExibirValor.set(true);
+    this.formValor.set(null);
+    this.formSku.set('');
     this.nomeArquivoEnviado.set(null);
     this.uploadandoArquivo.set(false);
     this.erroUpload.set(null);
@@ -867,9 +1002,14 @@ export class AdminMateriaisComponent implements OnInit {
     this.formDescricao.set(material.descricao || '');
     this.formCategoria.set(material.categoria || 'Planilhas');
     this.formFormato.set(material.formato || 'PDF');
+    this.formTipoArquivoReal.set(material.tipo_arquivo_real || '');
     this.formTamanho.set(material.tamanho || '');
     this.formUrlArquivo.set(material.url_arquivo || '');
     this.formAtivo.set(material.ativo);
+    this.formPago.set(!!material.pago);
+    this.formExibirValor.set(material.exibir_valor !== false);
+    this.formValor.set(material.valor ?? null);
+    this.formSku.set(material.sku || '');
     this.nomeArquivoEnviado.set(null);
     this.uploadandoArquivo.set(false);
     this.erroUpload.set(null);
@@ -911,14 +1051,19 @@ export class AdminMateriaisComponent implements OnInit {
       urlArquivoFinal = `https://vimeo.com/${vimeoId}`;
     }
 
-    const dados = {
+    const dados: any = {
       titulo,
       descricao: this.formDescricao().trim(),
       categoria: this.formCategoria(),
       formato: this.formFormato().trim().toUpperCase() || (this.formCategoria() === 'Vídeos' ? 'VÍDEO' : 'PDF'),
+      tipo_arquivo_real: this.formTipoArquivoReal().trim().toLowerCase() || null,
       tamanho: this.formTamanho().trim() || (this.formCategoria() === 'Vídeos' ? 'Vimeo Streaming' : 'Arquivo'),
       url_arquivo: urlArquivoFinal,
       ativo: this.formAtivo(),
+      pago: this.formPago(),
+      exibir_valor: this.formExibirValor(),
+      valor: this.formPago() ? this.formValor() : null,
+      sku: this.formPago() ? (this.formSku().trim() || null) : null,
     };
 
     const edicao = this.materialEmEdicao();

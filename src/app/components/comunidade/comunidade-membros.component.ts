@@ -21,7 +21,7 @@ export interface MembroCard {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="space-y-8 animate-fadeIn">
+    <div class="space-y-6 animate-fadeIn">
 
       <!-- Feedback Flutuante -->
       @if (mensagemFeedback()) {
@@ -29,7 +29,7 @@ export interface MembroCard {
           [class]="tipoFeedback() === 'sucesso'
             ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
             : 'bg-rose-50 border-rose-200 text-rose-800'"
-          class="p-4 rounded-2xl border flex items-center justify-between text-xs sm:text-sm font-semibold transition-all shadow-xs"
+          class="p-3.5 sm:p-4 rounded-2xl border flex items-center justify-between text-xs sm:text-sm font-semibold transition-all shadow-xs"
         >
           <div class="flex items-center gap-2">
             <span>{{ tipoFeedback() === 'sucesso' ? '✓' : '⚠️' }}</span>
@@ -46,19 +46,19 @@ export interface MembroCard {
       }
 
       <!-- 1. Banner Principal: Rede de Membros & Networking -->
-      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-indigo-800/30 shadow-md relative overflow-hidden">
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-7 text-white border border-indigo-800/30 shadow-md relative overflow-hidden">
         <div class="absolute inset-0 bg-[radial-gradient(#4338ca_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none"></div>
         
-        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div class="space-y-2 max-w-2xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-400/30">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div class="space-y-1.5 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-400/30">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <span>Networking Técnico & Parcerias</span>
             </div>
 
-            <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
               <span>Rede de Membros</span>
             </h3>
 
@@ -69,33 +69,33 @@ export interface MembroCard {
 
           <!-- Estatísticas Rápidas -->
           <div class="flex items-center gap-3 flex-wrap">
-            <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 flex items-center gap-3.5">
-              <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-base shadow-inner">
                 {{ totalMembros() }}
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Membros Ativos</div>
-                <div class="text-[11px] text-indigo-200">Cadastrados na Comunidade</div>
+                <div class="text-[10px] sm:text-[11px] text-indigo-200">Na Comunidade</div>
               </div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 flex items-center gap-3.5">
-              <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
+            <div class="p-3 sm:p-3.5 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-base shadow-inner">
                 {{ totalSeguindo() }}
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Você Segue</div>
-                <div class="text-[11px] text-emerald-200">Suas conexões ativas</div>
+                <div class="text-[10px] sm:text-[11px] text-emerald-200">Conexões ativas (+2 pts cada)</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 2. Filtros, Busca & Segmentações -->
-      <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
+      <!-- 2. Filtros, Busca, Segmentações & Ações em Massa -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
         
-        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4">
           <!-- Campo de Busca em Tempo Real -->
           <div class="relative flex-1">
             <input
@@ -104,16 +104,16 @@ export interface MembroCard {
               [value]="buscaTexto()"
               (input)="onBuscaInput($event)"
               placeholder="Buscar por nome, especialidade, CREA/CAU ou cidade..."
-              class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 placeholder-slate-400 rounded-2xl pl-10 pr-4 py-3 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden transition-all"
+              class="w-full bg-slate-50 text-xs sm:text-sm text-slate-800 placeholder-slate-400 rounded-2xl pl-10 pr-4 py-2.5 sm:py-3 border border-slate-200 focus:border-indigo-500 focus:bg-white outline-hidden transition-all"
             />
-            <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-3 sm:top-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             @if (buscaTexto()) {
               <button
                 type="button"
                 (click)="buscaTexto.set('')"
-                class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer"
+                class="absolute right-3.5 top-2.5 sm:top-3 text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -126,7 +126,7 @@ export interface MembroCard {
               type="button"
               (click)="filtroConexao.set('todos')"
               [class]="filtroConexao() === 'todos' ? 'bg-white text-indigo-700 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-              class="px-4 py-2 rounded-xl text-xs transition-all cursor-pointer"
+              class="px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all cursor-pointer"
             >
               Todos ({{ totalMembros() }})
             </button>
@@ -134,7 +134,7 @@ export interface MembroCard {
               type="button"
               (click)="filtroConexao.set('seguindo')"
               [class]="filtroConexao() === 'seguindo' ? 'bg-white text-indigo-700 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-              class="px-4 py-2 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5"
+              class="px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-1.5"
             >
               <span>Seguindo</span>
               <span class="px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-700 font-black text-[10px]">
@@ -154,32 +154,93 @@ export interface MembroCard {
               [class]="categoriaFiltro() === cat
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'"
-              class="px-3.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer shrink-0"
+              class="px-3 py-1 sm:py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer shrink-0 text-xs"
             >
               {{ cat }}
             </button>
           }
         </div>
 
+        <!-- Barra de Ação em Massa: Seguir Selecionados -->
+        @if (membrosNaoSeguidosFiltrados().length > 0) {
+          <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl">
+            <div class="flex items-center gap-2.5">
+              <button
+                type="button"
+                id="btn-selecionar-todos-membros"
+                (click)="toggleSelecionarTodos()"
+                [disabled]="processandoEmMassa()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-50 transition-colors cursor-pointer shadow-2xs"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="todosNaoSeguidosSelecionados()"
+                  [disabled]="processandoEmMassa()"
+                  class="rounded border-indigo-300 text-indigo-600 pointer-events-none w-3.5 h-3.5"
+                />
+                <span>
+                  {{ todosNaoSeguidosSelecionados() ? 'Desmarcar Todos' : 'Selecionar Todos (' + membrosNaoSeguidosFiltrados().length + ')' }}
+                </span>
+              </button>
+
+              @if (selecionadosIds().size > 0) {
+                <span class="text-xs font-bold text-indigo-900">
+                  {{ selecionadosIds().size }} {{ selecionadosIds().size === 1 ? 'membro selecionado' : 'membros selecionados' }}
+                </span>
+              }
+            </div>
+
+            @if (selecionadosIds().size > 0) {
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="limparSelecao()"
+                  [disabled]="processandoEmMassa()"
+                  class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Limpar
+                </button>
+                <button
+                  type="button"
+                  id="btn-seguir-selecionados"
+                  (click)="seguirSelecionados()"
+                  [disabled]="processandoEmMassa()"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50 min-h-[36px]"
+                >
+                  @if (processandoEmMassa()) {
+                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Seguindo ({{ progressoEmMassa()?.atual }}/{{ progressoEmMassa()?.total }})...</span>
+                  } @else {
+                    <span>🤝 Seguir Selecionados ({{ selecionadosIds().size }})</span>
+                    <span class="px-1.5 py-0.5 rounded-md bg-indigo-500 text-[10px] font-mono font-bold text-indigo-100">
+                      +{{ selecionadosIds().size * 2 }} pts
+                    </span>
+                  }
+                </button>
+              </div>
+            }
+          </div>
+        }
+
       </div>
 
-      <!-- 3. Grid de Cards de Membros -->
+      <!-- 3. Grid de Cards de Membros (Design Compacto e Elegante) -->
       @if (carregando()) {
         <!-- Skeleton Loading Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           @for (item of [1, 2, 3, 4, 5, 6]; track item) {
-            <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs animate-pulse">
-              <div class="h-24 bg-slate-200"></div>
-              <div class="p-6 pt-0 relative space-y-4">
-                <div class="w-18 h-18 rounded-2xl bg-slate-300 border-4 border-white -mt-9 shadow-xs"></div>
-                <div class="space-y-2">
-                  <div class="h-4 bg-slate-200 rounded-md w-3/4"></div>
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs animate-pulse">
+              <div class="h-16 bg-slate-200"></div>
+              <div class="p-4 pt-0 relative space-y-3">
+                <div class="w-14 h-14 rounded-xl bg-slate-300 border-2 border-white -mt-7 shadow-xs"></div>
+                <div class="space-y-1.5">
+                  <div class="h-3.5 bg-slate-200 rounded-md w-3/4"></div>
                   <div class="h-3 bg-slate-100 rounded-md w-1/2"></div>
                 </div>
-                <div class="h-12 bg-slate-50 rounded-xl"></div>
+                <div class="h-8 bg-slate-50 rounded-lg"></div>
                 <div class="flex gap-2 pt-2 border-t border-slate-100">
-                  <div class="h-9 bg-slate-200 rounded-xl flex-1"></div>
-                  <div class="h-9 bg-slate-200 rounded-xl w-24"></div>
+                  <div class="h-8 bg-slate-200 rounded-lg flex-1"></div>
+                  <div class="h-8 bg-slate-200 rounded-lg w-20"></div>
                 </div>
               </div>
             </div>
@@ -187,14 +248,14 @@ export interface MembroCard {
         </div>
       } @else if (membrosFiltrados().length === 0) {
         <!-- Estado Vazio -->
-        <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
-          <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 mx-auto flex items-center justify-center">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-3 shadow-xs">
+          <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 mx-auto flex items-center justify-center">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
           <div class="max-w-md mx-auto space-y-1">
-            <h4 class="text-lg font-black text-slate-900">Nenhum membro encontrado</h4>
+            <h4 class="text-base sm:text-lg font-black text-slate-900">Nenhum membro encontrado</h4>
             <p class="text-xs sm:text-sm text-slate-500">
               @if (buscaTexto() || categoriaFiltro() !== 'Todos' || filtroConexao() === 'seguindo') {
                 Nenhum membro corresponde aos filtros aplicados. Tente ajustar os termos da pesquisa.
@@ -207,22 +268,25 @@ export interface MembroCard {
             <button
               type="button"
               (click)="limparFiltros()"
-              class="px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition-colors cursor-pointer"
+              class="px-3.5 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition-colors cursor-pointer"
             >
               Limpar Filtros
             </button>
           }
         </div>
       } @else {
-        <!-- Grid Real de Cards de Membro -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Grid Real de Cards de Membro (Compacto e Responsivo) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           @for (membro of membrosFiltrados(); track membro.id) {
             <div
-              class="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col overflow-hidden group hover:border-indigo-200"
+              class="bg-white rounded-2xl border transition-all flex flex-col overflow-hidden group"
+              [class]="isSelecionado(membro.id)
+                ? 'border-indigo-400 ring-2 ring-indigo-500/20 shadow-sm'
+                : 'border-slate-200 shadow-2xs hover:shadow-xs hover:border-indigo-200'"
             >
               
-              <!-- Banner Superior do Card -->
-              <div class="h-24 sm:h-28 relative overflow-hidden bg-slate-900">
+              <!-- Banner Superior do Card (Compacto: h-16 sm:h-18) -->
+              <div class="h-16 sm:h-18 relative overflow-hidden bg-slate-900">
                 @if (membro.banner_url) {
                   <img
                     [src]="membro.banner_url"
@@ -239,35 +303,51 @@ export interface MembroCard {
                   </div>
                 }
 
+                <!-- Checkbox de Seleção Rápida (para membros não seguidos) -->
+                @if (membro.id !== meuId() && !isSeguindo(membro.id)) {
+                  <div class="absolute top-2 left-2 z-10">
+                    <label class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-black/40 backdrop-blur-md text-white text-[10px] font-bold cursor-pointer border border-white/20 hover:bg-black/60 transition-colors">
+                      <input
+                        type="checkbox"
+                        [checked]="isSelecionado(membro.id)"
+                        (change)="toggleSelecionar(membro.id)"
+                        [disabled]="processandoEmMassa()"
+                        class="rounded border-white/30 text-indigo-600 focus:ring-indigo-500 w-3 h-3 cursor-pointer"
+                      />
+                      <span>Selecionar</span>
+                    </label>
+                  </div>
+                }
+
                 <!-- Badge de Nível no Canto do Banner -->
-                <div class="absolute top-3 right-3">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md bg-black/40 text-amber-300 border border-amber-400/30">
+                <div class="absolute top-2 right-2">
+                  <span class="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider backdrop-blur-md bg-black/40 text-amber-300 border border-amber-400/30">
                     {{ membro.nivel_atual || 'Membro Ativo' }}
                   </span>
                 </div>
               </div>
 
-              <!-- Conteúdo do Card -->
-              <div class="p-5 sm:p-6 pt-0 relative flex-1 flex flex-col justify-between space-y-4">
+              <!-- Conteúdo do Card (Padding Reduzido) -->
+              <div class="p-4 sm:p-4.5 pt-0 relative flex-1 flex flex-col justify-between space-y-3">
                 
-                <!-- Avatar do Membro -->
-                <div class="flex items-end justify-between -mt-10 sm:-mt-12 mb-2">
+                <!-- Avatar do Membro + CREA/CAU -->
+                <div class="flex items-end justify-between -mt-7 sm:-mt-8 mb-1">
                   <div class="relative">
                     @if (membro.avatar_url) {
                       <img
                         [src]="membro.avatar_url"
                         [alt]="membro.full_name"
-                        class="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl object-cover object-center border-4 border-white shadow-md bg-white"
+                        class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover object-center border-2 border-white shadow-sm bg-white"
                       />
                     } @else {
-                      <div class="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-gradient-to-br from-[#132A41] to-[#1E3A5F] text-[#E59866] font-black text-xl sm:text-2xl flex items-center justify-center border-4 border-white shadow-md">
+                      <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-[#132A41] to-[#1E3A5F] text-[#E59866] font-black text-base sm:text-lg flex items-center justify-center border-2 border-white shadow-sm">
                         {{ getIniciais(membro.full_name) }}
                       </div>
                     }
 
                     <!-- Indicador de Sou Eu -->
                     @if (membro.id === meuId()) {
-                      <span class="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[9px] font-black uppercase tracking-wider border-2 border-white shadow-xs">
+                      <span class="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-md bg-indigo-600 text-white text-[8px] font-black uppercase tracking-wider border border-white shadow-xs">
                         Você
                       </span>
                     }
@@ -275,69 +355,69 @@ export interface MembroCard {
 
                   <!-- CREA/CAU Badge -->
                   @if (membro.crea_cau) {
-                    <span class="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
+                    <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
                       {{ membro.crea_cau }}
                     </span>
                   }
                 </div>
 
-                <!-- Informações Principais -->
-                <div class="space-y-1.5">
-                  <h4 class="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
+                <!-- Informações Principais (Tipografia Refinada) -->
+                <div class="space-y-1">
+                  <h4 class="text-sm sm:text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
                     {{ membro.full_name }}
                   </h4>
 
-                  <p class="text-xs font-semibold text-slate-600 line-clamp-1">
+                  <p class="text-[11px] sm:text-xs font-semibold text-slate-600 line-clamp-1">
                     {{ membro.professional_title || 'Profissional da Engenharia & Perícias' }}
                   </p>
 
                   <!-- Tags de Especialização / Categoria -->
-                  <div class="flex items-center gap-1.5 flex-wrap pt-1">
+                  <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
                     @if (membro.especializacao) {
-                      <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
+                      <span class="px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
                         {{ membro.especializacao }}
                       </span>
                     }
                     @if (membro.categoria_profissional && membro.categoria_profissional !== membro.especializacao) {
-                      <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-medium">
+                      <span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium">
                         {{ membro.categoria_profissional }}
                       </span>
                     }
                   </div>
                 </div>
 
-                <!-- Bio / Resumo -->
-                <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed min-h-[32px]">
-                  {{ membro.bio || 'Membro dedicado ao aprimoramento técnico, elaboração de laudos periciais e boas práticas na construção civil.' }}
+                <!-- Bio / Resumo (Truncado em 1 Linha) -->
+                <p class="text-[11px] text-slate-500 truncate leading-normal" [title]="membro.bio || ''">
+                  {{ membro.bio || 'Membro dedicado ao aprimoramento técnico e diagnósticos periciais.' }}
                 </p>
 
                 <!-- Barra de Ações do Card -->
-                <div class="pt-4 border-t border-slate-100 flex items-center gap-2">
+                <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
                   
                   @if (membro.id === meuId()) {
                     <!-- Meu próprio card -->
                     <button
                       type="button"
                       (click)="verMeuPerfil()"
-                      class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[36px]"
                     >
-                      <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <span>Ver Meu Perfil</span>
                     </button>
                   } @else {
                     
-                    <!-- Botão Seguir / Deixar de Seguir -->
+                    <!-- Botão Seguir / Deixar de Seguir (+2 pts) -->
                     <button
                       type="button"
                       [id]="'btn-seguir-' + membro.id"
                       (click)="toggleSeguir(membro)"
-                      [disabled]="processandoSeguirId() === membro.id"
+                      [disabled]="processandoSeguirId() === membro.id || processandoEmMassa()"
                       [class]="isSeguindo(membro.id)
                         ? 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs'"
-                      class="flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-2xs'"
+                      class="flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 min-h-[36px]"
                     >
                       @if (processandoSeguirId() === membro.id) {
                         <span class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
@@ -351,6 +431,7 @@ export interface MembroCard {
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         <span>Seguir</span>
+                        <span class="text-[10px] opacity-80 font-mono font-normal">(+2)</span>
                       }
                     </button>
 
@@ -359,10 +440,10 @@ export interface MembroCard {
                       type="button"
                       [id]="'btn-msg-' + membro.id"
                       (click)="iniciarConversa(membro)"
-                      class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 hover:border-indigo-200"
+                      class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 hover:border-indigo-200 min-h-[36px]"
                       title="Enviar Mensagem Direta"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                       </svg>
                       <span class="hidden sm:inline">Mensagem</span>
@@ -395,6 +476,11 @@ export class ComunidadeMembrosComponent implements OnInit {
   // Set de IDs dos membros que o usuário atual segue
   readonly seguindoIds = signal<Set<string>>(new Set());
   readonly processandoSeguirId = signal<string | null>(null);
+
+  // Seleção múltipla para Seguir em Massa
+  readonly selecionadosIds = signal<Set<string>>(new Set());
+  readonly processandoEmMassa = signal<boolean>(false);
+  readonly progressoEmMassa = signal<{ atual: number; total: number } | null>(null);
 
   // Filtros
   readonly buscaTexto = signal<string>('');
@@ -458,6 +544,19 @@ export class ComunidadeMembrosComponent implements OnInit {
     });
   });
 
+  readonly membrosNaoSeguidosFiltrados = computed(() => {
+    const meu = this.meuId();
+    const seguindo = this.seguindoIds();
+    return this.membrosFiltrados().filter(m => m.id !== meu && !seguindo.has(m.id));
+  });
+
+  readonly todosNaoSeguidosSelecionados = computed(() => {
+    const naoSeguidos = this.membrosNaoSeguidosFiltrados();
+    if (naoSeguidos.length === 0) return false;
+    const selecionados = this.selecionadosIds();
+    return naoSeguidos.every(m => selecionados.has(m.id));
+  });
+
   async ngOnInit(): Promise<void> {
     await this.carregarDados();
   }
@@ -490,8 +589,92 @@ export class ComunidadeMembrosComponent implements OnInit {
     return this.seguindoIds().has(membroId);
   }
 
+  isSelecionado(membroId: string): boolean {
+    return this.selecionadosIds().has(membroId);
+  }
+
+  toggleSelecionar(membroId: string): void {
+    if (this.processandoEmMassa()) return;
+    this.selecionadosIds.update(set => {
+      const novo = new Set(set);
+      if (novo.has(membroId)) {
+        novo.delete(membroId);
+      } else {
+        novo.add(membroId);
+      }
+      return novo;
+    });
+  }
+
+  toggleSelecionarTodos(): void {
+    if (this.processandoEmMassa()) return;
+    const naoSeguidos = this.membrosNaoSeguidosFiltrados();
+    const todosJaSelecionados = this.todosNaoSeguidosSelecionados();
+
+    this.selecionadosIds.update(set => {
+      const novo = new Set(set);
+      if (todosJaSelecionados) {
+        naoSeguidos.forEach(m => novo.delete(m.id));
+      } else {
+        naoSeguidos.forEach(m => novo.add(m.id));
+      }
+      return novo;
+    });
+  }
+
+  limparSelecao(): void {
+    if (this.processandoEmMassa()) return;
+    this.selecionadosIds.set(new Set());
+  }
+
+  async seguirSelecionados(): Promise<void> {
+    const idsParaSeguir = Array.from(this.selecionadosIds());
+    if (idsParaSeguir.length === 0 || this.processandoEmMassa()) return;
+
+    this.processandoEmMassa.set(true);
+    this.progressoEmMassa.set({ atual: 0, total: idsParaSeguir.length });
+
+    let sucessos = 0;
+    let falhas = 0;
+
+    for (let i = 0; i < idsParaSeguir.length; i++) {
+      const id = idsParaSeguir[i];
+      try {
+        const { error } = await this.supabaseService.seguirMembro(id);
+        if (!error) {
+          sucessos++;
+          this.seguindoIds.update(s => new Set(s).add(id));
+          this.selecionadosIds.update(s => {
+            const copy = new Set(s);
+            copy.delete(id);
+            return copy;
+          });
+        } else {
+          falhas++;
+        }
+      } catch {
+        falhas++;
+      }
+      this.progressoEmMassa.set({ atual: i + 1, total: idsParaSeguir.length });
+    }
+
+    this.processandoEmMassa.set(false);
+    this.progressoEmMassa.set(null);
+
+    if (sucessos > 0) {
+      this.tipoFeedback.set('sucesso');
+      const pontosGanhos = sucessos * 2;
+      this.mensagemFeedback.set(
+        `Você começou a seguir ${sucessos} ${sucessos === 1 ? 'membro' : 'membros'} (+${pontosGanhos} pts no Hall da Fama)!${falhas > 0 ? ` (${falhas} falhas)` : ''}`
+      );
+    } else {
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Não foi possível seguir os membros selecionados. Tente novamente.');
+    }
+  }
+
   async toggleSeguir(membro: MembroCard): Promise<void> {
-    if (!membro?.id || this.processandoSeguirId() === membro.id) return;
+    if (!membro?.id || this.processandoSeguirId() === membro.id || this.processandoEmMassa()) return;
     const jaSegue = this.isSeguindo(membro.id);
 
     this.processandoSeguirId.set(membro.id);
@@ -531,8 +714,13 @@ export class ComunidadeMembrosComponent implements OnInit {
           this.tipoFeedback.set('erro');
           this.mensagemFeedback.set('Erro ao seguir membro. Tente novamente.');
         } else {
+          this.selecionadosIds.update(s => {
+            const copy = new Set(s);
+            copy.delete(membro.id);
+            return copy;
+          });
           this.tipoFeedback.set('sucesso');
-          this.mensagemFeedback.set(`Você começou a seguir ${membro.full_name}!`);
+          this.mensagemFeedback.set(`Você começou a seguir ${membro.full_name} (+2 pts no Hall da Fama)!`);
         }
       }
     } catch (e: any) {

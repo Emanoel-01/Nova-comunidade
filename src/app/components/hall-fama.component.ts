@@ -1,6 +1,8 @@
-import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject, signal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
+import { REGRAS_PONTUACAO } from '../utils/gamificacao.util';
 
 export interface GamificacaoPerfil {
   id?: string;
@@ -45,230 +47,294 @@ export interface HistoricoVencedor {
 @Component({
   selector: 'app-hall-fama',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
-    <div class="space-y-8">
+    <div [class]="modoCompacto() ? 'space-y-4' : 'space-y-6'">
       
       <!-- ======================================================= -->
       <!-- 1. HERO / CABEÇALHO DO HALL DA FAMA                    -->
       <!-- ======================================================= -->
-      <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl text-white p-6 sm:p-8 shadow-md relative overflow-hidden">
-        <div class="absolute -right-8 -bottom-8 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none"></div>
+      @if (modoCompacto()) {
+        <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl text-white p-4 sm:p-5 shadow-sm relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none"></div>
 
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div class="space-y-2 max-w-2xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold border border-white/25 backdrop-blur-xs">
-              <span class="text-sm">🏆</span>
-              <span>Reconhecimento & Conquistas</span>
+          <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1 max-w-xl">
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold border border-white/25">
+                <span>🏆</span>
+                <span>Ranking & Conquistas</span>
+              </div>
+
+              <h3 class="text-lg sm:text-xl font-black tracking-tight text-white">
+                Hall da Fama Business 4.0
+              </h3>
+
+              <p class="text-xs text-amber-50 font-medium leading-normal">
+                Reconhecimento oficial dos membros mais engajados no ecossistema.
+              </p>
             </div>
 
-            <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Hall da Fama Business 4.0
-            </h2>
-
-            <p class="text-xs sm:text-sm text-amber-50 font-medium leading-relaxed">
-              O ecossistema reconhece e premia os membros mais engajados em diagnósticos, automações de IA, discussões técnicas e compartilhamento de conhecimento.
-            </p>
-          </div>
-
-          <!-- Badge de Tempo Real -->
-          <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/15 self-start md:self-auto text-xs font-bold text-amber-100">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Atualização em Tempo Real</span>
+            <!-- Badge de Tempo Real -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/20 backdrop-blur-sm border border-white/15 self-start sm:self-auto text-xs font-bold text-amber-100 shrink-0">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Tempo Real</span>
+            </div>
           </div>
         </div>
-      </div>
+      } @else {
+        <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl text-white p-5 sm:p-6 shadow-md relative overflow-hidden">
+          <div class="absolute -right-8 -bottom-8 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none"></div>
+
+          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1.5 max-w-2xl">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold border border-white/25 backdrop-blur-xs">
+                <span class="text-sm">🏆</span>
+                <span>Reconhecimento & Conquistas</span>
+              </div>
+
+              <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                Hall da Fama Business 4.0
+              </h2>
+
+              <p class="text-xs sm:text-sm text-amber-50 font-medium leading-relaxed">
+                O ecossistema reconhece e premia os membros mais engajados em diagnósticos, automações de IA, discussões técnicas e compartilhamento de conhecimento.
+              </p>
+            </div>
+
+            <!-- Badge de Tempo Real -->
+            <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/15 self-start md:self-auto text-xs font-bold text-amber-100 shrink-0">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Atualização em Tempo Real</span>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- ======================================================= -->
       <!-- 2. VITRINE DE PRÊMIOS DO MÊS EM DISPUTA                 -->
       <!-- ======================================================= -->
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-base border border-amber-200/60 shadow-2xs">
-              🎁
-            </div>
-            <div>
-              <h3 class="text-base sm:text-lg font-black text-slate-900">
-                Prêmios em Disputa ({{ getNomeMesAtual() }} / {{ anoAtual }})
-              </h3>
-              <p class="text-xs text-slate-500 font-medium">Premiações oficiais para os líderes do ranking deste mês</p>
-            </div>
-          </div>
-        </div>
-
-        @if (carregandoPremios()) {
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            @for (i of [1, 2, 3]; track i) {
-              <div class="p-5 rounded-2xl bg-white border border-slate-200 animate-pulse space-y-3">
-                <div class="w-8 h-8 bg-slate-200 rounded-lg"></div>
-                <div class="h-4 bg-slate-200 rounded w-3/4"></div>
-                <div class="h-3 bg-slate-200 rounded w-full"></div>
+      @if (!modoCompacto()) {
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-base border border-amber-200/60 shadow-2xs">
+                🎁
               </div>
-            }
+              <div>
+                <h3 class="text-base sm:text-lg font-black text-slate-900">
+                  Prêmios em Disputa ({{ getNomeMesAtual() }} / {{ anoAtual }})
+                </h3>
+                <p class="text-xs text-slate-500 font-medium">Premiações oficiais para os líderes do ranking deste mês</p>
+              </div>
+            </div>
           </div>
-        } @else if (premiosMesAtual().length === 0) {
-          <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs text-center space-y-2">
-            <div class="text-2xl">🎖️</div>
-            <p class="text-xs sm:text-sm font-bold text-slate-800">
-              Prêmios deste mês em fase de definição
-            </p>
-            <p class="text-xs text-slate-500 max-w-md mx-auto">
-              A equipe da Amorim Tech está finalizando o pacote de premiações exclusivas para o fechamento deste mês. Continue participando e acumulando pontos!
-            </p>
-          </div>
-        } @else {
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            @for (premio of premiosMesAtual(); track premio.id) {
-              <div
-                class="bg-white rounded-2xl p-5 border transition-all flex flex-col justify-between space-y-4 shadow-2xs relative overflow-hidden"
-                [class]="getCardPremioClass(premio.posicao)"
-              >
-                <!-- Faixa de Destaque -->
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl border shadow-xs"
-                      [class]="getMedalhaBadgeClass(premio.posicao)"
-                    >
-                      {{ getMedalhaIcone(premio.posicao) }}
-                    </div>
-                    <span class="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border"
-                      [class]="getPosicaoTagClass(premio.posicao)"
-                    >
-                      {{ getPosicaoTexto(premio.posicao) }}
-                    </span>
-                  </div>
 
-                  @if (premio.imagem_url) {
-                    <div class="h-28 w-full rounded-xl overflow-hidden border border-slate-100 bg-slate-50">
-                      <img
-                        [src]="premio.imagem_url"
-                        [alt]="premio.titulo"
-                        class="w-full h-full object-contain p-1"
-                        referrerpolicy="no-referrer"
-                      />
+          @if (carregandoPremios()) {
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              @for (i of [1, 2, 3]; track i) {
+                <div class="p-5 rounded-2xl bg-white border border-slate-200 animate-pulse space-y-3">
+                  <div class="w-8 h-8 bg-slate-200 rounded-lg"></div>
+                  <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+                  <div class="h-3 bg-slate-200 rounded w-full"></div>
+                </div>
+              }
+            </div>
+          } @else if (premiosMesAtual().length === 0) {
+            <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs text-center space-y-2">
+              <div class="text-2xl">🎖️</div>
+              <p class="text-xs sm:text-sm font-bold text-slate-800">
+                Prêmios deste mês em fase de definição
+              </p>
+              <p class="text-xs text-slate-500 max-w-md mx-auto">
+                A equipe da Amorim Tech está finalizando o pacote de premiações exclusivas para o fechamento deste mês. Continue participando e acumulando pontos!
+              </p>
+            </div>
+          } @else {
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              @for (premio of premiosMesAtual(); track premio.id) {
+                <div
+                  class="bg-white rounded-2xl p-5 border transition-all flex flex-col justify-between space-y-4 shadow-2xs relative overflow-hidden"
+                  [class]="getCardPremioClass(premio.posicao)"
+                >
+                  <!-- Faixa de Destaque -->
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl border shadow-xs"
+                        [class]="getMedalhaBadgeClass(premio.posicao)"
+                      >
+                        {{ getMedalhaIcone(premio.posicao) }}
+                      </div>
+                      <span class="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border"
+                        [class]="getPosicaoTagClass(premio.posicao)"
+                      >
+                        {{ getPosicaoTexto(premio.posicao) }}
+                      </span>
                     </div>
-                  }
 
-                  <div class="space-y-1">
-                    <h4 class="text-sm font-black text-slate-900 leading-snug">
-                      {{ premio.titulo }}
-                    </h4>
-                    @if (premio.descricao) {
-                      <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                        {{ premio.descricao }}
-                      </p>
+                    @if (premio.imagem_url) {
+                      <div class="h-28 w-full rounded-xl overflow-hidden border border-slate-100 bg-slate-50">
+                        <img
+                          [src]="premio.imagem_url"
+                          [alt]="premio.titulo"
+                          class="w-full h-full object-contain p-1"
+                          referrerpolicy="no-referrer"
+                        />
+                      </div>
                     }
+
+                    <div class="space-y-1">
+                      <h4 class="text-sm font-black text-slate-900 leading-snug">
+                        {{ premio.titulo }}
+                      </h4>
+                      @if (premio.descricao) {
+                        <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                          {{ premio.descricao }}
+                        </p>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span>Entrega no encerramento</span>
+                    <span class="font-bold text-amber-700">Vigência: {{ getNomeMes(premio.mes) }}/{{ premio.ano }}</span>
                   </div>
                 </div>
-
-                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                  <span>Entrega no encerramento</span>
-                  <span class="font-bold text-amber-700">Vigência: {{ getNomeMes(premio.mes) }}/{{ premio.ano }}</span>
-                </div>
-              </div>
-            }
-          </div>
-        }
-      </div>
+              }
+            </div>
+          }
+        </div>
+      }
 
       <!-- ======================================================= -->
       <!-- 3. RANKING PRINCIPAL (SEMANA / MÊS / ANO)              -->
       <!-- ======================================================= -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div
+        class="bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+        [class]="modoCompacto() ? 'rounded-2xl' : 'rounded-3xl'"
+      >
         
         <!-- Header do Card com Abas de Período -->
-        <div class="bg-slate-900 text-white p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800">
+        <div
+          class="bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800"
+          [class]="modoCompacto() ? 'p-4 sm:p-4.5' : 'p-5 sm:p-6'"
+        >
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl shadow-inner">
+            <div
+              class="rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-inner shrink-0"
+              [class]="modoCompacto() ? 'w-8 h-8 text-base' : 'w-10 h-10 text-xl'"
+            >
               👑
             </div>
             <div>
-              <h3 class="text-lg sm:text-xl font-bold tracking-tight text-white">Ranking Oficial</h3>
-              <p class="text-xs text-slate-400 font-medium">Membros com maior pontuação e engajamento</p>
+              <h3
+                class="font-bold tracking-tight text-white"
+                [class]="modoCompacto() ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'"
+              >
+                @if (modoCompacto()) {
+                  Top 3 do Mês ({{ getNomeMesAtual() }}/{{ anoAtual }})
+                } @else {
+                  Ranking Oficial
+                }
+              </h3>
+              <p class="text-xs text-slate-400 font-medium">
+                @if (modoCompacto()) {
+                  Líderes de pontuação e engajamento da rodada atual
+                } @else {
+                  Membros com maior pontuação e engajamento
+                }
+              </p>
             </div>
           </div>
 
-          <!-- Abas: Esta Semana, Este Mês, Este Ano -->
-          <div class="flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/80 self-stretch sm:self-auto">
-            <button
-              type="button"
-              id="tab-ranking-semana"
-              (click)="abaAtiva.set('semana')"
-              [class]="abaAtiva() === 'semana'
-                ? 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm transition-all cursor-pointer'
-                : 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer'"
-            >
-              Esta Semana
-            </button>
-            <button
-              type="button"
-              id="tab-ranking-mes"
-              (click)="abaAtiva.set('mes')"
-              [class]="abaAtiva() === 'mes'
-                ? 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm transition-all cursor-pointer'
-                : 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer'"
-            >
-              Este Mês
-            </button>
-            <button
-              type="button"
-              id="tab-ranking-ano"
-              (click)="abaAtiva.set('ano')"
-              [class]="abaAtiva() === 'ano'
-                ? 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm transition-all cursor-pointer'
-                : 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer'"
-            >
-              Este Ano
-            </button>
-          </div>
+          @if (!modoCompacto()) {
+            <!-- Abas: Esta Semana, Este Mês, Este Ano -->
+            <div class="flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/80 self-stretch sm:self-auto">
+              <button
+                type="button"
+                id="tab-ranking-semana"
+                (click)="abaAtiva.set('semana')"
+                [class]="abaAtiva() === 'semana'
+                  ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm transition-all cursor-pointer'
+                  : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer'"
+              >
+                Esta Semana
+              </button>
+              <button
+                type="button"
+                id="tab-ranking-mes"
+                (click)="abaAtiva.set('mes')"
+                [class]="abaAtiva() === 'mes'
+                  ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm transition-all cursor-pointer'
+                  : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer'"
+              >
+                Este Mês
+              </button>
+              <button
+                type="button"
+                id="tab-ranking-ano"
+                (click)="abaAtiva.set('ano')"
+                [class]="abaAtiva() === 'ano'
+                  ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 shadow-sm transition-all cursor-pointer'
+                  : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer'"
+              >
+                Este Ano
+              </button>
+            </div>
+          } @else {
+            <span class="text-[11px] font-bold text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-lg border border-amber-500/30 shrink-0">
+              Top 3 Mensal
+            </span>
+          }
         </div>
 
         <!-- Conteúdo do Ranking -->
-        <div class="p-4 sm:p-6">
+        <div [class]="modoCompacto() ? 'p-3 sm:p-4' : 'p-4 sm:p-5'">
           @if (loading()) {
             <!-- Estado de Carregamento -->
-            <div class="space-y-3">
-              @for (i of [1, 2, 3, 4, 5]; track i) {
-                <div class="animate-pulse flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <div class="flex items-center gap-3.5">
-                    <div class="w-7 h-7 bg-slate-200 rounded-full"></div>
-                    <div class="w-10 h-10 bg-slate-200 rounded-full"></div>
+            <div [class]="modoCompacto() ? 'space-y-2' : 'space-y-2.5'">
+              @for (i of (modoCompacto() ? [1, 2, 3] : [1, 2, 3, 4, 5]); track i) {
+                <div class="animate-pulse flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div class="flex items-center gap-3">
+                    <div class="w-6 h-6 bg-slate-200 rounded-full"></div>
+                    <div class="w-9 h-9 bg-slate-200 rounded-full"></div>
                     <div class="space-y-1.5">
-                      <div class="h-3.5 bg-slate-200 rounded w-32"></div>
-                      <div class="h-2.5 bg-slate-200 rounded w-20"></div>
+                      <div class="h-3 bg-slate-200 rounded w-28"></div>
+                      <div class="h-2 bg-slate-200 rounded w-16"></div>
                     </div>
                   </div>
-                  <div class="h-4 bg-slate-200 rounded w-16"></div>
+                  <div class="h-4 bg-slate-200 rounded w-14"></div>
                 </div>
               }
             </div>
           } @else if (rankingAtual().length === 0) {
             <!-- Estado Vazio -->
-            <div class="text-center py-12 px-4 space-y-2">
-              <div class="text-4xl mb-2">⭐</div>
-              <p class="text-slate-800 font-bold text-base">Ainda sem pontuações registradas para este período.</p>
-              <p class="text-slate-500 text-xs sm:text-sm">
-                Acesse diariamente, utilize os agentes de IA e interaja no feed e fórum para ser o primeiro colocado!
+            <div class="text-center py-8 sm:py-10 px-4 space-y-2">
+              <div class="text-3xl mb-1">⭐</div>
+              <p class="text-slate-800 font-bold text-sm sm:text-base">Ainda sem pontuações registradas para este período.</p>
+              <p class="text-slate-500 text-xs">
+                Acesse diariamente, utilize os agentes de IA e interaja na comunidade para ser o primeiro colocado!
               </p>
             </div>
           } @else {
             <!-- Lista dos Membros -->
-            <div class="space-y-3">
+            <div [class]="modoCompacto() ? 'space-y-2' : 'space-y-2.5'">
               @for (perfil of rankingAtual(); track perfil.id || $index; let idx = $index) {
                 <div
-                  class="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl transition-all border"
-                  [class]="getCardMembroRankingClass(idx)"
+                  class="flex items-center justify-between transition-all border"
+                  [class]="modoCompacto()
+                    ? 'p-2.5 sm:p-3 rounded-xl ' + getCardMembroRankingClass(idx)
+                    : 'p-3 sm:p-3.5 rounded-2xl ' + getCardMembroRankingClass(idx)"
                 >
                   <!-- Posição + Avatar + Nome + Nível -->
-                  <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                     <!-- Posição com Ícone ou Número -->
-                    <div class="w-7 text-center font-black text-sm sm:text-base shrink-0">
+                    <div class="w-6 text-center font-black text-sm shrink-0">
                       @if (idx === 0) { 🥇 }
                       @else if (idx === 1) { 🥈 }
                       @else if (idx === 2) { 🥉 }
-                      @else { <span class="text-slate-500 font-mono text-xs sm:text-sm">{{ idx + 1 }}º</span> }
+                      @else { <span class="text-slate-500 font-mono text-xs">{{ idx + 1 }}º</span> }
                     </div>
 
                     <!-- Avatar -->
@@ -277,16 +343,18 @@ export interface HistoricoVencedor {
                         <img
                           [src]="perfil.avatar_url"
                           [alt]="perfil.nome_exibicao || perfil.nome || 'Membro'"
-                          class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border border-slate-200 shadow-2xs"
+                          [class]="modoCompacto() ? 'w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-slate-200 shadow-2xs' : 'w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-slate-200 shadow-2xs'"
                           referrerpolicy="no-referrer"
                         />
                       } @else {
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-slate-900 text-amber-400 font-bold text-sm flex items-center justify-center border border-slate-700 shadow-2xs">
+                        <div
+                          [class]="modoCompacto() ? 'w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-900 text-amber-400 font-bold text-xs flex items-center justify-center border border-slate-700 shadow-2xs' : 'w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-900 text-amber-400 font-bold text-sm flex items-center justify-center border border-slate-700 shadow-2xs'"
+                        >
                           {{ getIniciais(perfil.nome_exibicao || perfil.nome) }}
                         </div>
                       }
                       @if (idx < 3) {
-                        <span class="absolute -bottom-1 -right-1 text-xs">
+                        <span class="absolute -bottom-1 -right-1 text-[10px]">
                           {{ idx === 0 ? '👑' : (idx === 1 ? '🥈' : '🥉') }}
                         </span>
                       }
@@ -295,18 +363,18 @@ export interface HistoricoVencedor {
                     <!-- Nome e Título -->
                     <div class="min-w-0">
                       <div class="flex items-center gap-1.5">
-                        <p class="text-sm font-bold text-slate-900 truncate">
+                        <p class="text-xs sm:text-sm font-bold text-slate-900 truncate">
                           {{ perfil.nome_exibicao || perfil.nome || 'Membro da Comunidade' }}
                         </p>
                       </div>
                       <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
                         <span
-                          class="inline-block px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold border"
+                          class="inline-block px-1.5 py-0.5 rounded-md text-[10px] font-semibold border"
                           [class]="getNivelBadgeClass(perfil.nivel_atual)"
                         >
                           {{ perfil.nivel_atual || 'Membro Ativo' }}
                         </span>
-                        @if (perfil.professional_title) {
+                        @if (perfil.professional_title && !modoCompacto()) {
                           <span class="text-[11px] text-slate-500 truncate hidden sm:inline">
                             • {{ perfil.professional_title }}
                           </span>
@@ -316,17 +384,37 @@ export interface HistoricoVencedor {
                   </div>
 
                   <!-- Pontuação -->
-                  <div class="text-right shrink-0 pl-3">
-                    <span class="block text-base sm:text-lg font-black text-slate-900 font-mono">
+                  <div class="text-right shrink-0 pl-2.5 sm:pl-3">
+                    <span
+                      class="block font-black text-slate-900 font-mono"
+                      [class]="modoCompacto() ? 'text-sm sm:text-base' : 'text-base sm:text-lg'"
+                    >
                       {{ getPontosDoPeriodo(perfil) }}
                     </span>
-                    <span class="text-[11px] text-slate-500 font-medium">
-                      {{ getLabelPeriodo() }}
+                    <span class="text-[10px] sm:text-[11px] text-slate-500 font-medium">
+                      {{ modoCompacto() ? 'pts mês' : getLabelPeriodo() }}
                     </span>
                   </div>
                 </div>
               }
             </div>
+
+            @if (modoCompacto()) {
+              <!-- Rodapé do Modo Compacto: Link para Hall da Fama Completo -->
+              <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                <span class="text-[11px] text-slate-500 text-center sm:text-left">
+                  Premiações exclusivas para o fechamento mensal da comunidade.
+                </span>
+                <a
+                  [routerLink]="['/comunidade/preview']"
+                  [queryParams]="{ aba: 'hall-fama' }"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold text-xs transition-colors shadow-xs cursor-pointer min-h-[38px]"
+                >
+                  <span>Ver Hall da Fama completo</span>
+                  <span>→</span>
+                </a>
+              </div>
+            }
           }
         </div>
       </div>
@@ -334,183 +422,143 @@ export interface HistoricoVencedor {
       <!-- ======================================================= -->
       <!-- 4. HISTÓRICO DE VENCEDORES (EDIÇÕES ANTERIORES)         -->
       <!-- ======================================================= -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8 space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-base border border-slate-200">
-              📜
+      @if (!modoCompacto()) {
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-base border border-slate-200">
+                📜
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-black text-slate-900">
+                  Galeria de Campeões Passados
+                </h3>
+                <p class="text-xs text-slate-500 font-medium">Vencedores históricos das edições mensais anteriores</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-base sm:text-lg font-black text-slate-900">
-                Galeria de Campeões Passados
-              </h3>
-              <p class="text-xs text-slate-500 font-medium">Vencedores históricos das edições mensais anteriores</p>
-            </div>
-          </div>
 
-          <!-- Filtro de Ano do Histórico -->
-          @if (anosHistorico().length > 0) {
-            <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
-              <span>Ano:</span>
-              <select
-                [value]="filtroAnoHistorico()"
-                (change)="onFiltroAnoHistoricoChange($event)"
-                class="px-3 py-1.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs cursor-pointer"
-              >
-                @for (ano of anosHistorico(); track ano) {
-                  <option [value]="ano">{{ ano }}</option>
-                }
-              </select>
-            </div>
-          }
-        </div>
-
-        @if (carregandoHistorico()) {
-          <div class="p-8 text-center space-y-2">
-            <div class="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p class="text-xs text-slate-500">Carregando galeria histórica...</p>
-          </div>
-        } @else if (historicoVencedores().length === 0) {
-          <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 text-center space-y-1.5">
-            <p class="text-xs sm:text-sm font-bold text-slate-700">
-              Nenhuma edição anterior arquivada ainda
-            </p>
-            <p class="text-xs text-slate-500">
-              Os vencedores do mês atual serão registrados automaticamente no encerramento desta rodada.
-            </p>
-          </div>
-        } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (v of historicoFiltrado(); track v.id) {
-              <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 border"
-                    [class]="getMedalhaBadgeClass(v.posicao)"
-                  >
-                    {{ getMedalhaIcone(v.posicao) }}
-                  </div>
-
-                  <div class="min-w-0 space-y-0.5">
-                    <p class="text-xs font-black text-slate-900 truncate">
-                      {{ v.nome_exibicao || 'Membro Campeão' }}
-                    </p>
-                    <div class="flex items-center gap-1.5 text-[11px] text-slate-500">
-                      <span class="font-bold text-amber-700">{{ getNomeMes(v.mes) }}/{{ v.ano }}</span>
-                      @if (v.premio_titulo) {
-                        <span class="truncate" [title]="v.premio_titulo">• {{ v.premio_titulo }}</span>
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <div class="text-right shrink-0">
-                  <span class="text-xs font-mono font-black text-slate-800">
-                    {{ v.pontos_final || 0 }}
-                  </span>
-                  <span class="block text-[10px] text-slate-400">pontos</span>
-                </div>
+            <!-- Filtro de Ano do Histórico -->
+            @if (anosHistorico().length > 0) {
+              <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <span>Ano:</span>
+                <select
+                  [value]="filtroAnoHistorico()"
+                  (change)="onFiltroAnoHistoricoChange($event)"
+                  class="px-3 py-1.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs cursor-pointer"
+                >
+                  @for (ano of anosHistorico(); track ano) {
+                    <option [value]="ano">{{ ano }}</option>
+                  }
+                </select>
               </div>
             }
           </div>
-        }
-      </div>
+
+          @if (carregandoHistorico()) {
+            <div class="p-8 text-center space-y-2">
+              <div class="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <p class="text-xs text-slate-500">Carregando galeria histórica...</p>
+            </div>
+          } @else if (historicoVencedores().length === 0) {
+            <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 text-center space-y-1.5">
+              <p class="text-xs sm:text-sm font-bold text-slate-700">
+                Nenhuma edição anterior arquivada ainda
+              </p>
+              <p class="text-xs text-slate-500">
+                Os vencedores do mês atual serão registrados automaticamente no encerramento desta rodada.
+              </p>
+            </div>
+          } @else {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              @for (v of historicoFiltrado(); track v.id) {
+                <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 border"
+                      [class]="getMedalhaBadgeClass(v.posicao)"
+                    >
+                      {{ getMedalhaIcone(v.posicao) }}
+                    </div>
+
+                    <div class="min-w-0 space-y-0.5">
+                      <p class="text-xs font-black text-slate-900 truncate">
+                        {{ v.nome_exibicao || 'Membro Campeão' }}
+                      </p>
+                      <div class="flex items-center gap-1.5 text-[11px] text-slate-500">
+                        <span class="font-bold text-amber-700">{{ getNomeMes(v.mes) }}/{{ v.ano }}</span>
+                        @if (v.premio_titulo) {
+                          <span class="truncate" [title]="v.premio_titulo">• {{ v.premio_titulo }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-right shrink-0">
+                    <span class="text-xs font-mono font-black text-slate-800">
+                      {{ v.pontos_final || 0 }}
+                    </span>
+                    <span class="block text-[10px] text-slate-400">pontos</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
 
       <!-- ======================================================= -->
       <!-- 5. GUIA DE PONTUAÇÃO (COMO SUBIR NO RANKING)            -->
       <!-- ======================================================= -->
-      <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8 space-y-5">
-        <div class="flex items-center gap-2.5 border-b border-slate-100 pb-4">
-          <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-base border border-indigo-100">
-            ⚡
+      @if (!modoCompacto()) {
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-5">
+          <div class="flex items-center gap-2.5 border-b border-slate-100 pb-4">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-base border border-indigo-100">
+              ⚡
+            </div>
+            <div>
+              <h3 class="text-base sm:text-lg font-black text-slate-900">
+                Como Ganhar Pontos no Hall da Fama?
+              </h3>
+              <p class="text-xs text-slate-500 font-medium">Suas interações no ecossistema geram pontuação automática via triggers</p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-base sm:text-lg font-black text-slate-900">
-              Como Ganhar Pontos no Hall da Fama?
-            </h3>
-            <p class="text-xs text-slate-500 font-medium">Suas interações no ecossistema geram pontuação automática via triggers</p>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            @for (regra of regrasPontuacao; track regra.id) {
+              <div class="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1 hover:bg-slate-100/70 transition-colors flex flex-col justify-between">
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-lg">{{ regra.icone }}</span>
+                    @if (regra.emBreve) {
+                      <span class="text-[10px] font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-md border border-slate-300/60">
+                        Em breve
+                      </span>
+                    } @else {
+                      <span class="text-xs font-black text-amber-600 font-mono">
+                        {{ regra.pontosTexto }}
+                      </span>
+                    }
+                  </div>
+                  <p class="text-xs font-bold text-slate-800 line-clamp-1" [title]="regra.acao">
+                    {{ regra.acao }}
+                  </p>
+                  <p class="text-[11px] text-slate-500 leading-tight line-clamp-2">
+                    {{ regra.descricao }}
+                  </p>
+                </div>
+              </div>
+            }
           </div>
         </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">📅</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+5 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Acesso Diário</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Ao entrar na plataforma (1x/dia)</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">🤖</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+10 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Uso de Agentes IA</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Executar ferramentas técnicas</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">✍️</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+15 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Publicação no Feed</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Compartilhar estudos e casos</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">💬</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+20 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Tópico no Fórum</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Iniciar debates e dúvidas</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">🎓</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+30 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Aulas Concluídas</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Evolução no Curso Predial</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">📥</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+5 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Download Material</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Baixar laudos e planilhas</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">🎟️</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+25 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Inscrição em Eventos</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Participar de webinars</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-lg">🤝</span>
-              <span class="text-xs font-black text-amber-600 font-mono">+10 pts</span>
-            </div>
-            <p class="text-xs font-bold text-slate-800">Seguir Membros</p>
-            <p class="text-[11px] text-slate-500 leading-tight">Expandir sua rede técnica</p>
-          </div>
-        </div>
-      </div>
+      }
 
     </div>
   `
 })
 export class HallFamaComponent implements OnInit, OnDestroy {
   private readonly supabaseService = inject(SupabaseService);
+
+  readonly modoCompacto = input<boolean>(false);
+  readonly regrasPontuacao = REGRAS_PONTUACAO;
 
   readonly loading = signal<boolean>(true);
   readonly carregandoPremios = signal<boolean>(true);
@@ -544,24 +592,30 @@ export class HallFamaComponent implements OnInit, OnDestroy {
   ];
 
   readonly topSemana = computed(() => {
+    const limit = this.modoCompacto() ? 3 : 8;
     return [...this.perfis()]
       .sort((a, b) => (Number(b.pontos_semana) || 0) - (Number(a.pontos_semana) || 0))
-      .slice(0, 10);
+      .slice(0, limit);
   });
 
   readonly topMes = computed(() => {
+    const limit = this.modoCompacto() ? 3 : 8;
     return [...this.perfis()]
       .sort((a, b) => (Number(b.pontos_mes) || 0) - (Number(a.pontos_mes) || 0))
-      .slice(0, 10);
+      .slice(0, limit);
   });
 
   readonly topAno = computed(() => {
+    const limit = this.modoCompacto() ? 3 : 8;
     return [...this.perfis()]
       .sort((a, b) => (Number(b.pontos_ano || b.pontos_total) || 0) - (Number(a.pontos_ano || a.pontos_total) || 0))
-      .slice(0, 10);
+      .slice(0, limit);
   });
 
   readonly rankingAtual = computed(() => {
+    if (this.modoCompacto()) {
+      return this.topMes();
+    }
     switch (this.abaAtiva()) {
       case 'semana':
         return this.topSemana();
@@ -852,3 +906,4 @@ export class HallFamaComponent implements OnInit, OnDestroy {
     }
   }
 }
+

@@ -13,6 +13,10 @@ export interface ModuloCursoAdmin {
   duracao?: string | null;
   vimeo_id?: string | null;
   ordem: number;
+  exige_avaliacao?: boolean;
+  trava_proximo_modulo?: boolean;
+  totalMateriais?: number;
+  totalQuestoes?: number;
 }
 
 export interface CursoAdmin {
@@ -26,6 +30,11 @@ export interface CursoAdmin {
   carga_horaria_certificado?: string | null;
   instrutor_nome?: string | null;
   instrutor_qualificacao?: string | null;
+  tem_avaliacao_por_modulo?: boolean;
+  nota_minima_avaliacao_modulo?: number | null;
+  nota_minima_avaliacao_final?: number | null;
+  tem_prazo?: boolean;
+  prazo_dias?: number | null;
   criado_em?: string;
   modulos?: ModuloCursoAdmin[];
   totalMatriculados?: number;
@@ -178,6 +187,34 @@ export interface CursoAdmin {
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   ></textarea>
                 </div>
+
+                <!-- Configurações de Avaliação e Prazo -->
+                <div class="sm:col-span-2 p-4 rounded-2xl bg-white border border-indigo-100 space-y-3">
+                  <div class="text-xs font-bold text-slate-800">Diretrizes de Avaliação e Prazos do Curso</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" #novoTemAvaliacaoModuloInput class="w-4 h-4 text-indigo-600 rounded" />
+                        <span class="text-xs font-bold text-slate-700">Habilitar Avaliação por Módulo</span>
+                      </label>
+                      <div class="flex items-center gap-2">
+                        <label class="text-[11px] font-semibold text-slate-600">Nota mínima por módulo (%):</label>
+                        <input type="number" #novoNotaMinModuloInput value="70" min="0" max="100" class="w-20 px-2 py-1 rounded-lg border border-slate-200 text-xs" />
+                      </div>
+                    </div>
+
+                    <div class="space-y-2">
+                      <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" #novoTemPrazoInput class="w-4 h-4 text-indigo-600 rounded" />
+                        <span class="text-xs font-bold text-slate-700">Definir Prazo para Conclusão</span>
+                      </label>
+                      <div class="flex items-center gap-2">
+                        <label class="text-[11px] font-semibold text-slate-600">Prazo (dias após matrícula):</label>
+                        <input type="number" #novoPrazoDiasInput value="30" min="1" class="w-20 px-2 py-1 rounded-lg border border-slate-200 text-xs" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="flex items-center justify-end gap-3 pt-2">
@@ -192,7 +229,18 @@ export interface CursoAdmin {
                 <button
                   type="button"
                   [disabled]="salvando()"
-                  (click)="salvarNovoCurso(novoTituloInput.value, novaDescricaoInput.value, novaCategoriaInput.value, novoVinculoInput.value, novoTextoNormativoInput.value, novaCargaHorariaInput.value)"
+                  (click)="salvarNovoCurso(
+                    novoTituloInput.value,
+                    novaDescricaoInput.value,
+                    novaCategoriaInput.value,
+                    novoVinculoInput.value,
+                    novoTextoNormativoInput.value,
+                    novaCargaHorariaInput.value,
+                    novoTemAvaliacaoModuloInput.checked,
+                    +novoNotaMinModuloInput.value,
+                    novoTemPrazoInput.checked,
+                    +novoPrazoDiasInput.value
+                  )"
                   class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
                 >
                   @if (salvando()) {
@@ -543,6 +591,37 @@ export interface CursoAdmin {
                       ></textarea>
                     </div>
 
+                    <!-- Configurações Pedagógicas e Trava do Módulo -->
+                    <div class="sm:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-white/80 rounded-2xl border border-indigo-100">
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          #formModExigeAvaliacaoInput
+                          [checked]="moduloFormDados.exige_avaliacao"
+                          (change)="moduloFormDados.exige_avaliacao = formModExigeAvaliacaoInput.checked"
+                          class="mt-0.5 w-4 h-4 text-indigo-600 rounded"
+                        />
+                        <div>
+                          <span class="text-xs font-bold text-slate-800">Exigir Avaliação de Proficiência</span>
+                          <p class="text-[11px] text-slate-500">O aluno só conclui o módulo se acertar as questões do quiz deste módulo.</p>
+                        </div>
+                      </label>
+
+                      <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          #formModTravaProximoInput
+                          [checked]="moduloFormDados.trava_proximo_modulo"
+                          (change)="moduloFormDados.trava_proximo_modulo = formModTravaProximoInput.checked"
+                          class="mt-0.5 w-4 h-4 text-indigo-600 rounded"
+                        />
+                        <div>
+                          <span class="text-xs font-bold text-slate-800">Travar Próximo Módulo (Sequencial)</span>
+                          <p class="text-[11px] text-slate-500">O módulo seguinte permanecerá bloqueado até que este seja concluído.</p>
+                        </div>
+                      </label>
+                    </div>
+
                     <!-- Prévia do Player do Vimeo em Tempo Real -->
                     @if (moduloFormDados.vimeo_id?.trim()) {
                       @let vimeoPreviewUrl = getVimeoUrl(moduloFormDados.vimeo_id);
@@ -636,6 +715,16 @@ export interface CursoAdmin {
                                 Vimeo: {{ mod.vimeo_id }}
                               </span>
                             }
+                            @if (mod.exige_avaliacao) {
+                              <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200 flex items-center gap-1">
+                                <span>📝</span> Exige Quiz
+                              </span>
+                            }
+                            @if (!mod.trava_proximo_modulo) {
+                              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-medium border border-slate-200">
+                                🔓 Sem trava
+                              </span>
+                            }
                           </div>
 
                           @if (mod.descricao) {
@@ -646,7 +735,27 @@ export interface CursoAdmin {
                         </div>
                       </div>
 
-                      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center flex-wrap">
+                        <button
+                          type="button"
+                          (click)="abrirModalMateriaisModulo(mod)"
+                          class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 border border-indigo-100"
+                          title="Gerenciar materiais anexos a este módulo"
+                        >
+                          <span>📎</span>
+                          <span>Materiais</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          (click)="abrirModalAvaliacaoModulo(mod)"
+                          class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 border border-amber-200"
+                          title="Configurar questões do quiz avaliativo deste módulo"
+                        >
+                          <span>📝</span>
+                          <span>Avaliação</span>
+                        </button>
+
                         <button
                           type="button"
                           (click)="iniciarEdicaoModulo(mod)"
@@ -1250,13 +1359,73 @@ export interface CursoAdmin {
                       class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
+
+                  <!-- Configurações de Avaliação e Prazos do Curso -->
+                  <div class="sm:col-span-2 p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-4">
+                    <div class="text-xs font-bold text-slate-800">Diretrizes de Avaliação e Prazos do Curso</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div class="space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            #editTemAvaliacaoModuloInput
+                            [checked]="cursoAtivo()?.tem_avaliacao_por_modulo"
+                            class="w-4 h-4 text-indigo-600 rounded"
+                          />
+                          <span class="text-xs font-bold text-slate-700">Habilitar Avaliação por Módulo</span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                          <label class="text-[11px] font-semibold text-slate-600">Nota mínima por módulo (%):</label>
+                          <input
+                            type="number"
+                            #editNotaMinModuloInput
+                            [value]="cursoAtivo()?.nota_minima_avaliacao_modulo ?? 70"
+                            min="0"
+                            max="100"
+                            class="w-20 px-2 py-1 rounded-lg border border-slate-300 text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            #editTemPrazoInput
+                            [checked]="cursoAtivo()?.tem_prazo"
+                            class="w-4 h-4 text-indigo-600 rounded"
+                          />
+                          <span class="text-xs font-bold text-slate-700">Definir Prazo para Conclusão</span>
+                        </label>
+                        <div class="flex items-center gap-2">
+                          <label class="text-[11px] font-semibold text-slate-600">Prazo (dias após matrícula):</label>
+                          <input
+                            type="number"
+                            #editPrazoDiasInput
+                            [value]="cursoAtivo()?.prazo_dias ?? 30"
+                            min="1"
+                            class="w-20 px-2 py-1 rounded-lg border border-slate-300 text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
                     type="button"
                     [disabled]="salvando()"
-                    (click)="salvarDadosGeraisCurso(editTituloInput.value, editDescricaoInput.value, editCategoriaInput.value, editVinculoInput.value)"
+                    (click)="salvarDadosGeraisCurso(
+                      editTituloInput.value,
+                      editDescricaoInput.value,
+                      editCategoriaInput.value,
+                      editVinculoInput.value,
+                      editTemAvaliacaoModuloInput.checked,
+                      +editNotaMinModuloInput.value,
+                      editTemPrazoInput.checked,
+                      +editPrazoDiasInput.value
+                    )"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
                     @if (salvando()) {
@@ -1273,6 +1442,435 @@ export interface CursoAdmin {
 
         </div>
 
+      }
+
+      <!-- ========================================================= -->
+      <!-- MODAL 1: GESTÃO DE MATERIAIS DO MÓDULO                    -->
+      <!-- ========================================================= -->
+      @if (moduloMateriaisAtivo(); as modMat) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scaleUp">
+            <!-- Header -->
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
+                    Aula {{ modMat.ordem }}
+                  </span>
+                  <h4 class="text-base font-bold text-slate-900">Materiais da Aula</h4>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">{{ modMat.titulo }}</p>
+              </div>
+              <button
+                type="button"
+                (click)="fecharModalMateriaisModulo()"
+                class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-700 flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-6">
+              <!-- Abas de seleção: Biblioteca vs Upload Exclusivo -->
+              <div class="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
+                <button
+                  type="button"
+                  (click)="abaMaterialModal.set('biblioteca')"
+                  [class]="abaMaterialModal() === 'biblioteca'
+                    ? 'flex-1 py-2 px-3 rounded-xl bg-white text-indigo-700 font-bold text-xs shadow-xs cursor-pointer text-center transition-all'
+                    : 'flex-1 py-2 px-3 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs cursor-pointer text-center transition-all'"
+                >
+                  <span>📚 Vincular da Biblioteca</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="abaMaterialModal.set('upload')"
+                  [class]="abaMaterialModal() === 'upload'
+                    ? 'flex-1 py-2 px-3 rounded-xl bg-white text-indigo-700 font-bold text-xs shadow-xs cursor-pointer text-center transition-all'
+                    : 'flex-1 py-2 px-3 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs cursor-pointer text-center transition-all'"
+                >
+                  <span>☁️ Upload Exclusivo deste Módulo</span>
+                </button>
+              </div>
+
+              <!-- OPÇÃO 1: Vincular novo material da biblioteca -->
+              @if (abaMaterialModal() === 'biblioteca') {
+                <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h5 class="text-xs font-bold text-slate-800">Vincular Material da Biblioteca Geral</h5>
+                    <span class="text-[11px] text-slate-500">Materiais já cadastrados na plataforma</span>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div class="sm:col-span-2 space-y-1">
+                      <label class="block text-[11px] font-bold text-slate-600">Selecione o Material</label>
+                      <select
+                        #novoMatSelect
+                        class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">-- Escolha um material da biblioteca --</option>
+                        @for (m of todosMateriaisDisponiveis(); track m.id) {
+                          <option [value]="m.id">
+                            {{ m.titulo }} ({{ m.categoria || 'Geral' }}) - {{ m.formato || 'PDF' }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                      <label class="flex items-center gap-1.5 cursor-pointer select-none text-xs text-slate-700 font-semibold">
+                        <input type="checkbox" #novoMatObrigatorioCheck class="w-4 h-4 text-indigo-600 rounded" />
+                        <span>Obrigatório</span>
+                      </label>
+
+                      <button
+                        type="button"
+                        [disabled]="salvandoMaterialModulo() || !novoMatSelect.value"
+                        (click)="vincularMaterialAoModulo(modMat.id, novoMatSelect.value, novoMatObrigatorioCheck.checked)"
+                        class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5 shrink-0"
+                      >
+                        @if (salvandoMaterialModulo()) {
+                          <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        } @else {
+                          <span>+ Vincular</span>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- OPÇÃO 2: Fazer Upload de Material Exclusivo deste Módulo -->
+              @if (abaMaterialModal() === 'upload') {
+                <div class="bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4 sm:p-5 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h5 class="text-xs font-bold text-slate-900">Upload de Material Exclusivo deste Módulo</h5>
+                      <p class="text-[11px] text-slate-500">Este arquivo ficará acessível apenas dentro desta aula e não aparecerá na biblioteca geral de materiais.</p>
+                    </div>
+                  </div>
+
+                  @if (erroUploadMaterialExclusivo()) {
+                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
+                      <span>{{ erroUploadMaterialExclusivo() }}</span>
+                      <button type="button" (click)="erroUploadMaterialExclusivo.set(null)" class="text-rose-500 hover:text-rose-700 cursor-pointer">✕</button>
+                    </div>
+                  }
+
+                  <!-- Seletor de Arquivo -->
+                  <div class="space-y-1.5">
+                    <label class="block text-[11px] font-bold text-slate-700">Arquivo do Material * (Qualquer formato até 20MB)</label>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                      <input
+                        type="file"
+                        #fileInputExclusivo
+                        (change)="onArquivoExclusivoSelecionado($event)"
+                        class="hidden"
+                      />
+                      <button
+                        type="button"
+                        (click)="fileInputExclusivo.click()"
+                        class="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                      >
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span>{{ arquivoExclusivoSelecionado() ? 'Trocar Arquivo' : 'Selecionar Arquivo...' }}</span>
+                      </button>
+
+                      @if (arquivoExclusivoSelecionado(); as file) {
+                        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-100/70 text-emerald-900 text-xs font-semibold border border-emerald-200 truncate">
+                          <span class="truncate">{{ file.name }}</span>
+                          <span class="text-[10px] text-emerald-700 shrink-0">({{ formatarTamanhoArquivoBytes(file.size) }})</span>
+                        </div>
+                      } @else {
+                        <span class="text-xs text-slate-400 self-center">Nenhum arquivo selecionado</span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Campos de Metadados -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="space-y-1 sm:col-span-2">
+                      <label class="block text-[11px] font-bold text-slate-700">Título do Material *</label>
+                      <input
+                        type="text"
+                        [value]="tituloMaterialExclusivo()"
+                        (input)="tituloMaterialExclusivo.set($any($event.target).value)"
+                        placeholder="Ex: Checklist de Inspeção de Fachadas — Aula 01"
+                        class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="block text-[11px] font-bold text-slate-700">Categoria</label>
+                      <select
+                        [value]="categoriaMaterialExclusivo()"
+                        (change)="categoriaMaterialExclusivo.set($any($event.target).value)"
+                        class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="Geral">Geral</option>
+                        <option value="Planilhas">Planilhas</option>
+                        <option value="Modelos de Laudo">Modelos de Laudo</option>
+                        <option value="Checklists">Checklists</option>
+                        <option value="E-books">E-books</option>
+                        <option value="Apostilas & Slides">Apostilas & Slides</option>
+                      </select>
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="block text-[11px] font-bold text-slate-700">Descrição Curta (Opcional)</label>
+                      <input
+                        type="text"
+                        [value]="descricaoMaterialExclusivo()"
+                        (input)="descricaoMaterialExclusivo.set($any($event.target).value)"
+                        placeholder="Ex: Planilha de apoio para cálculo de manifestações patológicas..."
+                        class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-emerald-100">
+                    <label class="flex items-center gap-1.5 cursor-pointer select-none text-xs text-slate-700 font-semibold">
+                      <input
+                        type="checkbox"
+                        [checked]="obrigatorioMaterialExclusivo()"
+                        (change)="obrigatorioMaterialExclusivo.set($any($event.target).checked)"
+                        class="w-4 h-4 text-emerald-600 rounded"
+                      />
+                      <span>Material Obrigatório para Conclusão</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      [disabled]="uploadandoMaterialExclusivo() || !arquivoExclusivoSelecionado()"
+                      (click)="enviarMaterialExclusivoModulo(modMat.id)"
+                      class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2 shrink-0"
+                    >
+                      @if (uploadandoMaterialExclusivo()) {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Enviando...</span>
+                      } @else {
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span>Fazer Upload e Anexar</span>
+                      }
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- Lista de Materiais Vinculados -->
+              <div class="space-y-3">
+                <h5 class="text-xs font-bold text-slate-800">
+                  Materiais Anexados a esta Aula ({{ materiaisModulo().length }})
+                </h5>
+
+                @if (carregandoMateriaisModulo()) {
+                  <div class="p-8 text-center space-y-2">
+                    <div class="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p class="text-xs text-slate-500">Carregando materiais vinculados...</p>
+                  </div>
+                } @else if (materiaisModulo().length === 0) {
+                  <div class="p-6 text-center rounded-2xl bg-slate-50 border border-slate-100 text-slate-500 text-xs">
+                    Nenhum material complementar vinculado a esta aula. Selecione um material acima para vincular.
+                  </div>
+                } @else {
+                  <div class="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                    @for (item of materiaisModulo(); track item.id || item.material_id) {
+                      <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50">
+                        <div class="space-y-0.5 min-w-0">
+                          <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-900 text-xs truncate">
+                              {{ item.material?.titulo || 'Material' }}
+                            </span>
+                            @if (item.obrigatorio) {
+                              <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
+                                Obrigatório
+                              </span>
+                            } @else {
+                              <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">
+                                Opcional
+                              </span>
+                            }
+                          </div>
+                          <div class="text-[11px] text-slate-400">
+                            {{ item.material?.categoria || 'Sem categoria' }} • {{ item.material?.formato || 'PDF' }}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          (click)="desvincularMaterialDoModulo(modMat.id, item.material_id || item.material?.id)"
+                          class="px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-xs font-semibold cursor-pointer shrink-0"
+                        >
+                          Desvincular
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+              <button
+                type="button"
+                (click)="fecharModalMateriaisModulo()"
+                class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ========================================================= -->
+      <!-- MODAL 2: GESTÃO DE AVALIAÇÃO DO MÓDULO                    -->
+      <!-- ========================================================= -->
+      @if (moduloAvaliacaoAtivo(); as modAv) {
+        <div class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scaleUp">
+            <!-- Header -->
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">
+                    Quiz • Aula {{ modAv.ordem }}
+                  </span>
+                  <h4 class="text-base font-bold text-slate-900">Avaliação do Módulo</h4>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">{{ modAv.titulo }}</p>
+              </div>
+              <button
+                type="button"
+                (click)="fecharModalAvaliacaoModulo()"
+                class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-700 flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-6">
+              <div class="flex items-center justify-between">
+                <p class="text-xs text-slate-500">
+                  Cadastre perguntas de múltipla escolha para validar o aprendizado do aluno antes de liberar o próximo módulo ou emitir o certificado.
+                </p>
+                <button
+                  type="button"
+                  (click)="adicionarNovaQuestao()"
+                  class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs cursor-pointer inline-flex items-center gap-1.5 shrink-0"
+                >
+                  <span>+ Adicionar Questão</span>
+                </button>
+              </div>
+
+              @if (carregandoQuestoesModulo()) {
+                <div class="p-8 text-center space-y-2">
+                  <div class="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p class="text-xs text-slate-500">Carregando questões cadastradas...</p>
+                </div>
+              } @else if (questoesModulo().length === 0) {
+                <div class="p-8 text-center rounded-2xl bg-amber-50/50 border border-amber-200 space-y-2">
+                  <div class="text-2xl">📝</div>
+                  <div class="text-xs font-bold text-slate-800">Nenhuma questão cadastrada para esta aula</div>
+                  <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                    Clique no botão "+ Adicionar Questão" acima para criar a primeira pergunta do quiz avaliativo.
+                  </p>
+                </div>
+              } @else {
+                <div class="space-y-5">
+                  @for (q of questoesModulo(); track q.id || $index; let qIdx = $index) {
+                    <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 relative group">
+                      <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-800 text-xs font-black">
+                          Questão {{ qIdx + 1 }}
+                        </span>
+                        <button
+                          type="button"
+                          (click)="removerQuestao(qIdx)"
+                          class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                        >
+                          Excluir Questão
+                        </button>
+                      </div>
+
+                      <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700">Enunciado da Questão *</label>
+                        <textarea
+                          rows="2"
+                          [value]="q.pergunta"
+                          (input)="atualizarPerguntaQuestao(q, $event)"
+                          placeholder="Ex: Conforme a NBR 16747, qual é o objetivo prioritário da inspeção predial?"
+                          class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        ></textarea>
+                      </div>
+
+                      <!-- Alternativas A, B, C, D -->
+                      <div class="space-y-2.5 pt-1">
+                        <label class="block text-xs font-bold text-slate-700">Alternativas & Gabarito Correto</label>
+                        
+                        @for (letra of ['a', 'b', 'c', 'd']; track letra) {
+                          <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1.5 cursor-pointer shrink-0">
+                              <input
+                                type="radio"
+                                [name]="'gabarito_' + qIdx"
+                                [value]="letra.toUpperCase()"
+                                [checked]="q.resposta_correta?.toUpperCase() === letra.toUpperCase()"
+                                (change)="q.resposta_correta = letra.toUpperCase()"
+                                class="w-4 h-4 text-emerald-600"
+                              />
+                              <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center uppercase">
+                                {{ letra }}
+                              </span>
+                            </label>
+                            <input
+                              type="text"
+                              [value]="q.alternativas ? q.alternativas[letra] || '' : ''"
+                              (input)="atualizarTextoAlternativa(q, letra, $event)"
+                              [placeholder]="'Texto da alternativa ' + letra.toUpperCase()"
+                              class="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <button
+                type="button"
+                (click)="fecharModalAvaliacaoModulo()"
+                class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                [disabled]="salvandoQuestoesModulo() || questoesModulo().length === 0"
+                (click)="salvarQuestoesModulo(modAv.id)"
+                class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
+              >
+                @if (salvandoQuestoesModulo()) {
+                  <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Salvando Questões...</span>
+                } @else {
+                  <span>💾 Salvar Questões da Avaliação</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
       }
 
     </div>
@@ -1306,7 +1904,30 @@ export class AdminCursoComponent implements OnInit {
     duracao: '',
     vimeo_id: '',
     ordem: 1,
+    exige_avaliacao: false,
+    trava_proximo_modulo: true,
   };
+
+  // Materiais do Módulo
+  readonly moduloMateriaisAtivo = signal<ModuloCursoAdmin | null>(null);
+  readonly materiaisModulo = signal<any[]>([]);
+  readonly todosMateriaisDisponiveis = signal<any[]>([]);
+  readonly carregandoMateriaisModulo = signal<boolean>(false);
+  readonly salvandoMaterialModulo = signal<boolean>(false);
+  readonly abaMaterialModal = signal<'biblioteca' | 'upload'>('biblioteca');
+  readonly uploadandoMaterialExclusivo = signal<boolean>(false);
+  readonly arquivoExclusivoSelecionado = signal<File | null>(null);
+  readonly tituloMaterialExclusivo = signal<string>('');
+  readonly categoriaMaterialExclusivo = signal<string>('Geral');
+  readonly descricaoMaterialExclusivo = signal<string>('');
+  readonly obrigatorioMaterialExclusivo = signal<boolean>(false);
+  readonly erroUploadMaterialExclusivo = signal<string | null>(null);
+
+  // Avaliação do Módulo (Quiz)
+  readonly moduloAvaliacaoAtivo = signal<ModuloCursoAdmin | null>(null);
+  readonly questoesModulo = signal<any[]>([]);
+  readonly carregandoQuestoesModulo = signal<boolean>(false);
+  readonly salvandoQuestoesModulo = signal<boolean>(false);
 
   // Alunos matriculados e liberação de acessos
   readonly subAbaAlunos = signal<'acessos' | 'progresso'>('acessos');
@@ -1370,7 +1991,11 @@ export class AdminCursoComponent implements OnInit {
     categoria: string,
     vinculo: string,
     textoNormativo: string,
-    cargaHoraria: string
+    cargaHoraria: string,
+    temAvaliacaoModulo: boolean = false,
+    notaMinModulo: number = 70,
+    temPrazo: boolean = false,
+    prazoDias: number = 30
   ): Promise<void> {
     if (!titulo.trim()) {
       this.exibirErro('Por favor, informe o título do curso.');
@@ -1387,6 +2012,10 @@ export class AdminCursoComponent implements OnInit {
         modulo_predial_vinculado: vinculoVal,
         texto_certificado: textoNormativo.trim() || undefined,
         carga_horaria_certificado: cargaHoraria.trim() || undefined,
+        tem_avaliacao_por_modulo: temAvaliacaoModulo,
+        nota_minima_avaliacao_modulo: notaMinModulo,
+        tem_prazo: temPrazo,
+        prazo_dias: temPrazo ? prazoDias : undefined,
       });
 
       if (res.error) {
@@ -1473,6 +2102,8 @@ export class AdminCursoComponent implements OnInit {
       duracao: '',
       vimeo_id: '',
       ordem: totalExistentes + 1,
+      exige_avaliacao: false,
+      trava_proximo_modulo: true,
     };
     this.editandoModuloId.set(null);
     this.criandoModulo.set(true);
@@ -1485,6 +2116,8 @@ export class AdminCursoComponent implements OnInit {
       duracao: modulo.duracao || '',
       vimeo_id: modulo.vimeo_id || '',
       ordem: modulo.ordem,
+      exige_avaliacao: modulo.exige_avaliacao ?? false,
+      trava_proximo_modulo: modulo.trava_proximo_modulo ?? true,
     };
     this.criandoModulo.set(false);
     this.editandoModuloId.set(modulo.id);
@@ -1531,6 +2164,8 @@ export class AdminCursoComponent implements OnInit {
           duracao: this.moduloFormDados.duracao.trim() || '',
           vimeo_id: vimeoIdFinal || '',
           ordem: this.moduloFormDados.ordem || 1,
+          exige_avaliacao: this.moduloFormDados.exige_avaliacao,
+          trava_proximo_modulo: this.moduloFormDados.trava_proximo_modulo,
         });
 
         if (res.error) {
@@ -1548,6 +2183,8 @@ export class AdminCursoComponent implements OnInit {
           duracao: this.moduloFormDados.duracao.trim() || undefined,
           vimeo_id: vimeoIdFinal || undefined,
           ordem: this.moduloFormDados.ordem || 1,
+          exige_avaliacao: this.moduloFormDados.exige_avaliacao,
+          trava_proximo_modulo: this.moduloFormDados.trava_proximo_modulo,
         });
 
         if (res.error) {
@@ -1579,6 +2216,252 @@ export class AdminCursoComponent implements OnInit {
       await this.carregarCursos();
     } catch (e: any) {
       this.exibirErro('Erro ao excluir aula: ' + (e?.message || e));
+    }
+  }
+
+  // ==========================================
+  // GESTÃO DE MATERIAIS DO MÓDULO
+  // ==========================================
+
+  async abrirModalMateriaisModulo(modulo: ModuloCursoAdmin): Promise<void> {
+    this.moduloMateriaisAtivo.set(modulo);
+    this.carregandoMateriaisModulo.set(true);
+    try {
+      const [vinculados, biblioteca] = await Promise.all([
+        this.supabaseService.listarMateriaisDoModulo(modulo.id),
+        this.supabaseService.listarMateriais()
+      ]);
+      this.materiaisModulo.set(vinculados);
+      this.todosMateriaisDisponiveis.set(biblioteca);
+    } catch (e: any) {
+      this.exibirErro('Erro ao carregar materiais da aula: ' + (e?.message || e));
+    } finally {
+      this.carregandoMateriaisModulo.set(false);
+    }
+  }
+
+  fecharModalMateriaisModulo(): void {
+    this.moduloMateriaisAtivo.set(null);
+    this.materiaisModulo.set([]);
+    this.limparFormMaterialExclusivo();
+    this.abaMaterialModal.set('biblioteca');
+  }
+
+  limparFormMaterialExclusivo(): void {
+    this.arquivoExclusivoSelecionado.set(null);
+    this.tituloMaterialExclusivo.set('');
+    this.categoriaMaterialExclusivo.set('Geral');
+    this.descricaoMaterialExclusivo.set('');
+    this.obrigatorioMaterialExclusivo.set(false);
+    this.erroUploadMaterialExclusivo.set(null);
+  }
+
+  onArquivoExclusivoSelecionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    this.arquivoExclusivoSelecionado.set(file);
+    this.erroUploadMaterialExclusivo.set(null);
+
+    // Sugere título limpo caso o campo esteja vazio
+    if (!this.tituloMaterialExclusivo().trim()) {
+      const nomeSemExt = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+      this.tituloMaterialExclusivo.set(nomeSemExt.charAt(0).toUpperCase() + nomeSemExt.slice(1));
+    }
+  }
+
+  formatarTamanhoArquivoBytes(bytes?: number): string {
+    if (!bytes) return '';
+    if (bytes >= 1024 * 1024) {
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    return Math.round(bytes / 1024) + ' KB';
+  }
+
+  async enviarMaterialExclusivoModulo(moduloId: string): Promise<void> {
+    const file = this.arquivoExclusivoSelecionado();
+    if (!file) {
+      this.erroUploadMaterialExclusivo.set('Selecione um arquivo para upload.');
+      return;
+    }
+
+    const titulo = this.tituloMaterialExclusivo().trim() || file.name;
+    this.uploadandoMaterialExclusivo.set(true);
+    this.erroUploadMaterialExclusivo.set(null);
+
+    try {
+      const categoria = this.categoriaMaterialExclusivo().trim() || 'Geral';
+      const uploadRes = await this.supabaseService.uploadArquivoMaterial(file, categoria);
+      if (uploadRes.error) {
+        this.erroUploadMaterialExclusivo.set(uploadRes.error.message || 'Falha no upload do arquivo.');
+        return;
+      }
+
+      const { error: errCriar, data: novoMaterial } = await this.supabaseService.criarMaterial({
+        titulo,
+        descricao: this.descricaoMaterialExclusivo().trim() || undefined,
+        categoria,
+        formato: uploadRes.formato || 'ARQUIVO',
+        tamanho: uploadRes.tamanho || 'Arquivo',
+        tipo_arquivo_real: uploadRes.tipoArquivoReal || null,
+        url_arquivo: uploadRes.signedUrl || '',
+        ativo: true,
+        exclusivo_curso: true,
+      });
+
+      if (errCriar || !novoMaterial?.id) {
+        this.erroUploadMaterialExclusivo.set(errCriar?.message || 'Falha ao cadastrar registro do material.');
+        return;
+      }
+
+      const resVinc = await this.supabaseService.vincularMaterialAoModulo(
+        moduloId,
+        novoMaterial.id,
+        this.obrigatorioMaterialExclusivo()
+      );
+
+      if (resVinc.error) {
+        this.erroUploadMaterialExclusivo.set(resVinc.error.message || 'Falha ao vincular material à aula.');
+        return;
+      }
+
+      this.exibirSucesso(`Material exclusivo "${titulo}" anexado com sucesso!`);
+      this.limparFormMaterialExclusivo();
+      const vinculados = await this.supabaseService.listarMateriaisDoModulo(moduloId);
+      this.materiaisModulo.set(vinculados);
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.erroUploadMaterialExclusivo.set(e?.message || 'Erro inesperado ao processar upload.');
+    } finally {
+      this.uploadandoMaterialExclusivo.set(false);
+    }
+  }
+
+  async vincularMaterialAoModulo(moduloId: string, materialId: string, obrigatorio: boolean): Promise<void> {
+    if (!materialId) return;
+    this.salvandoMaterialModulo.set(true);
+    try {
+      const res = await this.supabaseService.vincularMaterialAoModulo(moduloId, materialId, obrigatorio);
+      if (res.error) {
+        this.exibirErro('Erro ao vincular material: ' + res.error.message);
+        return;
+      }
+      this.exibirSucesso('Material vinculado à aula com sucesso!');
+      const vinculados = await this.supabaseService.listarMateriaisDoModulo(moduloId);
+      this.materiaisModulo.set(vinculados);
+    } catch (e: any) {
+      this.exibirErro('Erro ao vincular material: ' + (e?.message || e));
+    } finally {
+      this.salvandoMaterialModulo.set(false);
+    }
+  }
+
+  async desvincularMaterialDoModulo(moduloId: string, materialId: string): Promise<void> {
+    if (!materialId) return;
+    try {
+      const res = await this.supabaseService.desvincularMaterialDoModulo(moduloId, materialId);
+      if (res.error) {
+        this.exibirErro('Erro ao desvincular material: ' + res.error.message);
+        return;
+      }
+      this.exibirSucesso('Material desvinculado com sucesso.');
+      const vinculados = await this.supabaseService.listarMateriaisDoModulo(moduloId);
+      this.materiaisModulo.set(vinculados);
+    } catch (e: any) {
+      this.exibirErro('Erro ao desvincular material: ' + (e?.message || e));
+    }
+  }
+
+  // ==========================================
+  // GESTÃO DE AVALIAÇÕES / QUIZ DO MÓDULO
+  // ==========================================
+
+  async abrirModalAvaliacaoModulo(modulo: ModuloCursoAdmin): Promise<void> {
+    this.moduloAvaliacaoAtivo.set(modulo);
+    this.carregandoQuestoesModulo.set(true);
+    try {
+      const questoes = await this.supabaseService.listarAvaliacoesDoModulo(modulo.id);
+      this.questoesModulo.set(questoes && questoes.length > 0 ? JSON.parse(JSON.stringify(questoes)) : []);
+    } catch (e: any) {
+      this.exibirErro('Erro ao carregar questões da aula: ' + (e?.message || e));
+      this.questoesModulo.set([]);
+    } finally {
+      this.carregandoQuestoesModulo.set(false);
+    }
+  }
+
+  fecharModalAvaliacaoModulo(): void {
+    this.moduloAvaliacaoAtivo.set(null);
+    this.questoesModulo.set([]);
+  }
+
+  adicionarNovaQuestao(): void {
+    const total = this.questoesModulo().length;
+    const nova = {
+      modulo_id: this.moduloAvaliacaoAtivo()?.id,
+      pergunta: '',
+      alternativas: { a: '', b: '', c: '', d: '' },
+      resposta_correta: 'A',
+      ordem: total + 1
+    };
+    this.questoesModulo.update(list => [...list, nova]);
+  }
+
+  removerQuestao(index: number): void {
+    this.questoesModulo.update(list => list.filter((_, i) => i !== index));
+  }
+
+  atualizarPerguntaQuestao(q: any, event: Event): void {
+    q.pergunta = (event.target as HTMLTextAreaElement).value;
+  }
+
+  atualizarTextoAlternativa(q: any, letra: string, event: Event): void {
+    if (!q.alternativas) {
+      q.alternativas = {};
+    }
+    q.alternativas[letra] = (event.target as HTMLInputElement).value;
+  }
+
+  async salvarQuestoesModulo(moduloId: string): Promise<void> {
+    const questoes = this.questoesModulo();
+    for (let i = 0; i < questoes.length; i++) {
+      const q = questoes[i];
+      if (!q.pergunta || !q.pergunta.trim()) {
+        this.exibirErro(`Por favor, preencha o enunciado da Questão ${i + 1}.`);
+        return;
+      }
+      if (!q.resposta_correta) {
+        this.exibirErro(`Por favor, defina o gabarito correto da Questão ${i + 1}.`);
+        return;
+      }
+    }
+
+    this.salvandoQuestoesModulo.set(true);
+    try {
+      const res = await this.supabaseService.salvarQuestoesAvaliacaoModulo(
+        moduloId,
+        questoes.map((q, idx) => ({
+          modulo_id: moduloId,
+          pergunta: q.pergunta.trim(),
+          alternativas: q.alternativas || {},
+          resposta_correta: q.resposta_correta.toUpperCase(),
+          ordem: idx + 1
+        }))
+      );
+
+      if (res.error) {
+        this.exibirErro('Erro ao salvar questões: ' + res.error.message);
+        return;
+      }
+
+      this.exibirSucesso('Questões da avaliação salvas com sucesso!');
+      this.fecharModalAvaliacaoModulo();
+      await this.carregarCursos();
+    } catch (e: any) {
+      this.exibirErro('Erro ao salvar avaliação: ' + (e?.message || e));
+    } finally {
+      this.salvandoQuestoesModulo.set(false);
     }
   }
 
@@ -1712,7 +2595,11 @@ export class AdminCursoComponent implements OnInit {
     titulo: string,
     descricao: string,
     categoria: string,
-    vinculo: string
+    vinculo: string,
+    temAvaliacaoModulo: boolean = false,
+    notaMinModulo: number = 70,
+    temPrazo: boolean = false,
+    prazoDias: number = 30
   ): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
@@ -1730,6 +2617,10 @@ export class AdminCursoComponent implements OnInit {
         descricao: descricao.trim() || null,
         categoria: categoria.trim() || null,
         modulo_predial_vinculado: vinculoVal,
+        tem_avaliacao_por_modulo: temAvaliacaoModulo,
+        nota_minima_avaliacao_modulo: notaMinModulo,
+        tem_prazo: temPrazo,
+        prazo_dias: temPrazo ? prazoDias : null,
       });
 
       if (res.error) {

@@ -13,7 +13,13 @@ export interface CursoModuloAluno {
   duracao: string;
   descricao: string;
   vimeo_id?: string | null;
+  exige_avaliacao?: boolean;
+  trava_proximo_modulo?: boolean;
   status?: 'concluido' | 'em_andamento' | 'bloqueado';
+  liberado?: boolean;
+  concluido?: boolean;
+  nota?: number | null;
+  avaliacao_aprovada?: boolean;
 }
 
 export interface CursoAluno {
@@ -33,6 +39,12 @@ export interface CursoAluno {
   instrutorNome?: string | null;
   instrutor_qualificacao?: string | null;
   instrutorQualificacao?: string | null;
+  tem_avaliacao_por_modulo?: boolean;
+  nota_minima_avaliacao_modulo?: number | null;
+  nota_minima_avaliacao_final?: number | null;
+  tem_prazo?: boolean;
+  prazo_dias?: number | null;
+  prazo_final_calculado?: string | null;
   modulos: CursoModuloAluno[];
   temAcesso: boolean;
   matriculado: boolean;
@@ -359,8 +371,25 @@ export interface CursoAluno {
           <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div class="space-y-1">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
-                  <span>Capacitação Técnica</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+                    <span>Capacitação Técnica</span>
+                  </div>
+                  @if (curso.tem_prazo || curso.prazo_final_calculado) {
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                      <span>⏳</span>
+                      @if (curso.prazo_final_calculado) {
+                        <span>Prazo de Conclusão: {{ formatarData(curso.prazo_final_calculado) }}</span>
+                      } @else if (curso.prazo_dias) {
+                        <span>Prazo: {{ curso.prazo_dias }} dias após matrícula</span>
+                      }
+                    </div>
+                  }
+                  @if (curso.tem_avaliacao_por_modulo) {
+                    <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
+                      <span>📝 Avaliação por Módulo</span>
+                    </div>
+                  }
                 </div>
                 <h3 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   {{ curso.titulo }}
@@ -407,7 +436,7 @@ export interface CursoAluno {
                 Grade de Aulas e Módulos
               </h4>
               <span class="text-xs text-slate-500 font-medium">
-                Clique na aula liberada para assistir
+                Clique na aula liberada para assistir e responder avaliações
               </span>
             </div>
 
@@ -460,10 +489,20 @@ export interface CursoAluno {
                             <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200/60">
                               Concluído
                             </span>
+                            @if (mod.nota !== undefined && mod.nota !== null) {
+                              <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-200/60">
+                                Nota: {{ mod.nota }}%
+                              </span>
+                            }
                           } @else if (mod.status === 'em_andamento') {
                             <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-200/60">
                               Disponível
                             </span>
+                            @if (mod.exige_avaliacao || curso.tem_avaliacao_por_modulo) {
+                              <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-bold border border-amber-200/60">
+                                Exige Avaliação
+                              </span>
+                            }
                           } @else {
                             <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[11px] font-bold">
                               Bloqueado
@@ -499,9 +538,9 @@ export interface CursoAluno {
                     </div>
                   </div>
 
-                  <!-- Conteúdo Expandido do Módulo (Player de Vídeo Vimeo) -->
+                  <!-- Conteúdo Expandido do Módulo (Player de Vídeo Vimeo + Materiais + Avaliação) -->
                   @if (moduloAbertoId() === mod.id) {
-                    <div class="border-t border-slate-100 p-4 sm:p-6 bg-slate-50/50 space-y-4 animate-fadeIn">
+                    <div class="border-t border-slate-100 p-4 sm:p-6 bg-slate-50/50 space-y-6 animate-fadeIn">
                       
                       @if (mod.status === 'bloqueado') {
                         <!-- Aviso de Módulo Bloqueado -->
@@ -509,7 +548,7 @@ export interface CursoAluno {
                           <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
-                          <span>Complete a aula anterior para desbloquear este módulo.</span>
+                          <span>Complete a aula anterior e suas avaliações para desbloquear este módulo sequencial.</span>
                         </div>
                       } @else {
                         <!-- Player de Vídeo Vimeo -->
@@ -541,22 +580,166 @@ export interface CursoAluno {
                               <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                               </svg>
-                              <span>Vídeo não configurado corretamente para este módulo — contate o suporte.</span>
+                              <span>Vídeo não configurado para este módulo.</span>
                             </div>
                           }
                         </div>
 
-                        <!-- Botão de Marcar como Concluído -->
+                        <!-- Seção de Materiais de Apoio do Módulo -->
+                        @let materiais = materiaisPorModulo()[mod.id] || [];
+                        @if (materiais.length > 0) {
+                          <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 space-y-3 shadow-2xs">
+                            <div class="flex items-center justify-between">
+                              <div class="flex items-center gap-2">
+                                <span class="text-base">📎</span>
+                                <h6 class="text-xs sm:text-sm font-bold text-slate-900">Materiais de Apoio & Downloads da Aula</h6>
+                              </div>
+                              <span class="text-[11px] text-slate-500 font-semibold">{{ materiais.length }} anexo(s)</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              @for (mat of materiais; track mat.id || mat.material_id) {
+                                @let mItem = mat.material || mat;
+                                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3 hover:bg-slate-100/70 transition-colors">
+                                  <div class="min-w-0 space-y-0.5">
+                                    <div class="flex items-center gap-2">
+                                      <span class="text-xs font-bold text-slate-800 truncate">{{ mItem.titulo || 'Material Técnico' }}</span>
+                                      @if (mat.obrigatorio) {
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">Obrigatório</span>
+                                      }
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 truncate">{{ mItem.formato || 'PDF' }} • {{ mItem.tamanho || 'Arquivo técnico' }}</p>
+                                  </div>
+
+                                  @if (mItem.url_arquivo) {
+                                    <a
+                                      [href]="mItem.url_arquivo"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shrink-0 inline-flex items-center gap-1 shadow-2xs cursor-pointer"
+                                    >
+                                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                      </svg>
+                                      <span>Baixar</span>
+                                    </a>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+
+                        <!-- Seção de Avaliação / Questionário do Módulo -->
+                        @let questoes = questoesPorModulo()[mod.id] || [];
+                        @if (questoes.length > 0) {
+                          <div class="bg-indigo-50/50 rounded-2xl p-4 sm:p-6 border border-indigo-100 space-y-5 shadow-2xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/80 pb-3">
+                              <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
+                                  📝
+                                </div>
+                                <div>
+                                  <h6 class="text-xs sm:text-sm font-bold text-slate-900">Avaliação de Proficiência do Módulo</h6>
+                                  <p class="text-[11px] text-slate-500">Responda às questões para validar sua absorção e habilitar a conclusão.</p>
+                                </div>
+                              </div>
+
+                              @if (mod.nota !== undefined && mod.nota !== null) {
+                                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+                                  [class]="mod.avaliacao_aprovada ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'">
+                                  <span>{{ mod.avaliacao_aprovada ? '✓ Aprovado' : '⚠ Reprovado' }}</span>
+                                  <span>• Nota: {{ mod.nota }}%</span>
+                                </div>
+                              }
+                            </div>
+
+                            <!-- Lista de Questões -->
+                            <div class="space-y-4">
+                              @for (q of questoes; track q.id; let qIdx = $index) {
+                                <div class="bg-white rounded-xl p-4 border border-slate-200 space-y-3 shadow-2xs">
+                                  <div class="flex items-start gap-2">
+                                    <span class="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-xs font-bold shrink-0">
+                                      Q{{ qIdx + 1 }}
+                                    </span>
+                                    <p class="text-xs sm:text-sm font-bold text-slate-800 leading-snug">
+                                      {{ q.pergunta }}
+                                    </p>
+                                  </div>
+
+                                  <!-- Alternativas -->
+                                  <div class="space-y-2 pl-2 sm:pl-4">
+                                    @for (alt of getAlternativasArray(q.alternativas); track alt.chave) {
+                                      <label
+                                        class="flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer select-none"
+                                        [class]="isRespostaSelecionada(mod.id, q.id, alt.chave)
+                                          ? 'bg-indigo-50 border-indigo-400 text-indigo-950 font-semibold shadow-2xs'
+                                          : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:bg-slate-100/80'"
+                                      >
+                                        <input
+                                          type="radio"
+                                          [name]="'q_' + mod.id + '_' + q.id"
+                                          [value]="alt.chave"
+                                          [checked]="isRespostaSelecionada(mod.id, q.id, alt.chave)"
+                                          (change)="selecionarResposta(mod.id, q.id, alt.chave)"
+                                          class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                                        />
+                                        <span class="text-xs leading-relaxed">
+                                          <strong class="text-indigo-700 font-bold mr-1">({{ alt.chave }})</strong>
+                                          {{ alt.texto }}
+                                        </span>
+                                      </label>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                            </div>
+
+                            <!-- Feedback do Resultado do Quiz -->
+                            @let resultado = resultadoQuiz()[mod.id];
+                            @if (resultado) {
+                              <div
+                                class="p-4 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-between"
+                                [class]="resultado.aprovado ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'"
+                              >
+                                <span>{{ resultado.mensagem }}</span>
+                                <span class="px-2 py-0.5 rounded-md bg-white/80 border">{{ resultado.nota }}%</span>
+                              </div>
+                            }
+
+                            <!-- Botão de Enviar Avaliação -->
+                            <div class="flex items-center justify-end gap-3 pt-2">
+                              <button
+                                type="button"
+                                [disabled]="submetendoQuiz()[mod.id]"
+                                (click)="submeterQuiz(mod.id)"
+                                class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
+                              >
+                                @if (submetendoQuiz()[mod.id]) {
+                                  <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                  <span>Avaliando Respostas...</span>
+                                } @else {
+                                  <span>Enviar Avaliação do Módulo</span>
+                                  <span>✓</span>
+                                }
+                              </button>
+                            </div>
+                          </div>
+                        }
+
+                        <!-- Botão de Marcar como Concluído (Se não tiver quiz ou se quiz já foi aprovado) -->
                         <div class="flex items-center justify-between pt-2 flex-wrap gap-2">
                           <span class="text-xs text-slate-500 italic">
                             @if (mod.status === 'concluido') {
-                              ✓ Você já concluiu esta aula.
+                              ✓ Você já concluiu esta aula e suas avaliações.
+                            } @else if (questoes.length > 0) {
+                              Envie a avaliação acima para concluir esta aula e desbloquear o próximo módulo.
                             } @else {
-                              Ao concluir a aula, clique no botão para salvar seu progresso.
+                              Ao assistir ao vídeo, clique no botão ao lado para salvar seu progresso.
                             }
                           </span>
                           
-                          @if (mod.status !== 'concluido') {
+                          @if (mod.status !== 'concluido' && questoes.length === 0) {
                             <button
                               type="button"
                               [disabled]="salvandoModuloId() === mod.id"
@@ -793,6 +976,15 @@ export class ComunidadeCursoComponent implements OnInit {
   readonly gerandoPDF = signal<boolean>(false);
   readonly perfilAluno = signal<any | null>(null);
 
+  // Mapeamento de progresso e liberação por módulo
+  readonly progressoModulosMap = signal<Record<string, { concluido: boolean; nota?: number | null; avaliacao_aprovada?: boolean }>>({});
+  readonly statusLiberadoMap = signal<Record<string, boolean>>({});
+  readonly materiaisPorModulo = signal<Record<string, any[]>>({});
+  readonly questoesPorModulo = signal<Record<string, any[]>>({});
+  readonly respostasQuiz = signal<Record<string, Record<string, string>>>({});
+  readonly resultadoQuiz = signal<Record<string, { nota: number; aprovado: boolean; mensagem: string } | null>>({});
+  readonly submetendoQuiz = signal<Record<string, boolean>>({});
+
   readonly cursoAtivo = computed(() => {
     const id = this.cursoSelecionadoId();
     if (!id) return null;
@@ -808,20 +1000,63 @@ export class ComunidadeCursoComponent implements OnInit {
     if (!c || !c.modulos) return [];
 
     const concluidos = c.modulosConcluidos || [];
-    let primeiroNaoConcluidoEncontrado = false;
+    const progMap = this.progressoModulosMap();
+    const libMap = this.statusLiberadoMap();
 
-    return c.modulos.map((mod: CursoModuloAluno) => {
-      const isConcluido = concluidos.includes(mod.id);
+    const sorted = [...c.modulos].sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+    let anteriorConcluido = true;
+
+    return sorted.map((mod: CursoModuloAluno, index: number) => {
+      const prog = progMap[mod.id];
+      const isConcluido = concluidos.includes(mod.id) || !!prog?.concluido;
+
+      let isLiberado = true;
+      if (libMap[mod.id] !== undefined) {
+        isLiberado = libMap[mod.id];
+      } else if (index === 0) {
+        isLiberado = true;
+      } else {
+        const modAnterior = sorted[index - 1];
+        if (modAnterior?.trava_proximo_modulo !== false) {
+          isLiberado = anteriorConcluido;
+        } else {
+          isLiberado = true;
+        }
+      }
+
       if (isConcluido) {
-        return { ...mod, status: 'concluido' as const };
+        anteriorConcluido = true;
+        return {
+          ...mod,
+          status: 'concluido' as const,
+          liberado: true,
+          concluido: true,
+          nota: prog?.nota,
+          avaliacao_aprovada: prog?.avaliacao_aprovada,
+        };
       }
 
-      if (!primeiroNaoConcluidoEncontrado) {
-        primeiroNaoConcluidoEncontrado = true;
-        return { ...mod, status: 'em_andamento' as const };
+      if (isLiberado) {
+        anteriorConcluido = false;
+        return {
+          ...mod,
+          status: 'em_andamento' as const,
+          liberado: true,
+          concluido: false,
+          nota: prog?.nota,
+          avaliacao_aprovada: prog?.avaliacao_aprovada,
+        };
       }
 
-      return { ...mod, status: 'bloqueado' as const };
+      anteriorConcluido = false;
+      return {
+        ...mod,
+        status: 'bloqueado' as const,
+        liberado: false,
+        concluido: false,
+        nota: prog?.nota,
+        avaliacao_aprovada: prog?.avaliacao_aprovada,
+      };
     });
   });
 
@@ -841,7 +1076,7 @@ export class ComunidadeCursoComponent implements OnInit {
     }
   }
 
-  abrirDetalheCurso(cursoId: string): void {
+  async abrirDetalheCurso(cursoId: string): Promise<void> {
     this.cursoSelecionadoId.set(cursoId);
     this.mensagemFeedback.set(null);
 
@@ -851,9 +1086,42 @@ export class ComunidadeCursoComponent implements OnInit {
       return;
     }
 
+    // Carregar progresso específico e status liberado dos módulos
+    if (c.matriculaId) {
+      try {
+        const progresso = await this.supabaseService.buscarProgressoModulos(c.matriculaId);
+        const map: Record<string, { concluido: boolean; nota?: number | null; avaliacao_aprovada?: boolean }> = {};
+        for (const item of progresso) {
+          map[item.modulo_id] = {
+            concluido: item.concluido,
+            nota: item.nota,
+            avaliacao_aprovada: item.avaliacao_aprovada,
+          };
+        }
+        this.progressoModulosMap.set(map);
+
+        // Consultar RPC modulo_curso_liberado para cada módulo
+        if (c.modulos && c.modulos.length > 0) {
+          const libMap: Record<string, boolean> = {};
+          await Promise.all(
+            c.modulos.map(async mod => {
+              const liberado = await this.supabaseService.moduloEstaLiberado(c.matriculaId!, mod.id);
+              libMap[mod.id] = liberado;
+            })
+          );
+          this.statusLiberadoMap.set(libMap);
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar progresso detalhado:', e);
+      }
+    }
+
     const modulos = this.modulosEnriquecidos();
     const emAndamento = modulos.find(m => m.status === 'em_andamento') || modulos[0];
-    this.moduloAbertoId.set(emAndamento?.id || null);
+    if (emAndamento) {
+      this.moduloAbertoId.set(emAndamento.id);
+      this.carregarDetalhesModulo(emAndamento.id);
+    }
   }
 
   voltarParaListaCursos(): void {
@@ -867,6 +1135,118 @@ export class ComunidadeCursoComponent implements OnInit {
       this.moduloAbertoId.set(null);
     } else {
       this.moduloAbertoId.set(moduloId);
+      this.carregarDetalhesModulo(moduloId);
+    }
+  }
+
+  async carregarDetalhesModulo(moduloId: string): Promise<void> {
+    // Carregar materiais se ainda não carregados
+    if (!this.materiaisPorModulo()[moduloId]) {
+      try {
+        const materiais = await this.supabaseService.listarMateriaisDoModulo(moduloId);
+        this.materiaisPorModulo.update(prev => ({ ...prev, [moduloId]: materiais }));
+      } catch (e) {
+        console.warn('Erro ao carregar materiais do módulo:', e);
+      }
+    }
+
+    // Carregar avaliação se ainda não carregada
+    if (!this.questoesPorModulo()[moduloId]) {
+      try {
+        const questoes = await this.supabaseService.buscarAvaliacaoModulo(moduloId);
+        this.questoesPorModulo.update(prev => ({ ...prev, [moduloId]: questoes }));
+      } catch (e) {
+        console.warn('Erro ao carregar avaliação do módulo:', e);
+      }
+    }
+  }
+
+  getAlternativasArray(alternativas: any): Array<{ chave: string; texto: string }> {
+    if (!alternativas) return [];
+    if (Array.isArray(alternativas)) {
+      return alternativas.map((item, i) => {
+        const chave = String.fromCharCode(65 + i); // A, B, C, D...
+        return typeof item === 'string' ? { chave, texto: item } : { chave: item.chave || chave, texto: item.texto || item };
+      });
+    }
+    if (typeof alternativas === 'object') {
+      return Object.entries(alternativas).map(([k, v]) => ({
+        chave: k.toUpperCase(),
+        texto: String(v),
+      }));
+    }
+    return [];
+  }
+
+  isRespostaSelecionada(moduloId: string, questaoId: string, chave: string): boolean {
+    return this.respostasQuiz()[moduloId]?.[questaoId] === chave;
+  }
+
+  selecionarResposta(moduloId: string, questaoId: string, chave: string): void {
+    this.respostasQuiz.update(prev => ({
+      ...prev,
+      [moduloId]: {
+        ...(prev[moduloId] || {}),
+        [questaoId]: chave,
+      },
+    }));
+  }
+
+  async submeterQuiz(moduloId: string): Promise<void> {
+    const curso = this.cursoAtivo();
+    const matriculaId = curso?.matriculaId;
+    if (!curso || !matriculaId) return;
+
+    const respostas = this.respostasQuiz()[moduloId] || {};
+    const questoes = this.questoesPorModulo()[moduloId] || [];
+
+    if (Object.keys(respostas).length < questoes.length) {
+      this.tipoFeedback.set('alerta');
+      this.mensagemFeedback.set('Por favor, responda a todas as questões antes de enviar.');
+      return;
+    }
+
+    this.submetendoQuiz.update(prev => ({ ...prev, [moduloId]: true }));
+    try {
+      const notaMinima = curso.nota_minima_avaliacao_modulo || 70;
+      const res = await this.supabaseService.submeterAvaliacaoModulo(matriculaId, moduloId, respostas, curso.id);
+
+      if (res.error) {
+        this.tipoFeedback.set('erro');
+        this.mensagemFeedback.set('Erro ao submeter avaliação: ' + res.error.message);
+        return;
+      }
+
+      this.resultadoQuiz.update(prev => ({
+        ...prev,
+        [moduloId]: {
+          nota: res.nota,
+          aprovado: res.aprovado,
+          mensagem: res.aprovado
+            ? `Parabéns! Você atingiu ${res.nota}% de acertos e foi aprovado neste módulo.`
+            : `Você atingiu ${res.nota}%. A nota mínima exigida é ${notaMinima}%. Revise o conteúdo e tente novamente.`,
+        },
+      }));
+
+      // Atualiza progresso local
+      this.progressoModulosMap.update(prev => ({
+        ...prev,
+        [moduloId]: {
+          concluido: res.aprovado,
+          nota: res.nota,
+          avaliacao_aprovada: res.aprovado,
+        },
+      }));
+
+      if (res.aprovado) {
+        // Marca o módulo como concluído também
+        await this.concluirModulo(moduloId);
+      }
+    } catch (e: any) {
+      this.tipoFeedback.set('erro');
+      this.mensagemFeedback.set('Erro ao processar quiz: ' + (e?.message || e));
+    } finally {
+      this.submetendoQuiz.update(prev => ({ ...prev, [moduloId]: false }));
     }
   }
 
