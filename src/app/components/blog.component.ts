@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
+import { combineLatest } from 'rxjs';
 import { SupabaseService } from '../../services/supabase.service';
 import { SeoService } from '../services/seo.service';
 import { detectarVideoEmbed, VideoEmbedInfo } from '../utils/video-embed.util';
@@ -15,6 +16,7 @@ export interface BlogTag {
 export interface BlogPost {
   id: string;
   titulo: string;
+  slug?: string | null;
   resumo?: string | null;
   conteudo: string;
   categoria: string;
@@ -829,7 +831,8 @@ export class BlogComponent implements OnInit {
   async compartilharNativo(post: BlogPost | any): Promise<boolean> {
     if (typeof navigator === 'undefined' || !(navigator as any).share) return false;
     const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'https://emanoelamorim.com';
-    const url = `${origin}/blog?post=${encodeURIComponent(post.id)}`;
+    const routeSlug = post.slug || post.id;
+    const url = `${origin}/blog/${encodeURIComponent(routeSlug)}`;
     try {
       await (navigator as any).share({
         title: post.titulo,
@@ -858,7 +861,8 @@ export class BlogComponent implements OnInit {
 
   linkCompartilhamento(post: BlogPost, rede: 'whatsapp' | 'linkedin' | 'x'): string {
     const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'https://emanoelamorim.com';
-    const url = `${origin}/blog?post=${encodeURIComponent(post.id)}`;
+    const routeSlug = post.slug || post.id;
+    const url = `${origin}/blog/${encodeURIComponent(routeSlug)}`;
     const texto = encodeURIComponent(post.titulo);
     switch (rede) {
       case 'whatsapp':
@@ -872,7 +876,8 @@ export class BlogComponent implements OnInit {
 
   async copiarLinkPost(post: BlogPost): Promise<void> {
     const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'https://emanoelamorim.com';
-    const url = `${origin}/blog?post=${encodeURIComponent(post.id)}`;
+    const routeSlug = post.slug || post.id;
+    const url = `${origin}/blog/${encodeURIComponent(routeSlug)}`;
     try {
       await navigator.clipboard.writeText(url);
       this.linkCopiadoId.set(post.id);
@@ -884,30 +889,46 @@ export class BlogComponent implements OnInit {
 
   readonly linkCopiadoId = signal<string | null>(null);
 
+  private processarRotaEQuery(): void {
+    const routeSlug = this.route.snapshot.paramMap.get('slug');
+    const queryPostId = this.route.snapshot.queryParamMap.get('post');
+
+    if (routeSlug) {
+      const post = this.posts().find(p => p.slug === routeSlug || p.id === routeSlug);
+      if (post) {
+        if (this.postSelecionado()?.id !== post.id) {
+          this.postSelecionado.set(post);
+          this.atualizarSeoPost(post);
+          this.processarEmbedInstagramSeNecessario(post);
+          // Registra visualização não-bloqueante via URL direta
+          this.supabaseService.registrarVisualizacaoPost(post.id);
+        }
+      }
+    } else if (queryPostId) {
+      const post = this.posts().find(p => p.id === queryPostId || p.slug === queryPostId);
+      if (post) {
+        this.postSelecionado.set(post);
+        this.atualizarSeoPost(post);
+        this.processarEmbedInstagramSeNecessario(post);
+        this.supabaseService.registrarVisualizacaoPost(post.id);
+        // Redireciona links legados ?post= para a URL limpa /blog/:slug
+        this.router.navigate(['/blog', post.slug || post.id], { replaceUrl: true });
+      }
+    } else {
+      if (this.postSelecionado()) {
+        this.postSelecionado.set(null);
+        this.restaurarSeoPadrao();
+      }
+    }
+  }
+
   async ngOnInit(): Promise<void> {
     this.restaurarSeoPadrao();
     await this.carregarPosts();
 
-    // Sincronizar leitura com o queryParam "post" na URL
-    this.route.queryParamMap.subscribe(params => {
-      const postId = params.get('post');
-      if (postId) {
-        const post = this.posts().find(p => p.id === postId);
-        if (post) {
-          if (this.postSelecionado()?.id !== post.id) {
-            this.postSelecionado.set(post);
-            this.atualizarSeoPost(post);
-            this.processarEmbedInstagramSeNecessario(post);
-            // Registra visualização não-bloqueante via URL direta
-            this.supabaseService.registrarVisualizacaoPost(post.id);
-          }
-        }
-      } else {
-        if (this.postSelecionado()) {
-          this.postSelecionado.set(null);
-          this.restaurarSeoPadrao();
-        }
-      }
+    // Sincronizar leitura tanto com /blog/:slug quanto com o queryParam legado ?post=
+    combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(() => {
+      this.processarRotaEQuery();
     });
   }
 
@@ -920,11 +941,12 @@ export class BlogComponent implements OnInit {
   }
 
   atualizarSeoPost(post: BlogPost): void {
+    const routeSlug = post.slug || post.id;
     this.seoService.atualizar({
       title: `${post.titulo} | Blog AmorimTech`,
       description: post.resumo || 'Artigo técnico sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.',
       ogImage: post.imagem_capa_url || undefined,
-      canonicalPath: `/blog?post=${encodeURIComponent(post.id)}`,
+      canonicalPath: `/blog/${encodeURIComponent(routeSlug)}`,
       schema: {
         '@context': 'https://schema.org',
         '@type': 'BlogPosting',
@@ -933,7 +955,7 @@ export class BlogComponent implements OnInit {
         image: post.imagem_capa_url || undefined,
         datePublished: post.criado_em,
         dateModified: post.atualizado_em || post.criado_em,
-        url: `https://emanoelamorim.com/blog?post=${encodeURIComponent(post.id)}`,
+        url: `https://emanoelamorim.com/blog/${encodeURIComponent(routeSlug)}`,
         publisher: {
           '@type': 'Organization',
           '@id': 'https://emanoelamorim.com/#organization',
@@ -948,6 +970,7 @@ export class BlogComponent implements OnInit {
     try {
       const data = await this.supabaseService.listarPostsPublicados();
       this.posts.set(data || []);
+      this.processarRotaEQuery();
     } catch (e) {
       console.warn('Erro ao carregar posts do blog:', e);
     } finally {
@@ -1021,21 +1044,13 @@ export class BlogComponent implements OnInit {
     this.processarEmbedInstagramSeNecessario(post);
     // Registra visualização não-bloqueante no clique do post
     this.supabaseService.registrarVisualizacaoPost(post.id);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { post: post.id },
-      queryParamsHandling: 'merge',
-    });
+    this.router.navigate(['/blog', post.slug || post.id]);
   }
 
   fecharLeitura(): void {
     this.postSelecionado.set(null);
     this.restaurarSeoPadrao();
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { post: null },
-      queryParamsHandling: 'merge',
-    });
+    this.router.navigate(['/blog']);
   }
 
   async inscreverNewsletter(event: Event): Promise<void> {
