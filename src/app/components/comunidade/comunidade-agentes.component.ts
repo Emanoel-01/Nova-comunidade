@@ -8,6 +8,9 @@ import { ChecklistLicitacaoComponent } from './agentes/checklist-licitacao.compo
 import { LevantamentoQuantitativosComponent } from './agentes/levantamento-quantitativos.component';
 import { CustosViabilidadeComponent } from './agentes/custos-viabilidade.component';
 import { GeradorCanteiroComponent } from './agentes/gerador-canteiro.component';
+import { GuiaTipologiasComponent } from './agentes/guia-tipologias.component';
+import { CalculadoraPredimensionamentoComponent } from './agentes/calculadora-predimensionamento.component';
+import { EvteTipologiasComponent } from './agentes/evte-tipologias.component';
 
 export type FerramentaAtiva =
   | 'lista'
@@ -17,7 +20,10 @@ export type FerramentaAtiva =
   | 'checklist-licitacao'
   | 'levantamento-quantitativos'
   | 'custos-viabilidade'
-  | 'gerador-canteiro';
+  | 'gerador-canteiro'
+  | 'guia-tipologias'
+  | 'calculadora-predimensionamento'
+  | 'evte-tipologias';
 
 @Component({
   selector: 'app-comunidade-agentes',
@@ -30,7 +36,10 @@ export type FerramentaAtiva =
     ChecklistLicitacaoComponent,
     LevantamentoQuantitativosComponent,
     CustosViabilidadeComponent,
-    GeradorCanteiroComponent
+    GeradorCanteiroComponent,
+    GuiaTipologiasComponent,
+    CalculadoraPredimensionamentoComponent,
+    EvteTipologiasComponent
   ],
   template: `
     <div class="space-y-6">
@@ -534,6 +543,176 @@ export type FerramentaAtiva =
             </div>
           </div>
 
+          <!-- CARD 8: GUIA DE CONSULTA — BÍBLIA DA EDIFICAÇÃO -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-amber-200 shadow-sm hover:shadow-xl hover:border-[#B5642A] transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
+            <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge Gratuito -->
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+
+                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                  Gratuito para todos
+                </span>
+              </div>
+
+              <!-- Conteúdo -->
+              <div class="space-y-2">
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-[#B5642A] transition-colors">
+                  Guia de Consulta — Bíblia da Edificação
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Os 41 sistemas construtivos do livro, com Fundamentos, Execução, Patologias, Manutenção,
+                  Pré-dimensionamento, Conflitos e Normas. Consulta direta, sem IA, sem limite de uso.
+                </p>
+              </div>
+
+              <!-- Tags de Recursos -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#B5642A] border border-amber-200/60">41 Sistemas</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">8 Frentes Técnicas</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">13 Categorias</span>
+              </div>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div class="pt-6">
+              <button
+                type="button"
+                (click)="abrirFerramenta('guia-tipologias')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
+              >
+                <span>Abrir Guia de Consulta</span>
+                <svg class="w-4 h-4 text-[#E59866] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD 9: CALCULADORA DE PRÉ-DIMENSIONAMENTO -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-sm hover:shadow-xl hover:border-[#132A41] transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
+            <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge Condicional -->
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3v-6m-3 6v-1m-6-6h18M5 6h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z" />
+                  </svg>
+                </div>
+
+                @if (temPermissao('calculadora-predimensionamento')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
+              </div>
+
+              <!-- Conteúdo -->
+              <div class="space-y-2">
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-[#132A41] transition-colors">
+                  Calculadora de Pré-dimensionamento
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Regras práticas de anteprojeto para lajes, vigas, ar-condicionado, gerador, SPDA e mais —
+                  cálculo instantâneo, sem IA.
+                </p>
+              </div>
+
+              <!-- Tags de Recursos -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">18 Sistemas</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Sem IA</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Cálculo Instantâneo</span>
+              </div>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div class="pt-6">
+              <button
+                type="button"
+                (click)="abrirFerramenta('calculadora-predimensionamento')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
+              >
+                <span>Abrir Calculadora</span>
+                <svg class="w-4 h-4 text-[#E59866] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD 10: EVTE — ESTUDO DE VIABILIDADE TÉCNICA E ECONÔMICA -->
+          <div class="bg-white rounded-3xl p-6 border-2 border-rose-200 shadow-sm hover:shadow-xl hover:border-rose-500 transition-all flex flex-col justify-between group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-rose-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
+            <div class="space-y-4">
+              <!-- Topo do Card com Ícone e Badge Condicional -->
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-rose-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+
+                @if (temPermissao('evte-tipologias')) {
+                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                    Disponível
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Acesso Restrito</span>
+                  </span>
+                }
+              </div>
+
+              <!-- Conteúdo -->
+              <div class="space-y-2">
+                <h4 class="text-lg font-black text-slate-900 group-hover:text-rose-600 transition-colors">
+                  EVTE — Comparação de Sistemas
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Compare tipologias construtivas contra as restrições do seu projeto — pontos positivos, pontos
+                  de atenção e ranking comparativo, gerados por IA. Nunca aprova ou reprova, só organiza sua análise.
+                </p>
+              </div>
+
+              <!-- Tags de Recursos -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60">IA Comparativa</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">2 a 8 Sistemas</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Ranking Top 3</span>
+              </div>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div class="pt-6">
+              <button
+                type="button"
+                (click)="abrirFerramenta('evte-tipologias')"
+                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
+              >
+                <span>Abrir EVTE</span>
+                <svg class="w-4 h-4 text-rose-400 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
         </div>
 
       } @else if (ferramentaAtiva() === 'reajuste-contrato') {
@@ -711,6 +890,81 @@ export type FerramentaAtiva =
           <app-gerador-canteiro></app-gerador-canteiro>
         </div>
 
+      } @else if (ferramentaAtiva() === 'guia-tipologias') {
+
+        <!-- 10. Visualização do Módulo: Guia de Consulta — Bíblia da Edificação -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: Guia de Consulta — Bíblia da Edificação
+            </span>
+          </div>
+
+          <!-- Componente do Guia de Tipologias -->
+          <app-guia-tipologias></app-guia-tipologias>
+        </div>
+
+      } @else if (ferramentaAtiva() === 'calculadora-predimensionamento') {
+
+        <!-- 11. Visualização do Módulo: Calculadora de Pré-dimensionamento -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: Calculadora de Pré-dimensionamento
+            </span>
+          </div>
+
+          <!-- Componente da Calculadora -->
+          <app-calculadora-predimensionamento></app-calculadora-predimensionamento>
+        </div>
+
+      } @else if (ferramentaAtiva() === 'evte-tipologias') {
+
+        <!-- 12. Visualização do Módulo: EVTE — Estudo de Viabilidade Técnica e Econômica -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              (click)="voltarParaLista()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Voltar para todos os Agentes</span>
+            </button>
+
+            <span class="text-xs font-bold text-slate-400">
+              Módulo: EVTE — Comparação de Sistemas
+            </span>
+          </div>
+
+          <!-- Componente do EVTE -->
+          <app-evte-tipologias></app-evte-tipologias>
+        </div>
+
       }
 
     </div>
@@ -737,7 +991,9 @@ export class ComunidadeAgentesComponent implements OnInit {
       'checklist-licitacao',
       'levantamento-quantitativos',
       'custos-viabilidade',
-      'gerador-canteiro'
+      'gerador-canteiro',
+      'calculadora-predimensionamento',
+      'evte-tipologias'
     ];
     try {
       const resultados = await Promise.all(
@@ -752,6 +1008,8 @@ export class ComunidadeAgentesComponent implements OnInit {
   }
 
   temPermissao(modulo: string): boolean {
+    // Guia de Consulta (Bíblia da Edificação) é gratuito para todo membro — nunca bloqueado
+    if (modulo === 'guia-tipologias') return true;
     return !!this.permissoesFerramentas()[modulo];
   }
 
@@ -792,6 +1050,12 @@ export class ComunidadeAgentesComponent implements OnInit {
         return 'Custos & Viabilidade Imobiliária';
       case 'gerador-canteiro':
         return 'Plano de Canteiro de Obras (IA)';
+      case 'guia-tipologias':
+        return 'Guia de Consulta — Bíblia da Edificação';
+      case 'calculadora-predimensionamento':
+        return 'Calculadora de Pré-dimensionamento';
+      case 'evte-tipologias':
+        return 'EVTE — Comparação de Sistemas';
       default:
         return 'Ferramenta de Agente';
     }
