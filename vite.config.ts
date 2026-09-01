@@ -9,6 +9,7 @@ interface RouteSeo {
   title: string;
   description: string;
   canonicalPath: string;
+  ogImage?: string;
   schema?: object;
 }
 
@@ -18,6 +19,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     title: 'AmorimTech | Engenharia Diagnóstica, Tecnologia e Formação',
     description: 'Consultoria em engenharia diagnóstica, o SaaS Predial 4.0 para laudos de vistoria predial, e a Amorim Academy — formação em engenharia diagnóstica com mentoria e comunidade.',
     canonicalPath: '/',
+    ogImage: '/og-fallback-institucional.jpg',
     schema: {
       '@context': 'https://schema.org',
       '@type': 'Person',
@@ -44,6 +46,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     title: 'Amorim Arquitetura | Engenharia Diagnóstica e Consultiva em Pernambuco',
     description: 'Excelência técnica para proteger o seu patrimônio. Engenharia condominial e diagnóstica em Pernambuco, unindo o rigor técnico das normas ABNT com a Construção 4.0.',
     canonicalPath: '/amorim-arquitetura',
+    ogImage: '/og-fallback-institucional.jpg',
     schema: {
       '@context': 'https://schema.org',
       '@type': 'Service',
@@ -67,6 +70,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     title: 'Amorim Tech | Predial 4.0 — SaaS de Inspeção Predial com IA',
     description: 'Plataforma de gestão e inteligência predial avançada. Laudos técnicos, vistoria cautelar e diagnóstico por inteligência artificial para engenheiros, arquitetos e síndicos.',
     canonicalPath: '/amorim-tech',
+    ogImage: '/og-fallback-institucional.jpg',
     schema: {
       '@context': 'https://schema.org',
       '@type': 'Service',
@@ -86,6 +90,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     title: 'Amorim Academy | Formação, Mercado e Mentoria em Engenharia Diagnóstica',
     description: 'Curso Predial 4.0, Incubadora Profissional e Mentor Anjo — formação técnica com corresponsabilidade, inserção no mercado e mentoria individualizada.',
     canonicalPath: '/amorim-academy',
+    ogImage: '/og-fallback-institucional.jpg',
     schema: {
       '@context': 'https://schema.org',
       '@type': 'Service',
@@ -105,12 +110,21 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     title: 'Blog | AmorimTech',
     description: 'Artigos técnicos sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.',
     canonicalPath: '/blog',
+    ogImage: '/og-fallback-institucional.jpg',
   },
   {
     route: '/contato',
     title: 'Contato | AmorimTech',
     description: 'Fale com a AmorimTech — consultoria, laudos técnicos e formação em engenharia diagnóstica.',
     canonicalPath: '/contato',
+    ogImage: '/og-fallback-institucional.jpg',
+  },
+  {
+    route: '/comunidade',
+    title: 'Comunidade AmorimTech | Login',
+    description: 'Acesse a Comunidade AmorimTech — conteúdos, agentes de IA, cursos e networking para profissionais de engenharia diagnóstica.',
+    canonicalPath: '/comunidade',
+    ogImage: '/og-fallback-institucional.jpg',
   },
   {
     route: '/links',
@@ -155,6 +169,10 @@ function staticPrerenderPlugin(): Plugin {
           ? `\n    <!-- Schema.org Specific Route Data -->\n    <script type="application/ld+json" id="dynamic-jsonld">\n${JSON.stringify(item.schema, null, 2)}\n    </script>`
           : '';
 
+        const imageTags = item.ogImage
+          ? `\n    <meta property="og:image" content="${baseUrl}${item.ogImage}">\n    <meta name="twitter:image" content="${baseUrl}${item.ogImage}">`
+          : '';
+
         const seoTags = `
     <!-- SEO Meta Tags Prerendered -->
     <meta name="description" content="${item.description}">
@@ -162,7 +180,7 @@ function staticPrerenderPlugin(): Plugin {
     <meta property="og:title" content="${item.title}">
     <meta property="og:description" content="${item.description}">
     <meta property="og:url" content="${fullCanonicalUrl}">
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="website">${imageTags}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${item.title}">
     <meta name="twitter:description" content="${item.description}">${schemaTag}
