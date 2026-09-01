@@ -1,6 +1,8 @@
 // Supabase Edge Function: excluir-usuario-admin
 // Exclui com segurança a conta de autenticação (auth.users) e registros do profissional
 // Frente 5/7: Gestão de Usuários em Massa, Perfis Customizados e E-mail Automático
+// CORRIGIDO: nomes reais de tabelas (mensagens/conversas, não mensagens_comunidade)
+// v3: adicionado aistudio.google.com para permitir testes direto do preview do AI Studio
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -9,6 +11,7 @@ const ALLOWED_ORIGINS = [
   'https://emanoelamorim.com',
   'http://localhost:4200',
   'http://localhost:5173',
+  'https://aistudio.google.com',
 ];
 
 function buildCorsHeaders(requestOrigin: string | null): Record<string, string> {
@@ -41,7 +44,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // 1. Validar a presença do cabeçalho de autorização
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Não autorizado.' }), {
@@ -50,7 +52,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // 2. Verificar identidade do usuário que está chamando a função
     const clientCaller = createClient(supabaseUrl, supabaseAnonKey || supabaseServiceKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -63,7 +64,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // 3. Validar se o solicitante possui permissão de Administrador
     const clientAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const { data: permissaoAdmin, error: erroPermissao } = await clientAdmin
       .from('permissoes_acesso')
@@ -80,7 +80,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // 4. Extrair ID do usuário a ser excluído
     const { userId } = await req.json();
     if (!userId) {
       return new Response(JSON.stringify({ error: 'O ID do usuário a ser excluído é obrigatório.' }), {
@@ -89,7 +88,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Proteção: o administrador não pode excluir a si mesmo
     if (userId === userData.user.id) {
       return new Response(JSON.stringify({ error: 'Você não pode excluir sua própria conta de administrador.' }), {
         status: 400,
@@ -98,25 +96,46 @@ serve(async (req: Request) => {
     }
 
     // 5. Excluir dados dependentes em tabelas públicas para garantir integridade
-    await clientAdmin.from('permissoes_acesso').delete().eq('profissional_id', userId);
-    await clientAdmin.from('conexoes_comunidade').delete().or(`seguidor_id.eq.${userId},seguido_id.eq.${userId}`);
-    await clientAdmin.from('feed_curtidas').delete().eq('profissional_id', userId);
-    await clientAdmin.from('feed_comentarios').delete().eq('autor_id', userId);
-    await clientAdmin.from('feed_posts').delete().eq('autor_id', userId);
-    await clientAdmin.from('mensagens_comunidade').delete().or(`remetente_id.eq.${userId},destinatario_id.eq.${userId}`);
-    await clientAdmin.from('profissionais').delete().eq('id', userId);
+    // Nomes reais confirmados no schema: mensagens (não mensagens_comunidade), conversas
+    const avisos: string[] = [];
+
+    const tentarExcluir = async (label: string, promise: Promise<{ error: any }>) => {
+      const { error } = await promise;
+      if (error) avisos.push(`${label}: ${error.message}`);
+    };
+
+    await tentarExcluir('permissoes_acesso', clientAdmin.from('permissoes_acesso').delete().eq('profissional_id', userId));
+    await tentarExcluir('conexoes_comunidade', clientAdmin.from('conexoes_comunidade').delete().or(`seguidor_id.eq.${userId},seguido_id.eq.${userId}`));
+    await tentarExcluir('feed_curtidas', clientAdmin.from('feed_curtidas').delete().eq('profissional_id', userId));
+    await tentarExcluir('feed_comentarios', clientAdmin.from('feed_comentarios').delete().eq('autor_id', userId));
+    await tentarExcluir('feed_posts', clientAdmin.from('feed_posts').delete().eq('autor_id', userId));
+
+    // Mensagens: apagar via conversas em que o usuário participa
+    const { data: conversasDoUsuario } = await clientAdmin
+      .from('conversas')
+      .select('id')
+      .or(`participante_1.eq.${userId},participante_2.eq.${userId}`);
+
+    if (conversasDoUsuario && conversasDoUsuario.length > 0) {
+      const idsConversas = conversasDoUsuario.map((c: any) => c.id);
+      await tentarExcluir('mensagens', clientAdmin.from('mensagens').delete().in('conversa_id', idsConversas));
+      await tentarExcluir('conversas', clientAdmin.from('conversas').delete().in('id', idsConversas));
+    }
+
+    await tentarExcluir('cursos_matriculas', clientAdmin.from('cursos_matriculas').delete().eq('profissional_id', userId));
+    await tentarExcluir('profissionais', clientAdmin.from('profissionais').delete().eq('id', userId));
 
     // 6. Excluir a conta de autenticação no Supabase Auth via Admin API
     const { error: deleteAuthError } = await clientAdmin.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
-      console.warn('Aviso ao excluir conta em auth.users:', deleteAuthError.message);
-      // Mesmo se o usuário não estava em auth.users, se os dados públicos foram removidos, sucesso
+      avisos.push(`auth.users: ${deleteAuthError.message}`);
     }
 
     return new Response(JSON.stringify({
       sucesso: true,
       mensagem: 'Usuário e acessos excluídos com sucesso.',
       userId,
+      avisos: avisos.length > 0 ? avisos : undefined,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
