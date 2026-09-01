@@ -26,9 +26,9 @@ interface ResultadoVerificacao {
         
         <!-- Cabeçalho Institucional AmorimTech / Amorim Academy -->
         <header class="text-center space-y-4">
-          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-[#132A41] text-xs sm:text-sm font-semibold tracking-wide">
-            <span class="w-2 h-2 rounded-full bg-[#B5642A]"></span>
-            <span>AMORIM ACADEMY · ECOSSISTEMA DE FORMAÇÃO 4.0</span>
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-[#132A41] text-xs sm:text-sm font-semibold tracking-wide max-w-full">
+            <span class="w-2 h-2 rounded-full bg-[#B5642A] shrink-0"></span>
+            <span class="break-words">AMORIM ACADEMY · ECOSSISTEMA DE FORMAÇÃO 4.0</span>
           </div>
 
           <h1 class="text-3xl sm:text-4xl font-extrabold text-[#132A41] tracking-tight">

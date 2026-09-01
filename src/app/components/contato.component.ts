@@ -20,8 +20,8 @@ interface ChatMensagem {
 
         <!-- Cabeçalho Centralizado -->
         <div class="text-center space-y-4 max-w-2xl mx-auto">
-          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs sm:text-sm font-semibold tracking-wide shadow-sm">
-            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs sm:text-sm font-semibold tracking-wide shadow-sm max-w-full">
+            <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             <span>Central de Atendimento</span>
@@ -235,11 +235,11 @@ interface ChatMensagem {
                       <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.044c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.13.332.202.043.073.043.419-.101.824z"/>
                     </svg>
                   </div>
-                  <div class="space-y-0.5">
+                  <div class="space-y-0.5 min-w-0">
                     <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider block">
                       Atendimento (WhatsApp)
                     </span>
-                    <span class="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
+                    <span class="text-base font-bold text-white group-hover:text-emerald-300 transition-colors block break-words">
                       (81) 99129-8803
                     </span>
                     <span class="text-xs text-slate-400 block">
@@ -259,7 +259,7 @@ interface ChatMensagem {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <div class="space-y-0.5">
+                  <div class="space-y-0.5 min-w-0">
                     <span class="text-xs font-semibold text-indigo-400 uppercase tracking-wider block">
                       E-mail
                     </span>
@@ -285,16 +285,16 @@ interface ChatMensagem {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </div>
-                  <div class="space-y-0.5 flex-1">
-                    <div class="flex items-center justify-between">
+                  <div class="space-y-0.5 flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
                       <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider block">
                         Portal Acadêmico ESUDA
                       </span>
-                      <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     </div>
-                    <span class="text-sm sm:text-base font-bold text-white group-hover:text-amber-300 transition-colors block">
+                    <span class="text-sm sm:text-base font-bold text-white group-hover:text-amber-300 transition-colors block break-words">
                       Gestor de Cronogramas ESUDA
                     </span>
                     <span class="text-xs text-slate-400 block">
@@ -320,19 +320,19 @@ interface ChatMensagem {
             
             <!-- Barra Superior do Card Alô Síndico -->
             <div class="p-6 sm:p-8 border-b border-slate-800/80 bg-slate-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div class="flex items-center gap-4">
+              <div class="flex items-center gap-4 min-w-0">
                 <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center font-black text-xl shrink-0 shadow-inner">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
-                <div>
-                  <div class="inline-flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-widest">
+                <div class="min-w-0">
+                  <div class="inline-flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-widest flex-wrap">
                     <span>Atendimento Especializado</span>
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
                     <span class="text-emerald-400">Online</span>
                   </div>
-                  <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight break-words">
                     Alô, Síndico!
                   </h2>
                 </div>

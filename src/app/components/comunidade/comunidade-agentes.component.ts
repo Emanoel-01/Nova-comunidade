@@ -49,11 +49,11 @@ export type FerramentaAtiva =
       <!-- ======================================================= -->
       @if (mostrarAcessoRestrito(); as restrito) {
         <div class="space-y-6 animate-fadeIn">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -61,7 +61,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            <span class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 break-words">
               🔒 Módulo Restrito
             </span>
           </div>
@@ -120,7 +120,7 @@ export type FerramentaAtiva =
             <!-- Contador de Ferramentas -->
             <div class="p-4 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xs shrink-0 self-start md:self-auto flex items-center gap-3.5">
               <div class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-inner">
-                7
+                {{ totalFerramentas }}
               </div>
               <div>
                 <div class="text-xs font-bold text-white uppercase tracking-wider">Módulos no Catálogo</div>
@@ -719,11 +719,11 @@ export type FerramentaAtiva =
         
         <!-- 3. Visualização da Ferramenta: Reajuste de Contrato -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -731,7 +731,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Reajuste FGV/SINAENCO
             </span>
           </div>
@@ -744,11 +744,11 @@ export type FerramentaAtiva =
 
         <!-- 4. Visualização da Ferramenta: Biblioteca de Prompts -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -756,7 +756,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Catálogo de 369 Prompts Especializados
             </span>
           </div>
@@ -769,11 +769,11 @@ export type FerramentaAtiva =
 
         <!-- 5. Visualização do Módulo: Skills Claude -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -781,7 +781,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Skills Claude & Guias de Instalação
             </span>
           </div>
@@ -794,11 +794,11 @@ export type FerramentaAtiva =
 
         <!-- 6. Visualização do Módulo: Checklist de Licitação -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -806,7 +806,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Checklist de Habilitação (Lei 14.133/2021)
             </span>
           </div>
@@ -819,11 +819,11 @@ export type FerramentaAtiva =
 
         <!-- 7. Visualização do Módulo: Levantamento de Quantitativos -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -831,7 +831,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Levantamento de Quantitativos
             </span>
           </div>
@@ -844,11 +844,11 @@ export type FerramentaAtiva =
 
         <!-- 8. Visualização do Módulo: Custos & Viabilidade Imobiliária -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -856,7 +856,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Custos & Viabilidade Imobiliária (NBR 12.721)
             </span>
           </div>
@@ -869,11 +869,11 @@ export type FerramentaAtiva =
 
         <!-- 9. Visualização do Módulo: Gerador de Plano de Canteiro de Obras (IA) -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -881,7 +881,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Plano de Canteiro de Obras (NR-18 & IA)
             </span>
           </div>
@@ -894,11 +894,11 @@ export type FerramentaAtiva =
 
         <!-- 10. Visualização do Módulo: Guia de Consulta — Bíblia da Edificação -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -906,7 +906,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Guia de Consulta — Bíblia da Edificação
             </span>
           </div>
@@ -919,11 +919,11 @@ export type FerramentaAtiva =
 
         <!-- 11. Visualização do Módulo: Calculadora de Pré-dimensionamento -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -931,7 +931,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: Calculadora de Pré-dimensionamento
             </span>
           </div>
@@ -944,11 +944,11 @@ export type FerramentaAtiva =
 
         <!-- 12. Visualização do Módulo: EVTE — Estudo de Viabilidade Técnica e Econômica -->
         <div class="space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
             >
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -956,7 +956,7 @@ export type FerramentaAtiva =
               <span>Voltar para todos os Agentes</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-400">
+            <span class="text-xs font-bold text-slate-400 break-words">
               Módulo: EVTE — Comparação de Sistemas
             </span>
           </div>
@@ -982,19 +982,25 @@ export class ComunidadeAgentesComponent implements OnInit {
     await this.carregarPermissoes();
   }
 
+  // Módulos com permissão controlada (não inclui 'guia-tipologias', que é sempre gratuito — ver temPermissao()).
+  // Fonte única do total de ferramentas do catálogo: MODULOS_COM_PERMISSAO.length + 1 (Guia de Consulta).
+  private static readonly MODULOS_COM_PERMISSAO: FerramentaAtiva[] = [
+    'reajuste-contrato',
+    'biblioteca-prompts',
+    'skills-catalogo',
+    'checklist-licitacao',
+    'levantamento-quantitativos',
+    'custos-viabilidade',
+    'gerador-canteiro',
+    'calculadora-predimensionamento',
+    'evte-tipologias'
+  ];
+
+  readonly totalFerramentas = ComunidadeAgentesComponent.MODULOS_COM_PERMISSAO.length + 1;
+
   async carregarPermissoes(): Promise<void> {
     this.carregandoPermissoes.set(true);
-    const modulos: FerramentaAtiva[] = [
-      'reajuste-contrato',
-      'biblioteca-prompts',
-      'skills-catalogo',
-      'checklist-licitacao',
-      'levantamento-quantitativos',
-      'custos-viabilidade',
-      'gerador-canteiro',
-      'calculadora-predimensionamento',
-      'evte-tipologias'
-    ];
+    const modulos = ComunidadeAgentesComponent.MODULOS_COM_PERMISSAO;
     try {
       const resultados = await Promise.all(
         modulos.map(async (m) => [m, await this.supabaseService.temPermissaoModulo('comunidade', m)] as const)

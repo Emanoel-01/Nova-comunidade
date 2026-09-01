@@ -61,9 +61,9 @@ export interface HistoricoVencedor {
 
           <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div class="space-y-1 max-w-xl">
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold border border-white/25">
-                <span>🏆</span>
-                <span>Ranking & Conquistas</span>
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold border border-white/25 max-w-full">
+                <span class="shrink-0">🏆</span>
+                <span class="break-words">Ranking & Conquistas</span>
               </div>
 
               <h3 class="text-lg sm:text-xl font-black tracking-tight text-white">
@@ -89,9 +89,9 @@ export interface HistoricoVencedor {
 
           <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1.5 max-w-2xl">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold border border-white/25 backdrop-blur-xs">
-                <span class="text-sm">🏆</span>
-                <span>Reconhecimento & Conquistas</span>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold border border-white/25 backdrop-blur-xs max-w-full">
+                <span class="text-sm shrink-0">🏆</span>
+                <span class="break-words">Reconhecimento & Conquistas</span>
               </div>
 
               <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white">

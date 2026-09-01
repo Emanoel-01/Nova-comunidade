@@ -37,8 +37,8 @@ interface Institution {
 
       <div class="relative max-w-5xl mx-auto text-center z-10 space-y-5 sm:space-y-7">
         <!-- Eyebrow / Badge -->
-        <div class="inline-flex items-center gap-2 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full bg-indigo-900/80 border border-indigo-700/60 text-indigo-200 text-[11px] sm:text-xs md:text-sm font-semibold tracking-wide shadow-sm">
-          <span>Engenharia Diagnóstica · Gestão Predial · Tecnologia 4.0</span>
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full bg-indigo-900/80 border border-indigo-700/60 text-indigo-200 text-[11px] sm:text-xs md:text-sm font-semibold tracking-wide shadow-sm max-w-full">
+          <span class="break-words">Engenharia Diagnóstica · Gestão Predial · Tecnologia 4.0</span>
         </div>
 
         <!-- Headline -->
@@ -81,11 +81,11 @@ interface Institution {
         <div class="pt-1">
           <a
             routerLink="/comunidade"
-            class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-indigo-200 hover:text-white transition-colors py-2 px-4 rounded-full bg-white/10 hover:bg-white/15 border border-white/10 min-h-[40px]"
+            class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-indigo-200 hover:text-white transition-colors py-2 px-4 rounded-full bg-white/10 hover:bg-white/15 border border-white/10 min-h-[40px] max-w-full"
           >
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Área de Membros: Conhecer a Comunidade Business 4.0</span>
-            <span class="text-emerald-400">→</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+            <span class="break-words">Área de Membros: Conhecer a Comunidade Business 4.0</span>
+            <span class="text-emerald-400 shrink-0">→</span>
           </a>
         </div>
 
@@ -361,9 +361,9 @@ interface Institution {
         <!-- Banner Alô Síndico -->
         <div class="mt-8 sm:mt-12 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6">
           <div class="space-y-2 text-center md:text-left">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-              <span>⚡</span>
-              <span>Canal Especial</span>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider max-w-full">
+              <span class="shrink-0">⚡</span>
+              <span class="break-words">Canal Especial</span>
             </div>
             <h3 class="text-lg sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
               É Síndico ou Gestor Predial? Conheça o Alô Síndico
@@ -400,9 +400,9 @@ interface Institution {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           <!-- Coluna Esquerda: Informações e Benefícios -->
           <div class="lg:col-span-7 space-y-5 sm:space-y-6">
-            <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Acesso Restrito
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-[11px] sm:text-xs font-semibold uppercase tracking-wider max-w-full">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+              <span class="break-words">Acesso Restrito</span>
             </div>
 
             <div>

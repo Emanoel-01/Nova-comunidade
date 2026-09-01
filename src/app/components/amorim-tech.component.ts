@@ -13,11 +13,11 @@ import { SeoService } from '../services/seo.service';
       <div class="max-w-7xl mx-auto space-y-10 sm:space-y-14 lg:space-y-16">
         <!-- Seção 1: Cabeçalho -->
         <section class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200/80 text-cyan-700 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm">
-            <svg class="w-3.5 h-3.5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200/80 text-cyan-700 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm max-w-full">
+            <svg class="w-3.5 h-3.5 text-cyan-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m16-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
             </svg>
-            <span>Ecossistema Digital & Inteligência Artificial</span>
+            <span class="break-words">Ecossistema Digital & Inteligência Artificial</span>
           </div>
 
           <h1 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
@@ -197,11 +197,11 @@ import { SeoService } from '../services/seo.service';
         <section class="space-y-6 sm:space-y-8 lg:space-y-10" id="alo-sindico">
           <!-- Cabeçalho -->
           <div class="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm">
-              <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm max-w-full">
+              <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              <span>Para Síndicos e Gestores Prediais</span>
+              <span class="break-words">Para Síndicos e Gestores Prediais</span>
             </div>
 
             <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -301,9 +301,9 @@ import { SeoService } from '../services/seo.service';
           <div class="max-w-4xl mx-auto">
             <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-5 sm:p-8 lg:p-10 text-white text-center shadow-lg space-y-4 sm:space-y-6">
               <div class="space-y-2">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 backdrop-blur-xs text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                  <span>⚡</span>
-                  <span>Atendimento Especial para Síndicos</span>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 backdrop-blur-xs text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider max-w-full">
+                  <span class="shrink-0">⚡</span>
+                  <span class="break-words">Atendimento Especial para Síndicos</span>
                 </div>
                 <h3 class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
                   Fale agora com quem entende do assunto — sem compromisso.
@@ -345,11 +345,11 @@ import { SeoService } from '../services/seo.service';
         <!-- Seção 5: O Futuro da Amorim Tech (Roadmap Visionário de Inovação) -->
         <section class="space-y-6 sm:space-y-8 lg:space-y-10">
           <div class="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm">
-              <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm max-w-full">
+              <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span>Roadmap de Inovação Contínua</span>
+              <span class="break-words">Roadmap de Inovação Contínua</span>
             </div>
             <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
               O Futuro da Amorim Tech

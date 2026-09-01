@@ -35,8 +35,8 @@ import { SupabaseService } from '../../../services/supabase.service';
               <span>Carreiras & Conexões Técnicas</span>
             </div>
 
-            <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>Mural de Oportunidades & Vagas</span>
+            <h3 class="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center flex-wrap gap-3">
+              <span class="break-words">Mural de Oportunidades & Vagas</span>
             </h3>
 
             <p class="text-xs sm:text-sm text-slate-300">

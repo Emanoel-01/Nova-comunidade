@@ -386,9 +386,9 @@ import { ViabilizaIaComponent } from './comunidade/viabiliza-ia.component';
               </div>
 
               <!-- Badge Sessão Ativa -->
-              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Sessão Ativa</span>
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold max-w-full">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                <span class="break-words">Sessão Ativa</span>
               </div>
             </div>
           </div>

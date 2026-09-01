@@ -257,7 +257,7 @@ export type CategoriaMaterial =
 
               <!-- Rodapé: Estatísticas + Botão Baixar / Solicitado ou Indicador de Vídeo -->
               <div class="pt-4 border-t border-slate-100 space-y-2">
-                <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center justify-between gap-3 flex-wrap">
                   <div class="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                     @if (item.categoria === 'Vídeos') {
                       <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">

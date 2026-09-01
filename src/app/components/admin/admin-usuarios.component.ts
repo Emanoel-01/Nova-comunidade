@@ -3172,6 +3172,9 @@ export class AdminUsuariosComponent implements OnInit {
     { key: 'levantamento-quantitativos', nome: 'Agente: Levantamento de Quantitativos', descricao: 'Cálculo paramétrico de materiais e insumos.', produto: 'comunidade' },
     { key: 'custos-viabilidade', nome: 'Agente: Custos & Viabilidade', descricao: 'Estudo de viabilidade NBR 12.721, CUB e VGV.', produto: 'comunidade' },
     { key: 'gerador-canteiro', nome: 'Agente: Plano de Canteiro (IA)', descricao: 'Dimensionamento NR-18, Lean e PGRCC (CONAMA 307).', produto: 'comunidade' },
+    { key: 'guia-tipologias', nome: 'Agente: Guia de Consulta (Bíblia da Edificação)', descricao: 'Consulta dos 41 sistemas construtivos — Fundamentos, Execução, Patologia, Manutenção, Pré-dimensionamento, Conflitos e Normas.', produto: 'comunidade' },
+    { key: 'calculadora-predimensionamento', nome: 'Agente: Calculadora de Pré-dimensionamento', descricao: 'Cálculo rápido de anteprojeto por sistema construtivo — direto, tabela de escolha e engenharia multivariável.', produto: 'comunidade' },
+    { key: 'evte-tipologias', nome: 'Agente: EVTE — Comparação de Tipologias', descricao: 'Estudo de Viabilidade Técnica e Econômica comparando sistemas construtivos por IA — nunca aprova/reprova, só compara.', produto: 'comunidade' },
     { key: 'admin_comunidade', nome: 'Admin Comunidade', descricao: 'Permissões administrativas na comunidade.', produto: 'comunidade' },
   ];
 

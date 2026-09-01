@@ -289,7 +289,7 @@ export interface PerfilVisual {
           </div>
 
           <!-- Contadores de Conexões -->
-          <div class="flex items-center gap-6 py-4 border-y border-slate-100 text-xs sm:text-sm">
+          <div class="flex items-center flex-wrap gap-6 py-4 border-y border-slate-100 text-xs sm:text-sm">
             <div class="flex items-center gap-2">
               <span class="font-black text-slate-900 text-base sm:text-lg">{{ totalSeguidores() }}</span>
               <span class="text-slate-500 font-medium">Seguidores</span>

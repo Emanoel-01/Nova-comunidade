@@ -275,7 +275,7 @@ import { CategoriaForum } from './comunidade-state.service';
                   {{ topico.titulo }}
                 </h4>
 
-                <div class="flex items-center gap-2 text-xs text-slate-500">
+                <div class="flex items-center flex-wrap gap-2 text-xs text-slate-500 min-w-0">
                   @if (getAutorAvatar(topico.autor)) {
                     <img
                       [src]="getAutorAvatar(topico.autor)!"
@@ -288,9 +288,9 @@ import { CategoriaForum } from './comunidade-state.service';
                       {{ getIniciais(getAutorNome(topico.autor)) }}
                     </div>
                   }
-                  <span class="font-bold text-slate-800">{{ getAutorNome(topico.autor) }}</span>
-                  <span>•</span>
-                  <span>{{ getAutorCargo(topico.autor) }}</span>
+                  <span class="font-bold text-slate-800 break-words">{{ getAutorNome(topico.autor) }}</span>
+                  <span class="shrink-0">•</span>
+                  <span class="break-words">{{ getAutorCargo(topico.autor) }}</span>
                 </div>
               </div>
 
