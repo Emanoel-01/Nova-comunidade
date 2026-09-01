@@ -11,76 +11,95 @@ import { SeoService } from '../services/seo.service';
   template: `
     <div class="w-full bg-slate-50 py-6 sm:py-10 lg:py-16 px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-14 lg:space-y-16">
       <div class="max-w-7xl mx-auto space-y-10 sm:space-y-14 lg:space-y-16">
-        <!-- Seção 1: Cabeçalho -->
-        <section class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200/80 text-cyan-700 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm max-w-full">
-            <svg class="w-3.5 h-3.5 text-cyan-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m16-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-            </svg>
-            <span class="break-words">Ecossistema Digital & Inteligência Artificial</span>
-          </div>
+        <!-- Seção 1: Hero Unificado -->
+        <section class="relative rounded-3xl overflow-hidden" style="background: linear-gradient(160deg, #041B2D 0%, #0B2E47 55%, #0E3D52 100%);">
+          <div class="absolute inset-0" style="background-image: radial-gradient(rgba(255,255,255,0.09) 1px, transparent 1px); background-size: 22px 22px;"></div>
+          <div class="absolute -top-32 -right-24 w-96 h-96 rounded-full blur-3xl pointer-events-none" style="background: radial-gradient(circle, rgba(34,211,238,0.4) 0%, transparent 70%);"></div>
+          <div class="absolute -bottom-40 -left-24 w-80 h-80 rounded-full blur-3xl pointer-events-none" style="background: radial-gradient(circle, rgba(251,146,60,0.25) 0%, transparent 70%);"></div>
 
-          <h1 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight">
-            Predial 4.0
-          </h1>
-
-          <p class="text-slate-600 text-xs sm:text-base leading-relaxed max-w-2xl mx-auto text-justify sm:text-center">
-            O copiloto técnico para engenheiros e arquitetos que fazem vistorias e emitem laudos. Digitaliza o fluxo completo, da vistoria em campo à entrega do documento técnico, com apoio de inteligência artificial.
-          </p>
-        </section>
-
-        <!-- Seção 2: App em Destaque -->
-        <section class="max-w-4xl mx-auto">
-          <div class="relative bg-slate-900 text-white rounded-3xl p-5 sm:p-8 lg:p-10 shadow-2xl border border-slate-800 text-center space-y-5 sm:space-y-7 overflow-hidden">
-            <!-- Glow background decorativo -->
-            <div class="absolute -top-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-            <div class="relative z-10 flex flex-col items-center space-y-3 sm:space-y-4">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-cyan-500 flex items-center justify-center text-slate-950 font-black text-xl sm:text-2xl shadow-lg shadow-cyan-500/20">
-                  P
-                </div>
-                <div class="text-left">
-                  <span class="block text-[11px] sm:text-[11px] font-extrabold uppercase tracking-widest text-cyan-400">
-                    PLATAFORMA PRINCIPAL
-                  </span>
-                  <h2 class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
-                    Predial 4.0
-                  </h2>
-                </div>
+          <div class="relative z-10 px-6 sm:px-10 lg:px-14 py-10 sm:py-16 lg:py-20 grid lg:grid-cols-[1.15fr_0.85fr] gap-8 sm:gap-10 items-center">
+            <div class="space-y-5 sm:space-y-6">
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/8 border border-white/15 text-cyan-300 text-[11px] sm:text-xs font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                Ecossistema digital · engenharia diagnóstica
               </div>
 
-              <p class="text-slate-300 text-xs sm:text-base max-w-2xl leading-relaxed text-justify sm:text-center">
-                Prancheta de campo offline-first, registro fotográfico vinculado à ficha técnica, diagnóstico assistido por IA e emissão automática do laudo em PDF — tudo em um só lugar.
+              <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.05]">
+                Predial 4.0
+              </h1>
+
+              <p class="text-slate-300 text-xs sm:text-base lg:text-lg leading-relaxed max-w-xl text-justify sm:text-left">
+                O copiloto técnico para engenheiros e arquitetos que fazem vistorias e emitem laudos. Da vistoria em campo à obra concluída, com inteligência artificial em cada etapa — laudos mais rápidos e padronizados, sem perder rigor técnico.
               </p>
+
+              <div class="flex flex-col sm:flex-row gap-3 pt-1 sm:pt-2">
+                <a
+                  href="https://app-predial.emanoelamorim.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold rounded-xl transition-colors text-xs sm:text-sm min-h-[44px]"
+                >
+                  Acessar o Predial 4.0
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <a
+                  [href]="linkWhatsappTech"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/5 hover:bg-white/10 border border-white/15 text-white font-semibold rounded-xl transition-colors text-xs sm:text-sm min-h-[44px]"
+                >
+                  Falar com a gente
+                </a>
+              </div>
             </div>
 
-            <div class="relative z-10 flex justify-center pt-1 sm:pt-2">
-              <a
-                href="https://app-predial.emanoelamorim.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-200 cursor-pointer text-xs sm:text-base min-h-[44px]"
-              >
-                <span>Acessar o Predial 4.0</span>
-                <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
+            <div class="relative hidden sm:block">
+              <div class="bg-[#0A1E2E]/80 backdrop-blur border border-white/10 rounded-2xl p-5 space-y-3 shadow-2xl">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span>ficha_tecnica.laudo</span>
+                  <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>sincronizado</span>
+                </div>
+                <div class="h-px bg-white/10"></div>
+                <div class="space-y-2.5">
+                  <div class="flex items-center gap-2.5 text-sm text-slate-200"><span class="w-5 h-5 rounded-md bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-xs">✓</span>Checklist por sistema construtivo</div>
+                  <div class="flex items-center gap-2.5 text-sm text-slate-200"><span class="w-5 h-5 rounded-md bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-xs">✓</span>Diagnóstico assistido por IA</div>
+                  <div class="flex items-center gap-2.5 text-sm text-slate-200"><span class="w-5 h-5 rounded-md bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-xs">✓</span>Classificação P1 / P2 / P3</div>
+                  <div class="flex items-center gap-2.5 text-sm text-white font-semibold"><span class="w-5 h-5 rounded-md bg-emerald-500/25 text-emerald-300 flex items-center justify-center text-xs">↓</span>Laudo PDF gerado — ART/RRT pronto</div>
+                </div>
+              </div>
+              <div class="absolute -bottom-4 -left-4 bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-cyan-300 shadow-xl">
+                offline-first
+              </div>
+            </div>
+          </div>
+
+          <div class="relative z-10 border-t border-white/10 grid grid-cols-3 divide-x divide-white/10 bg-black/20">
+            <div class="px-4 py-5 sm:py-6 text-center">
+              <p class="text-lg sm:text-2xl font-extrabold text-white">3 módulos</p>
+              <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">um só ecossistema</p>
+            </div>
+            <div class="px-4 py-5 sm:py-6 text-center">
+              <p class="text-lg sm:text-2xl font-extrabold text-white">100% IA</p>
+              <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">diagnóstico assistido</p>
+            </div>
+            <div class="px-4 py-5 sm:py-6 text-center">
+              <p class="text-lg sm:text-2xl font-extrabold text-white">beta ativa</p>
+              <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">em evolução contínua</p>
             </div>
           </div>
         </section>
 
-        <!-- Seção 3: Dois Módulos -->
+        <!-- Seção 2: Três Módulos -->
         <section class="space-y-6 sm:space-y-8 lg:space-y-10">
           <div class="text-center max-w-2xl mx-auto">
+            <p class="text-cyan-700 text-xs font-bold uppercase tracking-wide mb-2">Feito para o profissional técnico</p>
             <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Dois módulos, um só ecossistema
+              Três módulos, um só fluxo
             </h2>
+            <p class="text-slate-600 text-xs sm:text-base mt-2">A ferramenta de trabalho do engenheiro e do arquiteto — do diagnóstico técnico à obra concluída.</p>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 max-w-7xl mx-auto">
             <!-- Card 1: Inspeção Predial -->
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
               <div class="h-2 w-full bg-indigo-600"></div>
@@ -190,6 +209,34 @@ import { SeoService } from '../services/seo.service';
                 </ul>
               </div>
             </div>
+
+            <!-- Card 3: Engenharia Condominial -->
+            <div class="rounded-3xl p-5 sm:p-8 flex flex-col justify-between space-y-5 text-white" style="background: linear-gradient(160deg, #1E1B4B 0%, #312E81 100%);">
+              <div class="space-y-3 sm:space-y-4">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 border border-white/15 text-indigo-300 flex items-center justify-center font-bold text-sm">03</div>
+                  <span class="text-[10px] font-bold uppercase text-indigo-300 bg-indigo-400/15 px-2 py-1 rounded-full">Em desenvolvimento</span>
+                </div>
+                <h3 class="text-base sm:text-xl font-bold tracking-tight">
+                  Engenharia Condominial
+                </h3>
+                <p class="text-indigo-100/80 text-xs sm:text-sm leading-relaxed text-justify">
+                  Do laudo técnico à obra concluída. Transforma o diagnóstico num Termo de Referência completo — orçamento, caderno de encargos e fiscalização.
+                </p>
+              </div>
+
+              <ul class="space-y-2.5 pt-4 border-t border-white/15">
+                <li class="flex items-start gap-2.5 text-xs sm:text-sm text-indigo-100/90">
+                  <span class="text-indigo-300 font-bold shrink-0">—</span><span>Plano de Ação e Cronograma físico-financeiro</span>
+                </li>
+                <li class="flex items-start gap-2.5 text-xs sm:text-sm text-indigo-100/90">
+                  <span class="text-indigo-300 font-bold shrink-0">—</span><span>Orçamento de Referência (SINAPI)</span>
+                </li>
+                <li class="flex items-start gap-2.5 text-xs sm:text-sm text-indigo-100/90">
+                  <span class="text-indigo-300 font-bold shrink-0">—</span><span>Caderno de Encargos e Fiscalização de Obra</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </section>
 
@@ -297,8 +344,8 @@ import { SeoService } from '../services/seo.service';
             </div>
           </div>
 
-          <!-- Bloco de CTA final da seção Alô Síndico -->
-          <div class="max-w-4xl mx-auto">
+          <!-- Bloco de CTA duplo Alô Síndico -->
+          <div class="max-w-4xl mx-auto pt-4">
             <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-5 sm:p-8 lg:p-10 text-white text-center shadow-lg space-y-4 sm:space-y-6">
               <div class="space-y-2">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 backdrop-blur-xs text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider max-w-full">
@@ -340,133 +387,16 @@ import { SeoService } from '../services/seo.service';
               </div>
             </div>
           </div>
-        </section>
 
-        <!-- Seção 5: O Futuro da Amorim Tech (Roadmap Visionário de Inovação) -->
-        <section class="space-y-6 sm:space-y-8 lg:space-y-10">
-          <div class="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm max-w-full">
-              <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span class="break-words">Roadmap de Inovação Contínua</span>
-            </div>
-            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
-              O Futuro da Amorim Tech
-            </h2>
-            <p class="text-slate-600 text-xs sm:text-base leading-relaxed">
-              Estamos expandindo as fronteiras da tecnologia predial. Conheça as próximas soluções que transformarão a gestão de edifícios, condomínios e empreendimentos.
-            </p>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 max-w-7xl mx-auto">
-            <!-- Futuro 1: Plano de Manutenção Digital 4.0 -->
-            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
-              <div class="space-y-3 sm:space-y-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-105 transition-transform">
-                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-blue-600 block mb-1">
-                    GESTÃO PREDITIVA
-                  </span>
-                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
-                    Plano de Manutenção 4.0
-                  </h3>
-                </div>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
-                  Cronogramas preventivos automatizados, alertas de periodicidade e controle orçamentário para síndicos e gestores prediais.
-                </p>
-              </div>
-
-              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-bold">
-                <span>Em Desenvolvimento</span>
-                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-              </div>
-            </div>
-
-            <!-- Futuro 2: Entrega e Recebimento de Áreas Comuns -->
-            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
-              <div class="space-y-3 sm:space-y-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 group-hover:scale-105 transition-transform">
-                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
-                    CONSTRUTORAS & CONDOMÍNIOS
-                  </span>
-                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
-                    Recebimento de Obras
-                  </h3>
-                </div>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
-                  Checklist digital para vistoria de entrega de chaves e recebimento de áreas comuns, garantindo conformidade entre projeto e obra.
-                </p>
-              </div>
-
-              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-emerald-600 font-bold">
-                <span>Planejado</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              </div>
-            </div>
-
-            <!-- Futuro 3: Due Diligence e Auditoria Técnica -->
-            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
-              <div class="space-y-3 sm:space-y-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 group-hover:scale-105 transition-transform">
-                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-purple-600 block mb-1">
-                    INVESTIMENTOS & AUDITORIA
-                  </span>
-                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
-                    Due Diligence Imobiliária
-                  </h3>
-                </div>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
-                  Auditoria técnica e documental profunda de ativos imobiliários, mitigando riscos para fundos, investidores e proprietários.
-                </p>
-              </div>
-
-              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-purple-600 font-bold">
-                <span>Planejado</span>
-                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-              </div>
-            </div>
-
-            <!-- Futuro 4: Alô Síndico AI Assistant -->
-            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
-              <div class="space-y-3 sm:space-y-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 group-hover:scale-105 transition-transform">
-                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-amber-600 block mb-1">
-                    IA EM TEMPO REAL
-                  </span>
-                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
-                    Alô Síndico AI
-                  </h3>
-                </div>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
-                  Assistente virtual 24/7 treinado com normas ABNT e práticas de engenharia para orientar gestores e conectar a engenheiros credenciados.
-                </p>
-              </div>
-
-              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-amber-600 font-bold">
-                <span>Versão Beta Ativa</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-              </div>
-            </div>
+          <div class="pt-6 sm:pt-8 flex justify-center">
+            <a
+              [href]="linkWhatsappSindico"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-colors text-xs sm:text-sm min-h-[44px]"
+            >
+              Falar com o Alô Síndico
+            </a>
           </div>
         </section>
 
@@ -523,6 +453,130 @@ import { SeoService } from '../services/seo.service';
               <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify sm:text-center">
                 Documento técnico gerado automaticamente, pronto para ART/RRT e entrega ao cliente.
               </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção: O Futuro da Amorim Tech (Roadmap Visionário de Inovação) -->
+        <section class="space-y-6 sm:space-y-8 lg:space-y-10">
+          <div class="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm max-w-full">
+              <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span class="break-words">Roadmap de Inovação Contínua</span>
+            </div>
+            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              O Futuro da Amorim Tech
+            </h2>
+            <p class="text-slate-600 text-xs sm:text-base leading-relaxed">
+              Estamos expandindo as fronteiras da tecnologia predial. Conheça as próximas soluções que transformarão a gestão de edifícios, condomínios e empreendimentos.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 max-w-7xl mx-auto">
+            <!-- Futuro 1: Plano de Manutenção Digital 4.0 -->
+            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
+              <div class="space-y-3 sm:space-y-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-blue-600 block mb-1">
+                    GESTÃO PREDITIVA
+                  </span>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                    Plano de Manutenção 4.0
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                  Cronogramas preventivos automatizados, alertas de periodicidade e controle orçamentário para síndicos e gestores prediais.
+                </p>
+              </div>
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-bold">
+                <span>Em Desenvolvimento</span>
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              </div>
+            </div>
+
+            <!-- Futuro 2: Entrega e Recebimento de Áreas Comuns -->
+            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
+              <div class="space-y-3 sm:space-y-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-emerald-600 block mb-1">
+                    CONSTRUTORAS & CONDOMÍNIOS
+                  </span>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                    Recebimento de Obras
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                  Checklist digital para vistoria de entrega de chaves e recebimento de áreas comuns, garantindo conformidade entre projeto e obra.
+                </p>
+              </div>
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-emerald-600 font-bold">
+                <span>Planejado</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              </div>
+            </div>
+
+            <!-- Futuro 3: Due Diligence e Auditoria Técnica -->
+            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
+              <div class="space-y-3 sm:space-y-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-purple-600 block mb-1">
+                    INVESTIMENTOS & AUDITORIA
+                  </span>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                    Due Diligence Imobiliária
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                  Auditoria técnica e documental profunda de ativos imobiliários, mitigando riscos para fundos, investidores e proprietários.
+                </p>
+              </div>
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-purple-600 font-bold">
+                <span>Planejado</span>
+                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+              </div>
+            </div>
+
+            <!-- Futuro 4: Alô Síndico AI Assistant -->
+            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
+              <div class="space-y-3 sm:space-y-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 group-hover:scale-105 transition-transform">
+                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-amber-600 block mb-1">
+                    IA EM TEMPO REAL
+                  </span>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                    Alô Síndico AI
+                  </h3>
+                </div>
+                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                  Assistente virtual 24/7 treinado com normas ABNT e práticas de engenharia para orientar gestores e conectar a engenheiros credenciados.
+                </p>
+              </div>
+              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-amber-600 font-bold">
+                <span>Versão Beta Ativa</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              </div>
             </div>
           </div>
         </section>

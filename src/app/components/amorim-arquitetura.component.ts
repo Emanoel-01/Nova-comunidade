@@ -230,36 +230,79 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
     <div class="w-full bg-slate-50 py-6 sm:py-10 lg:py-16 px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-14 lg:space-y-16">
       <div class="max-w-7xl mx-auto space-y-10 sm:space-y-14 lg:space-y-16">
         <!-- Seção 1: Hero -->
-        <section class="relative bg-slate-900 text-white rounded-3xl overflow-hidden shadow-2xl py-10 sm:py-16 lg:py-20 px-5 sm:px-10 lg:px-14 border border-slate-800">
-          <div
-            class="absolute inset-0 opacity-15 bg-cover bg-center mix-blend-overlay pointer-events-none"
-            style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop');"
-          ></div>
-
-          <div class="relative z-10 max-w-3xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-400/30 rounded-full text-blue-400 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-3 sm:mb-5 max-w-full">
-              <span class="shrink-0">🏢</span>
-              <span class="break-words">Especialistas em Engenharia Consultiva</span>
+        <section class="relative rounded-3xl overflow-hidden shadow-2xl" style="background: linear-gradient(135deg, #042C53 0%, #0C447C 55%, #4A1B0C 130%);">
+          <div class="relative z-10 px-6 sm:px-12 py-10 sm:py-14 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-semibold mb-5">
+              Especialistas em engenharia consultiva
             </div>
-
-            <h1 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight mb-3 sm:mb-5">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-[1.15] mb-4">
               Excelência técnica para proteger o seu patrimônio.
             </h1>
-
-            <p class="text-slate-300 text-xs sm:text-base leading-relaxed font-normal text-justify">
-              A Amorim Arquitetura é pioneira em Engenharia Condominial e Diagnóstica em Pernambuco. Unimos o rigor técnico das normas da ABNT com a inovação da Construção 4.0 para garantir a conformidade legal e otimizar os custos do seu empreendimento.
+            <p class="text-white/80 text-sm sm:text-base leading-relaxed max-w-xl mb-7">
+              Referência em Engenharia Condominial e Diagnóstica em Pernambuco, com mais de 15 anos de atuação em projetos públicos e privados de grande porte. Rigor técnico das normas ABNT e IBAPE, unido à inovação da Construção 4.0.
             </p>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://wa.me/5581991298803?text=Ol%C3%A1!%20Vim%20pela%20p%C3%A1gina%20da%20Amorim%20Arquitetura%20e%20gostaria%20de%20solicitar%20uma%20proposta."
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#B5642A] hover:bg-[#9c521e] text-white font-bold rounded-xl transition-colors text-sm min-h-[44px]"
+              >
+                Solicitar proposta técnica
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </a>
+              <a href="#diagnostica" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold rounded-xl transition-colors text-sm min-h-[44px]">
+                Explorar serviços
+              </a>
+            </div>
+          </div>
+
+          <div class="relative z-10 border-t border-white/15 grid grid-cols-3 divide-x divide-white/15">
+            <div class="px-4 py-6 sm:py-7 text-center">
+              <p class="text-2xl sm:text-3xl font-extrabold text-white">+15 anos</p>
+              <p class="text-[11px] sm:text-xs text-white/60 mt-1">de atuação na construção civil</p>
+            </div>
+            <div class="px-4 py-6 sm:py-7 text-center">
+              <p class="text-2xl sm:text-3xl font-extrabold text-white">+500</p>
+              <p class="text-[11px] sm:text-xs text-white/60 mt-1">projetos e laudos executados</p>
+            </div>
+            <div class="px-4 py-6 sm:py-7 text-center">
+              <p class="text-2xl sm:text-3xl font-extrabold text-white">+200.000m²</p>
+              <p class="text-[11px] sm:text-xs text-white/60 mt-1">de empreendimentos gerenciados</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Nova Seção: Filtro Rápido de Público -->
+        <section class="grid md:grid-cols-2 gap-5 sm:gap-6">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-[#B5642A]">Para síndicos e administradoras</span>
+              <h3 class="text-lg sm:text-xl font-bold text-slate-900">Gestão e inspeção condominial</h3>
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">Evite custos emergenciais, cumpra as exigências legais e valorize o edifício com planos de manutenção e laudos de inspeção completos.</p>
+            </div>
+            <a href="#condominial" class="inline-flex items-center gap-2 text-sm font-bold text-[#0C447C]">Ver soluções para condomínios →</a>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col justify-between space-y-4">
+            <div class="space-y-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-[#0C447C]">Para construtoras e instituições</span>
+              <h3 class="text-lg sm:text-xl font-bold text-slate-900">Engenharia diagnóstica e legal</h3>
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">Vistorias cautelares de vizinhança, fiscalização técnica de obras, laudos periciais e avaliações patrimoniais com respaldo normativo.</p>
+            </div>
+            <a href="#diagnostica" class="inline-flex items-center gap-2 text-sm font-bold text-[#0C447C]">Ver serviços para empresas e órgãos →</a>
           </div>
         </section>
 
         <!-- Seção 2: Portfólio -->
         <section class="space-y-6 sm:space-y-8 lg:space-y-10">
           <div class="text-center max-w-3xl mx-auto">
+            <p class="text-[#B5642A] text-xs font-bold uppercase tracking-wide mb-2">Trajetória</p>
             <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-3">
               Portfólio
             </h2>
             <p class="text-slate-600 text-xs sm:text-base">
-              Mais de 15 anos de serviços executados para órgãos públicos, instituições e empreendimentos privados em Pernambuco e no Brasil.
+              Mais de 15 anos de serviços executados para órgãos públicos, instituições e empreendimentos privados.
             </p>
           </div>
 
@@ -310,7 +353,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         </section>
 
         <!-- Seção 3: Engenharia Diagnóstica e Legal -->
-        <section class="space-y-6 sm:space-y-8 lg:space-y-10 pt-1 sm:pt-2">
+        <section id="diagnostica" class="space-y-6 sm:space-y-8 lg:space-y-10 pt-1 sm:pt-2">
           <div class="text-center max-w-3xl mx-auto">
             <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-3">
               Engenharia Diagnóstica e Legal
@@ -327,7 +370,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         </section>
 
         <!-- Seção 4: Gestão Condominial e Operação -->
-        <section class="space-y-6 sm:space-y-8 lg:space-y-10 pt-1 sm:pt-2">
+        <section id="condominial" class="space-y-6 sm:space-y-8 lg:space-y-10 pt-1 sm:pt-2">
           <div class="text-center max-w-3xl mx-auto">
             <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-3">
               Gestão Condominial e Operação
@@ -354,10 +397,43 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
             </p>
           </div>
 
-          <app-service-grid
-            [services]="servicosInovacao"
-            buttonText="Falar com um Especialista"
-          ></app-service-grid>
+          <div class="grid sm:grid-cols-3 gap-5">
+            <div class="rounded-2xl p-6 flex flex-col justify-between space-y-5 text-white" style="background: #042C53;">
+              <div class="space-y-2.5">
+                <h3 class="font-bold text-sm sm:text-base">{{ servicosInovacao[0].title }}</h3>
+                <p class="text-white/70 text-xs leading-relaxed">{{ servicosInovacao[0].description }}</p>
+              </div>
+              <ul class="space-y-1.5 pt-3 border-t border-white/15 text-xs text-white/80">
+                @for (it of servicosInovacao[0].items; track it) {
+                  <li class="flex gap-2"><span class="text-white/40">—</span><span>{{ it }}</span></li>
+                }
+              </ul>
+            </div>
+
+            <div class="rounded-2xl p-6 flex flex-col justify-between space-y-5 text-white" style="background: #0C447C;">
+              <div class="space-y-2.5">
+                <h3 class="font-bold text-sm sm:text-base">{{ servicosInovacao[1].title }}</h3>
+                <p class="text-white/70 text-xs leading-relaxed">{{ servicosInovacao[1].description }}</p>
+              </div>
+              <ul class="space-y-1.5 pt-3 border-t border-white/15 text-xs text-white/80">
+                @for (it of servicosInovacao[1].items; track it) {
+                  <li class="flex gap-2"><span class="text-white/40">—</span><span>{{ it }}</span></li>
+                }
+              </ul>
+            </div>
+
+            <div class="rounded-2xl p-6 flex flex-col justify-between space-y-5 text-white" style="background: #4A1B0C;">
+              <div class="space-y-2.5">
+                <h3 class="font-bold text-sm sm:text-base">{{ servicosInovacao[2].title }}</h3>
+                <p class="text-white/70 text-xs leading-relaxed">{{ servicosInovacao[2].description }}</p>
+              </div>
+              <ul class="space-y-1.5 pt-3 border-t border-white/15 text-xs text-white/80">
+                @for (it of servicosInovacao[2].items; track it) {
+                  <li class="flex gap-2"><span class="text-white/40">—</span><span>{{ it }}</span></li>
+                }
+              </ul>
+            </div>
+          </div>
         </section>
 
         <!-- Seção 6: Atendimento para Síndicos (Alô Síndico) -->
@@ -372,14 +448,13 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
                 Precisa de vistoria ou laudo para seu condomínio?
               </h3>
               <p class="text-amber-100 text-xs sm:text-sm max-w-xl text-justify md:text-left">
-                Consulte nosso assistente técnico inteligente Alô Síndico com IA ou receba uma proposta técnica direta e sem burocracia.
+                Síndicos, administradoras e gestores de condomínio: consulte nosso assistente técnico inteligente Alô Síndico com IA, ou feche uma parceria para laudos em massa usando a tecnologia do nosso software Predial 4.0 — agilidade, padronização e preço justo para sua carteira de imóveis.
               </p>
             </div>
 
             <div class="shrink-0 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
               <a
-                routerLink="/contato"
-                fragment="alo-sindico"
+                href="https://emanoelamorim.com/contato#alo-sindico"
                 class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all duration-200 text-xs sm:text-sm cursor-pointer whitespace-nowrap min-h-[44px]"
               >
                 <span>Acessar Alô Síndico</span>
@@ -395,7 +470,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         <section class="pt-1 sm:pt-2">
           <div class="bg-blue-50 border border-blue-100 rounded-3xl p-6 sm:p-10 lg:p-12 text-center max-w-4xl mx-auto shadow-sm">
             <h3 class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 mb-3 sm:mb-4 tracking-tight">
-              Mais de 100 projetos e laudos executados com sucesso
+              Mais de 500 projetos e laudos executados com sucesso
             </h3>
             <p class="text-slate-600 text-xs sm:text-base max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed text-justify sm:text-center">
               A Amorim Arquitetura é a escolha de grandes instituições públicas, privadas e condomínios que não abrem mão de segurança, rigor normativo e tecnologia de ponta.
@@ -478,22 +553,22 @@ export class AmorimArquiteturaComponent implements OnInit {
       img: 'https://static.wixstatic.com/media/152459_b214383a73d14514ad8901a5cb287041~mv2.png/v1/crop/x_359,y_0,w_583,h_731/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/cor.png',
       title: 'Residencial Parque de Exposições',
       year: '2024',
-      client: 'Privado',
+      client: 'Sertenge Engenharia S/A',
       location: 'Recife/PE'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_84fd38ffd69849378852a469c196cf20~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/RFRN.jpg',
       title: 'Nova Sede da Delegacia da Receita Federal',
       year: '2019',
-      client: 'Receita Federal',
+      client: 'Receita Federal (RFRN)',
       location: 'Natal/RN'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_04c2c92f8ef843218671d733881c4b64~mv2.png/v1/crop/x_530,y_0,w_861,h_1080/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Largo%20do%20Monte.png',
       title: 'Requalificação Largo do Monte',
       year: '2017',
-      client: 'Prefeitura do Recife',
-      location: 'Recife/PE'
+      client: 'SEPAC Olinda',
+      location: 'Olinda/PE'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_0a72b01d9aa9414cae7ab49644a3dcd2~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/parquedasesculturas-1.jpg',
@@ -513,14 +588,14 @@ export class AmorimArquiteturaComponent implements OnInit {
       img: 'https://static.wixstatic.com/media/152459_eba2191949b14057a6b1fc5693f2ab8c~mv2.jpg/v1/crop/x_322,y_0,w_957,h_1200/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/taatro11.jpg',
       title: 'Cine Teatro Quartel do Derby',
       year: '2014',
-      client: 'Governo PE',
+      client: 'SETUR/PE',
       location: 'Recife/PE'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_f4a82f2ec8e84ae19863af18f9c440e8~mv2.jpg/v1/crop/x_290,y_0,w_861,h_1080/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/teleferico%20recife06.jpg',
       title: 'Teleférico Parque Dois Irmãos',
       year: '2015',
-      client: 'SETUR/PE',
+      client: 'SEMAS/PE',
       location: 'Recife/PE'
     },
     {
@@ -531,22 +606,57 @@ export class AmorimArquiteturaComponent implements OnInit {
       location: 'Recife/PE'
     },
     {
+      img: 'https://static.wixstatic.com/media/152459_11f480498bd2431b857788391365298c~mv2.jpg/v1/crop/x_157,y_0,w_356,h_446/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/00.jpg',
+      title: 'Sinalização Turística do Rio Grande do Norte',
+      year: '2014',
+      client: 'SETUR',
+      location: 'Natal/RN'
+    },
+    {
+      img: 'https://static.wixstatic.com/media/152459_11f480498bd2431b857788391365298c~mv2.jpg/v1/crop/x_157,y_0,w_356,h_446/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/00.jpg',
+      title: 'Sinalização Turística de Pernambuco (Cidade da Copa)',
+      year: '2013',
+      client: 'SETUR/PE',
+      location: 'Recife/PE'
+    },
+    {
       img: 'https://static.wixstatic.com/media/152459_e7a542e59257490a8661700ab41915fa~mv2.jpg/v1/crop/x_77,y_0,w_265,h_332/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/blog-engenho_edited.jpg',
       title: 'Restauração Engenho São João',
       year: '2012',
-      client: 'IPHAN',
-      location: 'Pernambuco'
+      client: 'SETUR',
+      location: 'Itamaracá/PE'
+    },
+    {
+      img: 'https://static.wixstatic.com/media/152459_0aae4ff86b7742ed8de6ff6d201cedfc~mv2.jpg/v1/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/eufrasio.jpg',
+      title: 'Mercado Eufrásio Barbosa',
+      year: '2012',
+      client: 'SETUR',
+      location: 'Olinda/PE'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_1920e747843046e8b52ca5306d85e91d~mv2.jpg/v1/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/P1010034_JPG.jpg',
       title: 'Restauração Engenho Monjope',
       year: '2011',
-      client: 'IPHAN',
-      location: 'Pernambuco'
+      client: 'SETUR',
+      location: 'Igarassu/PE'
     }
   ];
 
   readonly gestaoObras: PortfolioProject[] = [
+    {
+      img: 'https://i.ibb.co/d0XN61CV/alepe-fachada-frontal-480x600.jpg',
+      title: 'Fiscalização das Obras de Restauro no Palácio Joaquim Nabuco (ALEPE)',
+      year: '2026',
+      client: 'ALEPE',
+      location: 'Recife/PE'
+    },
+    {
+      img: 'https://static.wixstatic.com/media/152459_15e60566f08a4fcf828b0c37630ce2ed~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/sol.jpg',
+      title: 'Usina Solar CRC/PE',
+      year: '2023',
+      client: 'CRC/PE',
+      location: 'Recife/PE'
+    },
     {
       img: 'https://static.wixstatic.com/media/152459_6339ba323283427daa071eb7d16349ab~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/2014.jpg',
       title: 'Gerenciamento da Nova Sede do CRC/PE',
@@ -558,29 +668,29 @@ export class AmorimArquiteturaComponent implements OnInit {
       img: 'https://static.wixstatic.com/media/152459_0dedafe2eeda4698981281984bcf0c99~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Basilica%20do%20Carmo%20_JPG.jpg',
       title: 'Restauração Basílica do Carmo',
       year: '2019',
-      client: 'FUNDARPE',
-      location: 'Olinda/PE'
-    },
-    {
-      img: 'https://static.wixstatic.com/media/152459_15e60566f08a4fcf828b0c37630ce2ed~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/sol.jpg',
-      title: 'Usina Solar CRC/PE',
-      year: '2023',
-      client: 'CRC/PE',
+      client: 'URB Recife',
       location: 'Recife/PE'
     },
     {
-      img: '',
-      title: 'Fiscalização das Obras de Restauro no Palácio Joaquim Nabuco (ALEPE)',
-      year: '2026',
-      client: 'ALEPE',
-      location: 'Recife/PE'
+      img: 'https://static.wixstatic.com/media/152459_c74871c783f44018b3dd0af7f80dd576~mv2.jpg/v1/crop/x_161,y_0,w_373,h_464/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Artesanato%20Itapissuma.jpg',
+      title: 'Fiscalização da Reforma do Mercado de Itapissuma',
+      year: '2013',
+      client: 'SETUR',
+      location: 'Itapissuma/PE'
+    },
+    {
+      img: 'https://static.wixstatic.com/media/152459_d1c77d4720b5490db125171c554314ee~mv2.jpg/v1/crop/x_225,y_0,w_511,h_635/fill/w_300,h_375,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/2014.jpg',
+      title: 'Fiscalização da Construção do Parque de Gravatá',
+      year: '2013',
+      client: 'SETUR',
+      location: 'Gravatá/PE'
     }
   ];
 
   readonly servicosDiagnostica: ServiceCard[] = [
     {
       title: 'Laudos Técnicos e Vistorias',
-      description: 'Evite riscos e assegure seus direitos com laudos certificados.',
+      description: 'Evite riscos e assegure seus direitos com laudos certificados. Elaboramos Laudos de Vistoria Cautelar de Vizinhança, Inspeção Predial e Assistência Técnica Pericial: mais exatos, padronizados e entregues muito mais rápido — com um preço bem mais acessível — graças à tecnologia do nosso software Predial 4.0. Solicite uma cotação sem compromisso.',
       items: [
         'Laudos de Vistoria Predial e Garantia',
         'Reforma (NBR 16280) e Acessibilidade (NBR 9050)',
@@ -657,8 +767,8 @@ export class AmorimArquiteturaComponent implements OnInit {
 
   readonly servicosInovacao: ServiceCard[] = [
     {
-      title: 'Inovação e Digitalização (Construção 4.0)',
-      description: 'Automatize, otimize e digitalize seus processos construtivos.',
+      title: 'Digitalização e Reengenharia de Processos',
+      description: 'Criamos soluções digitais próprias para a construção civil, automatizando o que hoje ainda é manual.',
       items: [
         'Construção 4.0 aplicada de forma prática no canteiro',
         'Formulários, aprovações e fluxos totalmente automatizados',
@@ -681,15 +791,6 @@ export class AmorimArquiteturaComponent implements OnInit {
         'Estudos rigorosos de viabilidade técnica e financeira',
         'Planejamento em BIM e gestão técnica de excelência',
         'Coordenação sincronizada de equipes e cronograma físico'
-      ]
-    },
-    {
-      title: 'Arquitetura Sensorial e Energética',
-      description: 'Melhore o fluxo de ambientes com arquitetura terapêutica.',
-      items: [
-        'Diagnóstico energético completo dos espaços e fluxos',
-        'Recomendações estratégicas de layout, luz e decoração',
-        'Foco na valorização do bem-estar, produtividade e harmonia'
       ]
     }
   ];

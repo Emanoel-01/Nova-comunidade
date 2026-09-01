@@ -85,6 +85,7 @@ export class TrajetoriaPortfolioComponent {
   private intervalId?: ReturnType<typeof setInterval>;
 
   timeline: TimelineItem[] = [
+    { year: '2026', title: 'Fiscalização das Obras de Restauro no Palácio Joaquim Nabuco (ALEPE)', description: 'Fiscalização das Obras de Restauro. ALEPE | Local: Recife/PE', icon: 'project', imageUrl: 'https://i.ibb.co/d0XN61CV/alepe-fachada-frontal-480x600.jpg' },
     { year: '2026', title: 'CEO & Arquiteto de Soluções da Amorim TECH', description: 'Liderança técnica e gestão de produto na evolução de soluções SaaS para a construção civil, com foco em arquitetura escalável e integração com Inteligência Artificial.', icon: 'tech', imageUrl: 'https://i.ibb.co/TDC35Hqf/Emanoel-Silva-de-Amorim.jpg' },
     { year: '2025', title: 'Analista de Processos e Arquiteto de Soluções Digitais', description: 'Desenvolvimento (por Vibe Coding) de 09 Protótipos de apps de gestão inteligente das edificações.', icon: 'tech', imageUrl: 'https://i.ibb.co/TDC35Hqf/Emanoel-Silva-de-Amorim.jpg' },
     { year: '2022-2024', title: 'Mestrado em Engenharia Civil', description: 'Gestão da Manutenção de Edificações em Instituições Públicas. UPE - Universidade de Pernambuco. Orientador: Prof. Dr. Alberto Casado Lordsleem Júnior.', icon: 'academic' },

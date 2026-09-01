@@ -101,7 +101,7 @@ interface Institution {
                 @if (totalProjetosPortfolio() >= 5) {
                   +{{ totalProjetosPortfolio() }}
                 } @else {
-                  +100
+                  +500
                 }
               </span>
               <span class="text-[11px] sm:text-xs text-indigo-200 font-medium">projetos e laudos executados</span>
@@ -193,7 +193,13 @@ interface Institution {
                 <span class="text-[11px] sm:text-xs text-slate-500 font-medium">de experiência e atuação na construção civil</span>
               </div>
               <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
-                <span class="block text-lg sm:text-2xl lg:text-3xl font-extrabold text-indigo-600 mb-1">+100</span>
+                <span class="block text-lg sm:text-2xl lg:text-3xl font-extrabold text-indigo-600 mb-1">
+                  @if (totalProjetosPortfolio() >= 5) {
+                    +{{ totalProjetosPortfolio() }}
+                  } @else {
+                    +500
+                  }
+                </span>
                 <span class="text-[11px] sm:text-xs text-slate-500 font-medium">projetos e laudos executados</span>
               </div>
               <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
