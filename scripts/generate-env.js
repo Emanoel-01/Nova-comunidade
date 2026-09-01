@@ -24,9 +24,19 @@ if (fs.existsSync(envPath)) {
   });
 }
 
+let existingSupabaseUrl = '';
+let existingSupabaseAnonKey = '';
+if (fs.existsSync(targetPath)) {
+  const targetContent = fs.readFileSync(targetPath, 'utf-8');
+  const urlMatch = targetContent.match(/supabaseUrl:\s*["']([^"']+)["']/);
+  const keyMatch = targetContent.match(/supabaseAnonKey:\s*["']([^"']+)["']/);
+  if (urlMatch) existingSupabaseUrl = urlMatch[1];
+  if (keyMatch) existingSupabaseAnonKey = keyMatch[1];
+}
+
 const apiBaseUrl = process.env.API_BASE_URL || envVars.API_BASE_URL || '';
-const supabaseUrl = process.env.SUPABASE_URL || envVars.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || envVars.SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || envVars.SUPABASE_URL || existingSupabaseUrl;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || envVars.SUPABASE_ANON_KEY || existingSupabaseAnonKey;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[generate-env] ERRO: SUPABASE_URL e/ou SUPABASE_ANON_KEY não definidas. Build abortado para evitar apontar para banco incorreto.');
