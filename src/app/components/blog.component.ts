@@ -813,13 +813,10 @@ export class BlogComponent implements OnInit {
     try {
       const { error } = await this.supabaseService.toggleCurtidaBlogPost(post.id, curtidoAntes);
       if (error) {
-        // Reverte em caso de erro (ex.: usuário não logado)
+        // Reverte em caso de erro
         post.curtidoPorMim = curtidoAntes;
         post.totalCurtidas = totalAntes;
         this.posts.set([...this.posts()]);
-        if (error.message === 'Não autenticado.') {
-          this.router.navigate(['/login']);
-        }
       }
     } finally {
       this.curtindoAgora.set(null);

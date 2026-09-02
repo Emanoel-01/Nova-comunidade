@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient, Session } from '@supabase/supabase-js';
 import { environment } from '../environments/environment';
 import { gerarCodigoVerificacaoCertificado } from '../app/services/certificado-pdf.service';
+import { obterVisitanteId } from '../app/utils/visitante-id.util';
 
 export interface DocumentoCredito {
   id: string;
@@ -2810,6 +2811,12 @@ export class SupabaseService {
     nota_minima_avaliacao_final?: number;
     tem_prazo?: boolean;
     prazo_dias?: number;
+    data_inicio?: string | null;
+    data_fim?: string | null;
+    formato?: string | null;
+    local?: string | null;
+    imagem_capa_url?: string | null;
+    exibir_na_agenda?: boolean;
   }): Promise<{ error: Error | null; data?: any }> {
     try {
       const payload: any = {
@@ -2828,6 +2835,12 @@ export class SupabaseService {
       if (curso.nota_minima_avaliacao_final !== undefined) payload.nota_minima_avaliacao_final = curso.nota_minima_avaliacao_final;
       if (curso.tem_prazo !== undefined) payload.tem_prazo = curso.tem_prazo;
       if (curso.prazo_dias !== undefined) payload.prazo_dias = curso.prazo_dias;
+      if (curso.data_inicio !== undefined) payload.data_inicio = curso.data_inicio;
+      if (curso.data_fim !== undefined) payload.data_fim = curso.data_fim;
+      if (curso.formato !== undefined) payload.formato = curso.formato;
+      if (curso.local !== undefined) payload.local = curso.local;
+      if (curso.imagem_capa_url !== undefined) payload.imagem_capa_url = curso.imagem_capa_url;
+      if (curso.exibir_na_agenda !== undefined) payload.exibir_na_agenda = curso.exibir_na_agenda;
 
       const { data, error } = await this.client.from('cursos').insert(payload).select().single();
       return { error, data };
@@ -3717,24 +3730,25 @@ export class SupabaseService {
     try {
       const session = await this.getSession();
       const meuId = session?.user?.id;
+      const meuVisitanteId = meuId ? null : obterVisitanteId();
       const { data, error } = await this.client
         .from('blog_posts')
-        .select('*, blog_post_tags(blog_tags(id, nome, slug)), blog_curtidas(profissional_id)')
+        .select('*, blog_post_tags(blog_tags(id, nome, slug)), blog_curtidas(profissional_id, visitante_id)')
         .eq('publicado', true)
         .order('criado_em', { ascending: false });
       if (error) {
         console.warn('Erro ao listar posts publicados:', error.message);
         return [];
       }
-      // Achata blog_post_tags(blog_tags(...)) em post.tags: [{id,nome,slug}]
-      // e blog_curtidas em post.totalCurtidas / post.curtidoPorMim
       return (data || []).map((post: any) => {
         const curtidas = post.blog_curtidas || [];
         return {
           ...post,
           tags: (post.blog_post_tags || []).map((pt: any) => pt.blog_tags).filter(Boolean),
           totalCurtidas: curtidas.length,
-          curtidoPorMim: meuId ? curtidas.some((c: any) => c.profissional_id === meuId) : false,
+          curtidoPorMim: meuId
+            ? curtidas.some((c: any) => c.profissional_id === meuId)
+            : curtidas.some((c: any) => c.visitante_id === meuVisitanteId),
         };
       });
     } catch (e: any) {
@@ -3746,21 +3760,23 @@ export class SupabaseService {
   async toggleCurtidaBlogPost(postId: string, curtidoAtualmente: boolean): Promise<{ error: Error | null }> {
     try {
       const session = await this.getSession();
-      if (!session?.user) return { error: new Error('Não autenticado.') };
+      const usuarioLogado = session?.user?.id ?? null;
+      const visitanteId = usuarioLogado ? null : obterVisitanteId();
+
       if (curtidoAtualmente) {
-        const { error } = await this.client
-          .from('blog_curtidas')
-          .delete()
-          .eq('post_id', postId)
-          .eq('profissional_id', session.user.id);
+        const query = this.client.from('blog_curtidas').delete().eq('post_id', postId);
+        const { error } = usuarioLogado
+          ? await query.eq('profissional_id', usuarioLogado)
+          : await query.eq('visitante_id', visitanteId);
         return { error };
       } else {
         const { error } = await this.client
           .from('blog_curtidas')
-          .insert({
-            post_id: postId,
-            profissional_id: session.user.id
-          });
+          .insert(
+            usuarioLogado
+              ? { post_id: postId, profissional_id: usuarioLogado }
+              : { post_id: postId, visitante_id: visitanteId }
+          );
         return { error };
       }
     } catch (e: any) {
@@ -4819,6 +4835,332 @@ export class SupabaseService {
   async excluirProjetoPortfolio(id: string): Promise<{ error: Error | null }> {
     try {
       const { error } = await this.client.from('portfolio_projetos').delete().eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // ----------------------------------------------------
+  // CURSOS — AGENDA PÚBLICA & PARCEIROS (DOCENTES / SOFTWARES / EMPRESAS)
+  // ----------------------------------------------------
+
+  async listarCursosAgenda(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('cursos')
+        .select('*')
+        .eq('exibir_na_agenda', true)
+        .order('data_inicio', { ascending: true, nullsFirst: false });
+      if (error) {
+        console.warn('Erro ao listar cursos da agenda pública:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar cursos da agenda pública:', e?.message || e);
+      return [];
+    }
+  }
+
+  async atualizarCampoAgendaCurso(
+    id: string,
+    dados: {
+      data_inicio?: string | null;
+      data_fim?: string | null;
+      formato?: string | null;
+      local?: string | null;
+      imagem_capa_url?: string | null;
+      exibir_na_agenda?: boolean;
+    }
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client.from('cursos').update(dados).eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // --- PROFESSORES PARCEIROS ---
+
+  async listarProfessoresParceirosAtivos(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('professores_parceiros')
+        .select('*')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar professores parceiros ativos:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar professores parceiros:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTodosProfessoresParceirosAdmin(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('professores_parceiros')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar professores parceiros (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar professores parceiros (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarProfessorParceiro(dados: {
+    nome: string;
+    disciplina_area?: string | null;
+    foto_url?: string | null;
+    ativo?: boolean;
+    ordem?: number;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const { data, error } = await this.client
+        .from('professores_parceiros')
+        .insert({
+          nome: dados.nome.trim(),
+          disciplina_area: dados.disciplina_area?.trim() || null,
+          foto_url: dados.foto_url?.trim() || null,
+          ativo: dados.ativo ?? true,
+          ordem: dados.ordem ?? 0,
+        })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarProfessorParceiro(
+    id: string,
+    dados: Partial<{
+      nome: string;
+      disciplina_area: string | null;
+      foto_url: string | null;
+      ativo: boolean;
+      ordem: number;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('professores_parceiros')
+        .update(dados)
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirProfessorParceiro(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('professores_parceiros')
+        .delete()
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // --- SOFTWARES PARCEIROS ---
+
+  async listarSoftwaresParceirosAtivos(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('softwares_parceiros')
+        .select('*')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar softwares parceiros ativos:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar softwares parceiros:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTodosSoftwaresParceirosAdmin(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('softwares_parceiros')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar softwares parceiros (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar softwares parceiros (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarSoftwareParceiro(dados: {
+    nome: string;
+    logo_url?: string | null;
+    link_site?: string | null;
+    ativo?: boolean;
+    ordem?: number;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const { data, error } = await this.client
+        .from('softwares_parceiros')
+        .insert({
+          nome: dados.nome.trim(),
+          logo_url: dados.logo_url?.trim() || null,
+          link_site: dados.link_site?.trim() || null,
+          ativo: dados.ativo ?? true,
+          ordem: dados.ordem ?? 0,
+        })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarSoftwareParceiro(
+    id: string,
+    dados: Partial<{
+      nome: string;
+      logo_url: string | null;
+      link_site: string | null;
+      ativo: boolean;
+      ordem: number;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('softwares_parceiros')
+        .update(dados)
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirSoftwareParceiro(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('softwares_parceiros')
+        .delete()
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  // --- EMPRESAS PARCEIRAS ---
+
+  async listarEmpresasParceirasAtivas(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('empresas_parceiras')
+        .select('*')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar empresas parceiras ativas:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar empresas parceiras:', e?.message || e);
+      return [];
+    }
+  }
+
+  async listarTodasEmpresasParceirasAdmin(): Promise<any[]> {
+    try {
+      const { data, error } = await this.client
+        .from('empresas_parceiras')
+        .select('*')
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar empresas parceiras (admin):', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar empresas parceiras (admin):', e?.message || e);
+      return [];
+    }
+  }
+
+  async criarEmpresaParceira(dados: {
+    nome: string;
+    logo_url?: string | null;
+    link_site?: string | null;
+    ativo?: boolean;
+    ordem?: number;
+  }): Promise<{ error: Error | null; data?: any }> {
+    try {
+      const { data, error } = await this.client
+        .from('empresas_parceiras')
+        .insert({
+          nome: dados.nome.trim(),
+          logo_url: dados.logo_url?.trim() || null,
+          link_site: dados.link_site?.trim() || null,
+          ativo: dados.ativo ?? true,
+          ordem: dados.ordem ?? 0,
+        })
+        .select()
+        .single();
+      return { error, data };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async atualizarEmpresaParceira(
+    id: string,
+    dados: Partial<{
+      nome: string;
+      logo_url: string | null;
+      link_site: string | null;
+      ativo: boolean;
+      ordem: number;
+    }>
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('empresas_parceiras')
+        .update(dados)
+        .eq('id', id);
+      return { error };
+    } catch (e: any) {
+      return { error: e };
+    }
+  }
+
+  async excluirEmpresaParceira(id: string): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('empresas_parceiras')
+        .delete()
+        .eq('id', id);
       return { error };
     } catch (e: any) {
       return { error: e };

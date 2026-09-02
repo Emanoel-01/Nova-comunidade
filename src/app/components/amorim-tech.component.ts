@@ -17,18 +17,18 @@ import { SeoService } from '../services/seo.service';
           <div class="absolute -top-32 -right-24 w-96 h-96 rounded-full blur-3xl pointer-events-none" style="background: radial-gradient(circle, rgba(34,211,238,0.4) 0%, transparent 70%);"></div>
           <div class="absolute -bottom-40 -left-24 w-80 h-80 rounded-full blur-3xl pointer-events-none" style="background: radial-gradient(circle, rgba(251,146,60,0.25) 0%, transparent 70%);"></div>
 
-          <div class="relative z-10 px-6 sm:px-10 lg:px-14 py-10 sm:py-16 lg:py-20 grid lg:grid-cols-[1.15fr_0.85fr] gap-8 sm:gap-10 items-center">
-            <div class="space-y-5 sm:space-y-6">
-              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/8 border border-white/15 text-cyan-300 text-[11px] sm:text-xs font-semibold">
+          <div class="relative z-10 px-5 sm:px-10 lg:px-14 py-8 sm:py-16 lg:py-20 grid lg:grid-cols-[1.15fr_0.85fr] gap-8 sm:gap-10 items-center">
+            <div class="space-y-4 sm:space-y-6">
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/8 border border-white/15 text-cyan-300 text-[10px] min-[360px]:text-[11px] sm:text-xs font-semibold max-w-full">
                 <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
-                Ecossistema digital · engenharia diagnóstica
+                <span class="truncate sm:overflow-visible">Ecossistema digital · engenharia diagnóstica</span>
               </div>
 
-              <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.05]">
+              <h1 class="text-2xl min-[360px]:text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.08]">
                 Predial 4.0
               </h1>
 
-              <p class="text-slate-300 text-xs sm:text-base lg:text-lg leading-relaxed max-w-xl text-justify sm:text-left">
+              <p class="text-slate-300 text-[13px] min-[360px]:text-sm sm:text-base lg:text-lg leading-relaxed max-w-xl text-left">
                 O copiloto técnico para engenheiros e arquitetos que fazem vistorias e emitem laudos. Da vistoria em campo à obra concluída, com inteligência artificial em cada etapa — laudos mais rápidos e padronizados, sem perder rigor técnico.
               </p>
 
@@ -39,8 +39,8 @@ import { SeoService } from '../services/seo.service';
                   rel="noopener noreferrer"
                   class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold rounded-xl transition-colors text-xs sm:text-sm min-h-[44px]"
                 >
-                  Acessar o Predial 4.0
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  <span>Acessar o Predial 4.0</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                 </a>
                 <a
                   [href]="linkWhatsappTech"
@@ -74,17 +74,17 @@ import { SeoService } from '../services/seo.service';
           </div>
 
           <div class="relative z-10 border-t border-white/10 grid grid-cols-3 divide-x divide-white/10 bg-black/20">
-            <div class="px-4 py-5 sm:py-6 text-center">
-              <p class="text-lg sm:text-2xl font-extrabold text-white">3 módulos</p>
-              <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">um só ecossistema</p>
+            <div class="px-2 sm:px-4 py-4 sm:py-5 lg:py-6 text-center flex flex-col justify-center">
+              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-white tracking-tight leading-tight">3 módulos</p>
+              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-slate-400 mt-1 leading-tight sm:leading-normal">um só ecossistema</p>
             </div>
-            <div class="px-4 py-5 sm:py-6 text-center">
-              <p class="text-lg sm:text-2xl font-extrabold text-white">100% IA</p>
-              <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">diagnóstico assistido</p>
+            <div class="px-2 sm:px-4 py-4 sm:py-5 lg:py-6 text-center flex flex-col justify-center">
+              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-white tracking-tight leading-tight">100% IA</p>
+              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-slate-400 mt-1 leading-tight sm:leading-normal">diagnóstico assistido</p>
             </div>
-            <div class="px-4 py-5 sm:py-6 text-center">
-              <p class="text-lg sm:text-2xl font-extrabold text-white">beta ativa</p>
-              <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">em evolução contínua</p>
+            <div class="px-2 sm:px-4 py-4 sm:py-5 lg:py-6 text-center flex flex-col justify-center">
+              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-white tracking-tight leading-tight">beta ativa</p>
+              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-slate-400 mt-1 leading-tight sm:leading-normal">em evolução contínua</p>
             </div>
           </div>
         </section>

@@ -39,6 +39,12 @@ export interface CursoAdmin {
   modulos?: ModuloCursoAdmin[];
   totalMatriculados?: number;
   totalCertificados?: number;
+  data_inicio?: string | null;
+  data_fim?: string | null;
+  formato?: 'gravado' | 'ao_vivo' | 'presencial_hibrido' | null;
+  local?: string | null;
+  imagem_capa_url?: string | null;
+  exibir_na_agenda?: boolean;
 }
 
 @Component({
@@ -215,6 +221,83 @@ export interface CursoAdmin {
                     </div>
                   </div>
                 </div>
+
+                <!-- Seção: Agenda Pública -->
+                <div class="sm:col-span-2 p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs font-bold text-slate-800">Agenda Pública (Amorim Academy)</div>
+                    <span class="text-[11px] text-slate-500">Exibição pública no site institucional</span>
+                  </div>
+
+                  <div class="space-y-3">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        #novoExibirAgendaInput
+                        [checked]="novoExibirAgenda()"
+                        (change)="novoExibirAgenda.set(novoExibirAgendaInput.checked)"
+                        class="w-4 h-4 text-indigo-600 rounded"
+                      />
+                      <span class="text-xs font-bold text-slate-700">Exibir na Agenda de Cursos do site</span>
+                    </label>
+
+                    <div [class.hidden]="!novoExibirAgenda()" class="space-y-3 pt-2 border-t border-indigo-100/70">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5 sm:col-span-2">
+                          <label class="block text-xs font-bold text-slate-700">Formato</label>
+                          <select
+                            #novoFormatoInput
+                            [value]="novoFormato()"
+                            (change)="novoFormato.set($any(novoFormatoInput.value))"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="gravado">Gravado (EAD)</option>
+                            <option value="ao_vivo">Remoto ao vivo</option>
+                            <option value="presencial_hibrido">Presencial híbrido</option>
+                          </select>
+                        </div>
+
+                        <div class="space-y-1.5">
+                          <label class="block text-xs font-bold text-slate-700">Data de Início</label>
+                          <input
+                            type="date"
+                            #novoDataInicioInput
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+
+                        <div class="space-y-1.5">
+                          <label class="block text-xs font-bold text-slate-700">Data de Fim</label>
+                          <input
+                            type="date"
+                            #novoDataFimInput
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+
+                        <div [class.hidden]="novoFormato() === 'gravado'" class="space-y-1.5 sm:col-span-2">
+                          <label class="block text-xs font-bold text-slate-700">Local</label>
+                          <input
+                            type="text"
+                            #novoLocalInput
+                            placeholder="Ex: Recife/PE ou Online"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+
+                        <div class="space-y-1.5 sm:col-span-2">
+                          <label class="block text-xs font-bold text-slate-700">URL da imagem de capa do curso</label>
+                          <input
+                            type="url"
+                            #novoImagemCapaInput
+                            placeholder="https://exemplo.com/imagem-capa.jpg"
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="flex items-center justify-end gap-3 pt-2">
@@ -239,7 +322,13 @@ export interface CursoAdmin {
                     novoTemAvaliacaoModuloInput.checked,
                     +novoNotaMinModuloInput.value,
                     novoTemPrazoInput.checked,
-                    +novoPrazoDiasInput.value
+                    +novoPrazoDiasInput.value,
+                    novoExibirAgendaInput.checked,
+                    $any(novoFormatoInput.value),
+                    novoDataInicioInput.value,
+                    novoDataFimInput.value,
+                    novoLocalInput.value,
+                    novoImagemCapaInput.value
                   )"
                   class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
                 >
@@ -1410,6 +1499,87 @@ export interface CursoAdmin {
                       </div>
                     </div>
                   </div>
+
+                  <!-- Seção: Agenda Pública na Edição -->
+                  <div class="sm:col-span-2 p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs font-bold text-slate-800">Agenda Pública (Amorim Academy)</div>
+                      <span class="text-[11px] text-slate-500">Exibição pública no site institucional</span>
+                    </div>
+
+                    <div class="space-y-3">
+                      <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          #editExibirAgendaInput
+                          [checked]="editExibirAgenda()"
+                          (change)="editExibirAgenda.set(editExibirAgendaInput.checked)"
+                          class="w-4 h-4 text-indigo-600 rounded"
+                        />
+                        <span class="text-xs font-bold text-slate-700">Exibir na Agenda de Cursos do site</span>
+                      </label>
+
+                      <div [class.hidden]="!editExibirAgenda()" class="space-y-3 pt-2 border-t border-indigo-100/70">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div class="space-y-1.5 sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700">Formato</label>
+                            <select
+                              #editFormatoInput
+                              [value]="editFormato()"
+                              (change)="editFormato.set($any(editFormatoInput.value))"
+                              class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              <option value="gravado">Gravado (EAD)</option>
+                              <option value="ao_vivo">Remoto ao vivo</option>
+                              <option value="presencial_hibrido">Presencial híbrido</option>
+                            </select>
+                          </div>
+
+                          <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-700">Data de Início</label>
+                            <input
+                              type="date"
+                              #editDataInicioInput
+                              [value]="cursoAtivo()?.data_inicio || ''"
+                              class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+
+                          <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-700">Data de Fim</label>
+                            <input
+                              type="date"
+                              #editDataFimInput
+                              [value]="cursoAtivo()?.data_fim || ''"
+                              class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+
+                          <div [class.hidden]="editFormato() === 'gravado'" class="space-y-1.5 sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700">Local</label>
+                            <input
+                              type="text"
+                              #editLocalInput
+                              [value]="cursoAtivo()?.local || ''"
+                              placeholder="Ex: Recife/PE ou Online"
+                              class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+
+                          <div class="space-y-1.5 sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700">URL da imagem de capa do curso</label>
+                            <input
+                              type="url"
+                              #editImagemCapaInput
+                              [value]="cursoAtivo()?.imagem_capa_url || ''"
+                              placeholder="https://exemplo.com/capa.jpg"
+                              class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
@@ -1424,7 +1594,13 @@ export interface CursoAdmin {
                       editTemAvaliacaoModuloInput.checked,
                       +editNotaMinModuloInput.value,
                       editTemPrazoInput.checked,
-                      +editPrazoDiasInput.value
+                      +editPrazoDiasInput.value,
+                      editExibirAgendaInput.checked,
+                      $any(editFormatoInput.value),
+                      editDataInicioInput.value,
+                      editDataFimInput.value,
+                      editLocalInput.value,
+                      editImagemCapaInput.value
                     )"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
@@ -1895,6 +2071,12 @@ export class AdminCursoComponent implements OnInit {
   readonly cursoExcluirId = signal<string | null>(null);
   readonly moduloExcluirId = signal<string | null>(null);
 
+  // Agenda Pública do Curso
+  readonly novoExibirAgenda = signal<boolean>(false);
+  readonly novoFormato = signal<'gravado' | 'ao_vivo' | 'presencial_hibrido'>('gravado');
+  readonly editExibirAgenda = signal<boolean>(false);
+  readonly editFormato = signal<'gravado' | 'ao_vivo' | 'presencial_hibrido'>('gravado');
+
   // Módulo form state
   readonly criandoModulo = signal<boolean>(false);
   readonly editandoModuloId = signal<string | null>(null);
@@ -1978,6 +2160,8 @@ export class AdminCursoComponent implements OnInit {
   }
 
   abrirModalCriarCurso(): void {
+    this.novoExibirAgenda.set(false);
+    this.novoFormato.set('gravado');
     this.criandoNovoCurso.set(true);
   }
 
@@ -1995,7 +2179,13 @@ export class AdminCursoComponent implements OnInit {
     temAvaliacaoModulo: boolean = false,
     notaMinModulo: number = 70,
     temPrazo: boolean = false,
-    prazoDias: number = 30
+    prazoDias: number = 30,
+    exibirNaAgenda: boolean = false,
+    formato: 'gravado' | 'ao_vivo' | 'presencial_hibrido' = 'gravado',
+    dataInicio?: string | null,
+    dataFim?: string | null,
+    local?: string | null,
+    imagemCapaUrl?: string | null
   ): Promise<void> {
     if (!titulo.trim()) {
       this.exibirErro('Por favor, informe o título do curso.');
@@ -2016,6 +2206,12 @@ export class AdminCursoComponent implements OnInit {
         nota_minima_avaliacao_modulo: notaMinModulo,
         tem_prazo: temPrazo,
         prazo_dias: temPrazo ? prazoDias : undefined,
+        exibir_na_agenda: exibirNaAgenda,
+        formato: exibirNaAgenda ? formato : null,
+        data_inicio: (exibirNaAgenda && dataInicio?.trim()) ? dataInicio.trim() : null,
+        data_fim: (exibirNaAgenda && dataFim?.trim()) ? dataFim.trim() : null,
+        local: (exibirNaAgenda && formato !== 'gravado' && local?.trim()) ? local.trim() : null,
+        imagem_capa_url: (exibirNaAgenda && imagemCapaUrl?.trim()) ? imagemCapaUrl.trim() : null,
       });
 
       if (res.error) {
@@ -2076,6 +2272,11 @@ export class AdminCursoComponent implements OnInit {
     this.cursoSelecionadoId.set(id);
     this.secaoAtiva.set('modulos');
     this.cancelarFormularioModulo();
+    const curso = this.cursos().find(c => c.id === id);
+    if (curso) {
+      this.editExibirAgenda.set(curso.exibir_na_agenda ?? false);
+      this.editFormato.set(curso.formato || 'gravado');
+    }
   }
 
   voltarParaListaCursos(): void {
@@ -2085,6 +2286,13 @@ export class AdminCursoComponent implements OnInit {
 
   setSecaoAtiva(secao: 'modulos' | 'certificado' | 'alunos' | 'dados'): void {
     this.secaoAtiva.set(secao);
+    if (secao === 'dados') {
+      const c = this.cursoAtivo();
+      if (c) {
+        this.editExibirAgenda.set(c.exibir_na_agenda ?? false);
+        this.editFormato.set(c.formato || 'gravado');
+      }
+    }
     if (secao === 'alunos') {
       this.carregarAlunosMatriculados();
     }
@@ -2599,7 +2807,13 @@ export class AdminCursoComponent implements OnInit {
     temAvaliacaoModulo: boolean = false,
     notaMinModulo: number = 70,
     temPrazo: boolean = false,
-    prazoDias: number = 30
+    prazoDias: number = 30,
+    exibirNaAgenda: boolean = false,
+    formato: 'gravado' | 'ao_vivo' | 'presencial_hibrido' = 'gravado',
+    dataInicio?: string | null,
+    dataFim?: string | null,
+    local?: string | null,
+    imagemCapaUrl?: string | null
   ): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
@@ -2621,6 +2835,12 @@ export class AdminCursoComponent implements OnInit {
         nota_minima_avaliacao_modulo: notaMinModulo,
         tem_prazo: temPrazo,
         prazo_dias: temPrazo ? prazoDias : null,
+        exibir_na_agenda: exibirNaAgenda,
+        formato: exibirNaAgenda ? formato : null,
+        data_inicio: (exibirNaAgenda && dataInicio?.trim()) ? dataInicio.trim() : null,
+        data_fim: (exibirNaAgenda && dataFim?.trim()) ? dataFim.trim() : null,
+        local: (exibirNaAgenda && formato !== 'gravado' && local?.trim()) ? local.trim() : null,
+        imagem_capa_url: (exibirNaAgenda && imagemCapaUrl?.trim()) ? imagemCapaUrl.trim() : null,
       });
 
       if (res.error) {
