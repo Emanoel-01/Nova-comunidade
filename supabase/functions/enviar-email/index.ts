@@ -1,17 +1,15 @@
 // Supabase Edge Function: enviar-email
 // Envio transacional e broadcast via Resend (resend.com) com template visual AmorimTech
 // Frente 5/7: Gestão de Usuários em Massa, Perfis Customizados e E-mail Automático
-// CORRIGIDO: CNPJ do rodapé ajustado para o CNPJ real da empresa
-// v2: adicionado aistudio.google.com para permitir testes direto do preview do AI Studio
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
   'https://emanoelamorim.com',
+  'https://aistudio.google.com',
   'http://localhost:4200',
   'http://localhost:5173',
-  'https://aistudio.google.com',
 ];
 
 function buildCorsHeaders(requestOrigin: string | null): Record<string, string> {
@@ -38,6 +36,7 @@ interface TemplateEmailOptions {
 
 export function gerarTemplateEmailAmorimTech(options: TemplateEmailOptions): { assunto: string; html: string } {
   const urlAcesso = options.linkAcesso || 'https://emanoelamorim.com';
+  const logoUrl = 'https://emanoelamorim.com/logo-header.jpg';
 
   let tituloAssunto = '';
   let corpoPrincipalHtml = '';
@@ -75,6 +74,12 @@ export function gerarTemplateEmailAmorimTech(options: TemplateEmailOptions): { a
             Recomendamos alterar sua senha após o primeiro acesso no menu de Perfil.
           </p>
         ` : ''}
+      </div>
+
+      <div style="margin: 20px 0; padding: 14px 16px; background-color: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #B5642A; border-radius: 8px;">
+        <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">
+          <strong>Aviso importante:</strong> Quando for completar seu perfil, você vai encontrar uma seção de <strong>Dados para Documentos Técnicos</strong> (nome completo para laudos, empresa, CNPJ, CREA/CAU, logo, etc.). Preencha com atenção: depois de confirmados, esses dados só podem ser alterados por um administrador.
+        </p>
       </div>
 
       <div style="margin: 28px 0 20px 0; text-align: center;">
@@ -181,6 +186,7 @@ serve(async (req: Request) => {
     const resendApiKey = Deno.env.get('RESEND_API_KEY') ?? '';
     const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'Amorim Academy <notificacoes@emanoelamorim.com>';
 
+    // 1. Validar autenticação do chamador
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Não autorizado.' }), {
@@ -201,6 +207,7 @@ serve(async (req: Request) => {
       });
     }
 
+    // 2. Validar permissão de admin
     const clientAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const { data: permissaoAdmin } = await clientAdmin
       .from('permissoes_acesso')
@@ -217,6 +224,7 @@ serve(async (req: Request) => {
       });
     }
 
+    // 3. Extrair corpo da requisição
     const body = await req.json();
     const {
       tipo = 'personalizado',
@@ -243,6 +251,7 @@ serve(async (req: Request) => {
       });
     }
 
+    // 4. Gerar template do e-mail
     const template = gerarTemplateEmailAmorimTech({
       tipo,
       nome,
@@ -258,6 +267,7 @@ serve(async (req: Request) => {
     const assuntoFinal = assuntoManual || template.assunto;
     const htmlFinal = htmlManual || template.html;
 
+    // 5. Se a chave da API do Resend não estiver configurada, retornar modo simulado
     if (!resendApiKey) {
       console.warn('RESEND_API_KEY não configurada no ambiente. E-mail simulado com sucesso.');
       return new Response(JSON.stringify({
@@ -272,8 +282,10 @@ serve(async (req: Request) => {
       });
     }
 
+    // 6. Enviar e-mails via Resend API
     const resultadosEnvio: Array<{ email: string; sucesso: boolean; id?: string; error?: string }> = [];
 
+    // Envio com controle individual de falhas (um e-mail inválido não interrompe os demais)
     for (const dest of listaDestinatarios) {
       try {
         const res = await fetch('https://api.resend.com/emails', {

@@ -198,8 +198,10 @@ serve(async (req: Request) => {
           continue;
         }
 
-        // 8. Registro em profissionais não requer atualização de timestamp
-        // (coluna updated_at não existe na tabela profissionais deste projeto)
+        // 8. Atualizar registro em profissionais
+        await clientAdmin.from('profissionais').update({
+          updated_at: timestampReenvio,
+        }).eq('id', targetUserId);
 
         // 9. Inserir auditoria na tabela reenvios_convite
         let reenvioId: string | undefined;

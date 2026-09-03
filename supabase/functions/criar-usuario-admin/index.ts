@@ -1,17 +1,15 @@
 // Supabase Edge Function: criar-usuario-admin
 // Criação individual e em lote de usuários com service_role, aplicação de perfis de acesso e e-mail via Resend.
 // Frente 5/7: Gestão de Usuários em Massa, Perfis Customizados e E-mail Automático
-// v6: CORREÇÃO — nivel_atual (rótulo exibido no admin) agora usa o perfil_nome informado
-//     (lote e individual), em vez de cair sempre no fallback 'Membro Trainee'.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
   'https://emanoelamorim.com',
+  'https://aistudio.google.com',
   'http://localhost:4200',
   'http://localhost:5173',
-  'https://aistudio.google.com',
 ];
 
 function buildCorsHeaders(requestOrigin: string | null): Record<string, string> {
@@ -79,6 +77,11 @@ async function dispararEmailBoasVindas(params: {
                       <span style="font-family:monospace;font-size:20px;font-weight:bold;color:#132A41;letter-spacing:2px;">${params.senhaProvisoria}</span>
                     </div>
                     <p style="margin:6px 0 0 0;font-size:12px;color:#94a3b8;">Altere sua senha no menu de Perfil após o primeiro login.</p>
+                  </div>
+                  <div style="margin:20px 0;padding:14px 16px;background-color:#fffbeb;border:1px solid #fef3c7;border-left:4px solid #B5642A;border-radius:8px;">
+                    <p style="margin:0;font-size:13px;color:#92400e;line-height:1.5;">
+                      <strong>Aviso importante:</strong> Quando for completar seu perfil, você vai encontrar uma seção de <strong>Dados para Documentos Técnicos</strong> (nome completo para laudos, empresa, CNPJ, CREA/CAU, logo, etc.). Preencha com atenção: depois de confirmados, esses dados só podem ser alterados por um administrador.
+                    </p>
                   </div>
                   <div style="margin:28px 0 20px 0;text-align:center;">
                     <a href="${urlAcesso}" target="_blank" style="background-color:#132A41;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;display:inline-block;">
@@ -345,6 +348,10 @@ serve(async (req: Request) => {
     // PROCESSAMENTO INDIVIDUAL
     const { email, password, full_name, nivel_atual, perfil_nome, perfil_id, enviar_email = true } = body;
 
+    // CORREÇÃO v6: mesmo ajuste do fluxo em lote — usa perfil_nome (ou perfil_id) como
+    // rótulo quando nivel_atual não vier explícito, antes de cair no fallback.
+    const nivelFinalIndividual = nivel_atual || perfil_nome || perfil_id || 'Membro Trainee';
+
     if (!email || !full_name) {
       return new Response(JSON.stringify({ error: 'Nome completo e e-mail são obrigatórios.' }), {
         status: 400,
@@ -356,16 +363,12 @@ serve(async (req: Request) => {
     const nomeLimpo = full_name.trim();
     const senhaFinal = password && password.trim().length >= 6 ? password.trim() : gerarSenhaProvisoria();
 
-    // CORREÇÃO v6: mesmo ajuste do fluxo em lote — usa perfil_nome (ou perfil_id) como
-    // rótulo quando nivel_atual não vier explícito, antes de cair no fallback.
-    const nivelFinalIndividual = nivel_atual || perfil_nome || perfil_id || 'Membro Trainee';
-
     // 6. Criar usuário em auth.users com e-mail confirmado
     const { data: authData, error: authError } = await clientAdmin.auth.admin.createUser({
       email: emailLimpo,
       password: senhaFinal,
       email_confirm: true,
-      user_metadata: { full_name: nomeLimpo, nivel_atual: nivelFinalIndividual },
+      user_metadata: { full_name: nomeLimpo, nivel_atual: nivelFinalIndividual, must_change_password: true },
     });
 
     if (authError) {
@@ -418,7 +421,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // 10. Retornar resposta segura com a senha provisoria
+    // 10. Retornar resposta segura com a senha provisória
     return new Response(JSON.stringify({
       user: authData.user,
       profissional: profData,
