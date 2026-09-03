@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { montarUrlPlayerVimeo } from '../../utils/vimeo.util';
+import { montarUrlPlayerYoutube } from '../../utils/youtube.util';
 
 export type CategoriaMaterial =
   | 'Todos'
@@ -11,7 +12,8 @@ export type CategoriaMaterial =
   | 'Checklists'
   | 'E-books'
   | 'Vídeos'
-  | 'Skills Claude';
+  | 'Skills Claude'
+  | 'Outros';
 
 @Component({
   selector: 'app-comunidade-materiais',
@@ -114,6 +116,8 @@ export type CategoriaMaterial =
               <span>🎬</span>
             } @else if (cat === 'Skills Claude') {
               <span>⚡</span>
+            } @else if (cat === 'Outros') {
+              <span>📦</span>
             }
             <span>{{ cat }}</span>
             <span
@@ -195,10 +199,10 @@ export type CategoriaMaterial =
                   </p>
                 </div>
 
-                <!-- Player de Vídeo Vimeo Embutido quando categoria === 'Vídeos' -->
+                <!-- Player de Vídeo Embutido (Vimeo ou YouTube) quando categoria === 'Vídeos' -->
                 @if (item.categoria === 'Vídeos') {
                   @if (temAcessoAoItem(item)) {
-                    @let videoUrl = getVimeoUrl(item.url_arquivo);
+                    @let videoUrl = getVideoUrl(item);
                     @if (videoUrl) {
                       <div class="space-y-1.5 pt-2">
                         <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-inner border border-slate-800">
@@ -206,7 +210,7 @@ export type CategoriaMaterial =
                             [src]="videoUrl"
                             class="w-full h-full"
                             frameborder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                             allowfullscreen
                             title="Vídeo do material"
                           ></iframe>
@@ -231,6 +235,53 @@ export type CategoriaMaterial =
                       }
                     </div>
                   }
+                }
+
+                <!-- Lista de Anexos Múltiplos (se houver) -->
+                @if (item.anexos && item.anexos.length > 0) {
+                  <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      <span>Anexos Adicionais ({{ item.anexos.length }})</span>
+                    </span>
+                    <div class="space-y-1.5">
+                      @for (anexo of item.anexos; track anexo.id || anexo.nome_arquivo) {
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                          <div class="flex items-center gap-2 min-w-0 pr-2">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-slate-600 border border-slate-200 uppercase shrink-0">
+                              {{ anexo.formato || 'ARQ' }}
+                            </span>
+                            <span class="truncate font-medium text-slate-700" [title]="anexo.nome_arquivo">
+                              {{ anexo.nome_arquivo }}
+                            </span>
+                            @if (anexo.tamanho) {
+                              <span class="text-[11px] text-slate-400 shrink-0">({{ anexo.tamanho }})</span>
+                            }
+                          </div>
+                          @if (temAcessoAoItem(item)) {
+                            <button
+                              type="button"
+                              (click)="baixarAnexo(anexo, item.titulo)"
+                              class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs shrink-0 flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Baixar anexo"
+                            >
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              <span>Baixar</span>
+                            </button>
+                          } @else {
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200/60 text-slate-400 flex items-center gap-1 shrink-0">
+                              <span>🔒</span>
+                              <span>Bloqueado</span>
+                            </span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
                 }
               </div>
 
@@ -260,10 +311,17 @@ export type CategoriaMaterial =
                 <div class="flex items-center justify-between gap-3 flex-wrap">
                   <div class="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                     @if (item.categoria === 'Vídeos') {
-                      <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
-                      </svg>
-                      <span>Transmissão Integrada</span>
+                      @if (item.plataforma_video === 'youtube') {
+                        <svg class="w-4 h-4 text-rose-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                        <span>YouTube Streaming</span>
+                      } @else {
+                        <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
+                        </svg>
+                        <span>Vimeo Streaming</span>
+                      }
                     } @else {
                       <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -468,13 +526,15 @@ export class ComunidadeMateriaisComponent implements OnInit {
     'Checklists',
     'E-books',
     'Vídeos',
-    'Skills Claude'
+    'Skills Claude',
+    'Outros'
   ];
 
   readonly categoriaSelecionada = signal<CategoriaMaterial>('Todos');
 
   temAcessoAoItem(material: any): boolean {
     if (!material) return false;
+    if (typeof material.tem_acesso === 'boolean') return material.tem_acesso;
     return this.temAcesso() || this.itensLiberadosIndividualmente().includes(material.id);
   }
 
@@ -509,6 +569,15 @@ export class ComunidadeMateriaisComponent implements OnInit {
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 
+  getVideoUrl(material: any): SafeResourceUrl | null {
+    if (!material) return null;
+    const url = material.plataforma_video === 'youtube'
+      ? montarUrlPlayerYoutube(material.url_arquivo)
+      : montarUrlPlayerVimeo(material.url_arquivo);
+    if (!url) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
   async ngOnInit(): Promise<void> {
     await this.carregarDados();
   }
@@ -524,9 +593,20 @@ export class ComunidadeMateriaisComponent implements OnInit {
       const acessosIndividuais = await this.supabaseService.listarAcessosItemDoUsuario('material');
       this.itensLiberadosIndividualmente.set(acessosIndividuais);
 
-      // 3. Carrega acervo de materiais ativos
-      const lista = await this.supabaseService.listarMateriais();
-      this.materiais.set(lista);
+      // 3. Carrega acervo de materiais ativos via view segura materiais_visiveis
+      const { data, error } = await this.supabaseService.client
+        .from('materiais_visiveis')
+        .select('*')
+        .or('exclusivo_curso.is.null,exclusivo_curso.eq.false')
+        .order('criado_em', { ascending: false });
+      if (error) {
+        console.warn('Erro ao carregar materiais_visiveis:', error);
+        // Fallback para listarMateriais() caso ocorra erro
+        const fallback = await this.supabaseService.listarMateriais();
+        this.materiais.set(fallback);
+      } else {
+        this.materiais.set(data || []);
+      }
     } catch (e) {
       console.warn('Erro ao carregar acervo de materiais:', e);
     } finally {
@@ -616,8 +696,25 @@ export class ComunidadeMateriaisComponent implements OnInit {
         return 'bg-indigo-50 text-indigo-700 border-indigo-100';
       case 'Skills Claude':
         return 'bg-violet-50 text-violet-700 border-violet-100';
+      case 'Outros':
+        return 'bg-slate-100 text-slate-700 border-slate-200';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  }
+
+  baixarAnexo(anexo: any, materialTitulo: string): void {
+    if (!anexo?.url_arquivo) {
+      this.tipoFeedback.set('alerta');
+      this.mensagemFeedback.set('Arquivo de anexo não disponível para download.');
+      return;
+    }
+    try {
+      window.open(anexo.url_arquivo, '_blank', 'noopener,noreferrer');
+      this.tipoFeedback.set('sucesso');
+      this.mensagemFeedback.set(`Download do anexo "${anexo.nome_arquivo}" iniciado.`);
+    } catch (e) {
+      console.warn('Erro ao abrir anexo:', e);
     }
   }
 

@@ -96,6 +96,17 @@ import { SupabaseService } from '../../../services/supabase.service';
       <!-- ABA 1: LINHAS DE CRÉDITO -->
       @if (subAbaAtiva() === 'linhas') {
         <div class="space-y-4">
+          <!-- Nota Fixa de Conferência de Parâmetros Bancários (Obrigatória em telas de linhas de crédito) -->
+          <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-3 shadow-xs">
+            <span class="text-base leading-none shrink-0 mt-0.5">⚖️</span>
+            <div class="space-y-0.5">
+              <strong class="font-bold text-amber-950 block">Aviso Regulatório aos Administradores:</strong>
+              <p class="text-[11px] text-amber-900/90 leading-relaxed">
+                Os parâmetros bancários apresentados são referência de mercado cadastrada pelo administrador do sistema e podem não refletir as condições vigentes na data de emissão. Antes de repassar este estudo ao cliente, confirme as taxas e condições diretamente com a instituição financeira.
+              </p>
+            </div>
+          </div>
+
           <div class="flex items-center justify-between">
             <h3 class="text-base font-bold text-slate-800">Linhas de Financiamento Cadastradas</h3>
 
@@ -133,7 +144,19 @@ import { SupabaseService } from '../../../services/supabase.service';
                       <span class="text-xs font-black text-[#B5642A]">{{ linha.taxa_juros_min }}% - {{ linha.taxa_juros_max || linha.taxa_juros_min }}% a.a.</span>
                     </div>
 
-                    <div class="text-xs font-bold text-slate-700">{{ linha.produto }}</div>
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="text-xs font-bold text-slate-700">{{ linha.produto }}</div>
+                      <span
+                        class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0"
+                        [ngClass]="{
+                          'bg-emerald-100 text-emerald-800': (linha.segmento || 'pessoa_fisica_construcao') === 'pessoa_fisica_construcao',
+                          'bg-amber-100 text-amber-800': linha.segmento === 'pessoa_fisica_reforma',
+                          'bg-purple-100 text-purple-800': linha.segmento === 'condominio'
+                        }"
+                      >
+                        {{ linha.segmento === 'condominio' ? 'Condomínio' : (linha.segmento === 'pessoa_fisica_reforma' ? 'Reforma PF' : 'Construção PF') }}
+                      </span>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100">
                       <div>
@@ -633,6 +656,20 @@ import { SupabaseService } from '../../../services/supabase.service';
                 />
               </div>
 
+              <div class="sm:col-span-2">
+                <label class="block font-bold text-slate-700 mb-1">Segmento da Operação</label>
+                <select
+                  [value]="formLinha.segmento || 'pessoa_fisica_construcao'"
+                  (change)="formLinha.segmento = $any($event.target).value"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium"
+                >
+                  <option value="pessoa_fisica_construcao">Pessoa Física — Construção Nova / Aquisição de Terreno</option>
+                  <option value="pessoa_fisica_reforma">Pessoa Física — Reforma / Ampliação</option>
+                  <option value="condominio">Condomínio Edilício — Obras e Manutenção</option>
+                </select>
+                <span class="text-[10px] text-slate-400">Define em quais trilhas do Viabiliza IA esta linha de crédito será exibida aos membros</span>
+              </div>
+
               <div>
                 <label class="block font-bold text-slate-700 mb-1">Taxa de Juros Mínima (% a.a.)</label>
                 <input
@@ -716,7 +753,108 @@ import { SupabaseService } from '../../../services/supabase.service';
                 />
               </div>
 
-              <div class="sm:col-span-2 flex items-center gap-6 pt-2">
+              <!-- Novos campos: Data de Referência e URL da Fonte (opcionais) -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  Data de Referência da Pesquisa <span class="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  type="date"
+                  [value]="formLinha.data_referencia || ''"
+                  (input)="formLinha.data_referencia = $any($event.target).value"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  Link / Fonte Oficial <span class="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  type="url"
+                  [value]="formLinha.fonte_url || ''"
+                  (input)="formLinha.fonte_url = $any($event.target).value"
+                  placeholder="https://exemplo.com.br/credito-habitacional"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  Limite de Idade em Meses (Referência) <span class="text-slate-400 font-normal">(ex: 966 para 80a 6m)</span>
+                </label>
+                <input
+                  type="number"
+                  [value]="formLinha.idade_meses_referencia || ''"
+                  (input)="formLinha.idade_meses_referencia = +$any($event.target).value || null"
+                  placeholder="Ex: 966"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  Composição de Renda <span class="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  [value]="formLinha.composicao_renda || ''"
+                  (input)="formLinha.composicao_renda = $any($event.target).value"
+                  placeholder="Ex: Até 3 proponentes com parentesco ou união"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="block font-bold text-slate-700 mb-1">
+                  Nota da Fonte / Observação de Mercado
+                </label>
+                <input
+                  type="text"
+                  [value]="formLinha.nota_fonte || ''"
+                  (input)="formLinha.nota_fonte = $any($event.target).value"
+                  placeholder="Estimativa de pesquisa de mercado — confirmar em agência antes de publicar"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  Vantagem Principal <span class="text-slate-400 font-normal">(destaque técnico)</span>
+                </label>
+                <input
+                  type="text"
+                  [value]="formLinha.vantagem_principal || ''"
+                  (input)="formLinha.vantagem_principal = $any($event.target).value"
+                  placeholder="Ex: Menor taxa para proponentes com relacionamento"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">
+                  Gargalos Operacionais / Alertas <span class="text-slate-400 font-normal">(pontos de atenção)</span>
+                </label>
+                <input
+                  type="text"
+                  [value]="formLinha.gargalos_operacionais || ''"
+                  (input)="formLinha.gargalos_operacionais = $any($event.target).value"
+                  placeholder="Ex: Exige vistoria presencial rigorosa para liberação"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white"
+                />
+              </div>
+
+              <div class="sm:col-span-2 flex flex-wrap items-center gap-6 pt-2">
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                  <input
+                    type="checkbox"
+                    [checked]="formLinha.permite_fgts !== false"
+                    (change)="formLinha.permite_fgts = $any($event.target).checked"
+                    class="w-4 h-4 rounded text-indigo-600"
+                  />
+                  <span>Permite Uso do FGTS</span>
+                </label>
+
                 <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
                   <input
                     type="checkbox"
@@ -958,7 +1096,30 @@ export class AdminViabilizaIaComponent implements OnInit {
 
   readonly filtroStatus = signal<string>('todos');
 
-  formLinha = {
+  formLinha: {
+    banco: string;
+    produto: string;
+    taxa_juros_min: number;
+    taxa_juros_max: number;
+    prazo_max_anos: number;
+    percentual_financiamento_max: number;
+    renda_minima: number;
+    idade_maxima: number;
+    juros_na_obra: boolean;
+    carencia_meses: number;
+    sistema_amortizacao: string;
+    ordem_prioridade: number;
+    ativo: boolean;
+    data_referencia?: string;
+    fonte_url?: string;
+    nota_fonte?: string;
+    permite_fgts?: boolean;
+    idade_meses_referencia?: number | null;
+    composicao_renda?: string;
+    vantagem_principal?: string;
+    gargalos_operacionais?: string;
+    segmento?: string;
+  } = {
     banco: '',
     produto: '',
     taxa_juros_min: 9.5,
@@ -971,7 +1132,16 @@ export class AdminViabilizaIaComponent implements OnInit {
     carencia_meses: 0,
     sistema_amortizacao: 'SAC / Price',
     ordem_prioridade: 10,
-    ativo: true
+    ativo: true,
+    data_referencia: '',
+    fonte_url: '',
+    nota_fonte: 'Estimativa de pesquisa de mercado — confirmar em agência antes de publicar',
+    permite_fgts: true,
+    idade_meses_referencia: null,
+    composicao_renda: '',
+    vantagem_principal: '',
+    gargalos_operacionais: '',
+    segmento: 'pessoa_fisica_construcao'
   };
 
   async ngOnInit(): Promise<void> {
@@ -1031,7 +1201,16 @@ export class AdminViabilizaIaComponent implements OnInit {
       carencia_meses: 0,
       sistema_amortizacao: 'SAC / Price',
       ordem_prioridade: 10,
-      ativo: true
+      ativo: true,
+      data_referencia: '',
+      fonte_url: '',
+      nota_fonte: 'Estimativa de pesquisa de mercado — confirmar em agência antes de publicar',
+      permite_fgts: true,
+      idade_meses_referencia: null,
+      composicao_renda: '',
+      vantagem_principal: '',
+      gargalos_operacionais: '',
+      segmento: 'pessoa_fisica_construcao'
     };
     this.modalLinhaAberto.set(true);
   }
@@ -1051,7 +1230,16 @@ export class AdminViabilizaIaComponent implements OnInit {
       carencia_meses: linha.carencia_meses ?? 0,
       sistema_amortizacao: linha.sistema_amortizacao || 'SAC / Price',
       ordem_prioridade: linha.ordem_prioridade ?? 10,
-      ativo: linha.ativo ?? true
+      ativo: linha.ativo ?? true,
+      data_referencia: linha.data_referencia || '',
+      fonte_url: linha.fonte_url || '',
+      nota_fonte: linha.nota_fonte ?? 'Estimativa de pesquisa de mercado — confirmar em agência antes de publicar',
+      permite_fgts: linha.permite_fgts ?? true,
+      idade_meses_referencia: linha.idade_meses_referencia ?? null,
+      composicao_renda: linha.composicao_renda || '',
+      vantagem_principal: linha.vantagem_principal || '',
+      gargalos_operacionais: linha.gargalos_operacionais || '',
+      segmento: linha.segmento || 'pessoa_fisica_construcao'
     };
     this.modalLinhaAberto.set(true);
   }

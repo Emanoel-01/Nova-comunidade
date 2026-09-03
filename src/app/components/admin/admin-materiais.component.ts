@@ -3,8 +3,27 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { extrairVimeoId, montarUrlPlayerVimeo } from '../../utils/vimeo.util';
+import { extrairYoutubeId, montarUrlPlayerYoutube } from '../../utils/youtube.util';
 
-export type CategoriaMaterialAdmin = 'Planilhas' | 'Modelos de Laudo' | 'Checklists' | 'E-books' | 'Vídeos' | 'Skills Claude';
+export type CategoriaMaterialAdmin =
+  | 'Planilhas'
+  | 'Modelos de Laudo'
+  | 'Checklists'
+  | 'E-books'
+  | 'Vídeos'
+  | 'Skills Claude'
+  | 'Outros';
+
+export interface MaterialAnexo {
+  id?: string;
+  material_id?: string;
+  nome_arquivo: string;
+  url_arquivo: string;
+  formato?: string;
+  tamanho?: string;
+  ordem: number;
+  criado_em?: string;
+}
 
 interface MaterialAdminItem {
   id: string;
@@ -14,6 +33,7 @@ interface MaterialAdminItem {
   formato?: string;
   tamanho?: string;
   url_arquivo?: string;
+  plataforma_video?: 'vimeo' | 'youtube' | null;
   ativo: boolean;
   pago?: boolean;
   exibir_valor?: boolean;
@@ -241,13 +261,20 @@ interface MaterialAdminItem {
                               rel="noopener noreferrer"
                               class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors pt-0.5"
                             >
-                              <svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
-                              </svg>
-                              <span>Vídeo Vimeo</span>
+                              @if (item.plataforma_video === 'youtube') {
+                                <svg class="w-3 h-3 text-rose-600" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                </svg>
+                                <span>Vídeo YouTube</span>
+                              } @else {
+                                <svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
+                                </svg>
+                                <span>Vídeo Vimeo</span>
+                              }
                             </a>
                           } @else {
-                            <span class="text-[11px] text-amber-600 font-medium">⚠️ Sem ID do Vimeo</span>
+                            <span class="text-[11px] text-amber-600 font-medium">⚠️ Sem link do vídeo</span>
                           }
                         } @else if (item.url_arquivo) {
                           <a
@@ -578,36 +605,69 @@ interface MaterialAdminItem {
                 </div>
               </div>
 
-              <!-- URL do Arquivo ou ID do Vimeo -->
+              <!-- URL do Arquivo ou ID do Vídeo (Vimeo / YouTube) -->
               <div class="space-y-2">
                 @if (formCategoria() === 'Vídeos') {
+                  <!-- Seletor de Plataforma de Vídeo por Botões -->
+                  <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700">
+                      Plataforma de Transmissão <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="onTrocarPlataformaVideo('vimeo')"
+                        [class]="formPlataformaVideo() === 'vimeo'
+                          ? 'px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5'
+                          : 'px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all cursor-pointer border border-slate-200 flex items-center gap-1.5'"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
+                        </svg>
+                        <span>Vimeo</span>
+                      </button>
+                      <button
+                        type="button"
+                        (click)="onTrocarPlataformaVideo('youtube')"
+                        [class]="formPlataformaVideo() === 'youtube'
+                          ? 'px-3.5 py-1.5 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5'
+                          : 'px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all cursor-pointer border border-slate-200 flex items-center gap-1.5'"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                        <span>YouTube</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <label class="block text-xs font-bold text-slate-700">
-                    ID ou Link do Vídeo no Vimeo <span class="text-rose-500">*</span>
+                    ID ou Link do Vídeo no {{ formPlataformaVideo() === 'youtube' ? 'YouTube' : 'Vimeo' }} <span class="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     [value]="formUrlArquivo()"
                     (input)="formUrlArquivo.set($any($event.target).value)"
-                    placeholder="Ex: 892019283 ou https://vimeo.com/892019283"
+                    [placeholder]="formPlataformaVideo() === 'youtube' ? 'Ex: dQw4w9WgXcQ ou https://youtube.com/watch?v=...' : 'Ex: 892019283 ou https://vimeo.com/892019283'"
                     required
                     class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium font-mono text-slate-800"
                   />
                   <p class="text-[11px] text-slate-400">
-                    Cole o ID numérico ou o link direto do Vimeo. O player será incorporado no card do material.
+                    {{ formPlataformaVideo() === 'youtube' ? 'Cole o link do YouTube (watch, youtu.be, shorts ou embed) ou o ID de 11 caracteres.' : 'Cole o ID numérico ou o link direto do Vimeo. O player será incorporado no card do material.' }}
                   </p>
 
-                  <!-- Prévia ao vivo do player Vimeo -->
+                  <!-- Prévia ao vivo do player de vídeo -->
                   @if (formUrlArquivo().trim()) {
-                    @let vimeoPreviewUrl = getVimeoUrl(formUrlArquivo());
+                    @let videoPreviewUrl = getVideoPreviewUrl(formUrlArquivo());
                     <div class="space-y-1.5 pt-1">
-                      <label class="block text-xs font-bold text-slate-700">Prévia do Player Vimeo</label>
-                      @if (vimeoPreviewUrl) {
+                      <label class="block text-xs font-bold text-slate-700">Prévia do Player ({{ formPlataformaVideo() === 'youtube' ? 'YouTube' : 'Vimeo' }})</label>
+                      @if (videoPreviewUrl) {
                         <div class="aspect-video max-w-md w-full bg-black rounded-2xl overflow-hidden shadow-xs border border-slate-300">
                           <iframe
-                            [src]="vimeoPreviewUrl"
+                            [src]="videoPreviewUrl"
                             class="w-full h-full"
                             frameborder="0"
-                            allow="autoplay; fullscreen; picture-in-picture"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                             allowfullscreen
                             title="Prévia do vídeo"
                           ></iframe>
@@ -617,7 +677,7 @@ interface MaterialAdminItem {
                           <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>Link ou ID do Vimeo não reconhecido. Use o número (ex: <code>892019283</code>) ou link <code>vimeo.com/ID</code>.</span>
+                          <span>{{ formPlataformaVideo() === 'youtube' ? 'Link ou ID do YouTube não reconhecido. Use a URL do vídeo ou o ID de 11 caracteres.' : 'Link ou ID do Vimeo não reconhecido. Use o número (ex: 892019283) ou link vimeo.com/ID.' }}</span>
                         </div>
                       }
                     </div>
@@ -672,7 +732,7 @@ interface MaterialAdminItem {
                               />
                             </label>
                             <p class="text-[11px] text-slate-400 mt-1.5">
-                              Todos os formatos suportados: PDF, Planilhas, Imagens, Documentos, Compactados (máx. 20 MB)
+                              Todos os formatos suportados: PDF, Planilhas, Imagens, Documentos, Compactados (máx. 50 MB)
                             </p>
                           </div>
                         }
@@ -725,6 +785,74 @@ interface MaterialAdminItem {
                   placeholder="Descreva o conteúdo técnico do material, normas associadas e recomendações de aplicação..."
                   class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium resize-none leading-relaxed"
                 ></textarea>
+              </div>
+
+              <!-- Gestão de Anexos Múltiplos (material_anexos) -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <span class="text-xs font-bold text-slate-800">Anexos Adicionais ({{ anexosAtuais().length }})</span>
+                  </div>
+
+                  <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold cursor-pointer transition-colors shadow-2xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Adicionar Anexo</span>
+                    <input type="file" (change)="onAnexoSelected($event)" class="hidden" [disabled]="uploadandoAnexo()" />
+                  </label>
+                </div>
+
+                @if (uploadandoAnexo()) {
+                  <div class="flex items-center gap-2 text-xs text-indigo-600 font-semibold py-1">
+                    <span class="w-3.5 h-3.5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></span>
+                    <span>Enviando anexo para o bucket...</span>
+                  </div>
+                }
+
+                @if (erroUploadAnexo()) {
+                  <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+                    <span>{{ erroUploadAnexo() }}</span>
+                    <button type="button" (click)="erroUploadAnexo.set(null)" class="text-rose-600 font-bold ml-2">✕</button>
+                  </div>
+                }
+
+                @if (anexosAtuais().length === 0) {
+                  <p class="text-[11px] text-slate-400 italic">
+                    Nenhum anexo adicional vinculado. Você pode anexar arquivos complementares (ex: arquivos DWG, tabelas extras, modelos).
+                  </p>
+                } @else {
+                  <div class="space-y-1.5">
+                    @for (anexo of anexosAtuais(); track anexo.id || anexo.nome_arquivo) {
+                      <div class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs">
+                        <div class="flex items-center gap-2 min-w-0 pr-2">
+                          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase shrink-0">
+                            {{ anexo.formato || 'ARQ' }}
+                          </span>
+                          <span class="truncate font-medium text-slate-800" [title]="anexo.nome_arquivo">
+                            {{ anexo.nome_arquivo }}
+                          </span>
+                          @if (anexo.tamanho) {
+                            <span class="text-[11px] text-slate-400 shrink-0">({{ anexo.tamanho }})</span>
+                          }
+                        </div>
+                        <button
+                          type="button"
+                          (click)="removerAnexo(anexo)"
+                          class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                          title="Remover anexo"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
               </div>
 
               <!-- Rodapé do Modal com Botões -->
@@ -786,7 +914,8 @@ export class AdminMateriaisComponent implements OnInit {
     'Checklists',
     'E-books',
     'Vídeos',
-    'Skills Claude'
+    'Skills Claude',
+    'Outros'
   ];
 
   // Modal e Formulário
@@ -800,6 +929,7 @@ export class AdminMateriaisComponent implements OnInit {
   readonly formTipoArquivoReal = signal<string>('');
   readonly formTamanho = signal<string>('');
   readonly formUrlArquivo = signal<string>('');
+  readonly formPlataformaVideo = signal<'vimeo' | 'youtube'>('vimeo');
   readonly formAtivo = signal<boolean>(true);
   readonly formPago = signal<boolean>(false);
   readonly formExibirValor = signal<boolean>(true);
@@ -810,6 +940,11 @@ export class AdminMateriaisComponent implements OnInit {
   readonly uploadandoArquivo = signal<boolean>(false);
   readonly nomeArquivoEnviado = signal<string | null>(null);
   readonly erroUpload = signal<string | null>(null);
+
+  // Gestão de Múltiplos Anexos (material_anexos)
+  readonly anexosAtuais = signal<MaterialAnexo[]>([]);
+  readonly uploadandoAnexo = signal<boolean>(false);
+  readonly erroUploadAnexo = signal<string | null>(null);
 
   // Computed
   readonly totalAtivos = computed(() => this.materiais().filter(m => m.ativo).length);
@@ -899,10 +1034,26 @@ export class AdminMateriaisComponent implements OnInit {
     this.termoBusca.set(val);
   }
 
+  getVideoPreviewUrl(urlOuId?: string | null): SafeResourceUrl | null {
+    if (!urlOuId) return null;
+    const url = this.formPlataformaVideo() === 'youtube'
+      ? montarUrlPlayerYoutube(urlOuId)
+      : montarUrlPlayerVimeo(urlOuId);
+    if (!url) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
   getVimeoUrl(urlOuId?: string | null): SafeResourceUrl | null {
     const url = montarUrlPlayerVimeo(urlOuId);
     if (!url) return null;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  onTrocarPlataformaVideo(plataforma: 'vimeo' | 'youtube'): void {
+    this.formPlataformaVideo.set(plataforma);
+    if (this.formCategoria() === 'Vídeos') {
+      this.formTamanho.set(plataforma === 'youtube' ? 'YouTube Streaming' : 'Vimeo Streaming');
+    }
   }
 
   getBadgeEstilo(cat: string): string {
@@ -919,6 +1070,8 @@ export class AdminMateriaisComponent implements OnInit {
         return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       case 'Skills Claude':
         return 'bg-violet-50 text-violet-700 border-violet-200';
+      case 'Outros':
+        return 'bg-slate-100 text-slate-700 border-slate-200';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }
@@ -930,10 +1083,107 @@ export class AdminMateriaisComponent implements OnInit {
       if (!this.formFormato() || this.formFormato() === 'XLSX' || this.formFormato() === 'PDF') {
         this.formFormato.set('VÍDEO');
       }
-      if (!this.formTamanho()) {
-        this.formTamanho.set('Vimeo Streaming');
+      if (!this.formTamanho() || this.formTamanho() === 'Vimeo Streaming' || this.formTamanho() === 'YouTube Streaming') {
+        this.formTamanho.set(this.formPlataformaVideo() === 'youtube' ? 'YouTube Streaming' : 'Vimeo Streaming');
       }
     }
+  }
+
+  async carregarAnexos(materialId: string): Promise<void> {
+    try {
+      const { data, error } = await this.supabaseService.client
+        .from('material_anexos')
+        .select('*')
+        .eq('material_id', materialId)
+        .order('ordem', { ascending: true });
+      if (!error && data) {
+        this.anexosAtuais.set(data);
+      } else {
+        this.anexosAtuais.set([]);
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar anexos:', e);
+      this.anexosAtuais.set([]);
+    }
+  }
+
+  async onAnexoSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    this.erroUploadAnexo.set(null);
+    this.uploadandoAnexo.set(true);
+
+    try {
+      const res = await this.supabaseService.uploadArquivoMaterial(file, this.formCategoria());
+      if (res.error) {
+        this.erroUploadAnexo.set(res.error.message || 'Falha no upload do anexo.');
+        return;
+      }
+
+      if (res.signedUrl) {
+        const material = this.materialEmEdicao();
+        const formato = res.formato || file.name.split('.').pop()?.toUpperCase() || 'ARQUIVO';
+        const tamanho = res.tamanho || `${(file.size / 1024).toFixed(0)} KB`;
+        const ordem = this.anexosAtuais().length;
+
+        if (material?.id) {
+          // Salva diretamente na tabela material_anexos
+          const { data, error } = await this.supabaseService.client
+            .from('material_anexos')
+            .insert({
+              material_id: material.id,
+              nome_arquivo: file.name,
+              url_arquivo: res.signedUrl,
+              formato,
+              tamanho,
+              ordem
+            })
+            .select()
+            .single();
+
+          if (error) {
+            this.erroUploadAnexo.set('Erro ao salvar anexo: ' + error.message);
+          } else if (data) {
+            this.anexosAtuais.update(lista => [...lista, data]);
+          }
+        } else {
+          // Material novo ainda não salvo no banco: armazena temporariamente na lista
+          this.anexosAtuais.update(lista => [
+            ...lista,
+            {
+              id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+              nome_arquivo: file.name,
+              url_arquivo: res.signedUrl!,
+              formato,
+              tamanho,
+              ordem
+            }
+          ]);
+        }
+      }
+    } catch (err: any) {
+      this.erroUploadAnexo.set(err?.message || 'Erro inesperado durante upload do anexo.');
+    } finally {
+      this.uploadandoAnexo.set(false);
+      input.value = '';
+    }
+  }
+
+  async removerAnexo(anexo: MaterialAnexo): Promise<void> {
+    if (anexo.id && !anexo.id.startsWith('temp_')) {
+      const { error } = await this.supabaseService.client
+        .from('material_anexos')
+        .delete()
+        .eq('id', anexo.id);
+
+      if (error) {
+        this.erroUploadAnexo.set('Erro ao remover anexo: ' + error.message);
+        return;
+      }
+    }
+    this.anexosAtuais.update(lista => lista.filter(a => a.id !== anexo.id));
   }
 
   async onFileSelected(event: Event): Promise<void> {
@@ -988,6 +1238,7 @@ export class AdminMateriaisComponent implements OnInit {
     this.formTipoArquivoReal.set('');
     this.formTamanho.set('');
     this.formUrlArquivo.set('');
+    this.formPlataformaVideo.set('vimeo');
     this.formAtivo.set(true);
     this.formPago.set(false);
     this.formExibirValor.set(true);
@@ -996,6 +1247,9 @@ export class AdminMateriaisComponent implements OnInit {
     this.nomeArquivoEnviado.set(null);
     this.uploadandoArquivo.set(false);
     this.erroUpload.set(null);
+    this.anexosAtuais.set([]);
+    this.uploadandoAnexo.set(false);
+    this.erroUploadAnexo.set(null);
     this.modalAberto.set(true);
   }
 
@@ -1008,6 +1262,7 @@ export class AdminMateriaisComponent implements OnInit {
     this.formTipoArquivoReal.set(material.tipo_arquivo_real || '');
     this.formTamanho.set(material.tamanho || '');
     this.formUrlArquivo.set(material.url_arquivo || '');
+    this.formPlataformaVideo.set(material.plataforma_video || 'vimeo');
     this.formAtivo.set(material.ativo);
     this.formPago.set(!!material.pago);
     this.formExibirValor.set(material.exibir_valor !== false);
@@ -1016,7 +1271,11 @@ export class AdminMateriaisComponent implements OnInit {
     this.nomeArquivoEnviado.set(null);
     this.uploadandoArquivo.set(false);
     this.erroUpload.set(null);
+    this.anexosAtuais.set([]);
+    this.uploadandoAnexo.set(false);
+    this.erroUploadAnexo.set(null);
     this.modalAberto.set(true);
+    this.carregarAnexos(material.id);
   }
 
   fecharModal(): void {
@@ -1025,6 +1284,9 @@ export class AdminMateriaisComponent implements OnInit {
     this.nomeArquivoEnviado.set(null);
     this.uploadandoArquivo.set(false);
     this.erroUpload.set(null);
+    this.anexosAtuais.set([]);
+    this.uploadandoAnexo.set(false);
+    this.erroUploadAnexo.set(null);
   }
 
   async salvarMaterial(event: Event): Promise<void> {
@@ -1038,30 +1300,47 @@ export class AdminMateriaisComponent implements OnInit {
 
     let urlArquivoFinal = this.formUrlArquivo().trim();
 
-    // Validação específica para a categoria Vídeos
+    // Validação específica para a categoria Vídeos (Vimeo vs YouTube)
     if (this.formCategoria() === 'Vídeos') {
       if (!urlArquivoFinal) {
-        this.mensagemErro.set('Por favor, informe o link ou o ID numérico do vídeo no Vimeo.');
+        this.mensagemErro.set(
+          this.formPlataformaVideo() === 'youtube'
+            ? 'Por favor, informe o link ou ID do vídeo no YouTube.'
+            : 'Por favor, informe o link ou o ID numérico do vídeo no Vimeo.'
+        );
         this.salvando.set(false);
         return;
       }
-      const vimeoId = extrairVimeoId(urlArquivoFinal);
-      if (!vimeoId) {
-        this.mensagemErro.set('Link ou ID do Vimeo não reconhecido. Use o número (ex: 892019283) ou o link direto vimeo.com/ID.');
-        this.salvando.set(false);
-        return;
+
+      if (this.formPlataformaVideo() === 'youtube') {
+        const ytId = extrairYoutubeId(urlArquivoFinal);
+        if (!ytId) {
+          this.mensagemErro.set('Link ou ID do YouTube não reconhecido. Use a URL do vídeo ou o ID de 11 caracteres.');
+          this.salvando.set(false);
+          return;
+        }
+        urlArquivoFinal = `https://www.youtube.com/watch?v=${ytId}`;
+      } else {
+        const vimeoId = extrairVimeoId(urlArquivoFinal);
+        if (!vimeoId) {
+          this.mensagemErro.set('Link ou ID do Vimeo não reconhecido. Use o número (ex: 892019283) ou o link direto vimeo.com/ID.');
+          this.salvando.set(false);
+          return;
+        }
+        urlArquivoFinal = `https://vimeo.com/${vimeoId}`;
       }
-      urlArquivoFinal = `https://vimeo.com/${vimeoId}`;
     }
 
+    const defaultTamanhoVideo = this.formPlataformaVideo() === 'youtube' ? 'YouTube Streaming' : 'Vimeo Streaming';
     const dados: any = {
       titulo,
       descricao: this.formDescricao().trim(),
       categoria: this.formCategoria(),
       formato: this.formFormato().trim().toUpperCase() || (this.formCategoria() === 'Vídeos' ? 'VÍDEO' : 'PDF'),
       tipo_arquivo_real: this.formTipoArquivoReal().trim().toLowerCase() || null,
-      tamanho: this.formTamanho().trim() || (this.formCategoria() === 'Vídeos' ? 'Vimeo Streaming' : 'Arquivo'),
+      tamanho: this.formTamanho().trim() || (this.formCategoria() === 'Vídeos' ? defaultTamanhoVideo : 'Arquivo'),
       url_arquivo: urlArquivoFinal,
+      plataforma_video: this.formCategoria() === 'Vídeos' ? this.formPlataformaVideo() : null,
       ativo: this.formAtivo(),
       pago: this.formPago(),
       exibir_valor: this.formExibirValor(),
@@ -1094,6 +1373,22 @@ export class AdminMateriaisComponent implements OnInit {
       if (error) {
         this.mensagemErro.set('Erro ao criar material: ' + error.message);
         return;
+      }
+
+      // Se havia anexos na fila temporária, salva agora vinculando ao material criado
+      if (data?.id && this.anexosAtuais().length > 0) {
+        for (const anexo of this.anexosAtuais()) {
+          await this.supabaseService.client
+            .from('material_anexos')
+            .insert({
+              material_id: data.id,
+              nome_arquivo: anexo.nome_arquivo,
+              url_arquivo: anexo.url_arquivo,
+              formato: anexo.formato,
+              tamanho: anexo.tamanho,
+              ordem: anexo.ordem
+            });
+        }
       }
 
       const novoMaterial: MaterialAdminItem = data || {

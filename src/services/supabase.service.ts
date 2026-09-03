@@ -1719,9 +1719,8 @@ export class SupabaseService {
   async listarMateriais(): Promise<any[]> {
     try {
       const { data, error } = await this.client
-        .from('materiais')
+        .from('materiais_visiveis')
         .select('*')
-        .eq('ativo', true)
         .or('exclusivo_curso.is.null,exclusivo_curso.eq.false')
         .order('criado_em', { ascending: false });
       if (error) {
@@ -1869,10 +1868,11 @@ export class SupabaseService {
       const session = await this.getSession();
       if (!session?.user) return { error: new Error('Não autenticado.') };
 
-      // Limite de 20 MB (20 * 1024 * 1024)
-      const maxBytes = 20 * 1024 * 1024;
+      // Limite de 50 MB (50 * 1024 * 1024) — alinhado ao file_size_limit
+      // do bucket materiais-comunidade no Supabase Storage
+      const maxBytes = 50 * 1024 * 1024;
       if (file.size > maxBytes) {
-        return { error: new Error('O arquivo excede o limite máximo permitido de 20 MB.') };
+        return { error: new Error('O arquivo excede o limite máximo permitido de 50 MB.') };
       }
 
       // Sanitiza slug da categoria e nome do arquivo

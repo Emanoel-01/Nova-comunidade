@@ -6,6 +6,7 @@ import { gerarLinkWhatsapp } from '../../utils/whatsapp.util';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 export interface AmbienteItem {
   id: string;
@@ -13,6 +14,88 @@ export interface AmbienteItem {
   tamanho: 'P' | 'M' | 'G' | 'Personalizado';
   area: number;
   dimensoes: string;
+  coeficienteEquivalencia: number; // 0 a 1, editável pelo profissional conforme NBR 12721
+  areaEquivalente: number; // computado: area * coeficienteEquivalencia
+}
+
+export interface MacroetapaOrcamento {
+  id: string;
+  nome: string;
+  percentualPadrao: number; // sugestão inicial, editável
+  percentualAjustado: number; // o que o profissional efetivamente usa
+  valorEstimado: number; // computado: custoBase * (percentualAjustado / 100)
+}
+
+export interface ParcelaObraCurvaS {
+  mes: number;
+  macroetapaPredominante: string; // nome da macroetapa daquele mês
+  percentualFisicoMes: number;
+  percentualAcumulado: number;
+  liberacaoMes: number; // valor liberado naquele mês
+  saldoLiberadoAcumulado: number;
+  encargoMes: number; // juros sobre saldo liberado + MIP + DFI + taxa adm
+  retidoGarantia: boolean; // true apenas no último mês
+}
+
+export interface MemorialDescritivo {
+  padraoAcabamento: 'baixo' | 'normal' | 'alto';
+  sistemaConstrutivo: string; // ex: "Alvenaria convencional", "Light Steel Framing"
+  fundacao: string;
+  estrutura: string;
+  vedacoes: string;
+  cobertura: string;
+  impermeabilizacao: string;
+  instalacoesHidraulicas: string;
+  instalacoesEletricas: string;
+  revestimentosInternos: string;
+  revestimentosExternos: string;
+  esquadrias: string;
+  pintura: string;
+  conformidadeNbr15575: boolean; // desempenho acústico/térmico/lumínico
+  conformidadeNbr9575: boolean; // impermeabilização
+  observacoesAdicionais: string;
+}
+
+export const MACROETAPAS_CONSTRUCAO: Omit<MacroetapaOrcamento, 'valorEstimado' | 'percentualAjustado'>[] = [
+  { id: '1', nome: 'Serviços preliminares e fundações', percentualPadrao: 10.3 },
+  { id: '2', nome: 'Estrutura resistente', percentualPadrao: 22.2 },
+  { id: '3', nome: 'Alvenarias e vedações', percentualPadrao: 13.6 },
+  { id: '4', nome: 'Cobertura e impermeabilização', percentualPadrao: 12.9 },
+  { id: '5', nome: 'Instalações prediais', percentualPadrao: 11.1 },
+  { id: '6', nome: 'Revestimentos internos', percentualPadrao: 9.2 },
+  { id: '7', nome: 'Revestimentos externos e esquadrias', percentualPadrao: 7.3 },
+  { id: '8', nome: 'Pintura, louças e metais', percentualPadrao: 9.7 },
+  { id: '9', nome: 'Limpeza e conclusão', percentualPadrao: 3.7 }
+];
+
+export const MACROETAPAS_CONDOMINIO: Omit<MacroetapaOrcamento, 'valorEstimado' | 'percentualAjustado'>[] = [
+  { id: '1', nome: 'Reparo e recuperação de fachada', percentualPadrao: 25 },
+  { id: '2', nome: 'Impermeabilização (coberturas, lajes, áreas molhadas)', percentualPadrao: 20 },
+  { id: '3', nome: 'Substituição de prumadas hidráulicas', percentualPadrao: 20 },
+  { id: '4', nome: 'Instalações elétricas e modernização de elevadores', percentualPadrao: 15 },
+  { id: '5', nome: 'Pintura geral e acabamentos de áreas comuns', percentualPadrao: 12 },
+  { id: '6', nome: 'Outros (portaria remota, energia solar, diversos)', percentualPadrao: 8 }
+];
+
+export function criarMemorialDescritivoPadrao(): MemorialDescritivo {
+  return {
+    padraoAcabamento: 'normal',
+    sistemaConstrutivo: 'Alvenaria convencional',
+    fundacao: 'Sapatas isoladas / Radier em concreto armado conforme sondagem geotécnica',
+    estrutura: 'Pilares, vigas e lajes maciças/treliçadas em concreto armado',
+    vedacoes: 'Alvenaria em blocos cerâmicos furados com argamassa mista de assentamento',
+    cobertura: 'Estrutura metálica/madeira de lei com telhas termoacústicas ou cerâmicas e rufos galvanizados',
+    impermeabilizacao: 'Manta asfáltica e emulsão acrílica elastomérica em baldrames, lajes e áreas molháveis',
+    instalacoesHidraulicas: 'Tubulações e conexões em PVC e PPR com reservatório superior dimensionado',
+    instalacoesEletricas: 'Eletrodutos antichama, condutores de cobre dimensionados com dispositivos DR e DPS',
+    revestimentosInternos: 'Porcelanato / Cerâmica retificada em áreas molhadas, reboco e gesso liso',
+    revestimentosExternos: 'Textura acrílica hidrorrepelente com detalhes em pedra natural ou porcelanato',
+    esquadrias: 'Alumínio com pintura eletrostática preta/branca e vidros temperados',
+    pintura: 'Tinta acrílica fosca/lavável de primeira linha sobre massa corrida/acrílica',
+    conformidadeNbr15575: true,
+    conformidadeNbr9575: true,
+    observacoesAdicionais: ''
+  };
 }
 
 export interface AreaExternaItem {
@@ -37,6 +120,30 @@ export interface ParcelaDetalhada {
   juros: number;
   saldo: number;
   fase: 'Obra' | 'Amortização';
+}
+
+export interface ResultadoElegibilidade {
+  linhaId: string;
+  banco: string;
+  produto: string;
+  nome_produto?: string;
+  compativel: boolean;
+  dadosIncompletos: boolean;
+  camposFaltantes: string[];
+  motivosIncompatibilidade: string[];
+  taxaJurosMin: number | null;
+  taxaJurosMax: number | null;
+  prazoMaxAnos: number | null;
+  percentualFinanciamentoMax: number | null;
+  faixaFinanciamentoEstimada: { min: number; max: number } | null;
+  parcelaEstimada: number | null;
+  sistemaAmortizacao: string;
+  permiteFgts: boolean;
+  vantagemPrincipal: string;
+  gargalosOperacionais: string;
+  notaFonte: string;
+  dataReferencia: string;
+  fonteUrl: string;
 }
 
 const AMBIENTES_DISPONIVEIS = [
@@ -84,6 +191,23 @@ const DOCUMENTOS_EMPRESARIO = [
   { id: 'balanco_patrimonial', nome: 'Balanço Patrimonial', descricao: 'Dos últimos 2 anos', obrigatorio: true },
   { id: 'declaracao_ir_pj', nome: 'IR da Pessoa Jurídica', descricao: 'Declaração de imposto de renda da empresa', obrigatorio: true },
   { id: 'declaracao_ir_pf', nome: 'IR Pessoa Física', descricao: 'Sua declaração pessoal dos últimos 2 anos', obrigatorio: true },
+];
+
+const DOCUMENTOS_REFORMA_PF = [
+  { id: 'matricula_reforma', nome: 'Matrícula Atualizada do Imóvel a Reformar', descricao: 'Certidão de matrícula demonstrando regularidade do imóvel existente', obrigatorio: true },
+  { id: 'prm_banco', nome: 'Proposta de Reforma e Melhoria (PRM)', descricao: 'Formulário técnico PRM (Caixa) ou equivalente da instituição financeira', obrigatorio: true },
+  { id: 'art_rrt_reforma', nome: 'ART / RRT de Execução da Reforma', descricao: 'Anotação/Registro de Responsabilidade Técnica da obra de reforma', obrigatorio: true },
+  { id: 'projeto_reforma_ampliacao', nome: 'Projeto Arquitetônico Aprovado (Ampliação)', descricao: 'Exigido pelos bancos e prefeituras caso haja acréscimo de área construída', obrigatorio: false },
+  { id: 'alvara_ampliacao', nome: 'Alvará de Reforma / Ampliação', descricao: 'Licença municipal (obrigatória somente se houver ampliação de área construída)', obrigatorio: false },
+];
+
+const DOCUMENTOS_CONDOMINIO = [
+  { id: 'laudo_inspecao_nbr16747', nome: 'Laudo de Inspeção Predial (ABNT NBR 16747)', descricao: 'Laudo técnico com mapeamento de anomalias, graus de risco e diretrizes de intervenção', obrigatorio: true },
+  { id: 'art_rrt_condominio', nome: 'ART / RRT do Laudo e Execução da Obra', descricao: 'Anotação técnica devidamente quitada pelo engenheiro/arquiteto responsável', obrigatorio: true },
+  { id: 'planilha_orcamentaria_condominio', nome: 'Planilha Orçamentária Detalhada (SINAPI/CUB)', descricao: 'Cronograma físico-financeiro e composição de insumos da obra', obrigatorio: true },
+  { id: 'ata_age_aprovacao', nome: 'Ata da Assembleia Geral Extraordinária (AGE)', descricao: 'Ata registrada em cartório aprovando a contratação do crédito e a realização da obra', obrigatorio: true },
+  { id: 'convencao_regimento', nome: 'Convenção Condominial e Regimento Interno', descricao: 'Comprovação jurídica da constituição e representatividade do condomínio', obrigatorio: true },
+  { id: 'balancetes_arrecadacao', nome: 'Balancetes e Extratos de Arrecadação (12 meses)', descricao: 'Histórico financeiro, inadimplência e capacidade de arrecadação do condomínio', obrigatorio: true },
 ];
 
 export const ESTADOS_BRASIL = [
@@ -289,9 +413,17 @@ export const ESTADOS_BRASIL = [
                         }
                       </div>
 
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
-                        {{ proj.status || 'Rascunho' }}
-                      </span>
+                      <div class="flex flex-col items-end gap-1">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
+                          {{ proj.status || 'Rascunho' }}
+                        </span>
+                        @if (proj.estudo_previo_concluido) {
+                          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-0.5" title="Estudo de Viabilidade Prévia Concluído">
+                            <span>✓</span>
+                            <span>Estudo Prévio</span>
+                          </span>
+                        }
+                      </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
@@ -390,8 +522,18 @@ export const ESTADOS_BRASIL = [
             </div>
           </div>
 
-          <!-- Barra de Navegação das 7 Etapas / Abas -->
+          <!-- Barra de Navegação das 8 Etapas / Abas (Etapa 0 + Etapas 1-7) -->
           <div class="bg-white rounded-2xl p-2 border border-slate-200 shadow-xs flex items-center gap-1 overflow-x-auto">
+            <button
+              type="button"
+              (click)="selecionarEtapa(0)"
+              [class]="etapaAtiva() === 0 ? 'bg-[#132A41] text-white font-bold' : 'text-slate-600 hover:bg-slate-100 font-medium'"
+              class="px-3.5 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            >
+              <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-bold">0</span>
+              <span>Estudo Prévio</span>
+            </button>
+
             <button
               type="button"
               (click)="selecionarEtapa(1)"
@@ -468,6 +610,605 @@ export const ESTADOS_BRASIL = [
           <!-- CONTEÚDO DAS ETAPAS -->
           <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs">
             
+            <!-- ETAPA 0: ESTUDO DE VIABILIDADE PRÉVIA DE CRÉDITO -->
+            @if (etapaAtiva() === 0) {
+              <div class="space-y-8">
+                <!-- Cabeçalho e Identificação da Etapa 0 -->
+                <div class="space-y-3">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-md bg-[#132A41] text-white text-[10px] font-black uppercase tracking-wider">
+                          Etapa 0 • Porta de Entrada Principal
+                        </span>
+                        @if (estudoPrevioConcluido()) {
+                          <span class="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                            <span>✓</span>
+                            <span>Estudo Concluído</span>
+                          </span>
+                        }
+                      </div>
+                      <h3 class="text-xl sm:text-2xl font-black text-[#132A41] mt-1 tracking-tight">
+                        Estudo de Viabilidade Prévia de Crédito
+                      </h3>
+                      <p class="text-xs text-slate-500 max-w-3xl leading-relaxed">
+                        Análise técnica preliminar de elegibilidade para contratação de crédito imobiliário. Permite qualificar o potencial financeiro do cliente em minutos, sem exigir projeto arquitetônico aprovado ou alvará prévio.
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        (click)="gerarPdfEstudoPrevio()"
+                        [disabled]="gerandoPdfEstudoPrevio()"
+                        class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#B5642A] to-[#8A4315] hover:from-[#C77234] hover:to-[#9E4D19] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        @if (gerandoPdfEstudoPrevio()) {
+                          <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Gerando PDF...</span>
+                        } @else {
+                          <span>📄</span>
+                          <span>Emitir Estudo Prévio (PDF)</span>
+                        }
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- AVISO LEGAL OBRIGATÓRIO (Inegociável) -->
+                  <div class="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs flex items-start gap-3 shadow-xs">
+                    <span class="text-base shrink-0 mt-0.5">⚠️</span>
+                    <div class="space-y-1">
+                      <strong class="font-bold text-amber-950 block">Aviso Legal Obrigatório:</strong>
+                      <p class="text-[11px] text-amber-900/90 leading-relaxed">
+                        Este estudo é uma análise técnica preliminar elaborada pelo responsável técnico identificado nesta peça. Não constitui carta de crédito, proposta de financiamento nem qualquer garantia de aprovação por instituição financeira. A análise definitiva depende de avaliação cadastral e técnica própria do agente financeiro escolhido.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- OS 3 BLOCOS DE ENTRADA: ELEGIBILIDADE, TERRENO E ESTUDO PRELIMINAR -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <!-- BLOCO A: ELEGIBILIDADE DO PROPONENTE -->
+                  <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
+                        <span class="w-6 h-6 rounded-lg bg-[#132A41] text-white flex items-center justify-center text-xs font-bold">A</span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                          Elegibilidade do Proponente
+                        </h4>
+                      </div>
+
+                      <div class="space-y-3">
+                        <div>
+                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            {{ tipoOperacao() === 'condominio' ? 'Nome do Condomínio / Síndico / Gestor' : 'Nome do Cliente / Proponente' }}
+                          </label>
+                          <input
+                            type="text"
+                            [value]="nomeCliente()"
+                            (input)="nomeCliente.set($any($event.target).value)"
+                            [placeholder]="tipoOperacao() === 'condominio' ? 'Ex: Condomínio Edifício Solar das Palmeiras' : 'Ex: Carlos Eduardo de Souza'"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                          />
+                        </div>
+
+                        @if (tipoOperacao() === 'condominio') {
+                          <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] space-y-1">
+                            <strong class="font-bold flex items-center gap-1 text-blue-950">
+                              <span>🏢</span> Tomador Pessoa Jurídica (Condomínio)
+                            </strong>
+                            <p class="text-[10px] leading-relaxed text-blue-900/90">
+                              A aprovação de crédito condominial é calculada sobre o fluxo de caixa do condomínio (arrecadação mensal e taxa de inadimplência), sem restrições de idade pessoal do gestor.
+                            </p>
+                          </div>
+                        }
+
+                        <div>
+                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            {{ tipoOperacao() === 'condominio' ? 'Data de Fundação / Registro CNPJ' : 'Data de Nascimento do Proponente' }}
+                          </label>
+                          <input
+                            type="date"
+                            [value]="dataNascimentoProponente()"
+                            (change)="onDataNascimentoChange($any($event.target).value)"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                          />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                          <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                              {{ tipoOperacao() === 'condominio' ? 'Tempo de Existência' : 'Idade Calculada' }}
+                            </label>
+                            <div class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs text-slate-800 font-bold">
+                              {{ idadeSolicitante ? idadeSolicitante + ' anos' : 'A calcular' }}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                              {{ tipoOperacao() === 'condominio' ? 'Perfil do Tomador' : 'Trilha de Renda' }}
+                            </label>
+                            @if (tipoOperacao() === 'condominio') {
+                              <div class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs text-[#132A41] font-bold">
+                                PJ • Condomínio
+                              </div>
+                            } @else {
+                              <select
+                                [value]="tipoRenda()"
+                                (change)="tipoRenda.set($any($event.target).value)"
+                                class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                              >
+                                <option value="clt">CLT / Formal</option>
+                                <option value="autonomo">Autônomo / Liberal</option>
+                                <option value="empresario">Empresário / PJ</option>
+                              </select>
+                            }
+                          </div>
+                        </div>
+
+                        <div>
+                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            {{ tipoOperacao() === 'condominio' ? 'Arrecadação Mensal do Condomínio (R$)' : 'Renda Familiar Bruta Mensal (R$)' }}
+                          </label>
+                          <input
+                            type="number"
+                            [value]="rendaFamiliar || ''"
+                            (input)="rendaFamiliar = +$any($event.target).value || null; recalcular()"
+                            [placeholder]="tipoOperacao() === 'condominio' ? 'Ex: 45000' : 'Ex: 14000'"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                          />
+                          <span class="text-[10px] text-slate-400">
+                            {{ tipoOperacao() === 'condominio' ? 'Taxa condominial média arrecadada mensalmente' : 'Soma da renda comprovável dos proponentes' }}
+                          </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                          <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Estado (UF)</label>
+                            <select
+                              [value]="uf()"
+                              (change)="onUfChange($any($event.target).value)"
+                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                            >
+                              @for (item of estadosBrasil; track item) {
+                                <option [value]="item">{{ item }}</option>
+                              }
+                            </select>
+                          </div>
+
+                          <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Cidade</label>
+                            <input
+                              type="text"
+                              [value]="cidade()"
+                              (input)="cidade.set($any($event.target).value)"
+                              placeholder="Ex: Ribeirão Preto"
+                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- BLOCO B: TERRENO / IMÓVEL BASE -->
+                  <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
+                        <span class="w-6 h-6 rounded-lg bg-[#132A41] text-white flex items-center justify-center text-xs font-bold">B</span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                          Terreno / Imóvel Base
+                        </h4>
+                      </div>
+
+                      <div class="space-y-3">
+                        <div>
+                          <label class="block text-[11px] font-bold text-slate-700 mb-1">Situação do Lote / Terreno</label>
+                          <select
+                            [value]="situacaoLote()"
+                            (change)="onSituacaoLoteChange($any($event.target).value)"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                          >
+                            <option value="a_adquirir">Terreno a adquirir (Aquisição de Terreno + Construção)</option>
+                            <option value="proprio_quitado">Terreno próprio já quitado (Construção em Terreno Próprio)</option>
+                            <option value="a_reformar">Já possui imóvel edificado (Reforma / Ampliação)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            Valor Estimado do Terreno (R$)
+                          </label>
+                          <input
+                            type="number"
+                            [value]="valorTerreno()"
+                            (input)="valorTerreno.set(+$any($event.target).value || 0); recalcular()"
+                            placeholder="Ex: 150000"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                          />
+                          <span class="text-[10px] text-slate-400">
+                            Valor de mercado estimado para o lote
+                          </span>
+                        </div>
+
+                        @if (situacaoLote() === 'proprio_quitado') {
+                          <div class="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-blue-950 text-xs space-y-1">
+                            <strong class="font-bold flex items-center gap-1.5 text-blue-900">
+                              <span>ℹ️</span> Terreno Próprio Quitado
+                            </strong>
+                            <p class="text-[11px] text-blue-900/90 leading-relaxed">
+                              O terreno quitado integra a garantia global e pode cobrir a cota mínima de entrada, reduzindo o aporte em dinheiro.
+                            </p>
+                          </div>
+                        }
+
+                        @if (situacaoLote() === 'a_reformar') {
+                          <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 text-xs space-y-1">
+                            <strong class="font-bold flex items-center gap-1.5 text-amber-900">
+                              <span>🏡</span> Imóvel Edificado Existente
+                            </strong>
+                            <p class="text-[11px] text-amber-900/90 leading-relaxed">
+                              O imóvel já edificado compõe a garantia da operação (hipoteca ou alienação fiduciária). A viabilidade avalia a intervenção técnica na benfeitoria existente.
+                            </p>
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5">
+                      <div class="flex items-center justify-between text-slate-500 text-[11px]">
+                        <span>Participação do Terreno:</span>
+                        <strong class="text-slate-800 font-bold">
+                          {{ (participacaoLoteEstudoPrevio() * 100).toFixed(1) }}% do investimento
+                        </strong>
+                      </div>
+                      <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          class="bg-[#132A41] h-2 rounded-full transition-all"
+                          [style.width.%]="Math.min(100, participacaoLoteEstudoPrevio() * 100)"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- BLOCO C: ESTUDO PRELIMINAR DE ARQUITETURA -->
+                  <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-4">
+                      <div class="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
+                        <span class="w-6 h-6 rounded-lg bg-[#132A41] text-white flex items-center justify-center text-xs font-bold">C</span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                          {{ tipoOperacao() === 'reforma_pf' ? 'Estudo Preliminar de Reforma / Ampliação' : (tipoOperacao() === 'condominio' ? 'Diagnóstico Preliminar Condominial' : 'Estudo Preliminar de Arquitetura') }}
+                        </h4>
+                      </div>
+
+                      <div class="space-y-3">
+                        @if (tipoOperacao() === 'reforma_pf' || tipoOperacao() === 'condominio') {
+                          <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Tipo de Intervenção Técnica</label>
+                            <select
+                              [value]="tipoIntervencao()"
+                              (change)="tipoIntervencao.set($any($event.target).value)"
+                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                            >
+                              @if (tipoOperacao() === 'reforma_pf') {
+                                <option value="reforma_sem_ampliacao">Reforma sem ampliação (não altera área construída)</option>
+                                <option value="ampliacao_com_area_nova">Ampliação com acréscimo de área construída</option>
+                              } @else {
+                                <option value="manutencao_predial">Manutenção Predial / Retrofit / Fachada</option>
+                                <option value="reforma_sem_ampliacao">Obras em Áreas Comuns (sem ampliação)</option>
+                                <option value="ampliacao_com_area_nova">Ampliação de Área de Lazer / Estruturas Novas</option>
+                              }
+                            </select>
+                          </div>
+
+                          @if (tipoIntervencao() === 'ampliacao_com_area_nova') {
+                            <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                              <strong>Atenção técnica:</strong> Por envolver acréscimo de área construída, a operação exigirá projeto arquitetônico aprovado na Prefeitura e Alvará de Construção para emissão da pasta bancária completa (Gate 7).
+                            </div>
+                          } @else if (tipoOperacao() === 'reforma_pf') {
+                            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] leading-relaxed">
+                              <strong>Trilha Simplificada:</strong> Sem acréscimo de área, a contratação é conduzida via formulário PRM (Proposta de Reforma e Melhoria) e ART/RRT, dispensando alvará municipal.
+                            </div>
+                          } @else {
+                            <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] leading-relaxed">
+                              <strong>Trilha Condominial:</strong> Obras amparadas por Laudo de Inspeção Predial (NBR 16747), ART/RRT e Aprovação formal em AGE.
+                            </div>
+                          }
+                        }
+
+                        <div>
+                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            {{ tipoOperacao() === 'condominio' ? 'Área Total das Áreas Objeto de Intervenção (m²)' : 'Área Estimada da Edificação (m²)' }}
+                          </label>
+                          <input
+                            type="number"
+                            [value]="areaEstimadaEstudoPrevio()"
+                            (input)="areaEstimadaEstudoPrevio.set(+$any($event.target).value || 0)"
+                            placeholder="Ex: 140"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                          />
+                          <span class="text-[10px] text-slate-400">Metragem pretendida para a edificação</span>
+                        </div>
+
+                        <div>
+                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            Padrão Construtivo Estimado
+                          </label>
+                          <select
+                            [value]="padraoConstrutivoEstudoPrevio()"
+                            (change)="padraoConstrutivoEstudoPrevio.set($any($event.target).value)"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                          >
+                            <option value="Baixo">Baixo (0.85 × CUB Estadual)</option>
+                            <option value="Normal">Normal / Médio (1.00 × CUB Estadual)</option>
+                            <option value="Alto">Alto Padrão (1.25 × CUB Estadual)</option>
+                          </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                          <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Pavimentos</label>
+                            <select
+                              [value]="pavimentos()"
+                              (change)="pavimentos.set(+$any($event.target).value)"
+                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
+                            >
+                              <option [value]="1">1 Pavimento (Térrea)</option>
+                              <option [value]="2">2 Pavimentos (Sobrado)</option>
+                              <option [value]="3">3+ Pavimentos</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">CUB de Referência</label>
+                            <div class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs text-slate-800 font-bold">
+                              R$ {{ formatarMoeda(valorCubEstadoAtual()) }}/m²
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
+                      <div class="flex items-center justify-between text-slate-500 text-[11px]">
+                        <span>Custo da Obra Estimado:</span>
+                        <strong class="text-[#132A41] font-black text-sm">
+                          R$ {{ formatarMoeda(custoObraEstudoPrevio()) }}
+                        </strong>
+                      </div>
+                      <div class="text-[10px] text-slate-400">
+                        {{ areaEstimadaEstudoPrevio() }}m² × R$ {{ formatarMoeda(valorCubEstadoAtual()) }} × {{ fatorPadraoConstrutivo() }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- RESUMO DO INVESTIMENTO GLOBAL ESTIMADO -->
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-[#132A41] to-slate-900 text-white space-y-4 shadow-sm">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-4">
+                    <div>
+                      <span class="text-[10px] font-bold text-[#E8B27E] uppercase tracking-wider">
+                        Investimento Global de Referência
+                      </span>
+                      <h4 class="text-xl sm:text-2xl font-black text-white">
+                        R$ {{ formatarMoeda(investimentoGlobalEstudoPrevio()) }}
+                      </h4>
+                    </div>
+
+                    <div class="flex items-center gap-6 text-xs text-slate-300">
+                      <div>
+                        <div class="text-[10px] text-slate-400 uppercase">Custo da Edificação</div>
+                        <div class="font-bold text-white">R$ {{ formatarMoeda(custoObraEstudoPrevio()) }}</div>
+                      </div>
+                      <div class="border-l border-white/20 pl-6">
+                        <div class="text-[10px] text-slate-400 uppercase">Terreno / Lote</div>
+                        <div class="font-bold text-white">R$ {{ formatarMoeda(valorTerreno()) }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- RESSALVA ESPECIAL DE TERRENO PRÓPRIO QUITADO (Quando aplicável) -->
+                  @if (situacaoLote() === 'proprio_quitado' && participacaoLoteEstudoPrevio() >= 0.20) {
+                    <div class="p-4 rounded-xl bg-white/10 border border-white/15 text-xs text-slate-200 space-y-1">
+                      <strong class="font-bold text-[#E8B27E] flex items-center gap-1.5">
+                        <span>💡</span> Potencial Cobertura de Entrada por Terreno Quitado:
+                      </strong>
+                      <p class="text-[11px] leading-relaxed text-slate-200/90">
+                        O valor do terreno já quitado pode cobrir a cota mínima de entrada exigida por algumas linhas, o que tende a reduzir ou eliminar a necessidade de aporte em dinheiro para a obra. Este valor está sujeito à avaliação técnica da instituição financeira e pode divergir da estimativa aqui apresentada.
+                      </p>
+                    </div>
+                  }
+                </div>
+
+                <!-- LINHAS DE CRÉDITO AVALIADAS (ELEGIBILIDADE PRELIMINAR) -->
+                <div class="space-y-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <h4 class="text-base font-bold text-[#132A41]">
+                        Linhas de Financiamento Avaliadas
+                      </h4>
+                      <p class="text-xs text-slate-500">
+                        Classificação de elegibilidade preliminar com base nos parâmetros bancários cadastrados
+                      </p>
+                    </div>
+
+                    <span class="text-xs font-bold text-slate-500">
+                      {{ calcularElegibilidade().length }} linhas de mercado analisadas
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @for (item of calcularElegibilidade(); track item.linhaId) {
+                      <div
+                        class="p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4"
+                        [class]="item.compativel ? 'bg-white border-emerald-200 shadow-xs hover:border-emerald-400' : (item.dadosIncompletos ? 'bg-slate-50/90 border-slate-300' : 'bg-slate-50/80 border-amber-200 opacity-80')"
+                      >
+                        <div class="space-y-3">
+                          <div class="flex items-start justify-between gap-2">
+                            <div>
+                              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                {{ item.banco }}
+                              </span>
+                              <h5 class="text-sm font-black text-slate-800 line-clamp-1">
+                                {{ item.produto }}
+                              </h5>
+                            </div>
+
+                            @if (item.compativel) {
+                              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 bg-emerald-100 text-emerald-800">
+                                ✓ Elegível Preliminarmente
+                              </span>
+                            } @else if (item.dadosIncompletos) {
+                              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 bg-slate-200 text-slate-700">
+                                ⚙️ Cadastro Incompleto
+                              </span>
+                            } @else {
+                              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 bg-amber-100 text-amber-800">
+                                ⚠️ Incompatível com Perfil
+                              </span>
+                            }
+                          </div>
+
+                          <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
+                            <div>
+                              <span class="text-[10px] text-slate-400 font-bold uppercase">Taxa de Referência</span>
+                              <div class="font-bold text-slate-800">
+                                @if (item.taxaJurosMin != null && item.taxaJurosMax != null) {
+                                  {{ item.taxaJurosMin }}% a {{ item.taxaJurosMax }}% a.a.
+                                } @else if (item.taxaJurosMin != null) {
+                                  {{ item.taxaJurosMin }}% a.a.
+                                } @else {
+                                  <span class="text-slate-400 font-normal italic">Pendente</span>
+                                }
+                              </div>
+                            </div>
+                            <div>
+                              <span class="text-[10px] text-slate-400 font-bold uppercase">Prazo Máximo</span>
+                              <div class="font-bold text-slate-800">
+                                @if (item.prazoMaxAnos != null) {
+                                  {{ item.prazoMaxAnos }} anos
+                                } @else {
+                                  <span class="text-slate-400 font-normal italic">Pendente</span>
+                                }
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs space-y-1">
+                            <div class="flex justify-between text-[11px]">
+                              <span class="text-slate-500">Financiamento Estimado:</span>
+                              @if (item.faixaFinanciamentoEstimada) {
+                                <strong class="text-indigo-700 font-bold">
+                                  Até R$ {{ formatarMoeda(item.faixaFinanciamentoEstimada.max) }}
+                                </strong>
+                              } @else {
+                                <span class="text-slate-400 italic">Pendente de dados</span>
+                              }
+                            </div>
+                            <div class="flex justify-between text-[11px]">
+                              <span class="text-slate-500">Parcela Inicial Aprox.:</span>
+                              @if (item.parcelaEstimada != null) {
+                                <strong class="text-[#B5642A] font-bold">
+                                  R$ {{ formatarMoeda(item.parcelaEstimada) }}/mês
+                                </strong>
+                              } @else {
+                                <span class="text-slate-400 italic">Pendente de dados</span>
+                              }
+                            </div>
+                          </div>
+
+                          @if (item.dadosIncompletos) {
+                            <div class="p-2.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-[11px] space-y-1">
+                              <strong class="font-bold block text-slate-800">Cadastro incompleto no admin:</strong>
+                              <span class="text-[10px] text-slate-600 block">Campos pendentes: {{ item.camposFaltantes.join(', ') }}</span>
+                            </div>
+                          }
+
+                          @if (!item.compativel && !item.dadosIncompletos && item.motivosIncompatibilidade.length > 0) {
+                            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-[11px] space-y-1">
+                              <strong class="font-bold block">Critérios a ajustar:</strong>
+                              <ul class="list-disc list-inside space-y-0.5 text-[10px] leading-tight text-rose-800">
+                                @for (motivo of item.motivosIncompatibilidade; track motivo) {
+                                  <li>{{ motivo }}</li>
+                                }
+                              </ul>
+                            </div>
+                          }
+
+                          @if (item.vantagemPrincipal) {
+                            <div class="text-[11px] text-slate-600 bg-amber-50/50 p-2 rounded-lg border border-amber-100">
+                              <span class="font-bold text-amber-900">Vantagem:</span> {{ item.vantagemPrincipal }}
+                            </div>
+                          }
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                          <span>{{ item.sistemaAmortizacao }}</span>
+                          <span>{{ item.permiteFgts ? 'Aceita FGTS' : 'Sem FGTS' }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- NOTA FIXA OBRIGATÓRIA DE CONFERÊNCIA DE TAXAS (Sempre presente) -->
+                  <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 text-xs leading-relaxed flex items-start gap-3 shadow-xs">
+                    <span class="text-base shrink-0 mt-0.5">📌</span>
+                    <div class="space-y-0.5">
+                      <strong class="font-bold text-slate-900 block">Nota Obrigatória de Conferência dos Parâmetros Bancários:</strong>
+                      <p class="text-[11px] text-slate-600 leading-relaxed">
+                        Os parâmetros bancários apresentados são referência de mercado cadastrada pelo administrador do sistema e podem não refletir as condições vigentes na data de emissão. Antes de repassar este estudo ao cliente, confirme as taxas e condições diretamente com a instituição financeira.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PRÓXIMOS PASSOS RECOMENDADOS & TRANSIÇÃO PARA ETAPA 1 -->
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                  <div class="flex items-start gap-3">
+                    <span class="text-xl">🗺️</span>
+                    <div class="space-y-1">
+                      <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                        Próximos Passos Recomendados
+                      </h4>
+                      <p class="text-xs text-slate-600 leading-relaxed max-w-3xl">
+                        Confirmada a viabilidade prévia pelo responsável técnico e pelo cliente, o próximo passo recomendável consiste na elaboração do projeto arquitetônico detalhado, desenvolvimento dos projetos executivos de engenharia e protocolo para aprovação municipal com emissão do Alvará de Construção e ART/RRT quitada.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="text-xs text-slate-500">
+                      Deseja detalhar os ambientes, custos finos e documentação completa?
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                      <button
+                        type="button"
+                        (click)="gerarPdfEstudoPrevio()"
+                        [disabled]="gerandoPdfEstudoPrevio()"
+                        class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-white text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                      >
+                        <span>📄 Baixar PDF do Estudo Prévio</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        (click)="avancarParaMontarProjeto()"
+                        class="px-6 py-2.5 rounded-xl bg-[#132A41] hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm flex items-center gap-2"
+                      >
+                        <span>Avançar para Etapa 1: Montar Projeto</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
             <!-- ETAPA 1: MONTAR PROJETO -->
             @if (etapaAtiva() === 1) {
               <div class="space-y-8">
@@ -493,13 +1234,15 @@ export const ESTADOS_BRASIL = [
                     </div>
 
                     <div>
-                      <label class="block text-[11px] font-bold text-slate-600 mb-1">Nome do Cliente</label>
+                      <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                        {{ tipoOperacao() === 'condominio' ? 'Nome do Condomínio / Síndico / Gestor' : 'Nome do Cliente' }}
+                      </label>
                       <input
                         type="text"
                         [value]="nomeCliente()"
                         (input)="nomeCliente.set($any($event.target).value)"
                         class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-medium"
-                        placeholder="Ex: Dr. Roberto Silva"
+                        [placeholder]="tipoOperacao() === 'condominio' ? 'Ex: Condomínio Edifício Solar das Palmeiras' : 'Ex: Dr. Roberto Silva'"
                       />
                     </div>
 
@@ -557,11 +1300,101 @@ export const ESTADOS_BRASIL = [
                       Avançar para Quanto Custa →
                     </button>
                   </div>
+                } @else if (tipoOperacao() === 'condominio') {
+                  <div class="space-y-6">
+                    <div class="p-6 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-4">
+                      <div class="flex items-center gap-3">
+                        <span class="text-2xl">🏢</span>
+                        <div>
+                          <h3 class="text-base font-bold text-blue-950">Diagnóstico Operacional e Financeiro do Condomínio</h3>
+                          <p class="text-xs text-blue-900/80">Dados cadastrais de fluxo de caixa e escopo técnico da intervenção predial</p>
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label class="block text-xs font-bold text-slate-700 mb-1">Arrecadação Mensal das Cotas (R$)</label>
+                          <input
+                            type="number"
+                            [value]="arrecadacaoMensalCondominio() || ''"
+                            (input)="arrecadacaoMensalCondominio.set(+$any($event.target).value || 0); recalcular()"
+                            placeholder="Ex: 45000"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-bold text-slate-800"
+                          />
+                          <span class="text-[10px] text-slate-400">Total arrecadado com taxa condominial ordinária</span>
+                        </div>
+
+                        <div>
+                          <label class="block text-xs font-bold text-slate-700 mb-1">Taxa Histórica de Inadimplência (%)</label>
+                          <input
+                            type="number"
+                            [value]="percentualInadimplenciaCondominio() || ''"
+                            (input)="percentualInadimplenciaCondominio.set(+$any($event.target).value || 0)"
+                            placeholder="Ex: 8.5"
+                            step="0.1"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-bold text-slate-800"
+                          />
+                          <span class="text-[10px] text-slate-400">Bancos costumam exigir inadimplência inferior a 12-15%</span>
+                        </div>
+
+                        <div>
+                          <label class="block text-xs font-bold text-slate-700 mb-1">Valor da Obra no Laudo NBR 16747 (R$)</label>
+                          <input
+                            type="number"
+                            [value]="valorObraIndicadoLaudo() || ''"
+                            (input)="valorObraIndicadoLaudo.set(+$any($event.target).value || 0)"
+                            placeholder="Ex: 280000"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-bold text-slate-800"
+                          />
+                          <span class="text-[10px] text-slate-400">Custo estimado apurado no Laudo de Inspeção Predial</span>
+                        </div>
+                      </div>
+
+                      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-blue-200/80">
+                        <div class="text-xs text-blue-900 leading-relaxed">
+                          <strong>Intervenção Selecionada:</strong> {{ tipoIntervencao() === 'manutencao_predial' ? 'Manutenção Predial / Retrofit / Fachada' : (tipoIntervencao() === 'ampliacao_com_area_nova' ? 'Ampliação de Área de Lazer / Estruturas Novas' : 'Obras em Áreas Comuns (sem ampliação)') }}
+                        </div>
+
+                        <button
+                          type="button"
+                          (click)="adotarValorLaudoComoObra()"
+                          [disabled]="!valorObraIndicadoLaudo() || valorObraIndicadoLaudo() <= 0"
+                          class="px-4 py-2 rounded-xl bg-[#132A41] hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                        >
+                          <span>⚙️</span>
+                          <span>Adotar Valor do Laudo no Orçamento</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-3">
+                      <span class="text-base shrink-0 mt-0.5">ℹ️</span>
+                      <div class="space-y-1">
+                        <strong class="font-bold block">Requisitos Regulamentares de Crédito Condominial:</strong>
+                        <p class="text-[11px] text-amber-900/90 leading-relaxed">
+                          Diferente de obras unifamiliares, o crédito condominial exige que o escopo físico da obra seja embasado em <strong>Laudo de Inspeção Predial (NBR 16747)</strong> com ART/RRT de engenharia, e a contratação do financiamento aprovada em <strong>Assembleia Geral Extraordinária (AGE)</strong> com quórum qualificado conforme convenção.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4">
+                      <button
+                        type="button"
+                        (click)="selecionarEtapa(2)"
+                        class="px-6 py-2.5 rounded-xl bg-[#B5642A] hover:bg-[#9E5522] text-white text-xs font-bold transition-colors cursor-pointer shadow-sm flex items-center gap-2"
+                      >
+                        <span>Avançar para Quanto Custa</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </div>
                 } @else {
                   <div class="space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                       <div>
-                        <h3 class="text-lg font-black text-slate-800">1. Ambientes Internos & Pavimentos</h3>
+                        <h3 class="text-lg font-black text-slate-800">
+                          {{ tipoOperacao() === 'reforma_pf' ? '1. Ambientes a Reformar / Ampliar & Pavimentos' : '1. Ambientes Internos & Pavimentos' }}
+                        </h3>
                         <p class="text-xs text-slate-500">Defina os cômodos e seus padrões de tamanho ou dimensões personalizadas</p>
                       </div>
 
@@ -579,14 +1412,35 @@ export const ESTADOS_BRASIL = [
                       </div>
                     </div>
 
+                    @if (aplicaAreaEquivalente()) {
+                      <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 text-xs text-indigo-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="space-y-0.5">
+                          <div class="flex items-center gap-2 font-bold text-indigo-900">
+                            <span>📐</span>
+                            <span>Cálculo de Área Equivalente Conforme ABNT NBR 12721</span>
+                          </div>
+                          <p class="text-[11px] text-indigo-900/80 leading-relaxed">
+                            Área equivalente é a base de cálculo do orçamento indexado ao CUB — pondera espaços cobertos, descobertos e de padrão diferenciado em relação à área real.
+                          </p>
+                        </div>
+                        <div class="flex items-center gap-2.5 shrink-0">
+                          <span class="text-[11px] text-slate-600 font-medium">Real: <strong>{{ areaTotal() }} m²</strong></span>
+                          <span class="text-slate-300">|</span>
+                          <span class="text-xs font-black text-indigo-800 bg-white px-2.5 py-1 rounded-xl border border-indigo-200 shadow-2xs">
+                            Equivalente: {{ areaEquivalenteTotal().toFixed(2) }} m²
+                          </span>
+                        </div>
+                      </div>
+                    }
+
                     <!-- Formulário de Adicionar Ambiente -->
                     <div class="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
                       <div class="text-xs font-bold text-slate-700 uppercase tracking-wider">
                         + Adicionar Ambiente
                       </div>
 
-                      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                        <div>
+                      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                        <div class="sm:col-span-2">
                           <label class="block text-[11px] font-bold text-slate-600 mb-1">Tipo de Ambiente</label>
                           <select
                             [value]="novoAmbienteNome"
@@ -614,7 +1468,7 @@ export const ESTADOS_BRASIL = [
                         </div>
 
                         <div>
-                          <label class="block text-[11px] font-bold text-slate-600 mb-1">Área (m²)</label>
+                          <label class="block text-[11px] font-bold text-slate-600 mb-1">Área Real (m²)</label>
                           <input
                             type="number"
                             [value]="novoAmbienteArea"
@@ -638,9 +1492,16 @@ export const ESTADOS_BRASIL = [
 
                     <!-- Lista de Ambientes Adicionados -->
                     <div class="space-y-3">
-                      <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold text-slate-700">
                         <span>Ambientes Cadastrados ({{ ambientes().length }})</span>
-                        <span class="text-indigo-600">Área Construída: {{ areaTotal() }} m²</span>
+                        <div class="flex items-center gap-3">
+                          <span class="text-slate-600">Área Real: <strong>{{ areaTotal() }} m²</strong></span>
+                          @if (aplicaAreaEquivalente()) {
+                            <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200">
+                              Área Equivalente NBR 12721: <strong>{{ areaEquivalenteTotal().toFixed(2) }} m²</strong>
+                            </span>
+                          }
+                        </div>
                       </div>
 
                       @if (ambientes().length === 0) {
@@ -650,21 +1511,44 @@ export const ESTADOS_BRASIL = [
                       } @else {
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           @for (amb of ambientes(); track amb.id; let idx = $index) {
-                            <div class="p-3 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-2">
-                              <div>
-                                <div class="text-xs font-bold text-slate-800">{{ amb.nome }}</div>
-                                <div class="text-[11px] text-slate-500">
-                                  Tamanho {{ amb.tamanho }} • <strong>{{ amb.area }} m²</strong> ({{ amb.dimensoes }})
+                            <div class="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between gap-2">
+                              <div class="flex items-start justify-between gap-2">
+                                <div>
+                                  <div class="text-xs font-bold text-slate-800">{{ amb.nome }}</div>
+                                  <div class="text-[11px] text-slate-500">
+                                    Tamanho {{ amb.tamanho }} • <strong>{{ amb.area }} m²</strong> ({{ amb.dimensoes }})
+                                  </div>
                                 </div>
+                                <button
+                                  type="button"
+                                  (click)="removerAmbiente(amb.id)"
+                                  class="text-rose-500 hover:text-rose-700 text-xs p-1 cursor-pointer"
+                                  title="Remover"
+                                >
+                                  ✕
+                                </button>
                               </div>
-                              <button
-                                type="button"
-                                (click)="removerAmbiente(amb.id)"
-                                class="text-rose-500 hover:text-rose-700 text-xs p-1 cursor-pointer"
-                                title="Remover"
-                              >
-                                ✕
-                              </button>
+
+                              @if (aplicaAreaEquivalente()) {
+                                <div class="mt-1 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                                  <div class="flex items-center gap-1.5">
+                                    <span class="text-slate-500 font-medium">Coef. NBR:</span>
+                                    <input
+                                      type="number"
+                                      step="0.025"
+                                      min="0"
+                                      max="1"
+                                      [value]="amb.coeficienteEquivalencia !== undefined ? amb.coeficienteEquivalencia : 1.0"
+                                      (input)="atualizarCoeficienteAmbiente(amb.id, +$any($event.target).value)"
+                                      class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-slate-800 font-bold text-center bg-slate-50"
+                                      title="Coeficiente de equivalência conforme NBR 12721 (Padrão 1.0, Garagem 0.5, Varanda 0.75)"
+                                    />
+                                  </div>
+                                  <div class="text-indigo-700 font-black">
+                                    {{ (amb.areaEquivalente !== undefined ? amb.areaEquivalente : (amb.area * (amb.coeficienteEquivalencia || 1))).toFixed(2) }} m² eq.
+                                  </div>
+                                </div>
+                              }
                             </div>
                           }
                         </div>
@@ -739,8 +1623,253 @@ export const ESTADOS_BRASIL = [
                       }
                     </div>
 
+                    <!-- PEÇA TÉCNICA 4: MEMORIAL DESCRITIVO (NBR 15575 / CEF) -->
+                    @if (aplicaMemorialDescritivo()) {
+                      <div class="pt-6 border-t border-slate-100 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900 text-white">
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <span class="text-sm">📋</span>
+                              <h4 class="text-sm font-black tracking-wide">Memorial Descritivo de Materiais e Acabamentos</h4>
+                              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                                ABNT NBR 15575 / CEF
+                              </span>
+                            </div>
+                            <p class="text-[11px] text-slate-300 mt-0.5">
+                              Especificações técnicas exigidas pelas instituições financeiras para validação da garantia e avaliação do imóvel
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            (click)="toggleMemorialDescritivo()"
+                            class="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors cursor-pointer shrink-0"
+                          >
+                            {{ memorialDescritivoAberto() ? 'Ocultar Detalhes ▲' : 'Expandir Especificações ▼' }}
+                          </button>
+                        </div>
+
+                        @if (memorialDescritivoAberto()) {
+                          <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
+                            <!-- Padrão de Acabamento & Sistema Construtivo -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-slate-100">
+                              <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Padrão Geral de Acabamento</label>
+                                <select
+                                  [value]="memorialDescritivo().padraoAcabamento"
+                                  (change)="atualizarCampoMemorial('padraoAcabamento', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800"
+                                >
+                                  <option value="Baixo">Baixo (Popular / R-1B)</option>
+                                  <option value="Normal">Normal (Médio Padrão / R-1N)</option>
+                                  <option value="Alto">Alto (Alto Padrão / R-1A)</option>
+                                </select>
+                                <span class="text-[10px] text-slate-400">Classificação conforme ABNT NBR 12721</span>
+                              </div>
+
+                              <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Sistema Construtivo Principal</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().sistemaConstrutivo"
+                                  (input)="atualizarCampoMemorial('sistemaConstrutivo', $any($event.target).value)"
+                                  placeholder="Ex: Alvenaria convencional em blocos cerâmicos"
+                                  list="sistemasConstrutivosList"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800 font-semibold"
+                                />
+                                <datalist id="sistemasConstrutivosList">
+                                  <option value="Alvenaria convencional (concreto armado e blocos cerâmicos)">
+                                  <option value="Alvenaria Estrutural (blocos de concreto)">
+                                  <option value="Light Steel Framing (LSF com DATec)">
+                                  <option value="Wood Frame (estruturas de madeira tratada com DATec)">
+                                  <option value="Estrutura Metálica com vedações leves">
+                                  <option value="Paredes de Concreto Moldadas in loco">
+                                </datalist>
+                                <span class="text-[10px] text-slate-400">Estrutura e fechamento vertical</span>
+                              </div>
+                            </div>
+
+                            <!-- Aviso Regulatório SiNAT / DATec se sistema não convencional -->
+                            @if (sistemaIndustrializadoAviso()) {
+                              <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-2.5">
+                                <span class="text-base shrink-0">⚠️</span>
+                                <div class="space-y-1">
+                                  <strong class="font-bold">Aviso Regulatório SiNAT / PBQP-H:</strong>
+                                  <p class="text-[11px] text-amber-900/90 leading-relaxed">
+                                    Sistemas construtivos inovadores (como Light Steel Framing ou Wood Frame) exigem <strong>Documento de Avaliação Técnica (DATec)</strong> ativo emitido por Instituição Técnica Avaliadora (ITA) para homologação de garantia e aprovação do financiamento perante a CEF e demais bancos.
+                                  </p>
+                                </div>
+                              </div>
+                            }
+
+                            <!-- Especificações Técnicas de Materiais -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Fundação</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().fundacao"
+                                  (input)="atualizarCampoMemorial('fundacao', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Estrutura</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().estrutura"
+                                  (input)="atualizarCampoMemorial('estrutura', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Alvenaria e Vedações</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().vedacoes"
+                                  (input)="atualizarCampoMemorial('vedacoes', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Cobertura e Telhado</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().cobertura"
+                                  (input)="atualizarCampoMemorial('cobertura', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Impermeabilização (NBR 9575)</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().impermeabilizacao"
+                                  (input)="atualizarCampoMemorial('impermeabilizacao', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Esquadrias (Portas / Janelas)</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().esquadrias"
+                                  (input)="atualizarCampoMemorial('esquadrias', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Revestimentos Internos / Pisos</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().revestimentosInternos"
+                                  (input)="atualizarCampoMemorial('revestimentosInternos', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Revestimentos Externos / Fachada</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().revestimentosExternos"
+                                  (input)="atualizarCampoMemorial('revestimentosExternos', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Pintura e Tratamentos</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().pintura"
+                                  (input)="atualizarCampoMemorial('pintura', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Instalações Hidrossanitárias</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().instalacoesHidraulicas"
+                                  (input)="atualizarCampoMemorial('instalacoesHidraulicas', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Instalações Elétricas / Cabeamento</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().instalacoesEletricas"
+                                  (input)="atualizarCampoMemorial('instalacoesEletricas', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+
+                              <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Louças e Metais Sanitários</label>
+                                <input
+                                  type="text"
+                                  [value]="memorialDescritivo().loucasEMetais"
+                                  (input)="atualizarCampoMemorial('loucasEMetais', $any($event.target).value)"
+                                  class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white text-slate-800"
+                                />
+                              </div>
+                            </div>
+
+                            <!-- Declarações de Conformidade Técnica Normativa -->
+                            <div class="pt-4 border-t border-slate-100 space-y-2">
+                              <div class="text-xs font-bold text-slate-800">Conformidade e Diretrizes Normativas</div>
+                              
+                              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/80 transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    [checked]="memorialDescritivo().conformidadeNbr15575"
+                                    (change)="atualizarCampoMemorial('conformidadeNbr15575', $any($event.target).checked)"
+                                    class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                                  />
+                                  <span class="text-xs text-slate-700 leading-snug">
+                                    <strong>ABNT NBR 15575:</strong> Edificações habitacionais — Desempenho (térmico, acústico, lumínico e durabilidade).
+                                  </span>
+                                </label>
+
+                                <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100/80 transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    [checked]="memorialDescritivo().conformidadeNbr9575"
+                                    (change)="atualizarCampoMemorial('conformidadeNbr9575', $any($event.target).checked)"
+                                    class="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                                  />
+                                  <span class="text-xs text-slate-700 leading-snug">
+                                    <strong>ABNT NBR 9575:</strong> Impermeabilização — Seleção e projeto de sistemas estanques para fundações e áreas molhadas.
+                                  </span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+
                     <!-- Navegação da Etapa -->
-                    <div class="pt-6 border-t border-slate-100 flex justify-end">
+                    <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
+                      <button
+                        type="button"
+                        (click)="selecionarEtapa(0)"
+                        class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-2"
+                      >
+                        <span>←</span>
+                        <span>Estudo Prévio de Viabilidade</span>
+                      </button>
+
                       <button
                         type="button"
                         (click)="selecionarEtapa(2)"
@@ -867,6 +1996,104 @@ export const ESTADOS_BRASIL = [
                         </div>
                       }
                     </div>
+
+                    <!-- PEÇA TÉCNICA 2: ORÇAMENTO POR MACROETAPA (SINAPI / NBR 16747) -->
+                    @if (tipoOperacao() !== 'compra_terreno' && custoBase() > 0) {
+                      <div class="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <span class="text-sm">📊</span>
+                              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                Orçamento por Macroetapa da Obra
+                              </h4>
+                            </div>
+                            <p class="text-[11px] text-slate-500">
+                              {{ tipoOperacao() === 'condominio' ? 'Pesos por frente de recuperação e manutenção predial conforme laudo técnico' : 'Distribuição de pesos percentuais de referência SINAPI / Caixa Econômica Federal' }}
+                            </p>
+                          </div>
+
+                          <div class="flex items-center gap-2">
+                            <button
+                              type="button"
+                              (click)="restaurarMacroetapasPadrao()"
+                              class="px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-50 text-[11px] font-bold text-slate-700 transition-colors cursor-pointer"
+                              title="Restaurar percentuais para as referências padronizadas"
+                            >
+                              Restaurar Padrão
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Barra de Status da Soma dos Percentuais -->
+                        <div
+                          class="p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                          [class]="macroetapasSomaCem() ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-amber-50 border-amber-300 text-amber-950'"
+                        >
+                          <div class="flex items-center gap-2">
+                            <span class="text-base">{{ macroetapasSomaCem() ? '✓' : '⚠️' }}</span>
+                            <span class="font-bold">
+                              Soma dos Pesos: {{ totalPercentualMacroetapas().toFixed(1) }}%
+                            </span>
+                            @if (!macroetapasSomaCem()) {
+                              <span class="text-[11px] font-medium text-amber-900">
+                                (Diferença de {{ (100 - totalPercentualMacroetapas()).toFixed(1) }}% para fechar em 100%)
+                              </span>
+                            }
+                          </div>
+                          <div class="font-bold text-slate-800">
+                            Total Alocado: {{ totalValorMacroetapas() | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                          </div>
+                        </div>
+
+                        <!-- Tabela / Lista de Macroetapas -->
+                        <div class="overflow-x-auto rounded-xl border border-slate-200">
+                          <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                              <tr>
+                                <th class="p-2.5">Macroetapa</th>
+                                <th class="p-2.5 text-center w-24">Ref. Padrão</th>
+                                <th class="p-2.5 text-center w-28">Peso Ajustado</th>
+                                <th class="p-2.5 text-right w-36">Valor Estimado</th>
+                              </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                              @for (etapa of macroetapas(); track etapa.id) {
+                                <tr class="hover:bg-slate-50/60 transition-colors">
+                                  <td class="p-2.5 font-semibold text-slate-800">
+                                    {{ etapa.nome }}
+                                  </td>
+                                  <td class="p-2.5 text-center text-slate-400 font-medium">
+                                    {{ etapa.percentualPadrao }}%
+                                  </td>
+                                  <td class="p-2.5 text-center">
+                                    <div class="inline-flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        step="0.5"
+                                        min="0"
+                                        max="100"
+                                        [value]="etapa.percentualAjustado"
+                                        (input)="atualizarPercentualMacroetapa(etapa.id, +$any($event.target).value)"
+                                        class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-xs font-bold text-slate-800 text-center bg-white"
+                                      />
+                                      <span class="text-slate-500 font-bold">%</span>
+                                    </div>
+                                  </td>
+                                  <td class="p-2.5 text-right font-black text-slate-900">
+                                    {{ etapa.valorEstimado | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div class="text-[11px] text-slate-500 italic">
+                          A decomposição orçamentária por macroetapa baliza as medições físicas mensais do perito credenciado pelo banco para liberação das parcelas da fase de obra.
+                        </div>
+                      </div>
+                    }
 
                     <!-- Parâmetros de Financiamento -->
                     <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
@@ -997,23 +2224,34 @@ export const ESTADOS_BRASIL = [
               <div class="space-y-8">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h3 class="text-lg font-black text-slate-800">3. Checklist de Documentação Bancária</h3>
-                    <p class="text-xs text-slate-500">Organize os documentos exigidos pelos bancos de acordo com o regime de renda</p>
+                    <h3 class="text-lg font-black text-slate-800">
+                      {{ tipoOperacao() === 'condominio' ? '3. Checklist de Documentação Condominial' : (tipoOperacao() === 'reforma_pf' ? '3. Checklist de Documentação: Reforma / Ampliação' : '3. Checklist de Documentação Bancária') }}
+                    </h3>
+                    <p class="text-xs text-slate-500">
+                      {{ tipoOperacao() === 'condominio' ? 'Organize os documentos institucionais, jurídicos, financeiros e técnicos exigidos pelos agentes financeiros' : 'Organize os documentos exigidos pelos bancos de acordo com o regime de renda' }}
+                    </p>
                   </div>
 
-                  <!-- Seletor de Tipo de Renda -->
-                  <div class="flex items-center gap-2">
-                    <label class="text-xs font-bold text-slate-700">Regime de Renda:</label>
-                    <select
-                      [value]="tipoRenda()"
-                      (change)="tipoRenda.set($any($event.target).value)"
-                      class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800"
-                    >
-                      <option value="clt">CLT (Carteira Assinada)</option>
-                      <option value="autonomo">Profissional Autônomo / Liberal</option>
-                      <option value="empresario">Empresário / PJ</option>
-                    </select>
-                  </div>
+                  <!-- Seletor de Tipo de Renda / Perfil -->
+                  @if (tipoOperacao() !== 'condominio') {
+                    <div class="flex items-center gap-2">
+                      <label class="text-xs font-bold text-slate-700">Regime de Renda:</label>
+                      <select
+                        [value]="tipoRenda()"
+                        (change)="tipoRenda.set($any($event.target).value)"
+                        class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800"
+                      >
+                        <option value="clt">CLT (Carteira Assinada)</option>
+                        <option value="autonomo">Profissional Autônomo / Liberal</option>
+                        <option value="empresario">Empresário / PJ</option>
+                      </select>
+                    </div>
+                  } @else {
+                    <div class="px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold text-blue-900 flex items-center gap-2">
+                      <span>🏢</span>
+                      <span>Tomador: Condomínio Edilício (PJ)</span>
+                    </div>
+                  }
                 </div>
 
                 <!-- Semáforo de Prontidão e Barra de Progresso -->
@@ -1293,27 +2531,41 @@ export const ESTADOS_BRASIL = [
                         <div class="space-y-3">
                           <div class="flex items-center justify-between">
                             <h4 class="text-base font-black text-[#132A41]">{{ linha.banco }}</h4>
-                            <span class="text-xs font-bold text-[#B5642A]">{{ linha.taxa_juros_min }}% a.a.</span>
+                            @if (linha._dadosIncompletos) {
+                              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-700">
+                                ⚙️ Cadastro Incompleto
+                              </span>
+                            } @else {
+                              <span class="text-xs font-bold text-[#B5642A]">{{ linha.taxa_juros_min }}% a.a.</span>
+                            }
                           </div>
 
                           <div class="text-xs text-slate-600 font-semibold">
-                            {{ linha.produto }}
+                            {{ linha.nome_produto }}
                           </div>
 
                           <!-- Parcela Estimada -->
-                          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-0.5">
+                          <div
+                            class="p-3 rounded-xl border space-y-0.5"
+                            [class]="linha._dadosIncompletos ? 'bg-slate-100/90 border-slate-300' : 'bg-slate-50 border-slate-200/80'"
+                          >
                             <div class="text-[10px] uppercase font-bold text-slate-500">Parcela Estimada</div>
-                            <div class="text-lg font-black text-emerald-700">
-                              {{ calcularParcelaLinha(linha) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}/mês
-                            </div>
-                            <div class="text-[10px] text-slate-400">
-                              Prazo máx: {{ linha.prazo_max_anos || 30 }} anos • Até {{ linha.percentual_financiamento_max || 80 }}%
-                            </div>
+                            @if (linha._dadosIncompletos) {
+                              <div class="text-xs font-bold text-slate-600">Cadastro incompleto no admin</div>
+                              <div class="text-[10px] text-slate-500">Campos pendentes: {{ linha._camposFaltantes.join(', ') }}</div>
+                            } @else {
+                              <div class="text-lg font-black text-emerald-700">
+                                {{ calcularParcelaLinha(linha) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}/mês
+                              </div>
+                              <div class="text-[10px] text-slate-400">
+                                Prazo máx: {{ linha.prazo_max_anos }} anos • Até {{ linha.percentual_financiamento_max }}%
+                              </div>
+                            }
                           </div>
 
                           <!-- Badges / Tags -->
                           <div class="flex flex-wrap gap-1 text-[10px]">
-                            @if (linha.juros_na_obra) {
+                            @if (linha.tem_juros_obra) {
                               <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Juros na Obra</span>
                             }
                             @if (linha.carencia_meses) {
@@ -1498,6 +2750,170 @@ export const ESTADOS_BRASIL = [
                   </div>
                 </div>
 
+                <!-- PEÇA TÉCNICA 3: CRONOGRAMA FÍSICO-FINANCEIRO COM CURVA S (FASE DE OBRA) -->
+                @if (tipoOperacao() !== 'compra_terreno' && cronogramaObra().length > 0) {
+                  <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-base">📈</span>
+                          <h4 class="text-sm font-black text-slate-800 uppercase tracking-wide">
+                            Cronograma Físico-Financeiro & Curva S (Fase de Obra)
+                          </h4>
+                          <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
+                            {{ prazoObraMeses() }} Medições Mensais
+                          </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                          Evolução física acumulada e desembolso gradual condicionado às medições periciais do banco
+                        </p>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          (click)="gerarCronogramaCurvaS()"
+                          class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                          title="Recalcular distribuição teórica em Curva S"
+                        >
+                          <span>↻</span>
+                          <span>Regerar Curva S Teórica</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Resumo Financeiro da Fase de Obra -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">Total Desembolso da Obra</div>
+                        <div class="text-lg font-black text-slate-900">
+                          {{ totalLiberadoCurvaS() | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                        </div>
+                        <div class="text-[10px] text-slate-500">
+                          {{ somaPercentualFisicoCurvaS() }}% do orçamento executado
+                        </div>
+                      </div>
+
+                      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">Total de Encargos na Fase de Obra</div>
+                        <div class="text-lg font-black text-rose-600">
+                          {{ totalEncargosObra() | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                        </div>
+                        <div class="text-[10px] text-slate-500">
+                          Juros sobre saldo liberado + MIP + DFI + taxa adm
+                        </div>
+                      </div>
+
+                      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">Retenção de Garantia (Última Medição)</div>
+                        <div class="text-lg font-black text-amber-700">
+                          {{ retencaoGarantiaObra() | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                        </div>
+                        <div class="text-[10px] text-slate-500">
+                          5% retidos {{ textoConclusaoObra().retencao }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Gráfico Visual da Curva S de Obra -->
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-700">Curva S de Evolução Físico-Financeira Acumulada</span>
+                        <span class="text-[11px] text-indigo-700 font-semibold">Altura da barra = % acumulado da obra</span>
+                      </div>
+
+                      <div class="w-full h-36 bg-slate-50 rounded-2xl p-3 flex items-end gap-1.5 overflow-hidden border border-slate-100 relative">
+                        @for (item of cronogramaObra(); track item.mes) {
+                          <div
+                            class="flex-1 bg-gradient-to-t from-indigo-600 to-indigo-400 hover:from-indigo-700 hover:to-indigo-500 rounded-t transition-all group relative cursor-pointer min-w-4"
+                            [style.height.%]="Math.max(4, item.percentualAcumulado)"
+                          >
+                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block p-2.5 rounded-xl bg-slate-900 text-white text-[10px] font-bold whitespace-nowrap z-20 shadow-xl border border-slate-800">
+                              <div class="text-amber-300">Mês {{ item.mes }} • {{ item.macroetapaPredominante }}</div>
+                              <div class="mt-0.5">Mês: {{ item.percentualFisicoMes }}% ({{ item.liberacaoMes | currency:'BRL':'symbol':'1.0-0':'pt-BR' }})</div>
+                              <div>Acumulado: {{ item.percentualAcumulado }}%</div>
+                              <div class="text-rose-300">Encargo: {{ item.encargoMes | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="flex justify-between text-[11px] text-slate-400 font-medium px-1">
+                        <span>Mês 1 (Início dos Serviços)</span>
+                        <span>Mês {{ Math.round(prazoObraMeses() / 2) }} (Pico da Obra)</span>
+                        <span>Mês {{ prazoObraMeses() }} ({{ textoConclusaoObra().cronograma }})</span>
+                      </div>
+                    </div>
+
+                    <!-- Tabela Completa do Cronograma Físico-Financeiro -->
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700">Tabela de Medições e Encargos da Fase de Construção</span>
+                        <span class="text-[11px] text-slate-400">Você pode ajustar os percentuais mensais livremente</span>
+                      </div>
+
+                      <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                        <table class="w-full text-left text-xs">
+                          <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                            <tr>
+                              <th class="p-2.5 w-16 text-center">Mês</th>
+                              <th class="p-2.5">Macroetapa Predominante</th>
+                              <th class="p-2.5 text-center w-28">Avanço Mês (%)</th>
+                              <th class="p-2.5 text-center w-28">Acumulado (%)</th>
+                              <th class="p-2.5 text-right w-32">Liberação (R$)</th>
+                              <th class="p-2.5 text-right w-36">Saldo Liberado (R$)</th>
+                              <th class="p-2.5 text-right w-32">Encargo Fase Obra</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-slate-100">
+                            @for (item of cronogramaObra(); track item.mes) {
+                              <tr class="hover:bg-slate-50/70 transition-colors">
+                                <td class="p-2.5 text-center font-bold text-slate-700">
+                                  {{ item.mes }}
+                                </td>
+                                <td class="p-2.5 text-slate-800 font-medium">
+                                  {{ item.macroetapaPredominante }}
+                                  @if (item.retidoGarantia) {
+                                    <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[9px]">
+                                      Retenção 5%
+                                    </span>
+                                  }
+                                </td>
+                                <td class="p-2.5 text-center">
+                                  <div class="inline-flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      min="0"
+                                      max="100"
+                                      [value]="item.percentualFisicoMes"
+                                      (input)="atualizarPercentualCronogramaMes(item.mes, +$any($event.target).value)"
+                                      class="w-16 px-1.5 py-0.5 rounded border border-slate-300 text-center font-bold text-slate-800 bg-white"
+                                    />
+                                    <span class="text-slate-400 font-bold">%</span>
+                                  </div>
+                                </td>
+                                <td class="p-2.5 text-center font-semibold text-slate-600">
+                                  {{ item.percentualAcumulado }}%
+                                </td>
+                                <td class="p-2.5 text-right font-semibold text-slate-800">
+                                  {{ item.liberacaoMes | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                                </td>
+                                <td class="p-2.5 text-right font-medium text-slate-600">
+                                  {{ item.saldoLiberadoAcumulado | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                                </td>
+                                <td class="p-2.5 text-right font-bold text-rose-600">
+                                  {{ item.encargoMes | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                }
+
                 <!-- Amostra da Tabela de Amortização -->
                 <div class="space-y-3">
                   <div class="flex items-center justify-between">
@@ -1554,76 +2970,130 @@ export const ESTADOS_BRASIL = [
               </div>
             }
 
-            <!-- ETAPA 6: CONSTRUIR VS ALUGAR -->
+            <!-- ETAPA 6: CONSTRUIR VS ALUGAR / VIABILIDADE CONDOMINIAL -->
             @if (etapaAtiva() === 6 && tipoOperacao() !== 'compra_terreno') {
               <div class="space-y-8">
-                <div>
-                  <h3 class="text-lg font-black text-slate-800">6. Estudo de Viabilidade: Construir vs. Alugar</h3>
-                  <p class="text-xs text-slate-500">Confronte o valor gasto em aluguel no período com o custo real (com juros) de construir seu patrimônio</p>
-                </div>
-
-                <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                @if (tipoOperacao() === 'condominio') {
                   <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Valor Médio de Aluguel da Região (R$/m²):</label>
-                    <div class="flex items-center gap-2">
-                      <input
-                        type="number"
-                        [value]="valorAluguelM2()"
-                        (input)="valorAluguelM2.set(+$any($event.target).value); recalcularComparacaoAluguel()"
-                        class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white w-32"
-                      />
-                      <span class="text-xs text-slate-500">
-                        = {{ (areaTotal() * valorAluguelM2()) | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}/mês de aluguel estimado
-                      </span>
+                    <h3 class="text-lg font-black text-slate-800">6. Estudo de Viabilidade Financeira do Condomínio</h3>
+                    <p class="text-xs text-slate-500">Comprometimento da receita das cotas condominiais e impacto da parcela da intervenção</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div class="text-[11px] text-slate-500 font-bold uppercase">Arrecadação Mensal</div>
+                      <div class="text-xl font-black text-[#132A41]">
+                        {{ (arrecadacaoMensalCondominio() || 0) | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                      </div>
+                      <div class="text-[10px] text-slate-400">Cotas ordinárias/mês</div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div class="text-[11px] text-slate-500 font-bold uppercase">Taxa de Inadimplência</div>
+                      <div class="text-xl font-black" [class.text-emerald-700]="percentualInadimplenciaCondominio() <= 10" [class.text-amber-700]="percentualInadimplenciaCondominio() > 10">
+                        {{ percentualInadimplenciaCondominio() || 0 }}%
+                      </div>
+                      <div class="text-[10px] text-slate-400">{{ percentualInadimplenciaCondominio() <= 12 ? 'Dentro da faixa bancária' : 'Atenção com exigências' }}</div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div class="text-[11px] text-slate-500 font-bold uppercase">Parcela Mensal da Obra</div>
+                      <div class="text-xl font-black text-[#B5642A]">
+                        {{ resultado()?.parcela | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                      </div>
+                      <div class="text-[10px] text-slate-400">Em {{ prazoAnos() * 12 }} meses</div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div class="text-[11px] text-slate-500 font-bold uppercase">Comprometimento da Receita</div>
+                      <div class="text-xl font-black text-blue-900">
+                        {{ arrecadacaoMensalCondominio() > 0 ? (((resultado()?.parcela || 0) / arrecadacaoMensalCondominio()) * 100).toFixed(1) : '0.0' }}%
+                      </div>
+                      <div class="text-[10px] text-slate-400">Referência de mercado — confirme faixa aceitável com a instituição financeira</div>
                     </div>
                   </div>
 
-                  <div class="text-right text-xs">
-                    <span class="text-slate-400">Horizonte:</span>
-                    <strong class="text-slate-800 ml-1">{{ prazoAnos() * 12 }} meses ({{ prazoAnos() }} anos)</strong>
+                  <div class="p-5 rounded-2xl bg-blue-50/70 border border-blue-200 text-blue-950 text-xs space-y-2">
+                    <strong class="font-bold flex items-center gap-1.5 text-blue-950">
+                      <span>💡</span> Indicador de Capacidade de Pagamento do Condomínio
+                    </strong>
+                    <p class="text-[11px] text-blue-900/90 leading-relaxed">
+                      Ao financiar <strong>{{ resultado()?.valorFinanciavel | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}</strong> para a execução da intervenção predial, a parcela estimada representa <strong>{{ arrecadacaoMensalCondominio() > 0 ? (((resultado()?.parcela || 0) / arrecadacaoMensalCondominio()) * 100).toFixed(1) : '0.0' }}%</strong> da receita mensal ordinária informada. Este é um indicador de referência para orientar a discussão em Assembleia — a análise de capacidade de pagamento e a aprovação da operação são feitas pela instituição financeira, com base em critérios próprios que podem não coincidir com esta estimativa.
+                    </p>
                   </div>
-                </div>
+                } @else {
+                  <div>
+                    <h3 class="text-lg font-black text-slate-800">
+                      {{ tipoOperacao() === 'reforma_pf' ? '6. Estudo de Viabilidade: Reformar vs. Alugar / Aquisição' : '6. Estudo de Viabilidade: Construir vs. Alugar' }}
+                    </h3>
+                    <p class="text-xs text-slate-500">Confronte o valor gasto em aluguel no período com o custo real (com juros) de construir ou valorizar seu patrimônio</p>
+                  </div>
 
-                <!-- Comparativo em 2 Colunas -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <!-- Coluna Construção -->
-                  <div class="p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs font-black uppercase tracking-wider text-emerald-800">Construção Própria</span>
-                      <span class="text-xs px-2 py-0.5 rounded bg-emerald-200 text-emerald-900 font-bold">Patrimônio</span>
-                    </div>
-
-                    <div class="space-y-1">
-                      <div class="text-xs text-slate-500">Custo Total Real (Financiamento Quitado):</div>
-                      <div class="text-2xl font-black text-emerald-900">
-                        {{ resultado()?.totalPago | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                  <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">Valor Médio de Aluguel da Região (R$/m²):</label>
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="number"
+                          [value]="valorAluguelM2()"
+                          (input)="valorAluguelM2.set(+$any($event.target).value); recalcularComparacaoAluguel()"
+                          class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white w-32"
+                        />
+                        <span class="text-xs text-slate-500">
+                          = {{ (areaTotal() * valorAluguelM2()) | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}/mês de aluguel estimado
+                        </span>
                       </div>
                     </div>
 
-                    <p class="text-xs text-slate-600 leading-relaxed">
-                      Ao final de {{ prazoAnos() }} anos, o imóvel é 100% de sua propriedade com valorização de mercado sobre a área de {{ areaTotal() }} m².
-                    </p>
+                    <div class="text-right text-xs">
+                      <span class="text-slate-400">Horizonte:</span>
+                      <strong class="text-slate-800 ml-1">{{ prazoAnos() * 12 }} meses ({{ prazoAnos() }} anos)</strong>
+                    </div>
                   </div>
 
-                  <!-- Coluna Aluguel -->
-                  <div class="p-6 rounded-3xl bg-amber-50/60 border border-amber-200 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs font-black uppercase tracking-wider text-amber-800">Aluguel Acumulado</span>
-                      <span class="text-xs px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-bold">Despesa Pura</span>
-                    </div>
-
-                    <div class="space-y-1">
-                      <div class="text-xs text-slate-500">Total Desembolsado em Aluguel:</div>
-                      <div class="text-2xl font-black text-amber-900">
-                        {{ (areaTotal() * valorAluguelM2() * prazoAnos() * 12) | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                  <!-- Comparativo em 2 Colunas -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Coluna Construção -->
+                    <div class="p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200 space-y-4">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-black uppercase tracking-wider text-emerald-800">
+                          {{ tipoOperacao() === 'reforma_pf' ? 'Patrimônio Reformado / Ampliado' : 'Construção Própria' }}
+                        </span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-200 text-emerald-900 font-bold">Patrimônio</span>
                       </div>
+
+                      <div class="space-y-1">
+                        <div class="text-xs text-slate-500">Custo Total Real (Financiamento Quitado):</div>
+                        <div class="text-2xl font-black text-emerald-900">
+                          {{ resultado()?.totalPago | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                        </div>
+                      </div>
+
+                      <p class="text-xs text-slate-600 leading-relaxed">
+                        Ao final de {{ prazoAnos() }} anos, a intervenção consolida a valorização total da edificação com plena quitação bancária.
+                      </p>
                     </div>
 
-                    <p class="text-xs text-slate-600 leading-relaxed">
-                      Capital não recuperável investido em imóvel de terceiros sem formação de patrimônio imobiliário.
-                    </p>
+                    <!-- Coluna Aluguel -->
+                    <div class="p-6 rounded-3xl bg-amber-50/60 border border-amber-200 space-y-4">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-black uppercase tracking-wider text-amber-800">Aluguel Acumulado</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-bold">Despesa Pura</span>
+                      </div>
+
+                      <div class="space-y-1">
+                        <div class="text-xs text-slate-500">Total Desembolsado em Aluguel:</div>
+                        <div class="text-2xl font-black text-amber-900">
+                          {{ (areaTotal() * valorAluguelM2() * prazoAnos() * 12) | currency:'BRL':'symbol':'1.0-0':'pt-BR' }}
+                        </div>
+                      </div>
+
+                      <p class="text-xs text-slate-600 leading-relaxed">
+                        Capital não recuperável investido em imóvel de terceiros sem formação de patrimônio imobiliário.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                }
 
                 <div class="pt-6 border-t border-slate-100 flex justify-between items-center">
                   <button
@@ -1678,12 +3148,191 @@ export const ESTADOS_BRASIL = [
                     </div>
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-700/60">
+                  <!-- GATE DE CONFORMIDADE TÉCNICA (Obrigatório para emissão da Pasta Completa) -->
+                  <div class="p-5 rounded-2xl bg-white/10 border border-white/20 space-y-3">
+                    <div class="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Documentação (Etapa 3)</span>
+                        <span class="text-[11px] font-black" [class]="percentualDocumentacao() === 100 ? 'text-emerald-400' : 'text-amber-300'">
+                          {{ totalDocsObrigatoriosMarcados() }} de {{ totalDocsObrigatorios() }} obrigatórios
+                        </span>
+                      </div>
+                      <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div class="h-full rounded-full transition-all"
+                             [class]="percentualDocumentacao() === 100 ? 'bg-emerald-500' : 'bg-amber-400'"
+                             [style.width.%]="percentualDocumentacao()">
+                        </div>
+                      </div>
+                      @if (percentualDocumentacao() < 100) {
+                        <div class="flex flex-wrap gap-1.5 pt-1">
+                          @for (doc of getDocumentosPendentesObrigatorios(); track doc.id) {
+                            <span class="text-[10px] px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-200 border border-rose-400/30">
+                              {{ doc.nome }}
+                            </span>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <span class="text-base">🛡️</span>
+                        <h4 class="text-xs font-bold text-white uppercase tracking-wider">
+                          Gate de Conformidade Técnica da Pasta Completa
+                        </h4>
+                      </div>
+                      <span
+                        class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
+                        [class]="pastaCompletaLiberada() ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-amber-950'"
+                      >
+                        {{ pastaCompletaLiberada() ? '✓ Pasta Liberada para Emissão' : '⚠️ Confirmação Pendente' }}
+                      </span>
+                    </div>
+
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                      @if (tipoOperacao() === 'condominio') {
+                        A submissão bancária condominial exige Laudo de Inspeção Predial (NBR 16747), ART/RRT quitada e Aprovação formal em Assembleia Geral Extraordinária (AGE). Confirme os 3 itens abaixo:
+                      } @else if (tipoOperacao() === 'reforma_pf' && tipoIntervencao() !== 'ampliacao_com_area_nova') {
+                        A submissão de reforma sem ampliação dispensa alvará municipal, exigindo a Proposta de Reforma e Melhoria (PRM / Memorial) e a respectiva ART/RRT de execução/projeto:
+                      } @else {
+                        A submissão bancária definitiva exige projeto aprovado, alvará de construção e anotação técnica quitada. Confirme os itens abaixo para liberar a geração do Dossiê Consolidado e do Pacote ZIP:
+                      }
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                      @if (tipoOperacao() === 'condominio') {
+                        <!-- 1. Laudo NBR 16747 -->
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="laudoInspecaoConfirmado()"
+                            (change)="alternarConfirmacaoGate('laudo', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">1. Laudo NBR 16747</strong>
+                            <span class="text-slate-300 text-[10px]">Laudo de Inspeção Predial com memorial descritivo</span>
+                          </div>
+                        </label>
+
+                        <!-- 2. ART / RRT Registrada -->
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="artRrtConfirmado()"
+                            (change)="alternarConfirmacaoGate('art_rrt', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">2. ART / RRT Registrada</strong>
+                            <span class="text-slate-300 text-[10px]">Anotação técnica emitida e quitada (CREA/CAU)</span>
+                          </div>
+                        </label>
+
+                        <!-- 3. Ata de AGE Aprovada -->
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="ataAgeConfirmada()"
+                            (change)="alternarConfirmacaoGate('ata_age', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">3. Ata de AGE Aprovada</strong>
+                            <span class="text-slate-300 text-[10px]">Ata da assembleia aprovando obra e crédito</span>
+                          </div>
+                        </label>
+                      } @else if (tipoOperacao() === 'reforma_pf' && tipoIntervencao() !== 'ampliacao_com_area_nova') {
+                        <!-- 1. Formulário PRM / Laudo Técnico -->
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="laudoInspecaoConfirmado()"
+                            (change)="alternarConfirmacaoGate('laudo', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">1. PRM / Memorial Técnico</strong>
+                            <span class="text-slate-300 text-[10px]">Proposta de Reforma e Melhoria com orçamento</span>
+                          </div>
+                        </label>
+
+                        <!-- 2. ART / RRT Registrada -->
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="artRrtConfirmado()"
+                            (change)="alternarConfirmacaoGate('art_rrt', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">2. ART / RRT Registrada</strong>
+                            <span class="text-slate-300 text-[10px]">Anotação técnica emitida e quitada (CREA/CAU)</span>
+                          </div>
+                        </label>
+                      } @else {
+                        <!-- Padrão: Construção Nova ou Reforma com Ampliação -->
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="projetoAprovadoConfirmado()"
+                            (change)="alternarConfirmacaoGate('projeto', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">1. Projeto Aprovado</strong>
+                            <span class="text-slate-300 text-[10px]">Projeto aprovado na prefeitura com carimbo/visto</span>
+                          </div>
+                        </label>
+
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="alvaraConfirmado()"
+                            (change)="alternarConfirmacaoGate('alvara', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">2. Alvará de Construção</strong>
+                            <span class="text-slate-300 text-[10px]">Alvará ou licença municipal expedido e válido</span>
+                          </div>
+                        </label>
+
+                        <label class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-start gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="artRrtConfirmado()"
+                            (change)="alternarConfirmacaoGate('art_rrt', $any($event.target).checked)"
+                            class="w-4 h-4 rounded text-[#B5642A] mt-0.5"
+                          />
+                          <div class="text-[11px] leading-tight">
+                            <strong class="text-white font-bold block">3. ART / RRT Registrada</strong>
+                            <span class="text-slate-300 text-[10px]">Anotação técnica emitida e quitada (CREA/CAU)</span>
+                          </div>
+                        </label>
+                      }
+                    </div>
+
+                    @if (!pastaCompletaLiberada()) {
+                      <div class="p-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-[11px] text-amber-200 flex items-center gap-2">
+                        <span>ℹ️</span>
+                        <span>Se ainda não possui todos os itens técnicos homologados, utilize o <strong>Estudo de Viabilidade Prévia de Crédito (Etapa 0)</strong> para apresentar ao cliente antes de gerar a pasta final.</span>
+                      </div>
+                    }
+                    @if (percentualDocumentacao() < 100) {
+                      <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-400/30 text-[11px] text-rose-200 flex items-center gap-2">
+                        <span>📋</span>
+                        <span>Ainda faltam {{ totalDocsObrigatorios() - totalDocsObrigatoriosMarcados() }} documento(s) obrigatório(s) na Etapa 3 (Documentação) — mesmo marcando os itens técnicos abaixo, a pasta ficará incompleta sem eles.</span>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-700/60">
                     <!-- Botão 1: PDF Consolidado -->
                     <button
                       type="button"
                       (click)="gerarRelatorioConsolidadoPDF()"
-                      [disabled]="gerandoPdf()"
+                      [disabled]="gerandoPdf() || !pastaCompletaLiberada()"
                       class="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-black text-xs transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 shadow-md group"
                     >
                       @if (gerandoPdf()) {
@@ -1703,12 +3352,36 @@ export const ESTADOS_BRASIL = [
                       }
                     </button>
 
-                    <!-- Botão 2: Pacote ZIP -->
+                    <!-- Botão 2: Gerar Pasta Completa (PDF Único) -->
+                    <button
+                      type="button"
+                      (click)="gerarPastaCreditoPdfUnico()"
+                      [disabled]="gerandoPdfUnico() || !pastaCompletaLiberada()"
+                      class="p-4 rounded-2xl bg-gradient-to-r from-[#B5642A] to-[#8A4315] hover:from-[#C77234] hover:to-[#9E4D19] text-white font-black text-xs transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 shadow-md group"
+                    >
+                      @if (gerandoPdfUnico()) {
+                        <svg class="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Costurando Pasta em PDF Único...</span>
+                      } @else {
+                        <span class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
+                          📁
+                        </span>
+                        <div class="text-left">
+                          <div class="text-xs font-black text-white">Gerar Pasta Completa (PDF Único)</div>
+                          <div class="text-[10px] text-amber-200/90 font-normal">Dossiê + Peças + Anexos mesclados</div>
+                        </div>
+                      }
+                    </button>
+
+                    <!-- Botão 3: Pacote ZIP (Arquivos Separados) -->
                     <button
                       type="button"
                       (click)="baixarPacoteCompletoZip()"
-                      [disabled]="gerandoZip()"
-                      class="p-4 rounded-2xl bg-gradient-to-r from-[#B5642A] to-[#8A4315] hover:from-[#C77234] hover:to-[#9E4D19] text-white font-black text-xs transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 shadow-md group"
+                      [disabled]="gerandoZip() || !pastaCompletaLiberada()"
+                      class="p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-black text-xs transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 shadow-md group"
                     >
                       @if (gerandoZip()) {
                         <svg class="animate-spin w-5 h-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -1717,12 +3390,12 @@ export const ESTADOS_BRASIL = [
                         </svg>
                         <span>Empacotando Arquivos em ZIP...</span>
                       } @else {
-                        <span class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
+                        <span class="w-8 h-8 rounded-xl bg-white/10 text-white flex items-center justify-center font-bold text-sm shadow-xs group-hover:scale-105 transition-transform">
                           📦
                         </span>
                         <div class="text-left">
-                          <div class="text-xs font-black text-white">Baixar Pacote Completo (ZIP)</div>
-                          <div class="text-[10px] text-amber-200/90 font-normal">Relatório PDF + Documentos anexados</div>
+                          <div class="text-xs font-black text-white">Baixar Pacote ZIP (Separado)</div>
+                          <div class="text-[10px] text-slate-300 font-normal">Relatório PDF + pasta de anexos</div>
                         </div>
                       }
                     </button>
@@ -1890,12 +3563,12 @@ export const ESTADOS_BRASIL = [
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Nome do Cliente</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">{{ novoProjetoTipoOperacao === 'condominio' ? 'Nome do Condomínio / Empreendimento' : 'Nome do Cliente' }}</label>
                 <input
                   type="text"
                   [value]="novoProjetoNomeCliente"
                   (input)="novoProjetoNomeCliente = $any($event.target).value"
-                  placeholder="Ex: Dr. Roberto Silva"
+                  [placeholder]="novoProjetoTipoOperacao === 'condominio' ? 'Ex: Condomínio Edifício Solar das Palmeiras' : 'Ex: Dr. Roberto Silva'"
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs bg-white font-medium"
                 />
               </div>
@@ -1972,6 +3645,28 @@ export const ESTADOS_BRASIL = [
                       <div class="text-[11px] text-slate-500">Aquisição de lote urbano ou em condomínio fechado</div>
                     </div>
                   </label>
+
+                  <label class="p-3 rounded-xl border flex items-center gap-3 cursor-pointer"
+                    [class.border-[#B5642A]]="novoProjetoTipoOperacao === 'reforma_pf'"
+                    [class.bg-amber-50/40]="novoProjetoTipoOperacao === 'reforma_pf'"
+                  >
+                    <input type="radio" name="tipoOp" value="reforma_pf" [checked]="novoProjetoTipoOperacao === 'reforma_pf'" (change)="novoProjetoTipoOperacao = 'reforma_pf'" />
+                    <div>
+                      <div class="text-xs font-bold text-slate-800">Reforma / Ampliação PF</div>
+                      <div class="text-[11px] text-slate-500">Imóvel próprio existente regularizado (com ou sem acréscimo de área)</div>
+                    </div>
+                  </label>
+
+                  <label class="p-3 rounded-xl border flex items-center gap-3 cursor-pointer"
+                    [class.border-[#B5642A]]="novoProjetoTipoOperacao === 'condominio'"
+                    [class.bg-amber-50/40]="novoProjetoTipoOperacao === 'condominio'"
+                  >
+                    <input type="radio" name="tipoOp" value="condominio" [checked]="novoProjetoTipoOperacao === 'condominio'" (change)="novoProjetoTipoOperacao = 'condominio'" />
+                    <div>
+                      <div class="text-xs font-bold text-slate-800">Crédito Condominial</div>
+                      <div class="text-[11px] text-slate-500">Obras em áreas comuns, fachada e retrofit (amparado por Laudo NBR 16747 e AGE)</div>
+                    </div>
+                  </label>
                 </div>
               </div>
             </div>
@@ -2015,12 +3710,76 @@ export class ViabilizaIaComponent implements OnInit {
   readonly projetos = signal<any[]>([]);
   readonly carregandoProjetos = signal(false);
   readonly projetoAtual = signal<any | null>(null);
-  readonly etapaAtiva = signal<number>(1);
+  readonly etapaAtiva = signal<number>(0);
   readonly salvando = signal(false);
   readonly criandoProjeto = signal(false);
   readonly modalNovoProjetoAberto = signal(false);
   readonly mensagemSucesso = signal<string | null>(null);
   readonly mensagemErro = signal<string | null>(null);
+
+  // Etapa 0: Estudo de Viabilidade Prévia de Crédito
+  readonly dataNascimentoProponente = signal<string>('');
+  readonly situacaoLote = signal<'a_adquirir' | 'proprio_quitado' | 'a_reformar'>('a_adquirir');
+  readonly areaEstimadaEstudoPrevio = signal<number>(140);
+  readonly padraoConstrutivoEstudoPrevio = signal<'Baixo' | 'Normal' | 'Alto'>('Normal');
+  readonly estudoPrevioConcluido = signal<boolean>(false);
+  readonly estudoPrevioGeradoEm = signal<string | null>(null);
+  readonly elegibilidadeResultado = signal<ResultadoElegibilidade[]>([]);
+  readonly gerandoPdfEstudoPrevio = signal<boolean>(false);
+
+  // Gate da Pasta Completa (Etapa 7)
+  readonly projetoAprovadoConfirmado = signal<boolean>(false);
+  readonly alvaraConfirmado = signal<boolean>(false);
+  readonly artRrtConfirmado = signal<boolean>(false);
+  readonly laudoInspecaoConfirmado = signal<boolean>(false);
+  readonly ataAgeConfirmada = signal<boolean>(false);
+
+  // Campos específicos de Trilha (Frente 6: Reforma PF e Crédito Condominial)
+  readonly tipoIntervencao = signal<'reforma_sem_ampliacao' | 'ampliacao_com_area_nova' | 'manutencao_predial'>('reforma_sem_ampliacao');
+  readonly arrecadacaoMensalCondominio = signal<number | null>(null);
+  readonly percentualInadimplenciaCondominio = signal<number | null>(null);
+  readonly valorObraIndicadoLaudo = signal<number | null>(null);
+
+  readonly pastaCompletaLiberada = computed(() => {
+    if (this.tipoOperacao() === 'condominio') {
+      return this.laudoInspecaoConfirmado() && this.artRrtConfirmado() && this.ataAgeConfirmada();
+    }
+    if (this.tipoOperacao() === 'reforma_pf' && this.tipoIntervencao() !== 'ampliacao_com_area_nova') {
+      return this.artRrtConfirmado();
+    }
+    return this.projetoAprovadoConfirmado() && this.alvaraConfirmado() && this.artRrtConfirmado();
+  });
+
+  readonly fatorPadraoConstrutivo = computed(() => {
+    switch (this.padraoConstrutivoEstudoPrevio()) {
+      case 'Baixo': return 0.85;
+      case 'Alto': return 1.25;
+      case 'Normal':
+      default: return 1.0;
+    }
+  });
+
+  readonly custoObraEstudoPrevio = computed(() => {
+    const area = this.areaEstimadaEstudoPrevio() || 0;
+    const cub = this.valorCubEstadoAtual() || 2650;
+    const fator = this.fatorPadraoConstrutivo();
+    return Math.round(area * cub * fator);
+  });
+
+  readonly investimentoGlobalEstudoPrevio = computed(() => {
+    const obra = this.custoObraEstudoPrevio();
+    const isTerreno = this.tipoOperacao() === 'compra_terreno' || this.tipoOperacao() === 'compra_construcao';
+    const terreno = isTerreno ? (this.valorTerreno() || 0) : 0;
+    return obra + terreno;
+  });
+
+  readonly participacaoLoteEstudoPrevio = computed(() => {
+    const global = this.investimentoGlobalEstudoPrevio();
+    if (global <= 0) return 0;
+    const isTerreno = this.tipoOperacao() === 'compra_terreno' || this.tipoOperacao() === 'compra_construcao';
+    const terreno = isTerreno ? (this.valorTerreno() || 0) : 0;
+    return terreno / global;
+  });
 
   // Documentos e Exportação
   readonly documentosEnviados = signal<DocumentoCredito[]>([]);
@@ -2029,6 +3788,7 @@ export class ViabilizaIaComponent implements OnInit {
   readonly excluindoDocId = signal<string | null>(null);
   readonly gerandoPdf = signal(false);
   readonly gerandoZip = signal(false);
+  readonly gerandoPdfUnico = signal(false);
 
   // Form Novo Projeto
   novoProjetoNome = '';
@@ -2036,7 +3796,7 @@ export class ViabilizaIaComponent implements OnInit {
   novoProjetoUf = 'SP';
   novoProjetoCidade = '';
   novoProjetoEndereco = '';
-  novoProjetoTipoOperacao: 'compra_terreno' | 'compra_construcao' | 'construcao' = 'compra_construcao';
+  novoProjetoTipoOperacao: 'compra_terreno' | 'compra_construcao' | 'construcao' | 'reforma_pf' | 'condominio' = 'compra_construcao';
 
   // Parâmetros do Projeto Ativo
   readonly nomeProjeto = signal('');
@@ -2044,7 +3804,7 @@ export class ViabilizaIaComponent implements OnInit {
   readonly uf = signal('SP');
   readonly cidade = signal('');
   readonly endereco = signal('');
-  readonly tipoOperacao = signal<'compra_terreno' | 'compra_construcao' | 'construcao'>('compra_construcao');
+  readonly tipoOperacao = signal<'compra_terreno' | 'compra_construcao' | 'construcao' | 'reforma_pf' | 'condominio'>('compra_construcao');
   readonly status = signal('rascunho');
 
   // CUB do Estado
@@ -2061,9 +3821,64 @@ export class ViabilizaIaComponent implements OnInit {
   novoAmbienteTamanho: 'P' | 'M' | 'G' | 'Personalizado' = 'M';
   novoAmbienteArea = 12;
   novoAmbienteDimensoes = '3x4m';
+  novoAmbienteCoeficiente = 1.0;
 
   novaAreaTipo = 'Piscina';
   novaAreaMetragem = 15;
+
+  // Peça 1: Área Equivalente NBR 12721
+  readonly aplicaAreaEquivalente = computed(() => {
+    const op = this.tipoOperacao();
+    if (op === 'compra_terreno' || op === 'compra_construcao' || op === 'construcao') {
+      return true;
+    }
+    if (op === 'reforma_pf' && this.tipoIntervencao() === 'ampliacao_com_area_nova') {
+      return true;
+    }
+    return false;
+  });
+
+  readonly areaEquivalenteTotal = computed(() => {
+    return this.ambientes().reduce((acc, a) => {
+      const coef = (typeof a.coeficienteEquivalencia === 'number') ? a.coeficienteEquivalencia : 1.0;
+      const eq = (typeof a.areaEquivalente === 'number') ? a.areaEquivalente : (a.area * coef);
+      return acc + eq;
+    }, 0);
+  });
+
+  // Peça 4: Memorial Descritivo
+  readonly memorialDescritivo = signal<MemorialDescritivo>(criarMemorialDescritivoPadrao());
+  readonly memorialDescritivoAberto = signal<boolean>(false);
+  readonly aplicaMemorialDescritivo = computed(() => {
+    const op = this.tipoOperacao();
+    return op === 'construcao' || op === 'compra_construcao' || op === 'reforma_pf';
+  });
+  readonly sistemaIndustrializadoAviso = computed(() => {
+    const sis = (this.memorialDescritivo().sistemaConstrutivo || '').trim().toLowerCase();
+    return sis !== 'alvenaria convencional' && sis !== '';
+  });
+
+  readonly textoConclusaoObra = computed(() => {
+    const op = this.tipoOperacao();
+    const exigeHabiteSe =
+      op === 'construcao' ||
+      op === 'compra_construcao' ||
+      op === 'compra_terreno' ||
+      (op === 'reforma_pf' && this.tipoIntervencao() === 'ampliacao_com_area_nova');
+
+    if (exigeHabiteSe) {
+      return {
+        retencao: 'até averbação do Habite-se / CND',
+        cronograma: 'Conclusão & Habite-se',
+        pdfObra: 'após a entrega do Habite-se'
+      };
+    }
+    return {
+      retencao: 'até vistoria final de conformidade',
+      cronograma: 'Conclusão & Vistoria Final',
+      pdfObra: 'após a vistoria final de conclusão da obra'
+    };
+  });
 
   // Etapa 2: Custos
   readonly valorTerreno = signal<number>(150000);
@@ -2076,6 +3891,16 @@ export class ViabilizaIaComponent implements OnInit {
   readonly taxaJurosAnual = signal<number>(9.5);
   readonly prazoAnos = signal<number>(25);
   readonly sistemaAmortizacao = signal<'price' | 'sac'>('sac');
+
+  // Peça 2: Orçamento por Macroetapa
+  readonly macroetapas = signal<MacroetapaOrcamento[]>([]);
+  readonly totalPercentualMacroetapas = computed(() => {
+    const soma = this.macroetapas().reduce((acc, m) => acc + (m.percentualAjustado || 0), 0);
+    return Number(soma.toFixed(2));
+  });
+  readonly totalValorMacroetapas = computed(() => {
+    return this.macroetapas().reduce((acc, m) => acc + (m.valorEstimado || 0), 0);
+  });
 
   novoItemNome = '';
   novoItemTipo: 'percentual' | 'fixo' = 'percentual';
@@ -2096,6 +3921,20 @@ export class ViabilizaIaComponent implements OnInit {
   readonly temJurosObra = signal<boolean>(true);
   readonly prazoObraMeses = signal<number>(12);
   readonly taxaJurosObra = signal<number>(9.5);
+
+  // Peça 3: Cronograma Físico-Financeiro em Curva S
+  readonly cronogramaObra = signal<ParcelaObraCurvaS[]>([]);
+  readonly retencaoGarantiaObra = computed(() => (this.custoBase() || 0) * 0.05);
+  readonly totalLiberadoCurvaS = computed(() =>
+    this.cronogramaObra().reduce((acc, p) => acc + (p.liberacaoMes || 0), 0)
+  );
+  readonly somaPercentualFisicoCurvaS = computed(() => {
+    const soma = this.cronogramaObra().reduce((acc, p) => acc + (p.percentualFisicoMes || 0), 0);
+    return Number(soma.toFixed(2));
+  });
+  readonly totalEncargosObra = computed(() =>
+    this.cronogramaObra().reduce((acc, p) => acc + (p.encargoMes || 0), 0)
+  );
 
   // Etapa 6: Aluguel
   readonly valorAluguelM2 = signal<number>(25);
@@ -2181,8 +4020,22 @@ export class ViabilizaIaComponent implements OnInit {
         endereco: this.novoProjetoEndereco.trim() || undefined,
         tipo_operacao: this.novoProjetoTipoOperacao,
         status: 'rascunho',
-        etapa_atual: 1,
-        valor_terreno: this.novoProjetoTipoOperacao !== 'construcao' ? 150000 : 0,
+        etapa_atual: 0,
+        situacao_lote: (this.novoProjetoTipoOperacao === 'construcao')
+          ? 'proprio_quitado'
+          : (this.novoProjetoTipoOperacao === 'reforma_pf' || this.novoProjetoTipoOperacao === 'condominio')
+            ? 'a_reformar'
+            : 'a_adquirir',
+        area_estimada_estudo_previo: 140,
+        padrao_construtivo_estudo_previo: 'Normal',
+        estudo_previo_concluido: false,
+        projeto_aprovado_confirmado: false,
+        alvara_confirmado: false,
+        art_rrt_confirmado: false,
+        laudo_inspecao_confirmado: false,
+        ata_age_confirmada: false,
+        tipo_intervencao: this.novoProjetoTipoOperacao === 'condominio' ? 'manutencao_predial' : 'reforma_sem_ampliacao',
+        valor_terreno: (this.novoProjetoTipoOperacao === 'compra_terreno' || this.novoProjetoTipoOperacao === 'compra_construcao') ? 150000 : 0,
         custo_base: this.novoProjetoTipoOperacao !== 'compra_terreno' ? 350000 : 0,
         taxa_juros_anual: 9.5,
         prazo_anos: 25,
@@ -2191,7 +4044,15 @@ export class ViabilizaIaComponent implements OnInit {
         ambientes: [],
         areas_externas: [],
         itens_adicionais: [],
-        checklist_documentacao: []
+        checklist_documentacao: [],
+        macroetapas_orcamento: (this.novoProjetoTipoOperacao === 'condominio' ? MACROETAPAS_CONDOMINIO : MACROETAPAS_CONSTRUCAO).map(item => ({
+          id: item.id,
+          nome: item.nome,
+          percentualPadrao: item.percentualPadrao,
+          percentualAjustado: item.percentualPadrao,
+          valorEstimado: Number(((350000 * item.percentualPadrao) / 100).toFixed(2))
+        })),
+        memorial_descritivo: criarMemorialDescritivoPadrao()
       });
 
       if (error) throw error;
@@ -2219,12 +4080,73 @@ export class ViabilizaIaComponent implements OnInit {
     this.endereco.set(proj.endereco || '');
     this.tipoOperacao.set(proj.tipo_operacao || 'compra_construcao');
     this.status.set(proj.status || 'rascunho');
-    this.etapaAtiva.set(proj.etapa_atual || 1);
+    this.etapaAtiva.set(proj.etapa_atual ?? 0);
 
-    // Carregar ambientes e áreas
-    this.ambientes.set(Array.isArray(proj.ambientes) ? proj.ambientes : []);
+    // Campos da Etapa 0
+    this.dataNascimentoProponente.set(proj.data_nascimento_proponente || '');
+    if (proj.data_nascimento_proponente) {
+      this.onDataNascimentoChange(proj.data_nascimento_proponente);
+    }
+    this.situacaoLote.set(proj.situacao_lote || (proj.tipo_operacao === 'construcao' ? 'proprio_quitado' : (proj.tipo_operacao === 'reforma_pf' || proj.tipo_operacao === 'condominio' ? 'a_reformar' : 'a_adquirir')));
+    this.areaEstimadaEstudoPrevio.set(proj.area_estimada_estudo_previo || 140);
+    this.padraoConstrutivoEstudoPrevio.set(proj.padrao_construtivo_estudo_previo || 'Normal');
+    this.estudoPrevioConcluido.set(!!proj.estudo_previo_concluido);
+    this.estudoPrevioGeradoEm.set(proj.estudo_previo_gerado_em || null);
+
+    // Gate da Pasta Completa (Etapa 7)
+    this.projetoAprovadoConfirmado.set(!!proj.projeto_aprovado_confirmado);
+    this.alvaraConfirmado.set(!!proj.alvara_confirmado);
+    this.artRrtConfirmado.set(!!proj.art_rrt_confirmado);
+    this.laudoInspecaoConfirmado.set(!!proj.laudo_inspecao_confirmado);
+    this.ataAgeConfirmada.set(!!proj.ata_age_confirmada);
+
+    // Campos Frente 6
+    this.tipoIntervencao.set(proj.tipo_intervencao || (proj.tipo_operacao === 'condominio' ? 'manutencao_predial' : 'reforma_sem_ampliacao'));
+    this.arrecadacaoMensalCondominio.set(proj.arrecadacao_mensal_condominio ?? null);
+    this.percentualInadimplenciaCondominio.set(proj.percentual_inadimplencia_condominio ?? null);
+    this.valorObraIndicadoLaudo.set(proj.valor_obra_indicado_laudo ?? null);
+
+    // Carregar ambientes e áreas com normalização NBR 12721
+    const rawAmbientes = Array.isArray(proj.ambientes) ? proj.ambientes : [];
+    const ambientesNormalizados: AmbienteItem[] = rawAmbientes.map((a: any) => {
+      const coef = (typeof a.coeficienteEquivalencia === 'number') ? a.coeficienteEquivalencia : 1.0;
+      const areaVal = a.area || 0;
+      const areaEq = (typeof a.areaEquivalente === 'number') ? a.areaEquivalente : Number((areaVal * coef).toFixed(2));
+      return {
+        id: a.id || Math.random().toString(36).substring(2, 9),
+        nome: a.nome || 'Ambiente',
+        tamanho: a.tamanho || 'M',
+        area: areaVal,
+        dimensoes: a.dimensoes || `${areaVal} m²`,
+        coeficienteEquivalencia: coef,
+        areaEquivalente: areaEq
+      };
+    });
+    this.ambientes.set(ambientesNormalizados);
     this.areasExternas.set(Array.isArray(proj.areas_externas) ? proj.areas_externas : []);
     this.pavimentos.set(proj.pavimentos || 1);
+
+    // Carregar Peças Técnicas Frente 3
+    if (Array.isArray(proj.macroetapas_orcamento) && proj.macroetapas_orcamento.length > 0) {
+      this.macroetapas.set(proj.macroetapas_orcamento);
+    } else {
+      this.inicializarMacroetapas(true);
+    }
+
+    if (Array.isArray(proj.cronograma_obra_curva_s) && proj.cronograma_obra_curva_s.length > 0) {
+      this.cronogramaObra.set(proj.cronograma_obra_curva_s);
+    } else {
+      this.gerarCronogramaCurvaS();
+    }
+
+    if (proj.memorial_descritivo && typeof proj.memorial_descritivo === 'object') {
+      this.memorialDescritivo.set({
+        ...criarMemorialDescritivoPadrao(),
+        ...proj.memorial_descritivo
+      });
+    } else {
+      this.memorialDescritivo.set(criarMemorialDescritivoPadrao());
+    }
 
     // Custos
     this.valorTerreno.set(proj.valor_terreno ?? 150000);
@@ -2323,6 +4245,21 @@ export class ViabilizaIaComponent implements OnInit {
         parcela_estimada: res?.parcela || 0,
         total_pago: res?.totalPago || 0,
         tipo_renda: this.tipoRenda(),
+        data_nascimento_proponente: this.dataNascimentoProponente() || undefined,
+        situacao_lote: this.situacaoLote(),
+        area_estimada_estudo_previo: this.areaEstimadaEstudoPrevio(),
+        padrao_construtivo_estudo_previo: this.padraoConstrutivoEstudoPrevio(),
+        estudo_previo_concluido: this.estudoPrevioConcluido(),
+        estudo_previo_gerado_em: this.estudoPrevioGeradoEm(),
+        projeto_aprovado_confirmado: this.projetoAprovadoConfirmado(),
+        alvara_confirmado: this.alvaraConfirmado(),
+        art_rrt_confirmado: this.artRrtConfirmado(),
+        laudo_inspecao_confirmado: this.laudoInspecaoConfirmado(),
+        ata_age_confirmada: this.ataAgeConfirmada(),
+        tipo_intervencao: this.tipoIntervencao(),
+        arrecadacao_mensal_condominio: this.arrecadacaoMensalCondominio(),
+        percentual_inadimplencia_condominio: this.percentualInadimplenciaCondominio(),
+        valor_obra_indicado_laudo: this.valorObraIndicadoLaudo(),
         checklist_documentacao: this.checklistDocumentacao(),
         linha_credito_selecionada_id: this.linhaCreditoSelecionadaId(),
         tem_juros_obra: this.temJurosObra(),
@@ -2330,7 +4267,10 @@ export class ViabilizaIaComponent implements OnInit {
         taxa_juros_obra: this.taxaJurosObra(),
         total_juros: this.getTotalJuros(),
         valor_aluguel_m2: this.valorAluguelM2(),
-        itens_adicionais: this.itensAdicionais()
+        itens_adicionais: this.itensAdicionais(),
+        macroetapas_orcamento: this.macroetapas(),
+        cronograma_obra_curva_s: this.cronogramaObra(),
+        memorial_descritivo: this.memorialDescritivo()
       };
 
       const { error } = await this.supabaseService.atualizarProjetoCredito(proj.id, payload);
@@ -2361,6 +4301,445 @@ export class ViabilizaIaComponent implements OnInit {
   selecionarEtapa(etapa: number): void {
     this.etapaAtiva.set(etapa);
     this.recalcular();
+  }
+
+  onDataNascimentoChange(data: string): void {
+    this.dataNascimentoProponente.set(data);
+    if (!data) return;
+    const parts = data.split('-');
+    if (parts.length === 3) {
+      const ano = parseInt(parts[0], 10);
+      const mes = parseInt(parts[1], 10) - 1;
+      const dia = parseInt(parts[2], 10);
+      const nasc = new Date(ano, mes, dia);
+      const hoje = new Date();
+      let anos = hoje.getFullYear() - nasc.getFullYear();
+      const m = hoje.getMonth() - nasc.getMonth();
+      if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) {
+        anos--;
+      }
+      if (anos >= 18 && anos <= 100) {
+        this.idadeSolicitante = anos;
+        this.recalcular();
+      }
+    }
+  }
+
+  onSituacaoLoteChange(novaSituacao: 'a_adquirir' | 'proprio_quitado' | 'a_reformar'): void {
+    this.situacaoLote.set(novaSituacao);
+    if (novaSituacao === 'a_adquirir') {
+      this.tipoOperacao.set('compra_construcao');
+    } else if (novaSituacao === 'a_reformar') {
+      if (this.tipoOperacao() !== 'condominio') {
+        this.tipoOperacao.set('reforma_pf');
+      }
+    } else {
+      this.tipoOperacao.set('construcao');
+    }
+    this.recalcular();
+  }
+
+  avancarParaMontarProjeto(): void {
+    if (this.custoObraEstudoPrevio() > 0) {
+      this.custoBase.set(this.custoObraEstudoPrevio());
+    }
+    this.selecionarEtapa(1);
+  }
+
+  async alternarConfirmacaoGate(campo: 'projeto' | 'alvara' | 'art_rrt' | 'laudo' | 'ata_age', valor: boolean): Promise<void> {
+    if (campo === 'projeto') this.projetoAprovadoConfirmado.set(valor);
+    if (campo === 'alvara') this.alvaraConfirmado.set(valor);
+    if (campo === 'art_rrt') this.artRrtConfirmado.set(valor);
+    if (campo === 'laudo') this.laudoInspecaoConfirmado.set(valor);
+    if (campo === 'ata_age') this.ataAgeConfirmada.set(valor);
+
+    const proj = this.projetoAtual();
+    if (proj?.id) {
+      await this.salvarProjetoAtual();
+    }
+  }
+
+  calcularElegibilidade(): ResultadoElegibilidade[] {
+    const segmentoAtual = (this.tipoOperacao() === 'reforma_pf')
+      ? 'pessoa_fisica_reforma'
+      : (this.tipoOperacao() === 'condominio')
+        ? 'condominio'
+        : 'pessoa_fisica_construcao';
+
+    const linhas = this.linhasCredito().filter(l => {
+      if (l.ativo === false) return false;
+      const segLinha = l.segmento || 'pessoa_fisica_construcao';
+      return segLinha === segmentoAtual;
+    });
+    const investimentoGlobal = this.investimentoGlobalEstudoPrevio();
+    const custoObra = this.custoObraEstudoPrevio();
+    const idade = this.idadeSolicitante;
+    const renda = this.rendaFamiliar;
+    const situacao = this.situacaoLote();
+
+    return linhas.map(linha => {
+      const motivos: string[] = [];
+      const camposFaltantes: string[] = [];
+
+      // Prazo — obrigatório para todo o restante do cálculo
+      if (!linha.prazo_max_anos) camposFaltantes.push('prazo_max_anos');
+      const prazoAnos = linha.prazo_max_anos ?? null;
+      const prazoMeses = prazoAnos ? prazoAnos * 12 : null;
+
+      // Idade — só avalia se prazo E algum limite de idade existirem
+      if (idade && prazoAnos) {
+        if (linha.idade_meses_referencia) {
+          const idadeMesesAtual = idade * 12;
+          if (idadeMesesAtual + prazoMeses! > linha.idade_meses_referencia) {
+            const limiteAnos = Math.floor(linha.idade_meses_referencia / 12);
+            motivos.push(`Idade atual (${idade} anos) somada ao prazo (${prazoAnos} anos) ultrapassa o limite da linha (${limiteAnos} anos / ${linha.idade_meses_referencia} meses).`);
+          }
+        } else if (linha.idade_maxima) {
+          if (idade + prazoAnos > linha.idade_maxima) {
+            motivos.push(`Idade atual (${idade} anos) somada ao prazo (${prazoAnos} anos) excede a idade máxima permitida (${linha.idade_maxima} anos).`);
+          }
+        } else {
+          camposFaltantes.push('idade_maxima ou idade_meses_referencia');
+        }
+      }
+
+      // Renda mínima
+      if (!linha.renda_minima) {
+        camposFaltantes.push('renda_minima');
+      } else if (renda && renda < linha.renda_minima) {
+        motivos.push(`Renda mensal (R$ ${this.formatarMoeda(renda)}) é inferior à renda mínima de entrada deste produto (R$ ${this.formatarMoeda(linha.renda_minima)}).`);
+      }
+
+      // Percentual de financiamento — sem fallback de 80%
+      if (!linha.percentual_financiamento_max) camposFaltantes.push('percentual_financiamento_max');
+      const percentualMax = linha.percentual_financiamento_max
+        ? linha.percentual_financiamento_max / 100
+        : null;
+
+      // Regra confirmada: terreno próprio quitado funciona como entrada técnica,
+      // então o financiamento é calculado sobre o custo da obra, não sobre o
+      // investimento global (terreno + obra). Isso é mais conservador e reflete
+      // a mecânica real de mercado documentada na pesquisa de financiamento.
+      const baseFinanciavel = situacao === 'proprio_quitado' ? custoObra : investimentoGlobal;
+      const maxFinanciamento = percentualMax ? baseFinanciavel * percentualMax : null;
+      const minFinanciamento = maxFinanciamento ? maxFinanciamento * 0.7 : null;
+
+      // Taxa — sem fallback de 9.5%
+      if (!linha.taxa_juros_min) camposFaltantes.push('taxa_juros_min');
+      let parcelaEstimada: number | null = null;
+      if (linha.taxa_juros_min && maxFinanciamento && prazoAnos) {
+        const taxaAnual = linha.taxa_juros_min / 100;
+        const taxaMensal = Math.pow(1 + taxaAnual, 1 / 12) - 1;
+        const numParcelas = prazoAnos * 12;
+        if (linha.sistema_amortizacao && linha.sistema_amortizacao.includes('SAC')) {
+          const amortizacao = maxFinanciamento / numParcelas;
+          const jurosInicial = maxFinanciamento * taxaMensal;
+          parcelaEstimada = amortizacao + jurosInicial;
+        } else {
+          parcelaEstimada = maxFinanciamento *
+            (taxaMensal * Math.pow(1 + taxaMensal, numParcelas)) /
+            (Math.pow(1 + taxaMensal, numParcelas) - 1);
+        }
+      }
+
+      const dadosIncompletos = camposFaltantes.length > 0;
+      const compativel = motivos.length === 0 && !dadosIncompletos;
+
+      return {
+        linhaId: linha.id,
+        banco: linha.banco,
+        produto: linha.nome_produto,
+        nome_produto: linha.nome_produto,
+        taxaJurosMin: linha.taxa_juros_min ?? null,
+        taxaJurosMax: linha.taxa_juros_max ?? null,
+        prazoMaxAnos: prazoAnos,
+        percentualFinanciamentoMax: linha.percentual_financiamento_max ?? null,
+        compativel,
+        dadosIncompletos,
+        camposFaltantes,
+        motivosIncompatibilidade: motivos,
+        faixaFinanciamentoEstimada: maxFinanciamento
+          ? { min: minFinanciamento!, max: maxFinanciamento }
+          : null,
+        parcelaEstimada,
+        sistemaAmortizacao: linha.sistema_amortizacao || 'SAC',
+        permiteFgts: linha.permite_fgts !== false,
+        vantagemPrincipal: linha.vantagem_principal || '',
+        gargalosOperacionais: linha.gargalos_operacionais || '',
+        notaFonte: linha.nota_fonte || '',
+        dataReferencia: linha.data_referencia || '',
+        fonteUrl: linha.fonte_url || ''
+      };
+    }).sort((a, b) => {
+      // Compatíveis primeiro, depois incompletas, depois incompatíveis
+      if (a.compativel && !b.compativel) return -1;
+      if (!a.compativel && b.compativel) return 1;
+      if (a.dadosIncompletos && !b.dadosIncompletos) return 1;
+      if (!a.dadosIncompletos && b.dadosIncompletos) return -1;
+      return 0;
+    });
+  }
+
+  async gerarPdfEstudoPrevio(): Promise<void> {
+    this.gerandoPdfEstudoPrevio.set(true);
+    try {
+      const perfil = await this.motorPdfService.obterPerfilDocumental();
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const dataEmissao = new Date().toLocaleDateString('pt-BR');
+      const nomeEmpresa = perfil?.company_name || perfil?.full_name || 'EMPRESA DE ENGENHARIA';
+      const respTecnico = perfil?.full_name || 'Responsável Técnico';
+      const crea = perfil?.crea_cau || 'CREA/CAU 000000/D';
+      const cliente = this.nomeCliente() || 'Cliente Interessado';
+      const linhasResultado = this.calcularElegibilidade();
+
+      // Cabeçalho Navy com filete Copper
+      doc.setFillColor(19, 42, 65); // #132A41
+      doc.rect(14, 10, 182, 18, 'F');
+      doc.setFillColor(181, 100, 42); // #B5642A
+      doc.rect(14, 28, 182, 1.5, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.text(nomeEmpresa.toUpperCase(), 20, 17);
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(203, 213, 225);
+      doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}`, 20, 23);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(232, 178, 126);
+      doc.text('ESTUDO DE VIABILIDADE PRÉVIA DE CRÉDITO', 190, 17, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`EMISSÃO: ${dataEmissao}`, 190, 23, { align: 'right' });
+
+      let currentY = 34;
+
+      // AVISO LEGAL OBRIGATÓRIO (Em destaque)
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'plain',
+        body: [
+          [
+            'AVISO LEGAL OBRIGATÓRIO:\nEste estudo é uma análise técnica preliminar elaborada pelo responsável técnico identificado nesta peça. Não constitui carta de crédito, proposta de financiamento nem qualquer garantia de aprovação por instituição financeira. A análise definitiva depende de avaliação cadastral e técnica própria do agente financeiro escolhido.'
+          ]
+        ],
+        styles: {
+          fontSize: 7,
+          textColor: [120, 53, 15],
+          fillColor: [254, 243, 199],
+          fontStyle: 'bold',
+          cellPadding: 3,
+          lineColor: [251, 191, 36],
+          lineWidth: 0.2
+        }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 4;
+
+      // TABELA 1: DADOS DO PROPONENTE & LOCALIZAÇÃO
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'grid',
+        head: [['1. IDENTIFICAÇÃO DO PROPONENTE & LOCALIZAÇÃO', '']],
+        body: [
+          ['Cliente / Proponente:', cliente],
+          ['Trilha de Renda:', this.tipoRenda().toUpperCase()],
+          ['Renda Familiar Bruta:', this.rendaFamiliar ? `R$ ${this.formatarMoeda(this.rendaFamiliar)}/mês` : 'Não informada'],
+          ['Idade do Proponente:', this.idadeSolicitante ? `${this.idadeSolicitante} anos` : 'Não informada'],
+          ['Localização Prevista:', `${this.cidade() ? this.cidade() + ' - ' : ''}${this.uf()}`]
+        ],
+        headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+        styles: { fontSize: 7.5, cellPadding: 1.5, textColor: [30, 41, 59] },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55, fillColor: [248, 250, 252] } }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 4;
+
+      // TABELA 2: IMÓVEL BASE & INVESTIMENTO GLOBAL ESTIMADO
+      const sitLabel = this.situacaoLote() === 'proprio_quitado'
+        ? 'Terreno próprio já quitado'
+        : this.situacaoLote() === 'a_adquirir'
+        ? 'Aquisição de terreno + construção'
+        : 'Imóvel existente a reformar';
+
+      const corpoImovel: any[] = [
+        ['Situação do Lote / Terreno:', sitLabel],
+        ['Valor Estimado do Terreno:', `R$ ${this.formatarMoeda(this.valorTerreno())}`],
+        ['Área Estimada da Edificação:', `${this.areaEstimadaEstudoPrevio()} m² (${this.padraoConstrutivoEstudoPrevio()} padrão)`],
+        ['CUB de Referência do Estado:', `R$ ${this.formatarMoeda(this.valorCubEstadoAtual())}/m² (${this.infoCubEstadoAtual()})`],
+        ['Custo Estimado da Edificação:', `R$ ${this.formatarMoeda(this.custoObraEstudoPrevio())}`],
+        ['Investimento Global de Referência:', `R$ ${this.formatarMoeda(this.investimentoGlobalEstudoPrevio())}`]
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'grid',
+        head: [['2. PARÂMETROS DO IMÓVEL & INVESTIMENTO GLOBAL ESTIMADO', '']],
+        body: corpoImovel,
+        headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+        styles: { fontSize: 7.5, cellPadding: 1.5, textColor: [30, 41, 59] },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55, fillColor: [248, 250, 252] } }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 3;
+
+      // RESSALVA ESPECIAL DO TERRENO QUITADO
+      if (this.situacaoLote() === 'proprio_quitado' && this.participacaoLoteEstudoPrevio() >= 0.20) {
+        autoTable(doc, {
+          startY: currentY,
+          theme: 'plain',
+          body: [
+            [
+              'POTENCIAL COBERTURA DE ENTRADA POR TERRENO QUITADO:\nO valor do terreno já quitado pode cobrir a cota mínima de entrada exigida por algumas linhas, o que tende a reduzir ou eliminar a necessidade de aporte em dinheiro para a obra. Este valor está sujeito à avaliação técnica da instituição financeira e pode divergir da estimativa aqui apresentada.'
+            ]
+          ],
+          styles: {
+            fontSize: 6.8,
+            textColor: [30, 58, 138],
+            fillColor: [239, 246, 255],
+            fontStyle: 'normal',
+            cellPadding: 2.5,
+            lineColor: [191, 219, 254],
+            lineWidth: 0.2
+          }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 4;
+      }
+
+      // TABELA 3: LINHAS DE FINANCIAMENTO AVALIADAS
+      const corpoLinhas = linhasResultado.map(l => {
+        let statusTexto = 'Elegível Preliminarmente';
+        let detalhes = l.vantagemPrincipal || 'Parâmetros de prazo e renda em conformidade com o produto.';
+
+        if (l.dadosIncompletos) {
+          statusTexto = 'Cadastro Incompleto';
+          detalhes = `Cadastro incompleto no admin — campos pendentes: ${l.camposFaltantes.join(', ')}`;
+        } else if (!l.compativel) {
+          statusTexto = 'Incompatível com Perfil';
+          detalhes = l.motivosIncompatibilidade.join('; ');
+        }
+
+        const taxaTexto = (l.taxaJurosMin != null && l.taxaJurosMax != null)
+          ? `${l.taxaJurosMin}% a ${l.taxaJurosMax}%\n${l.sistemaAmortizacao}`
+          : (l.taxaJurosMin != null ? `${l.taxaJurosMin}%\n${l.sistemaAmortizacao}` : `Não informada\n${l.sistemaAmortizacao}`);
+
+        const prazoTexto = l.prazoMaxAnos ? `${l.prazoMaxAnos} anos` : 'Não informado';
+
+        const financiamTexto = l.faixaFinanciamentoEstimada
+          ? `Até R$ ${this.formatarMoeda(l.faixaFinanciamentoEstimada.max)}\n(Parc. ~R$ ${this.formatarMoeda(l.parcelaEstimada || 0)})`
+          : 'Cálculo pendente\n(dados incompletos)';
+
+        return [
+          `${l.banco}\n${l.produto || l.nome_produto || ''}`,
+          taxaTexto,
+          prazoTexto,
+          financiamTexto,
+          statusTexto,
+          detalhes
+        ];
+      });
+
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'grid',
+        head: [['Instituição / Linha', 'Taxa & Amort.', 'Prazo', 'Financiamento Est.', 'Elegibilidade', 'Parecer / Observações']],
+        body: corpoLinhas,
+        headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7, fontStyle: 'bold', halign: 'center' },
+        styles: { fontSize: 6.5, cellPadding: 1.5, textColor: [30, 41, 59] },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 32 },
+          1: { cellWidth: 22, halign: 'center' },
+          2: { cellWidth: 16, halign: 'center' },
+          3: { cellWidth: 30, halign: 'right' },
+          4: { cellWidth: 28, halign: 'center', fontStyle: 'bold' },
+          5: { cellWidth: 54 }
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 4) {
+            if (data.cell.raw === 'Elegível Preliminarmente') {
+              data.cell.styles.textColor = [22, 101, 52];
+            } else if (data.cell.raw === 'Cadastro Incompleto') {
+              data.cell.styles.textColor = [71, 85, 105];
+            } else {
+              data.cell.styles.textColor = [180, 83, 9];
+            }
+          }
+        }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 3;
+
+      // NOTA FIXA DE CONFERÊNCIA DE TAXAS
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'plain',
+        body: [
+          [
+            'NOTA DE CONFERÊNCIA DOS PARÂMETROS BANCÁRIOS:\nOs parâmetros bancários apresentados são referência de mercado cadastrada pelo administrador do sistema e podem não refletir as condições vigentes na data de emissão. Antes de repassar este estudo ao cliente, confirme as taxas e condições diretamente com a instituição financeira.'
+          ]
+        ],
+        styles: {
+          fontSize: 6.5,
+          textColor: [71, 85, 105],
+          fillColor: [248, 250, 252],
+          cellPadding: 2,
+          lineColor: [226, 232, 240],
+          lineWidth: 0.2
+        }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 3;
+
+      // PRÓXIMOS PASSOS RECOMENDADOS
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'plain',
+        body: [
+          [
+            'PRÓXIMOS PASSOS RECOMENDADOS:\nConfirmada a viabilidade preliminar pelo responsável técnico e pelo cliente, o próximo passo consiste no desenvolvimento dos projetos arquitetônico e complementares de engenharia e na obtenção das aprovações municipais (Alvará). Uma vez aprovados os projetos e emitidas as respectivas ARTs/RRTs, a Pasta Técnica Completa de Crédito poderá ser gerada e submetida à instituição financeira eleita.'
+          ]
+        ],
+        styles: {
+          fontSize: 6.8,
+          textColor: [19, 42, 65],
+          fillColor: [241, 245, 249],
+          fontStyle: 'bold',
+          cellPadding: 2.5,
+          lineColor: [203, 213, 225],
+          lineWidth: 0.2
+        }
+      });
+
+      // Rodapé da página
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(148, 163, 184);
+      doc.text(
+        `Documento emitido para fins de estudo técnico prévio • Responsável Técnico: ${respTecnico} (${crea}) • Viabiliza IA`,
+        14,
+        287
+      );
+
+      const nomeLimpo = cliente.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+      const nomeArquivo = `estudo-viabilidade-previa-${nomeLimpo}-${new Date().getTime()}.pdf`;
+      doc.save(nomeArquivo);
+
+      // Marca estudo como concluído
+      this.estudoPrevioConcluido.set(true);
+      this.estudoPrevioGeradoEm.set(new Date().toISOString());
+      this.elegibilidadeResultado.set(linhasResultado);
+
+      if (this.projetoAtual()?.id) {
+        await this.salvarProjetoAtual();
+      }
+
+      this.motorPdfService.exibirToast('Estudo de Viabilidade Prévia gerado com sucesso!', 'sucesso');
+    } catch (e: any) {
+      this.mensagemErro.set(e?.message || 'Erro ao emitir PDF do Estudo Prévio');
+      this.motorPdfService.exibirToast('Erro ao gerar Estudo Prévio em PDF', 'erro');
+    } finally {
+      this.gerandoPdfEstudoPrevio.set(false);
+    }
   }
 
   // --- CÁLCULOS MATEMÁTICOS DE FINANCIAMENTO ---
@@ -2408,6 +4787,9 @@ export class ViabilizaIaComponent implements OnInit {
       parcela: isNaN(parcela) ? 0 : parcela,
       totalPago: isNaN(totalPago) ? 0 : totalPago
     });
+
+    this.recalcularValoresMacroetapas();
+    this.gerarCronogramaCurvaS();
   }
 
   calcularCustoAreasExternas(): number {
@@ -2415,15 +4797,29 @@ export class ViabilizaIaComponent implements OnInit {
   }
 
   aplicarEstimativaCUB(): void {
-    const area = this.areaTotal() || 130;
+    const area = (this.aplicaAreaEquivalente() && this.areaEquivalenteTotal() > 0)
+      ? this.areaEquivalenteTotal()
+      : (this.areaTotal() || 130);
     const cubValor = this.valorCubEstadoAtual() || 2650;
-    const valorSugerido = area * cubValor;
+    const valorSugerido = Math.round(area * cubValor);
     this.custoBase.set(valorSugerido);
     this.recalcular();
-    this.mensagemSucesso.set(`Custo base atualizado para R$ ${valorSugerido.toLocaleString('pt-BR')} com base no CUB/${this.uf() || 'SP'} (R$ ${cubValor.toLocaleString('pt-BR')}/m²).`);
+    const descTipo = (this.aplicaAreaEquivalente() && this.areaEquivalenteTotal() > 0)
+      ? `Área Equivalente NBR 12721 (${area.toFixed(2)} m²)`
+      : `Área Real (${area} m²)`;
+    this.mensagemSucesso.set(`Custo base atualizado para R$ ${valorSugerido.toLocaleString('pt-BR')} com base na ${descTipo} e CUB/${this.uf() || 'SP'} (R$ ${cubValor.toLocaleString('pt-BR')}/m²).`);
   }
 
-  // --- AMBIENTES ---
+  adotarValorLaudoComoObra(): void {
+    const valor = this.valorObraIndicadoLaudo();
+    if (typeof valor === 'number' && valor > 0) {
+      this.custoBase.set(valor);
+      this.recalcular();
+      this.mensagemSucesso.set(`Custo da intervenção atualizado para R$ ${valor.toLocaleString('pt-BR')} conforme Laudo Técnico NBR 16747.`);
+    }
+  }
+
+  // --- AMBIENTES & NBR 12721 ---
   onAmbienteSelecionadoChange(): void {
     const amb = this.ambientesDisponiveis.find(a => a.nome === this.novoAmbienteNome);
     if (amb) {
@@ -2433,20 +4829,47 @@ export class ViabilizaIaComponent implements OnInit {
         this.novoAmbienteDimensoes = tam.dimensoes;
       }
     }
+    this.novoAmbienteCoeficiente = this.obterCoeficienteSugerido(this.novoAmbienteNome);
   }
 
   onAmbienteTamanhoChange(): void {
     this.onAmbienteSelecionadoChange();
   }
 
+  obterCoeficienteSugerido(nome: string): number {
+    const n = (nome || '').toLowerCase();
+    if (n.includes('garagem')) return 0.50;
+    if (n.includes('varanda') || n.includes('gourmet') || n.includes('sacada')) return 0.75;
+    if (n.includes('serviço') || n.includes('lavanderia') || n.includes('descoberta')) return 0.175;
+    if (n.includes('piscina') || n.includes('lazer') || n.includes('deck')) return 0.50;
+    return 1.00;
+  }
+
+  atualizarCoeficienteAmbiente(id: string, novoCoef: number): void {
+    const coefValido = isNaN(novoCoef) ? 1.0 : Math.max(0, Math.min(1.0, novoCoef));
+    this.ambientes.update(arr =>
+      arr.map(a => a.id === id ? {
+        ...a,
+        coeficienteEquivalencia: coefValido,
+        areaEquivalente: Number((a.area * coefValido).toFixed(2))
+      } : a)
+    );
+    this.recalcular();
+  }
+
   adicionarAmbiente(): void {
     if (this.novoAmbienteArea <= 0) return;
+    const coef = (typeof this.novoAmbienteCoeficiente === 'number' && this.novoAmbienteCoeficiente >= 0)
+      ? this.novoAmbienteCoeficiente
+      : 1.0;
     const novo: AmbienteItem = {
       id: Math.random().toString(36).substring(2, 9),
       nome: this.novoAmbienteNome,
       tamanho: this.novoAmbienteTamanho,
       area: this.novoAmbienteArea,
-      dimensoes: this.novoAmbienteDimensoes || `${this.novoAmbienteArea} m²`
+      dimensoes: this.novoAmbienteDimensoes || `${this.novoAmbienteArea} m²`,
+      coeficienteEquivalencia: coef,
+      areaEquivalente: Number((this.novoAmbienteArea * coef).toFixed(2))
     };
     this.ambientes.update(arr => [...arr, novo]);
     this.recalcular();
@@ -2455,6 +4878,168 @@ export class ViabilizaIaComponent implements OnInit {
   removerAmbiente(id: string): void {
     this.ambientes.update(arr => arr.filter(a => a.id !== id));
     this.recalcular();
+  }
+
+  // --- PEÇA 2: MACROETAPAS DE ORÇAMENTO ---
+  inicializarMacroetapas(forcar: boolean = false): void {
+    if (!forcar && this.macroetapas().length > 0) return;
+    const conjunto = (this.tipoOperacao() === 'condominio')
+      ? MACROETAPAS_CONDOMINIO
+      : MACROETAPAS_CONSTRUCAO;
+
+    const custo = this.custoBase() || 0;
+    const novas: MacroetapaOrcamento[] = conjunto.map(item => ({
+      id: item.id,
+      nome: item.nome,
+      percentualPadrao: item.percentualPadrao,
+      percentualAjustado: item.percentualPadrao,
+      valorEstimado: Number(((custo * item.percentualPadrao) / 100).toFixed(2))
+    }));
+    this.macroetapas.set(novas);
+  }
+
+  atualizarPercentualMacroetapa(id: string, novoPerc: number): void {
+    const percValido = isNaN(novoPerc) ? 0 : Math.max(0, Math.min(100, novoPerc));
+    const custo = this.custoBase() || 0;
+    this.macroetapas.update(lista =>
+      lista.map(m => m.id === id ? {
+        ...m,
+        percentualAjustado: percValido,
+        valorEstimado: Number(((custo * percValido) / 100).toFixed(2))
+      } : m)
+    );
+    this.gerarCronogramaCurvaS();
+  }
+
+  recalcularValoresMacroetapas(): void {
+    const custo = this.custoBase() || 0;
+    if (this.macroetapas().length === 0) {
+      this.inicializarMacroetapas(true);
+      return;
+    }
+    this.macroetapas.update(lista =>
+      lista.map(m => ({
+        ...m,
+        valorEstimado: Number(((custo * (m.percentualAjustado || 0)) / 100).toFixed(2))
+      }))
+    );
+  }
+
+  restaurarMacroetapasPadrao(): void {
+    this.inicializarMacroetapas(true);
+    this.gerarCronogramaCurvaS();
+    this.mensagemSucesso.set('Percentuais das macroetapas restaurados para os valores padrão de referência.');
+  }
+
+  // --- PEÇA 3: CRONOGRAMA EM CURVA S ---
+  obterMacroetapaPredominante(percAcumulado: number): string {
+    const etapas = this.macroetapas();
+    if (!etapas || etapas.length === 0) return 'Execução de Serviços';
+    let acumuladoEtapas = 0;
+    for (const etapa of etapas) {
+      acumuladoEtapas += (etapa.percentualAjustado || 0);
+      if (percAcumulado <= acumuladoEtapas || etapa === etapas[etapas.length - 1]) {
+        return etapa.nome;
+      }
+    }
+    return etapas[etapas.length - 1].nome;
+  }
+
+  gerarCronogramaCurvaS(): void {
+    const meses = Math.max(1, this.prazoObraMeses() || 12);
+    const totalObra = this.custoBase() || 0;
+    if (totalObra <= 0) {
+      this.cronogramaObra.set([]);
+      return;
+    }
+
+    const pesos: number[] = [];
+    for (let m = 1; m <= meses; m++) {
+      const z = (m - meses / 2) / (meses / 6);
+      pesos.push(1 / (1 + Math.exp(-z)));
+    }
+    const diffs = pesos.map((p, i) => p - (i === 0 ? 0 : pesos[i - 1]));
+    const soma = diffs.reduce((a, b) => a + b, 0);
+    const fatores = diffs.map(d => d / (soma || 1));
+
+    let saldoAcumulado = 0;
+    let percAcumulado = 0;
+    const parcelas: ParcelaObraCurvaS[] = [];
+
+    for (let mes = 1; mes <= meses; mes++) {
+      let percMes = fatores[mes - 1] * 100;
+      const ultimoMes = mes === meses;
+      percAcumulado += percMes;
+      if (ultimoMes) {
+        percMes += (100 - percAcumulado);
+        percAcumulado = 100;
+      }
+
+      const liberacao = (percMes / 100) * totalObra;
+      saldoAcumulado += liberacao;
+
+      // Taxa mensal por juros compostos
+      const taxaMensal = Math.pow(1 + this.taxaJurosObra() / 100, 1 / 12) - 1;
+      const juros = saldoAcumulado * taxaMensal;
+      const mip = saldoAcumulado * 0.00028; // Morte e Invalidez Permanente
+      const dfi = totalObra * 0.00006;      // Danos Físicos ao Imóvel
+      const ta = 25.0;                      // Taxa de Administração mensal média
+
+      parcelas.push({
+        mes,
+        macroetapaPredominante: this.obterMacroetapaPredominante(percAcumulado),
+        percentualFisicoMes: Number(percMes.toFixed(2)),
+        percentualAcumulado: Number(percAcumulado.toFixed(2)),
+        liberacaoMes: Number(liberacao.toFixed(2)),
+        saldoLiberadoAcumulado: Number(saldoAcumulado.toFixed(2)),
+        encargoMes: Number((juros + mip + dfi + ta).toFixed(2)),
+        retidoGarantia: ultimoMes
+      });
+    }
+    this.cronogramaObra.set(parcelas);
+  }
+
+  atualizarPercentualCronogramaMes(mes: number, novoPerc: number): void {
+    const percValido = isNaN(novoPerc) ? 0 : Math.max(0, Math.min(100, novoPerc));
+    const totalObra = this.custoBase() || 0;
+    const taxaMensal = Math.pow(1 + this.taxaJurosObra() / 100, 1 / 12) - 1;
+
+    this.cronogramaObra.update(lista => {
+      let saldoAcumulado = 0;
+      let percAcumulado = 0;
+      const totalMeses = lista.length;
+
+      return lista.map((p, idx) => {
+        const percMes = p.mes === mes ? percValido : p.percentualFisicoMes;
+        percAcumulado += percMes;
+        const liberacao = (percMes / 100) * totalObra;
+        saldoAcumulado += liberacao;
+        const juros = saldoAcumulado * taxaMensal;
+        const mip = saldoAcumulado * 0.00028;
+        const dfi = totalObra * 0.00006;
+        const ta = 25.0;
+
+        return {
+          ...p,
+          percentualFisicoMes: Number(percMes.toFixed(2)),
+          percentualAcumulado: Number(percAcumulado.toFixed(2)),
+          liberacaoMes: Number(liberacao.toFixed(2)),
+          saldoLiberadoAcumulado: Number(saldoAcumulado.toFixed(2)),
+          encargoMes: Number((juros + mip + dfi + ta).toFixed(2)),
+          macroetapaPredominante: this.obterMacroetapaPredominante(percAcumulado),
+          retidoGarantia: idx === totalMeses - 1
+        };
+      });
+    });
+  }
+
+  // --- PEÇA 4: MEMORIAL DESCRITIVO ---
+  atualizarCampoMemorial(campo: keyof MemorialDescritivo, valor: any): void {
+    this.memorialDescritivo.update(m => ({ ...m, [campo]: valor }));
+  }
+
+  toggleMemorialDescritivo(): void {
+    this.memorialDescritivoAberto.update(v => !v);
   }
 
   // --- ÁREAS EXTERNAS ---
@@ -2500,14 +5085,22 @@ export class ViabilizaIaComponent implements OnInit {
 
   // --- DOCUMENTOS ---
   getDocumentosAtuais(): any[] {
-    const base = [...DOCUMENTOS_BASE];
-    if (this.tipoRenda() === 'clt') {
-      return [...base, ...DOCUMENTOS_CLT];
-    } else if (this.tipoRenda() === 'autonomo') {
-      return [...base, ...DOCUMENTOS_AUTONOMO];
-    } else {
-      return [...base, ...DOCUMENTOS_EMPRESARIO];
+    if (this.tipoOperacao() === 'condominio') {
+      return [...DOCUMENTOS_CONDOMINIO];
     }
+    const base = [...DOCUMENTOS_BASE];
+    let porRenda: any[] = [];
+    if (this.tipoRenda() === 'clt') {
+      porRenda = DOCUMENTOS_CLT;
+    } else if (this.tipoRenda() === 'autonomo') {
+      porRenda = DOCUMENTOS_AUTONOMO;
+    } else {
+      porRenda = DOCUMENTOS_EMPRESARIO;
+    }
+    if (this.tipoOperacao() === 'reforma_pf') {
+      return [...base, ...porRenda, ...DOCUMENTOS_REFORMA_PF];
+    }
+    return [...base, ...porRenda];
   }
 
   isDocumentoMarcado(id: string): boolean {
@@ -2539,22 +5132,50 @@ export class ViabilizaIaComponent implements OnInit {
     return Math.min(100, (this.totalDocsObrigatoriosMarcados() / total) * 100);
   }
 
-  // --- LINHAS DE CRÉDITO ---
-  filtrarLinhasElegiveis(): any[] {
-    return this.linhasCredito().filter(linha => {
-      const rendaOk = !linha.renda_minima || !this.rendaFamiliar || (this.rendaFamiliar >= linha.renda_minima);
-      const idadeOk = !linha.idade_maxima || !this.idadeSolicitante || (this.idadeSolicitante <= linha.idade_maxima);
-      return rendaOk && idadeOk;
-    });
+  getDocumentosPendentesObrigatorios(): any[] {
+    const marcados = this.checklistDocumentacao();
+    return this.getDocumentosAtuais().filter(d => d.obrigatorio && !marcados.includes(d.id));
   }
 
-  calcularParcelaLinha(linha: any): number {
-    const res = this.resultado();
-    if (!res || !res.valorFinanciavel) return 0;
+  // --- LINHAS DE CRÉDITO ---
+  filtrarLinhasElegiveis(): any[] {
+    const segmentoAtual = (this.tipoOperacao() === 'reforma_pf')
+      ? 'pessoa_fisica_reforma'
+      : (this.tipoOperacao() === 'condominio')
+        ? 'condominio'
+        : 'pessoa_fisica_construcao';
 
-    const taxaAnual = (linha.taxa_juros_min || 9.5) / 100;
+    return this.linhasCredito()
+      .filter(linha => {
+        if (linha.ativo === false) return false;
+        const seg = linha.segmento || 'pessoa_fisica_construcao';
+        return seg === segmentoAtual;
+      })
+      .map(linha => {
+        const rendaOk = (this.tipoOperacao() === 'condominio') || !linha.renda_minima || !this.rendaFamiliar || (this.rendaFamiliar >= linha.renda_minima);
+        const idadeOk = (this.tipoOperacao() === 'condominio') || !linha.idade_maxima || !this.idadeSolicitante || (this.idadeSolicitante <= linha.idade_maxima);
+        const camposFaltantes: string[] = [];
+        if (!linha.taxa_juros_min) camposFaltantes.push('taxa_juros_min');
+        if (!linha.prazo_max_anos) camposFaltantes.push('prazo_max_anos');
+        if (!linha.percentual_financiamento_max) camposFaltantes.push('percentual_financiamento_max');
+        return {
+          ...linha,
+          _elegivel: rendaOk && idadeOk,
+          _dadosIncompletos: camposFaltantes.length > 0,
+          _camposFaltantes: camposFaltantes
+        };
+      })
+      .filter(linha => linha._elegivel);
+  }
+
+  calcularParcelaLinha(linha: any): number | null {
+    const res = this.resultado();
+    if (!res || !res.valorFinanciavel) return null;
+    if (!linha.taxa_juros_min || !linha.prazo_max_anos) return null; // sem dado, sem cálculo
+
+    const taxaAnual = linha.taxa_juros_min / 100;
     const taxaMensal = Math.pow(1 + taxaAnual, 1 / 12) - 1;
-    const numParcelas = (linha.prazo_max_anos || this.prazoAnos() || 25) * 12;
+    const numParcelas = linha.prazo_max_anos * 12;
     const valorFinanciavel = res.valorFinanciavel;
 
     if (linha.sistema_amortizacao && linha.sistema_amortizacao.includes('SAC')) {
@@ -2710,6 +5331,8 @@ export class ViabilizaIaComponent implements OnInit {
       case 'compra_terreno': return 'Compra de Terreno';
       case 'compra_construcao': return 'Terreno + Construção';
       case 'construcao': return 'Construção (Terreno Próprio)';
+      case 'reforma_pf': return 'Reforma / Ampliação PF';
+      case 'condominio': return 'Crédito Condominial';
       default: return 'Crédito Imobiliário';
     }
   }
@@ -2968,7 +5591,7 @@ export class ViabilizaIaComponent implements OnInit {
       // 5. Linha de Crédito
       const linhaSel = this.linhasCredito().find(l => l.id === this.linhaCreditoSelecionadaId());
       const linhaInfo = linhaSel
-        ? `${linhaSel.banco} - ${linhaSel.nome} (${linhaSel.taxa_juros_min}% a.a. • até ${linhaSel.prazo_max_anos} anos • ${linhaSel.sistema_amortizacao})`
+        ? `${linhaSel.banco} - ${linhaSel.nome_produto || linhaSel.nome || ''} (${linhaSel.taxa_juros_min}% a.a. • até ${linhaSel.prazo_max_anos} anos • ${linhaSel.sistema_amortizacao})`
         : 'Linha Padrão de Mercado (Estimativa SFH/SFI)';
 
       // 6. Construir vs Alugar (se aplicável)
@@ -3194,7 +5817,7 @@ export class ViabilizaIaComponent implements OnInit {
 
           ${this.temJurosObra() ? `
             <div style="background-color: #FEF3C7; border: 1px solid #F59E0B; border-radius: 6px; padding: 6px 10px; margin-top: 6px; font-size: 7pt; color: #92400E;">
-              <strong>Juros de Obra Ativados:</strong> Durante a fase construtiva de ${this.prazoObraMeses()} meses, incidem juros proporcionais à evolução física com taxa de ${this.taxaJurosObra()}% a.a., amortizando o saldo devedor integralmente após a entrega do Habite-se.
+              <strong>Juros de Obra Ativados:</strong> Durante a fase construtiva de ${this.prazoObraMeses()} meses, incidem juros proporcionais à evolução física com taxa de ${this.taxaJurosObra()}% a.a., amortizando o saldo devedor integralmente ${this.textoConclusaoObra().pdfObra}.
             </div>
           ` : ''}
         </div>
@@ -3302,7 +5925,144 @@ export class ViabilizaIaComponent implements OnInit {
     }
   }
 
-  // --- GERADOR DE PDF BINÁRIO VETORIAL VIA jsPDF PARA O PACOTE ZIP ---
+  // --- GERAÇÃO DA PASTA DE CRÉDITO EM PDF ÚNICO (FRENTE 4 - pdf-lib) ---
+
+  async gerarPastaCreditoPdfUnico(): Promise<void> {
+    const proj = this.projetoAtual();
+    if (!proj?.id) {
+      this.mensagemErro.set('Abra um projeto para gerar a pasta completa.');
+      return;
+    }
+
+    this.gerandoPdfUnico.set(true);
+    this.mensagemErro.set(null);
+    this.mensagemSucesso.set(null);
+    const avisos: string[] = [];
+
+    try {
+      const perfil = await this.motorPdfService.obterPerfilDocumental();
+      if (!perfil?.crea_cau || perfil.crea_cau.trim().length <= 2) {
+        this.motorPdfService.exibirToast(
+          'Registro Profissional Obrigatório: cadastre seu CREA/CAU/CFT antes de gerar a pasta completa.',
+          'erro'
+        );
+        return;
+      }
+
+      // 1. Gera o dossiê (seções 00-05) com jsPDF, como já é feito hoje
+      const docJsPdf = await this.gerarDocJsPdf(perfil);
+      const dossieBytes = docJsPdf.output('arraybuffer');
+
+      // 2. Carrega o dossiê no pdf-lib como documento base
+      const pdfFinal = await PDFDocument.load(dossieBytes);
+
+      // 3. Adiciona a folha separadora da Seção 06
+      await this.adicionarFolhaSeparadora(
+        pdfFinal,
+        '06',
+        'ANEXOS DOCUMENTAIS',
+        'A partir desta página, os documentos originais enviados pelo cliente são reproduzidos integralmente, sem edição de conteúdo.'
+      );
+
+      // 4. Mescla cada documento do cliente, na ordem em que aparecem no checklist
+      const docs = this.documentosEnviados();
+      for (const d of docs) {
+        if (!d.caminho_storage) continue;
+
+        const { data: blob, error } = await this.supabaseService.baixarArquivoDocumentoCredito(d.caminho_storage);
+        if (!blob) {
+          avisos.push(`Não foi possível incluir "${d.nome_arquivo}" na pasta (${error?.message || 'erro ao baixar'}).`);
+          continue;
+        }
+
+        const tipoMime = (d.tipo_mime || '').toLowerCase();
+        const bytes = await blob.arrayBuffer();
+
+        try {
+          if (tipoMime === 'application/pdf' || d.nome_arquivo.toLowerCase().endsWith('.pdf')) {
+            await this.mesclarPaginasPdf(pdfFinal, bytes, d.nome_arquivo);
+          } else if (tipoMime.startsWith('image/') || /\.(jpe?g|png)$/i.test(d.nome_arquivo)) {
+            await this.mesclarImagemComoPagina(pdfFinal, bytes, tipoMime, d.nome_arquivo);
+          } else {
+            avisos.push(`"${d.nome_arquivo}" está em um formato que não pode ser mesclado automaticamente (${d.tipo_mime || 'desconhecido'}). Anexe manualmente ao protocolar, ou converta para PDF antes de reenviar.`);
+          }
+        } catch (e: any) {
+          // PDF protegido por senha é o caso mais comum de falha aqui
+          avisos.push(`"${d.nome_arquivo}" não pôde ser processado (${e?.message?.includes('encrypt') ? 'arquivo protegido por senha' : 'arquivo corrompido ou inválido'}). Remova a proteção ou reenvie o arquivo.`);
+        }
+      }
+
+      // 5. Gera o PDF final e dispara o download
+      const pdfBytesFinal = await pdfFinal.save();
+      const blob = new Blob([pdfBytesFinal.buffer as ArrayBuffer], { type: 'application/pdf' });
+      const clienteOuProjeto = (this.nomeCliente() || this.nomeProjeto() || 'Cliente')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '-');
+      const dataStr = new Date().toISOString().split('T')[0];
+      const nomeArquivo = `Pasta-Credito-${clienteOuProjeto}-${dataStr}.pdf`;
+
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = nomeArquivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      if (avisos.length > 0) {
+        this.mensagemErro.set(`Pasta gerada com ${avisos.length} pendência(s): ${avisos.join(' | ')}`);
+      } else {
+        this.mensagemSucesso.set(`Pasta "${nomeArquivo}" gerada com sucesso — arquivo único pronto para protocolo.`);
+      }
+    } catch (err: any) {
+      console.error('Erro ao gerar pasta completa em PDF único:', err);
+      this.mensagemErro.set(err?.message || 'Falha ao gerar a pasta em PDF único.');
+    } finally {
+      this.gerandoPdfUnico.set(false);
+    }
+  }
+
+  async mesclarPaginasPdf(pdfFinal: PDFDocument, bytesOrigem: ArrayBuffer, nomeArquivo: string): Promise<void> {
+    const docOrigem = await PDFDocument.load(bytesOrigem, { ignoreEncryption: false });
+    const paginas = await pdfFinal.copyPages(docOrigem, docOrigem.getPageIndices());
+    paginas.forEach(p => pdfFinal.addPage(p));
+  }
+
+  async mesclarImagemComoPagina(pdfFinal: PDFDocument, bytesOrigem: ArrayBuffer, tipoMime: string, nomeArquivo: string): Promise<void> {
+    const imagem = (tipoMime.includes('png') || nomeArquivo.toLowerCase().endsWith('.png'))
+      ? await pdfFinal.embedPng(bytesOrigem)
+      : await pdfFinal.embedJpg(bytesOrigem);
+
+    // Página A4 (595.28 x 841.89 pt), imagem centralizada e redimensionada
+    // proporcionalmente para caber com margem de 40pt
+    const pagina = pdfFinal.addPage([595.28, 841.89]);
+    const larguraMax = 515.28;
+    const alturaMax = 761.89;
+    const escala = Math.min(larguraMax / imagem.width, alturaMax / imagem.height, 1);
+    const largura = imagem.width * escala;
+    const altura = imagem.height * escala;
+
+    pagina.drawImage(imagem, {
+      x: (595.28 - largura) / 2,
+      y: (841.89 - altura) / 2,
+      width: largura,
+      height: altura
+    });
+  }
+
+  async adicionarFolhaSeparadora(pdfFinal: PDFDocument, numero: string, titulo: string, descricao: string): Promise<void> {
+    const pagina = pdfFinal.addPage([595.28, 841.89]);
+    const fonteBold = await pdfFinal.embedFont(StandardFonts.HelveticaBold);
+    const fonteRegular = await pdfFinal.embedFont(StandardFonts.Helvetica);
+
+    pagina.drawText(numero, { x: 60, y: 650, size: 64, font: fonteBold, color: rgb(0.71, 0.39, 0.16) }); // copper #B5642A
+    pagina.drawText(titulo, { x: 60, y: 600, size: 20, font: fonteBold, color: rgb(0.075, 0.165, 0.255) }); // navy #132A41
+    pagina.drawText(descricao, { x: 60, y: 570, size: 10, font: fonteRegular, color: rgb(0.27, 0.27, 0.27), maxWidth: 475, lineHeight: 14 });
+  }
+
+  // --- GERADOR DO DOSSIÊ TÉCNICO BINÁRIO (SEÇÕES 00 A 05) VIA jsPDF ---
 
   async gerarDocJsPdf(perfil: any): Promise<jsPDF> {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -3315,219 +6075,384 @@ export class ViabilizaIaComponent implements OnInit {
     const crea = perfil?.crea_cau || 'CREA/CAU 000000/D';
     const dataEmissao = new Date().toLocaleDateString('pt-BR');
 
-    // Cabeçalho Página 1
-    doc.setFillColor(19, 42, 65); // #132A41 Navy
-    doc.rect(14, 10, 182, 18, 'F');
-    doc.setFillColor(181, 100, 42); // #B5642A Copper
-    doc.rect(14, 28, 182, 1.5, 'F');
+    const desenharCabecalho = (tituloSecao: string, subtituloSecao: string) => {
+      doc.setFillColor(19, 42, 65); // #132A41 Navy
+      doc.rect(14, 10, 182, 16, 'F');
+      doc.setFillColor(181, 100, 42); // #B5642A Copper
+      doc.rect(14, 26, 182, 1.2, 'F');
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(255, 255, 255);
-    doc.text(nomeEmpresa.toUpperCase(), 20, 17);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(nomeEmpresa.toUpperCase(), 20, 17);
 
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(203, 213, 225);
-    doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}`, 20, 23);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(203, 213, 225);
+      doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}`, 20, 22);
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(232, 178, 126); // #E8B27E
-    doc.text('MEMORIAL CONSOLIDADO DE CRÉDITO IMOBILIÁRIO', 190, 17, { align: 'right' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`EMISSÃO: ${dataEmissao}`, 190, 23, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(232, 178, 126); // #E8B27E
+      doc.text(tituloSecao.toUpperCase(), 190, 17, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(subtituloSecao, 190, 22, { align: 'right' });
+    };
 
-    let currentY = 34;
+    // ==========================================
+    // SEÇÃO 00 — CAPA + ÍNDICE + RESUMO EXECUTIVO
+    // ==========================================
+    desenharCabecalho('PASTA TÉCNICA DE CRÉDITO IMOBILIÁRIO', `EMISSÃO: ${dataEmissao}`);
 
-    // Tabela 1: Identificação do Projeto
+    let currentY = 32;
+
+    // 00.1 Identificação do Projeto
     autoTable(doc, {
       startY: currentY,
       theme: 'grid',
-      head: [['IDENTIFICAÇÃO DO PROJETO & LOCALIZAÇÃO', '']],
+      head: [['00.1 IDENTIFICAÇÃO DO PROJETO & LOCALIZAÇÃO', '']],
       body: [
         ['Nome do Projeto:', this.nomeProjeto()],
         ['Cliente / Proponente:', this.nomeCliente() || 'Não informado'],
-        ['Tipo de Operação:', this.getTipoOperacaoLabel(this.tipoOperacao())],
+        ['Trilha Operacional:', this.getTipoOperacaoLabel(this.tipoOperacao())],
         ['Localização:', `${this.cidade() ? this.cidade() + ' - ' : ''}${this.uf()}`],
         ['Endereço / Lote:', this.endereco() || 'A definir'],
-        ['CUB de Referência:', `R$ ${this.formatarMoeda(this.valorCubEstadoAtual())}/m² (${this.infoCubEstadoAtual()})`]
+        ['CUB de Referência Estadual:', `R$ ${this.formatarMoeda(this.valorCubEstadoAtual())}/m² (${this.infoCubEstadoAtual()})`]
       ],
       headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      styles: { fontSize: 7.5, cellPadding: 1.5, textColor: [30, 41, 59] },
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50, fillColor: [248, 250, 252] } }
+      styles: { fontSize: 7.2, cellPadding: 1.3, textColor: [30, 41, 59] },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55, fillColor: [248, 250, 252] } }
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 6;
+    currentY = (doc as any).lastAutoTable.finalY + 4;
 
-    // Tabela 2: Ambientes e Áreas
+    // 00.2 Índice Estrutural da Pasta Protocolável
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'striped',
+      head: [['00.2 ÍNDICE ESTRUTURAL DA PASTA PROTOCOLÁVEL', 'Conteúdo Sequencial']],
+      body: [
+        ['Seção 00', 'Capa, Identificação do Projeto, Índice Geral e Resumo Executivo'],
+        ['Seção 01', 'Documentação do Proponente (Identificação Civil, Regime de Renda e Vínculo)'],
+        ['Seção 02', 'Documentação do Imóvel (Titularidade, Matrícula, IPTU e Regularidade Cartorária)'],
+        ['Seção 03', 'Peças Técnicas de Engenharia (Quadro NBR 12721, Orçamento, Curva S e Memorial)'],
+        ['Seção 04', 'Simulação Financeira Bancária & Estudo Comparativo Patrimonial'],
+        ['Seção 05', 'Provisão de Custos Transacionais & Termo de Responsabilidade Técnica'],
+        ['Seção 06', 'Anexos Documentais do Cliente (Reprodução Integral e Sequencial dos Originais)']
+      ],
+      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
+      styles: { fontSize: 6.8, cellPadding: 1.1 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 26, fillColor: [248, 250, 252] } }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 4;
+
+    // 00.3 Resumo Executivo Financeiro
+    const resumoCustos: string[][] = [];
+    if (this.tipoOperacao() !== 'construcao') {
+      resumoCustos.push(['Aquisição de Terreno / Lote', 'Lançamento', `R$ ${this.formatarMoeda(this.valorTerreno())}`]);
+    }
+    if (this.tipoOperacao() !== 'compra_terreno') {
+      resumoCustos.push(['Custo da Edificação Base (CUB)', `${this.areaTotal()} m²`, `R$ ${this.formatarMoeda(this.custoBase())}`]);
+    }
+    if (this.areasExternas().length > 0) {
+      resumoCustos.push(['Áreas Externas e Lazer', `${this.areaExternaTotal()} m²`, `R$ ${this.formatarMoeda(this.calcularCustoAreasExternas())}`]);
+    }
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['00.3 RESUMO EXECUTIVO DO EMPREENDIMENTO', 'Critério', 'Valor Estimado (R$)']],
+      body: resumoCustos,
+      foot: [
+        ['INVESTIMENTO TOTAL ESTIMADO', '100%', `R$ ${this.formatarMoeda(res?.custoTotal)}`],
+        ['Recursos Próprios (Entrada)', `${this.percentualEntrada()}%`, `R$ ${this.formatarMoeda(res?.valorEntrada)}`],
+        ['Financiamento Bancário Solicitado', `${100 - this.percentualEntrada()}%`, `R$ ${this.formatarMoeda(res?.valorFinanciavel)}`],
+        ['1ª Parcela Estimada (Inicial)', this.sistemaAmortizacao().toUpperCase(), `R$ ${this.formatarMoeda(this.getPrimeiraParcela())}`]
+      ],
+      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
+      footStyles: { fillColor: [248, 250, 252], textColor: [181, 100, 42], fontStyle: 'bold', fontSize: 7.2 },
+      styles: { fontSize: 6.8, cellPadding: 1.1 },
+      columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
+    });
+
+    // =========================================================================
+    // PÁGINA 2: SEÇÃO 01 & 02 — DOCUMENTAÇÃO PROPONENTE E DOCUMENTAÇÃO DO IMÓVEL
+    // =========================================================================
+    doc.addPage();
+    desenharCabecalho('SEÇÕES 01 & 02 — AUDITORIA DOCUMENTAL', `PRONTIDÃO: ${this.percentualDocumentacao()}%`);
+
+    currentY = 32;
+
+    // Seção 01: Documentos do Proponente
+    const idsProponente = [
+      'rg_cpf', 'comprovante_residencia', 'certidao_casamento',
+      'contracheque', 'carteira_trabalho', 'declaracao_empregador',
+      'declaracao_ir', 'extrato_bancario', 'decore',
+      'contrato_social', 'balanco_patrimonial', 'declaracao_ir_pj', 'declaracao_ir_pf'
+    ];
+    const docsProponente = this.getDocumentosAtuais().filter(d => idsProponente.includes(d.id));
+    const bodyDocs01 = docsProponente.map(d => {
+      const anexado = this.obterDocumentoEnviado(d.id);
+      const marcado = this.isDocumentoMarcado(d.id);
+      const statusStr = anexado ? '✓ Anexado' : (marcado ? '✓ Entregue' : '✗ Pendente');
+      const arqStr = anexado ? `${anexado.nome_arquivo} (${this.formatarTamanhoBytes(anexado.tamanho_bytes)})` : '—';
+      return [d.nome, d.obrigatorio ? 'Obrigatório' : 'Opcional', statusStr, arqStr];
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [[`01. DOCUMENTAÇÃO DO PROPONENTE (REGIME: ${this.tipoRenda().toUpperCase()})`, 'Exigência', 'Status', 'Arquivo Anexado']],
+      body: bodyDocs01.length > 0 ? bodyDocs01 : [['Nenhum documento listado', '—', '—', '—']],
+      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
+      styles: { fontSize: 6.7, cellPadding: 1.1 },
+      columnStyles: {
+        1: { halign: 'center', cellWidth: 24 },
+        2: { halign: 'center', fontStyle: 'bold', cellWidth: 24 }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 5;
+
+    // Seção 02: Documentos do Imóvel e Regularidade
+    const docsImovel = this.getDocumentosAtuais().filter(d => !idsProponente.includes(d.id));
+    const bodyDocs02 = docsImovel.map(d => {
+      const anexado = this.obterDocumentoEnviado(d.id);
+      const marcado = this.isDocumentoMarcado(d.id);
+      const statusStr = anexado ? '✓ Anexado' : (marcado ? '✓ Entregue' : '✗ Pendente');
+      const arqStr = anexado ? `${anexado.nome_arquivo} (${this.formatarTamanhoBytes(anexado.tamanho_bytes)})` : '—';
+      return [d.nome, d.obrigatorio ? 'Obrigatório' : 'Opcional', statusStr, arqStr];
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['02. DOCUMENTAÇÃO DO IMÓVEL, TITULARIDADE & LICENÇAS', 'Exigência', 'Status', 'Arquivo Anexado']],
+      body: bodyDocs02.length > 0 ? bodyDocs02 : [['Não aplicável a esta modalidade', '—', '—', '—']],
+      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
+      styles: { fontSize: 6.7, cellPadding: 1.1 },
+      columnStyles: {
+        1: { halign: 'center', cellWidth: 24 },
+        2: { halign: 'center', fontStyle: 'bold', cellWidth: 24 }
+      }
+    });
+
+    // ===============================================
+    // PÁGINA 3: SEÇÃO 03 — PEÇAS TÉCNICAS DE ENGENHARIA
+    // ===============================================
+    doc.addPage();
+    desenharCabecalho('SEÇÃO 03 — PEÇAS TÉCNICAS DE ENGENHARIA', 'NORMAS ABNT NBR 12721 / 15575 / 16747');
+
+    currentY = 32;
+
+    // 03.1 Quadro de Áreas NBR 12721
     const ambientesBody = this.ambientes().map(a => [
       a.nome,
       a.tamanho,
       a.dimensoes,
-      `${a.area.toFixed(1)} m²`
+      `${a.area.toFixed(1)} m²`,
+      (a.coeficienteEquivalencia ?? 1.0).toFixed(2),
+      `${(a.areaEquivalente ?? a.area).toFixed(2)} m²`
     ]);
 
     autoTable(doc, {
       startY: currentY,
       theme: 'striped',
-      head: [[`QUADRO DE AMBIENTES (Área Total: ${this.areaTotal()} m² • ${this.pavimentos()} Pav.)`, 'Porte', 'Dimensões', 'Área']],
-      body: ambientesBody.length > 0 ? ambientesBody : [['Nenhum ambiente lançado', '—', '—', '0 m²']],
-      foot: [['TOTAL ÁREA CONSTRUÍDA', '', '', `${this.areaTotal()} m²`]],
-      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      footStyles: { fillColor: [241, 245, 249], textColor: [19, 42, 65], fontStyle: 'bold', fontSize: 7.5 },
-      styles: { fontSize: 7, cellPadding: 1.3 },
-      columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } }
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 6;
-
-    // Tabela 3: Demonstrativo Financeiro de Custos
-    const custosBody: string[][] = [];
-    if (this.tipoOperacao() !== 'construcao') {
-      custosBody.push(['Aquisição de Terreno / Lote', 'Lançamento', `R$ ${this.formatarMoeda(this.valorTerreno())}`]);
-    }
-    if (this.tipoOperacao() !== 'compra_terreno') {
-      custosBody.push(['Custo da Edificação (CUB)', `${this.areaTotal()} m²`, `R$ ${this.formatarMoeda(this.custoBase())}`]);
-    }
-    if (this.areasExternas().length > 0) {
-      custosBody.push(['Áreas Externas e Lazer', `${this.areaExternaTotal()} m²`, `R$ ${this.formatarMoeda(this.calcularCustoAreasExternas())}`]);
-    }
-    this.itensAdicionais().forEach(i => {
-      const valor = i.tipo === 'percentual' ? (this.custoBase() * (i.valor / 100)) : i.valor;
-      custosBody.push([i.nome, i.tipo === 'percentual' ? `${i.valor}%` : 'Fixo', `R$ ${this.formatarMoeda(valor)}`]);
-    });
-
-    autoTable(doc, {
-      startY: currentY,
-      theme: 'grid',
-      head: [['DEMONSTRATIVO DE CUSTOS DA OBRA', 'Critério', 'Valor Estimado (R$)']],
-      body: custosBody,
-      foot: [
-        ['INVESTIMENTO TOTAL ESTIMADO', '100%', `R$ ${this.formatarMoeda(res?.custoTotal)}`],
-        ['Valor de Entrada', `${this.percentualEntrada()}%`, `R$ ${this.formatarMoeda(res?.valorEntrada)}`],
-        ['Valor Financiável', `${100 - this.percentualEntrada()}%`, `R$ ${this.formatarMoeda(res?.valorFinanciavel)}`]
-      ],
-      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      footStyles: { fillColor: [248, 250, 252], textColor: [181, 100, 42], fontStyle: 'bold', fontSize: 7.5 },
-      styles: { fontSize: 7, cellPadding: 1.3 },
-      columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
-    });
-
-    // PÁGINA 2: Documentos e Simulação Avançada
-    doc.addPage();
-
-    doc.setFillColor(19, 42, 65);
-    doc.rect(14, 10, 182, 14, 'F');
-    doc.setFillColor(181, 100, 42);
-    doc.rect(14, 24, 182, 1.5, 'F');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`PASTA DE CRÉDITO & SIMULAÇÃO • ${this.nomeProjeto()}`, 20, 19);
-
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(232, 178, 126);
-    doc.text(`Prontidão: ${this.percentualDocumentacao()}%`, 190, 19, { align: 'right' });
-
-    currentY = 30;
-
-    // Tabela 4: Checklist de Documentos
-    const docsBody = this.getDocumentosAtuais().map(d => {
-      const anexado = this.obterDocumentoEnviado(d.id);
-      const marcado = this.isDocumentoMarcado(d.id);
-      const statusStr = anexado ? '✓ Anexado' : (marcado ? '✓ Entregue' : '✗ Pendente');
-      const arquivoStr = anexado ? `${anexado.nome_arquivo} (${this.formatarTamanhoBytes(anexado.tamanho_bytes)})` : '—';
-      return [
-        d.nome,
-        d.obrigatorio ? 'Obrigatório' : 'Opcional',
-        statusStr,
-        arquivoStr
-      ];
-    });
-
-    autoTable(doc, {
-      startY: currentY,
-      theme: 'grid',
-      head: [[`AUDITORIA DE DOCUMENTOS (${this.tipoRenda().toUpperCase()})`, 'Tipo', 'Status', 'Arquivo Anexado']],
-      body: docsBody,
-      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      styles: { fontSize: 6.8, cellPadding: 1.2 },
+      head: [[`03.1 QUADRO DE ÁREAS (NBR 12721) • ${this.pavimentos()} PAV.`, 'Porte', 'Dimensões', 'Área Real', 'Coef. NBR', 'Área Equiv.']],
+      body: ambientesBody.length > 0 ? ambientesBody : [['Padrão do Empreendimento', '—', '—', `${this.areaTotal()} m²`, '1.00', `${this.areaTotal()} m²`]],
+      foot: [[`TOTAIS DO EMPREENDIMENTO`, '', '', `${this.areaTotal()} m²`, '—', `${this.areaEquivalenteTotal().toFixed(2)} m²`]],
+      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.5, fontStyle: 'bold' },
+      footStyles: { fillColor: [241, 245, 249], textColor: [19, 42, 65], fontStyle: 'bold', fontSize: 7 },
+      styles: { fontSize: 6.5, cellPadding: 1 },
       columnStyles: {
-        1: { halign: 'center' },
-        2: { halign: 'center', fontStyle: 'bold' }
+        3: { halign: 'right', fontStyle: 'bold' },
+        4: { halign: 'center' },
+        5: { halign: 'right', fontStyle: 'bold' }
       }
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 6;
+    currentY = (doc as any).lastAutoTable.finalY + 4;
 
-    // Tabela 5: Simulação de Financiamento
+    // 03.2 Orçamento por Macroetapa
+    const macroBody = this.macroetapas().map(m => [
+      m.nome,
+      `${(m.percentualAjustado || 0).toFixed(1)}%`,
+      `R$ ${this.formatarMoeda(m.valorEstimado || 0)}`
+    ]);
+
     autoTable(doc, {
       startY: currentY,
       theme: 'grid',
-      head: [['CONDICIONAMENTO FINANCEIRO BANCÁRIO', '']],
-      body: [
-        ['Sistema de Amortização:', this.sistemaAmortizacao().toUpperCase()],
-        ['Taxa de Juros Anual:', `${this.taxaJurosAnual()}% a.a.`],
-        ['Prazo Contratual:', `${this.prazoAnos()} anos (${this.prazoAnos() * 12} parcelas)`],
-        ['Primeira Parcela Estimada:', `R$ ${this.formatarMoeda(this.getPrimeiraParcela())}`],
-        [this.sistemaAmortizacao() === 'sac' ? 'Última Parcela (SAC):' : 'Parcela Média:', `R$ ${this.formatarMoeda(this.sistemaAmortizacao() === 'sac' ? this.getUltimaParcela() : res?.parcela)}`],
-        ['Total Estimado de Juros:', `R$ ${this.formatarMoeda(totalJuros)}`],
-        ['Desembolso Total no Prazo:', `R$ ${this.formatarMoeda(res?.totalPago)}`]
-      ],
-      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-      styles: { fontSize: 7.2, cellPadding: 1.4 },
+      head: [['03.2 ORÇAMENTO POR MACROETAPA DA EDIFICAÇÃO', 'Peso (%)', 'Valor Estimado (R$)']],
+      body: macroBody.length > 0 ? macroBody : [['Custo Total Paramétrico da Obra', '100%', `R$ ${this.formatarMoeda(this.custoBase())}`]],
+      foot: [['TOTAL CUSTO DA CONSTRUÇÃO', '100.0%', `R$ ${this.formatarMoeda(this.custoBase())}`]],
+      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 7.5, fontStyle: 'bold' },
+      footStyles: { fillColor: [248, 250, 252], textColor: [181, 100, 42], fontStyle: 'bold', fontSize: 7 },
+      styles: { fontSize: 6.5, cellPadding: 1 },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 65, fillColor: [248, 250, 252] },
+        1: { halign: 'center', cellWidth: 26 },
+        2: { halign: 'right', fontStyle: 'bold', cellWidth: 42 }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 4;
+
+    // 03.3 Cronograma Físico-Financeiro em Curva S
+    const cronograma = this.cronogramaObra();
+    if (cronograma.length > 0) {
+      const cronoBody = cronograma.map(c => [
+        `Mês ${c.mes}${c.retidoGarantia ? ' (Garantia)' : ''}`,
+        c.macroetapaPredominante,
+        `${c.percentualFisicoMes.toFixed(1)}%`,
+        `${c.percentualAcumulado.toFixed(1)}%`,
+        `R$ ${this.formatarMoeda(c.liberacaoMes)}`,
+        `R$ ${this.formatarMoeda(c.saldoLiberadoAcumulado)}`
+      ]);
+
+      autoTable(doc, {
+        startY: currentY,
+        theme: 'striped',
+        head: [['03.3 CRONOGRAMA FÍSICO-FINANCEIRO EM CURVA S', 'Etapa Predominante', '% Mês', '% Acum.', 'Liberação Mês', 'Saldo Acumulado']],
+        body: cronoBody,
+        headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.2, fontStyle: 'bold' },
+        styles: { fontSize: 6.3, cellPadding: 0.9 },
+        columnStyles: {
+          2: { halign: 'center' },
+          3: { halign: 'center', fontStyle: 'bold' },
+          4: { halign: 'right' },
+          5: { halign: 'right', fontStyle: 'bold' }
+        }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 4;
+    }
+
+    // 03.4 Memorial Descritivo
+    const mem = this.memorialDescritivo();
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['03.4 MEMORIAL DESCRITIVO DE ESPECIFICAÇÕES E SISTEMAS', '']],
+      body: [
+        ['Padrão de Acabamento & Sistema Construtivo:', `Padrão ${mem.padraoAcabamento.toUpperCase()} • ${mem.sistemaConstrutivo}`],
+        ['Fundações & Estrutura:', `${mem.fundacao} | ${mem.estrutura}`],
+        ['Vedações & Cobertura:', `${mem.vedacoes} | ${mem.cobertura}`],
+        ['Impermeabilização & Instalações:', `${mem.impermeabilizacao} | ${mem.instalacoesHidraulicas} / ${mem.instalacoesEletricas}`],
+        ['Esquadrias, Revestimentos & Pintura:', `${mem.esquadrias} | ${mem.revestimentosInternos} | ${mem.pintura}`],
+        ['Conformidades Técnicas Normativas:', `ABNT NBR 15575 (Desempenho Edificações): ${mem.conformidadeNbr15575 ? 'Atendida' : 'Parcial'} • ABNT NBR 9575 (Impermeabilização): ${mem.conformidadeNbr9575 ? 'Atendida' : 'Parcial'}`]
+      ],
+      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 7.2, fontStyle: 'bold' },
+      styles: { fontSize: 6.2, cellPadding: 0.9 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55, fillColor: [248, 250, 252] } }
+    });
+
+    // ===================================================================================
+    // PÁGINA 4: SEÇÕES 04 & 05 — SIMULAÇÃO FINANCEIRA, CUSTOS TRANSACIONAIS & RESP. TÉCNICA
+    // ===================================================================================
+    doc.addPage();
+    desenharCabecalho('SEÇÕES 04 & 05 — SIMULAÇÃO & RESP. TÉCNICA', 'CONDICIONAMENTO BANCÁRIO & CUSTOS');
+
+    currentY = 32;
+
+    // Seção 04: Simulação Financeira
+    const bodySimulacao: string[][] = [
+      ['Sistema de Amortização:', this.sistemaAmortizacao().toUpperCase()],
+      ['Taxa de Juros Anual:', `${this.taxaJurosAnual()}% a.a.`],
+      ['Prazo Contratual:', `${this.prazoAnos()} anos (${this.prazoAnos() * 12} parcelas)`],
+      ['Primeira Parcela Estimada:', `R$ ${this.formatarMoeda(this.getPrimeiraParcela())}`],
+      [this.sistemaAmortizacao() === 'sac' ? 'Última Parcela (SAC):' : 'Parcela Média:', `R$ ${this.formatarMoeda(this.sistemaAmortizacao() === 'sac' ? this.getUltimaParcela() : res?.parcela)}`],
+      ['Total Estimado de Juros:', `R$ ${this.formatarMoeda(totalJuros)}`],
+      ['Desembolso Total no Prazo:', `R$ ${this.formatarMoeda(res?.totalPago)}`]
+    ];
+
+    if (this.temJurosObra()) {
+      bodySimulacao.push([
+        'Juros de Fase de Obra:',
+        `Prazo: ${this.prazoObraMeses()} meses • Taxa: ${this.taxaJurosObra()}% a.a. (${this.textoConclusaoObra().pdfObra})`
+      ]);
+    }
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['04. CONDICIONAMENTO FINANCEIRO BANCÁRIO (SIMULAÇÃO)', '']],
+      body: bodySimulacao,
+      headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
+      styles: { fontSize: 7, cellPadding: 1.2 },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 60, fillColor: [248, 250, 252] },
         1: { fontStyle: 'bold' }
       }
     });
 
+    currentY = (doc as any).lastAutoTable.finalY + 4;
+
+    // Seção 05: Custos Transacionais e Indiretos
+    const transacionaisBody: string[][] = [];
+    this.itensAdicionais().forEach(i => {
+      const valor = i.tipo === 'percentual' ? (this.custoBase() * (i.valor / 100)) : i.valor;
+      transacionaisBody.push([i.nome, i.tipo === 'percentual' ? `${i.valor}% s/ custo obra` : 'Custo Fixo Estimado', `R$ ${this.formatarMoeda(valor)}`]);
+    });
+    // Itens de referência padrão se tabela estiver vazia
+    if (transacionaisBody.length === 0) {
+      transacionaisBody.push(['Projetos & Licenciamento Municipal', 'Estimado', `R$ ${this.formatarMoeda(this.custoBase() * 0.04)}`]);
+      transacionaisBody.push(['ITBI & Emolumentos Cartorários de Registro', 'Estimado (~3% do valor)', `R$ ${this.formatarMoeda((res?.custoTotal || 0) * 0.03)}`]);
+      transacionaisBody.push(['Taxa Bancária de Avaliação / Análise de Engenharia', 'Estimado', 'R$ 3.500,00']);
+    }
+
+    autoTable(doc, {
+      startY: currentY,
+      theme: 'grid',
+      head: [['05. PROVISÃO DE CUSTOS TRANSACIONAIS & INDIRETOS', 'Parâmetro', 'Valor Estimado (R$)']],
+      body: transacionaisBody,
+      headStyles: { fillColor: [181, 100, 42], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
+      styles: { fontSize: 6.8, cellPadding: 1.1 },
+      columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
+    });
+
     currentY = (doc as any).lastAutoTable.finalY + 6;
 
-    // Tabela 6: Construir vs Alugar (se aplicável)
+    // Estudo Comparativo Construir vs Alugar
     if (this.tipoOperacao() !== 'compra_terreno') {
       autoTable(doc, {
         startY: currentY,
         theme: 'striped',
-        head: [['ESTUDO: CONSTRUIR VS. ALUGAR', `Prazo: ${this.prazoAnos()} anos`, 'Resultado Patrimonial']],
+        head: [['ESTUDO PATRIMONIAL: CONSTRUIR VS. ALUGAR', `Prazo: ${this.prazoAnos()} anos`, 'Resultado Patrimonial']],
         body: [
-          ['Construção Financiada', `R$ ${this.formatarMoeda(res?.totalPago)}`, 'Imóvel quitado no patrimônio próprio'],
-          ['Aluguel Acumulado', `R$ ${this.formatarMoeda(totalAluguel)}`, 'Despesa a fundo perdido (zero patrimônio)']
+          ['Construção Financiada', `R$ ${this.formatarMoeda(res?.totalPago)}`, 'Imóvel integralmente quitado no patrimônio da família'],
+          ['Aluguel Acumulado', `R$ ${this.formatarMoeda(totalAluguel)}`, 'Despesa acumulada a fundo perdido (zero patrimônio)']
         ],
-        headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.8, fontStyle: 'bold' },
-        styles: { fontSize: 7, cellPadding: 1.3 }
+        headStyles: { fillColor: [19, 42, 65], textColor: 255, fontSize: 7.4, fontStyle: 'bold' },
+        styles: { fontSize: 6.7, cellPadding: 1 }
       });
       currentY = (doc as any).lastAutoTable.finalY + 6;
     }
 
-    // Assinatura e Responsabilidade Técnica
+    // Termo de Responsabilidade Técnica & Assinatura
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
     doc.setTextColor(100, 116, 139);
     doc.text(
-      'Nota: Estudo paramétrico fundamentado na NBR 12.721 / CUB Sinduscon e normas de crédito do SFH/SFI. Sujeito à aprovação bancária.',
+      'Nota de Responsabilidade Técnica: Estudo paramétrico fundamentado nas normas ABNT NBR 12.721, NBR 15.575 e NBR 16.747, com orçamentação alinhada aos índices do Sinduscon/CUB e diretrizes de engenharia dos agentes financeiros do SFH/SFI. Condições de concessão, margem consignável e taxas finais sujeitas à análise cadastral do banco operador.',
       14,
-      currentY + 4,
-      { maxWidth: 182 }
+      currentY + 2,
+      { maxWidth: 182, lineHeightFactor: 1.25 }
     );
 
     doc.setDrawColor(203, 213, 225);
-    doc.line(70, currentY + 22, 140, currentY + 22);
+    doc.line(70, currentY + 20, 140, currentY + 20);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(19, 42, 65);
-    doc.text(respTecnico, 105, currentY + 26, { align: 'center' });
+    doc.text(respTecnico, 105, currentY + 24, { align: 'center' });
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.8);
     doc.setTextColor(100, 116, 139);
-    doc.text(`${crea} • ${nomeEmpresa}`, 105, currentY + 29.5, { align: 'center' });
+    doc.text(`${crea} • ${nomeEmpresa}`, 105, currentY + 27.5, { align: 'center' });
 
-    // Rodapé em todas as páginas
+    // Numeração de Página em Todas as Páginas
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
@@ -3536,7 +6461,7 @@ export class ViabilizaIaComponent implements OnInit {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.5);
       doc.setTextColor(100, 116, 139);
-      doc.text(`${nomeEmpresa} • Viabiliza IA`, 14, 291);
+      doc.text(`${nomeEmpresa} • Viabiliza IA • Pasta Técnica de Crédito Imobiliário`, 14, 291);
       doc.text(`Página ${i} de ${totalPages}`, 196, 291, { align: 'right' });
     }
 
