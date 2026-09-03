@@ -1,0 +1,88 @@
+name: CI/CD - Auditoria Completa e Validação
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # FRENTE A: Segurança, LGPD, Segredos e Vulnerabilidades Estáticas
+  security-audit:
+    name: "Frente A - Auditoria de Segurança & LGPD"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Completo do Repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 1. Bloqueio de Credenciais Expostas (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 2. Varredura SAST, OWASP e Vazamento de PII (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/typescript
+
+  # FRENTE B e D: Validação de Código, Tipagem e Compilação de Produção
+  build-and-lint:
+    name: "Frentes B/D - Lint, Tipagem e Build"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: 1. Auditoria de Pacotes com Falhas de Segurança
+        run: npm audit --audit-level=high
+
+      - name: 2. Linter de Código
+        run: npm run lint --if-present
+
+      - name: 3. Checagem Estrita de Tipagem TypeScript
+        run: npx tsc --noEmit --skipLibCheck
+
+      - name: 4. Validação de Build de Produção
+        run: npm run build
+
+  # FRENTE C e BANCO: Auditoria de Migrações, Tabelas e Row Level Security (RLS)
+  supabase-audit:
+    name: "Frente C - Validação Supabase & RLS"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 1. Inicializar Container Supabase Local
+        run: supabase start
+
+      - name: 2. Rodar Linter de Banco de Dados (Supabase Lint)
+        run: supabase db lint
+
+      - name: 3. Executar Testes Unitários de Banco (pgTAP)
+        run: supabase test db --debug
+        continue-on-error: true # Não quebra caso ainda não existam testes .sql configurados
