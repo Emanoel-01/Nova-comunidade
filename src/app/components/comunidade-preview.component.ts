@@ -5,7 +5,7 @@
 // pelo Predial 4.0 (mesmo projeto Supabase compartilhado) para validar
 // esse pré-requisito automaticamente.
 
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
@@ -244,24 +244,26 @@ import { ViabilizaIaComponent } from './comunidade/viabiliza-ia.component';
               </button>
 
               <!-- 11. Viabiliza IA (Crédito Imobiliário) -->
-              <button
-                type="button"
-                id="sidebar-btn-viabiliza-ia"
-                (click)="selecionarAba('viabiliza-ia')"
-                [class]="abaAtiva() === 'viabiliza-ia'
-                  ? 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#132A41] text-white font-bold shadow-sm'
-                  : 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer'"
-              >
-                <div class="flex items-center gap-3">
-                  <svg class="w-4 h-4 shrink-0 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                  <span>Viabiliza IA</span>
-                </div>
-                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600" [class.text-amber-300]="abaAtiva() === 'viabiliza-ia'">
-                  Crédito
-                </span>
-              </button>
+              @if (temAcessoViabilizaIa()) {
+                <button
+                  type="button"
+                  id="sidebar-btn-viabiliza-ia"
+                  (click)="selecionarAba('viabiliza-ia')"
+                  [class]="abaAtiva() === 'viabiliza-ia'
+                    ? 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#132A41] text-white font-bold shadow-sm'
+                    : 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer'"
+                >
+                  <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 shrink-0 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span>Viabiliza IA</span>
+                  </div>
+                  <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600" [class.text-amber-300]="abaAtiva() === 'viabiliza-ia'">
+                    Crédito
+                  </span>
+                </button>
+              }
 
             </nav>
           </div>
@@ -440,7 +442,9 @@ import { ViabilizaIaComponent } from './comunidade/viabiliza-ia.component';
             <app-comunidade-agentes></app-comunidade-agentes>
           } @else if (abaAtiva() === 'viabiliza-ia') {
             <!-- Módulo Viabiliza IA (Assessoria de Crédito Imobiliário) -->
-            <app-viabiliza-ia></app-viabiliza-ia>
+            @if (temAcessoViabilizaIa()) {
+              <app-viabiliza-ia></app-viabiliza-ia>
+            }
           } @else {
             <!-- Placeholder Padrão das Outras Áreas -->
             <div class="bg-white rounded-3xl border border-slate-200 p-10 sm:p-16 text-center space-y-4 shadow-xs">
@@ -573,22 +577,24 @@ import { ViabilizaIaComponent } from './comunidade/viabiliza-ia.component';
               </button>
 
               <!-- 7. Viabiliza IA (Crédito) -->
-              <button
-                type="button"
-                (click)="selecionarAbaMobile('viabiliza-ia')"
-                [class]="abaAtiva() === 'viabiliza-ia' ? 'bg-[#132A41] text-white font-bold' : 'text-slate-700'"
-                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors cursor-pointer"
-              >
-                <div class="flex items-center gap-3">
-                  <svg class="w-4 h-4 shrink-0 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                  <span>Viabiliza IA</span>
-                </div>
-                <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600" [class.text-amber-300]="abaAtiva() === 'viabiliza-ia'">
-                  Crédito
-                </span>
-              </button>
+              @if (temAcessoViabilizaIa()) {
+                <button
+                  type="button"
+                  (click)="selecionarAbaMobile('viabiliza-ia')"
+                  [class]="abaAtiva() === 'viabiliza-ia' ? 'bg-[#132A41] text-white font-bold' : 'text-slate-700'"
+                  class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs text-left hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 shrink-0 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span>Viabiliza IA</span>
+                  </div>
+                  <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600" [class.text-amber-300]="abaAtiva() === 'viabiliza-ia'">
+                    Crédito
+                  </span>
+                </button>
+              }
             </div>
 
             <!-- Fixo no rodapé do menu Mais -->
@@ -694,10 +700,12 @@ import { ViabilizaIaComponent } from './comunidade/viabiliza-ia.component';
 export class ComunidadePreviewComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
   private readonly router = inject(Router);
+  private readonly ngZone = inject(NgZone);
 
   readonly usuario = signal<any | null>(null);
   readonly profissional = signal<any | null>(null);
   readonly souAdmin = signal<boolean>(false);
+  readonly temAcessoViabilizaIa = signal<boolean>(false);
   readonly abaAtiva = signal('feed');
   readonly menuMaisAberto = signal(false);
 
@@ -733,6 +741,9 @@ export class ComunidadePreviewComponent implements OnInit {
     const ehAdmin = await this.supabaseService.temPermissaoModulo('comunidade', 'admin');
     this.souAdmin.set(ehAdmin);
 
+    const temAcesso = await this.supabaseService.temPermissaoModulo('comunidade', 'viabiliza-ia');
+    this.temAcessoViabilizaIa.set(temAcesso);
+
     const prof = await this.supabaseService.getProfissional(session.user.id);
     if (prof) {
       this.profissional.set(prof);
@@ -749,7 +760,9 @@ export class ComunidadePreviewComponent implements OnInit {
 
     this.supabaseService.onAuthStateChange((s) => {
       if (!s?.user) {
-        this.router.navigate(['/comunidade']);
+        this.ngZone.run(() => {
+          this.router.navigate(['/comunidade']);
+        });
       }
     });
 
@@ -801,10 +814,15 @@ export class ComunidadePreviewComponent implements OnInit {
 
   async encerrarSessao(): Promise<void> {
     await this.supabaseService.signOut();
-    this.router.navigate(['/comunidade']);
+    this.ngZone.run(() => {
+      this.router.navigate(['/comunidade'], { replaceUrl: true });
+    });
   }
 
   selecionarAba(abaId: string): void {
+    if (abaId === 'viabiliza-ia' && !this.temAcessoViabilizaIa()) {
+      return;
+    }
     this.abaAtiva.set(abaId);
   }
 
@@ -814,6 +832,9 @@ export class ComunidadePreviewComponent implements OnInit {
   }
 
   selecionarAbaMobile(abaId: string): void {
+    if (abaId === 'viabiliza-ia' && !this.temAcessoViabilizaIa()) {
+      return;
+    }
     this.abaAtiva.set(abaId);
     this.menuMaisAberto.set(false);
   }

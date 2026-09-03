@@ -1020,7 +1020,10 @@ export class ComunidadeAgentesComponent implements OnInit {
   }
 
   contarLiberados(): number {
-    return Object.values(this.permissoesFerramentas()).filter(Boolean).length;
+    // +1 fixo pelo Guia de Consulta (guia-tipologias), que é sempre
+    // liberado e por isso não entra em MODULOS_COM_PERMISSAO nem em
+    // permissoesFerramentas — ver temPermissao().
+    return Object.values(this.permissoesFerramentas()).filter(Boolean).length + 1;
   }
 
   abrirFerramenta(ferramenta: FerramentaAtiva): void {

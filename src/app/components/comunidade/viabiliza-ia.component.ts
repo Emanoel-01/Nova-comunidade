@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { SupabaseService, DocumentoCredito } from '../../../services/supabase.service';
 import { MotorPdfService } from '../../services/motor-pdf.service';
 import { gerarLinkWhatsapp } from '../../utils/whatsapp.util';
+import { carregarLogoComFallback } from '../../utils/pdf-logo.util';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -417,12 +418,6 @@ export const ESTADOS_BRASIL = [
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
                           {{ proj.status || 'Rascunho' }}
                         </span>
-                        @if (proj.estudo_previo_concluido) {
-                          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-0.5" title="Estudo de Viabilidade Prévia Concluído">
-                            <span>✓</span>
-                            <span>Estudo Prévio</span>
-                          </span>
-                        }
                       </div>
                     </div>
 
@@ -522,18 +517,8 @@ export const ESTADOS_BRASIL = [
             </div>
           </div>
 
-          <!-- Barra de Navegação das 8 Etapas / Abas (Etapa 0 + Etapas 1-7) -->
+          <!-- Barra de Navegação das Etapas 1-7 -->
           <div class="bg-white rounded-2xl p-2 border border-slate-200 shadow-xs flex items-center gap-1 overflow-x-auto">
-            <button
-              type="button"
-              (click)="selecionarEtapa(0)"
-              [class]="etapaAtiva() === 0 ? 'bg-[#132A41] text-white font-bold' : 'text-slate-600 hover:bg-slate-100 font-medium'"
-              class="px-3.5 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer shrink-0"
-            >
-              <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center font-bold">0</span>
-              <span>Estudo Prévio</span>
-            </button>
-
             <button
               type="button"
               (click)="selecionarEtapa(1)"
@@ -610,605 +595,6 @@ export const ESTADOS_BRASIL = [
           <!-- CONTEÚDO DAS ETAPAS -->
           <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs">
             
-            <!-- ETAPA 0: ESTUDO DE VIABILIDADE PRÉVIA DE CRÉDITO -->
-            @if (etapaAtiva() === 0) {
-              <div class="space-y-8">
-                <!-- Cabeçalho e Identificação da Etapa 0 -->
-                <div class="space-y-3">
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <span class="px-2.5 py-1 rounded-md bg-[#132A41] text-white text-[10px] font-black uppercase tracking-wider">
-                          Etapa 0 • Porta de Entrada Principal
-                        </span>
-                        @if (estudoPrevioConcluido()) {
-                          <span class="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                            <span>✓</span>
-                            <span>Estudo Concluído</span>
-                          </span>
-                        }
-                      </div>
-                      <h3 class="text-xl sm:text-2xl font-black text-[#132A41] mt-1 tracking-tight">
-                        Estudo de Viabilidade Prévia de Crédito
-                      </h3>
-                      <p class="text-xs text-slate-500 max-w-3xl leading-relaxed">
-                        Análise técnica preliminar de elegibilidade para contratação de crédito imobiliário. Permite qualificar o potencial financeiro do cliente em minutos, sem exigir projeto arquitetônico aprovado ou alvará prévio.
-                      </p>
-                    </div>
-
-                    <div class="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                      <button
-                        type="button"
-                        (click)="gerarPdfEstudoPrevio()"
-                        [disabled]="gerandoPdfEstudoPrevio()"
-                        class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#B5642A] to-[#8A4315] hover:from-[#C77234] hover:to-[#9E4D19] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                      >
-                        @if (gerandoPdfEstudoPrevio()) {
-                          <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span>Gerando PDF...</span>
-                        } @else {
-                          <span>📄</span>
-                          <span>Emitir Estudo Prévio (PDF)</span>
-                        }
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- AVISO LEGAL OBRIGATÓRIO (Inegociável) -->
-                  <div class="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs flex items-start gap-3 shadow-xs">
-                    <span class="text-base shrink-0 mt-0.5">⚠️</span>
-                    <div class="space-y-1">
-                      <strong class="font-bold text-amber-950 block">Aviso Legal Obrigatório:</strong>
-                      <p class="text-[11px] text-amber-900/90 leading-relaxed">
-                        Este estudo é uma análise técnica preliminar elaborada pelo responsável técnico identificado nesta peça. Não constitui carta de crédito, proposta de financiamento nem qualquer garantia de aprovação por instituição financeira. A análise definitiva depende de avaliação cadastral e técnica própria do agente financeiro escolhido.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- OS 3 BLOCOS DE ENTRADA: ELEGIBILIDADE, TERRENO E ESTUDO PRELIMINAR -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <!-- BLOCO A: ELEGIBILIDADE DO PROPONENTE -->
-                  <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4 flex flex-col justify-between">
-                    <div class="space-y-4">
-                      <div class="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
-                        <span class="w-6 h-6 rounded-lg bg-[#132A41] text-white flex items-center justify-center text-xs font-bold">A</span>
-                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                          Elegibilidade do Proponente
-                        </h4>
-                      </div>
-
-                      <div class="space-y-3">
-                        <div>
-                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                            {{ tipoOperacao() === 'condominio' ? 'Nome do Condomínio / Síndico / Gestor' : 'Nome do Cliente / Proponente' }}
-                          </label>
-                          <input
-                            type="text"
-                            [value]="nomeCliente()"
-                            (input)="nomeCliente.set($any($event.target).value)"
-                            [placeholder]="tipoOperacao() === 'condominio' ? 'Ex: Condomínio Edifício Solar das Palmeiras' : 'Ex: Carlos Eduardo de Souza'"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                          />
-                        </div>
-
-                        @if (tipoOperacao() === 'condominio') {
-                          <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] space-y-1">
-                            <strong class="font-bold flex items-center gap-1 text-blue-950">
-                              <span>🏢</span> Tomador Pessoa Jurídica (Condomínio)
-                            </strong>
-                            <p class="text-[10px] leading-relaxed text-blue-900/90">
-                              A aprovação de crédito condominial é calculada sobre o fluxo de caixa do condomínio (arrecadação mensal e taxa de inadimplência), sem restrições de idade pessoal do gestor.
-                            </p>
-                          </div>
-                        }
-
-                        <div>
-                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                            {{ tipoOperacao() === 'condominio' ? 'Data de Fundação / Registro CNPJ' : 'Data de Nascimento do Proponente' }}
-                          </label>
-                          <input
-                            type="date"
-                            [value]="dataNascimentoProponente()"
-                            (change)="onDataNascimentoChange($any($event.target).value)"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                          />
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                          <div>
-                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                              {{ tipoOperacao() === 'condominio' ? 'Tempo de Existência' : 'Idade Calculada' }}
-                            </label>
-                            <div class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs text-slate-800 font-bold">
-                              {{ idadeSolicitante ? idadeSolicitante + ' anos' : 'A calcular' }}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                              {{ tipoOperacao() === 'condominio' ? 'Perfil do Tomador' : 'Trilha de Renda' }}
-                            </label>
-                            @if (tipoOperacao() === 'condominio') {
-                              <div class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs text-[#132A41] font-bold">
-                                PJ • Condomínio
-                              </div>
-                            } @else {
-                              <select
-                                [value]="tipoRenda()"
-                                (change)="tipoRenda.set($any($event.target).value)"
-                                class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                              >
-                                <option value="clt">CLT / Formal</option>
-                                <option value="autonomo">Autônomo / Liberal</option>
-                                <option value="empresario">Empresário / PJ</option>
-                              </select>
-                            }
-                          </div>
-                        </div>
-
-                        <div>
-                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                            {{ tipoOperacao() === 'condominio' ? 'Arrecadação Mensal do Condomínio (R$)' : 'Renda Familiar Bruta Mensal (R$)' }}
-                          </label>
-                          <input
-                            type="number"
-                            [value]="rendaFamiliar || ''"
-                            (input)="rendaFamiliar = +$any($event.target).value || null; recalcular()"
-                            [placeholder]="tipoOperacao() === 'condominio' ? 'Ex: 45000' : 'Ex: 14000'"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                          />
-                          <span class="text-[10px] text-slate-400">
-                            {{ tipoOperacao() === 'condominio' ? 'Taxa condominial média arrecadada mensalmente' : 'Soma da renda comprovável dos proponentes' }}
-                          </span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                          <div>
-                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Estado (UF)</label>
-                            <select
-                              [value]="uf()"
-                              (change)="onUfChange($any($event.target).value)"
-                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                            >
-                              @for (item of estadosBrasil; track item) {
-                                <option [value]="item">{{ item }}</option>
-                              }
-                            </select>
-                          </div>
-
-                          <div>
-                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Cidade</label>
-                            <input
-                              type="text"
-                              [value]="cidade()"
-                              (input)="cidade.set($any($event.target).value)"
-                              placeholder="Ex: Ribeirão Preto"
-                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- BLOCO B: TERRENO / IMÓVEL BASE -->
-                  <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4 flex flex-col justify-between">
-                    <div class="space-y-4">
-                      <div class="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
-                        <span class="w-6 h-6 rounded-lg bg-[#132A41] text-white flex items-center justify-center text-xs font-bold">B</span>
-                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                          Terreno / Imóvel Base
-                        </h4>
-                      </div>
-
-                      <div class="space-y-3">
-                        <div>
-                          <label class="block text-[11px] font-bold text-slate-700 mb-1">Situação do Lote / Terreno</label>
-                          <select
-                            [value]="situacaoLote()"
-                            (change)="onSituacaoLoteChange($any($event.target).value)"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                          >
-                            <option value="a_adquirir">Terreno a adquirir (Aquisição de Terreno + Construção)</option>
-                            <option value="proprio_quitado">Terreno próprio já quitado (Construção em Terreno Próprio)</option>
-                            <option value="a_reformar">Já possui imóvel edificado (Reforma / Ampliação)</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                            Valor Estimado do Terreno (R$)
-                          </label>
-                          <input
-                            type="number"
-                            [value]="valorTerreno()"
-                            (input)="valorTerreno.set(+$any($event.target).value || 0); recalcular()"
-                            placeholder="Ex: 150000"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                          />
-                          <span class="text-[10px] text-slate-400">
-                            Valor de mercado estimado para o lote
-                          </span>
-                        </div>
-
-                        @if (situacaoLote() === 'proprio_quitado') {
-                          <div class="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-blue-950 text-xs space-y-1">
-                            <strong class="font-bold flex items-center gap-1.5 text-blue-900">
-                              <span>ℹ️</span> Terreno Próprio Quitado
-                            </strong>
-                            <p class="text-[11px] text-blue-900/90 leading-relaxed">
-                              O terreno quitado integra a garantia global e pode cobrir a cota mínima de entrada, reduzindo o aporte em dinheiro.
-                            </p>
-                          </div>
-                        }
-
-                        @if (situacaoLote() === 'a_reformar') {
-                          <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 text-xs space-y-1">
-                            <strong class="font-bold flex items-center gap-1.5 text-amber-900">
-                              <span>🏡</span> Imóvel Edificado Existente
-                            </strong>
-                            <p class="text-[11px] text-amber-900/90 leading-relaxed">
-                              O imóvel já edificado compõe a garantia da operação (hipoteca ou alienação fiduciária). A viabilidade avalia a intervenção técnica na benfeitoria existente.
-                            </p>
-                          </div>
-                        }
-                      </div>
-                    </div>
-
-                    <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5">
-                      <div class="flex items-center justify-between text-slate-500 text-[11px]">
-                        <span>Participação do Terreno:</span>
-                        <strong class="text-slate-800 font-bold">
-                          {{ (participacaoLoteEstudoPrevio() * 100).toFixed(1) }}% do investimento
-                        </strong>
-                      </div>
-                      <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                        <div
-                          class="bg-[#132A41] h-2 rounded-full transition-all"
-                          [style.width.%]="Math.min(100, participacaoLoteEstudoPrevio() * 100)"
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- BLOCO C: ESTUDO PRELIMINAR DE ARQUITETURA -->
-                  <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4 flex flex-col justify-between">
-                    <div class="space-y-4">
-                      <div class="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
-                        <span class="w-6 h-6 rounded-lg bg-[#132A41] text-white flex items-center justify-center text-xs font-bold">C</span>
-                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                          {{ tipoOperacao() === 'reforma_pf' ? 'Estudo Preliminar de Reforma / Ampliação' : (tipoOperacao() === 'condominio' ? 'Diagnóstico Preliminar Condominial' : 'Estudo Preliminar de Arquitetura') }}
-                        </h4>
-                      </div>
-
-                      <div class="space-y-3">
-                        @if (tipoOperacao() === 'reforma_pf' || tipoOperacao() === 'condominio') {
-                          <div>
-                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Tipo de Intervenção Técnica</label>
-                            <select
-                              [value]="tipoIntervencao()"
-                              (change)="tipoIntervencao.set($any($event.target).value)"
-                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                            >
-                              @if (tipoOperacao() === 'reforma_pf') {
-                                <option value="reforma_sem_ampliacao">Reforma sem ampliação (não altera área construída)</option>
-                                <option value="ampliacao_com_area_nova">Ampliação com acréscimo de área construída</option>
-                              } @else {
-                                <option value="manutencao_predial">Manutenção Predial / Retrofit / Fachada</option>
-                                <option value="reforma_sem_ampliacao">Obras em Áreas Comuns (sem ampliação)</option>
-                                <option value="ampliacao_com_area_nova">Ampliação de Área de Lazer / Estruturas Novas</option>
-                              }
-                            </select>
-                          </div>
-
-                          @if (tipoIntervencao() === 'ampliacao_com_area_nova') {
-                            <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
-                              <strong>Atenção técnica:</strong> Por envolver acréscimo de área construída, a operação exigirá projeto arquitetônico aprovado na Prefeitura e Alvará de Construção para emissão da pasta bancária completa (Gate 7).
-                            </div>
-                          } @else if (tipoOperacao() === 'reforma_pf') {
-                            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] leading-relaxed">
-                              <strong>Trilha Simplificada:</strong> Sem acréscimo de área, a contratação é conduzida via formulário PRM (Proposta de Reforma e Melhoria) e ART/RRT, dispensando alvará municipal.
-                            </div>
-                          } @else {
-                            <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] leading-relaxed">
-                              <strong>Trilha Condominial:</strong> Obras amparadas por Laudo de Inspeção Predial (NBR 16747), ART/RRT e Aprovação formal em AGE.
-                            </div>
-                          }
-                        }
-
-                        <div>
-                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                            {{ tipoOperacao() === 'condominio' ? 'Área Total das Áreas Objeto de Intervenção (m²)' : 'Área Estimada da Edificação (m²)' }}
-                          </label>
-                          <input
-                            type="number"
-                            [value]="areaEstimadaEstudoPrevio()"
-                            (input)="areaEstimadaEstudoPrevio.set(+$any($event.target).value || 0)"
-                            placeholder="Ex: 140"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                          />
-                          <span class="text-[10px] text-slate-400">Metragem pretendida para a edificação</span>
-                        </div>
-
-                        <div>
-                          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-                            Padrão Construtivo Estimado
-                          </label>
-                          <select
-                            [value]="padraoConstrutivoEstudoPrevio()"
-                            (change)="padraoConstrutivoEstudoPrevio.set($any($event.target).value)"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                          >
-                            <option value="Baixo">Baixo (0.85 × CUB Estadual)</option>
-                            <option value="Normal">Normal / Médio (1.00 × CUB Estadual)</option>
-                            <option value="Alto">Alto Padrão (1.25 × CUB Estadual)</option>
-                          </select>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                          <div>
-                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Pavimentos</label>
-                            <select
-                              [value]="pavimentos()"
-                              (change)="pavimentos.set(+$any($event.target).value)"
-                              class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 focus:border-[#132A41]"
-                            >
-                              <option [value]="1">1 Pavimento (Térrea)</option>
-                              <option [value]="2">2 Pavimentos (Sobrado)</option>
-                              <option [value]="3">3+ Pavimentos</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label class="block text-[11px] font-bold text-slate-700 mb-1">CUB de Referência</label>
-                            <div class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs text-slate-800 font-bold">
-                              R$ {{ formatarMoeda(valorCubEstadoAtual()) }}/m²
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
-                      <div class="flex items-center justify-between text-slate-500 text-[11px]">
-                        <span>Custo da Obra Estimado:</span>
-                        <strong class="text-[#132A41] font-black text-sm">
-                          R$ {{ formatarMoeda(custoObraEstudoPrevio()) }}
-                        </strong>
-                      </div>
-                      <div class="text-[10px] text-slate-400">
-                        {{ areaEstimadaEstudoPrevio() }}m² × R$ {{ formatarMoeda(valorCubEstadoAtual()) }} × {{ fatorPadraoConstrutivo() }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- RESUMO DO INVESTIMENTO GLOBAL ESTIMADO -->
-                <div class="p-6 rounded-2xl bg-gradient-to-br from-[#132A41] to-slate-900 text-white space-y-4 shadow-sm">
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/10 pb-4">
-                    <div>
-                      <span class="text-[10px] font-bold text-[#E8B27E] uppercase tracking-wider">
-                        Investimento Global de Referência
-                      </span>
-                      <h4 class="text-xl sm:text-2xl font-black text-white">
-                        R$ {{ formatarMoeda(investimentoGlobalEstudoPrevio()) }}
-                      </h4>
-                    </div>
-
-                    <div class="flex items-center gap-6 text-xs text-slate-300">
-                      <div>
-                        <div class="text-[10px] text-slate-400 uppercase">Custo da Edificação</div>
-                        <div class="font-bold text-white">R$ {{ formatarMoeda(custoObraEstudoPrevio()) }}</div>
-                      </div>
-                      <div class="border-l border-white/20 pl-6">
-                        <div class="text-[10px] text-slate-400 uppercase">Terreno / Lote</div>
-                        <div class="font-bold text-white">R$ {{ formatarMoeda(valorTerreno()) }}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- RESSALVA ESPECIAL DE TERRENO PRÓPRIO QUITADO (Quando aplicável) -->
-                  @if (situacaoLote() === 'proprio_quitado' && participacaoLoteEstudoPrevio() >= 0.20) {
-                    <div class="p-4 rounded-xl bg-white/10 border border-white/15 text-xs text-slate-200 space-y-1">
-                      <strong class="font-bold text-[#E8B27E] flex items-center gap-1.5">
-                        <span>💡</span> Potencial Cobertura de Entrada por Terreno Quitado:
-                      </strong>
-                      <p class="text-[11px] leading-relaxed text-slate-200/90">
-                        O valor do terreno já quitado pode cobrir a cota mínima de entrada exigida por algumas linhas, o que tende a reduzir ou eliminar a necessidade de aporte em dinheiro para a obra. Este valor está sujeito à avaliação técnica da instituição financeira e pode divergir da estimativa aqui apresentada.
-                      </p>
-                    </div>
-                  }
-                </div>
-
-                <!-- LINHAS DE CRÉDITO AVALIADAS (ELEGIBILIDADE PRELIMINAR) -->
-                <div class="space-y-4">
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <h4 class="text-base font-bold text-[#132A41]">
-                        Linhas de Financiamento Avaliadas
-                      </h4>
-                      <p class="text-xs text-slate-500">
-                        Classificação de elegibilidade preliminar com base nos parâmetros bancários cadastrados
-                      </p>
-                    </div>
-
-                    <span class="text-xs font-bold text-slate-500">
-                      {{ calcularElegibilidade().length }} linhas de mercado analisadas
-                    </span>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @for (item of calcularElegibilidade(); track item.linhaId) {
-                      <div
-                        class="p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4"
-                        [class]="item.compativel ? 'bg-white border-emerald-200 shadow-xs hover:border-emerald-400' : (item.dadosIncompletos ? 'bg-slate-50/90 border-slate-300' : 'bg-slate-50/80 border-amber-200 opacity-80')"
-                      >
-                        <div class="space-y-3">
-                          <div class="flex items-start justify-between gap-2">
-                            <div>
-                              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                                {{ item.banco }}
-                              </span>
-                              <h5 class="text-sm font-black text-slate-800 line-clamp-1">
-                                {{ item.produto }}
-                              </h5>
-                            </div>
-
-                            @if (item.compativel) {
-                              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 bg-emerald-100 text-emerald-800">
-                                ✓ Elegível Preliminarmente
-                              </span>
-                            } @else if (item.dadosIncompletos) {
-                              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 bg-slate-200 text-slate-700">
-                                ⚙️ Cadastro Incompleto
-                              </span>
-                            } @else {
-                              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 bg-amber-100 text-amber-800">
-                                ⚠️ Incompatível com Perfil
-                              </span>
-                            }
-                          </div>
-
-                          <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
-                            <div>
-                              <span class="text-[10px] text-slate-400 font-bold uppercase">Taxa de Referência</span>
-                              <div class="font-bold text-slate-800">
-                                @if (item.taxaJurosMin != null && item.taxaJurosMax != null) {
-                                  {{ item.taxaJurosMin }}% a {{ item.taxaJurosMax }}% a.a.
-                                } @else if (item.taxaJurosMin != null) {
-                                  {{ item.taxaJurosMin }}% a.a.
-                                } @else {
-                                  <span class="text-slate-400 font-normal italic">Pendente</span>
-                                }
-                              </div>
-                            </div>
-                            <div>
-                              <span class="text-[10px] text-slate-400 font-bold uppercase">Prazo Máximo</span>
-                              <div class="font-bold text-slate-800">
-                                @if (item.prazoMaxAnos != null) {
-                                  {{ item.prazoMaxAnos }} anos
-                                } @else {
-                                  <span class="text-slate-400 font-normal italic">Pendente</span>
-                                }
-                              </div>
-                            </div>
-                          </div>
-
-                          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs space-y-1">
-                            <div class="flex justify-between text-[11px]">
-                              <span class="text-slate-500">Financiamento Estimado:</span>
-                              @if (item.faixaFinanciamentoEstimada) {
-                                <strong class="text-indigo-700 font-bold">
-                                  Até R$ {{ formatarMoeda(item.faixaFinanciamentoEstimada.max) }}
-                                </strong>
-                              } @else {
-                                <span class="text-slate-400 italic">Pendente de dados</span>
-                              }
-                            </div>
-                            <div class="flex justify-between text-[11px]">
-                              <span class="text-slate-500">Parcela Inicial Aprox.:</span>
-                              @if (item.parcelaEstimada != null) {
-                                <strong class="text-[#B5642A] font-bold">
-                                  R$ {{ formatarMoeda(item.parcelaEstimada) }}/mês
-                                </strong>
-                              } @else {
-                                <span class="text-slate-400 italic">Pendente de dados</span>
-                              }
-                            </div>
-                          </div>
-
-                          @if (item.dadosIncompletos) {
-                            <div class="p-2.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-[11px] space-y-1">
-                              <strong class="font-bold block text-slate-800">Cadastro incompleto no admin:</strong>
-                              <span class="text-[10px] text-slate-600 block">Campos pendentes: {{ item.camposFaltantes.join(', ') }}</span>
-                            </div>
-                          }
-
-                          @if (!item.compativel && !item.dadosIncompletos && item.motivosIncompatibilidade.length > 0) {
-                            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-[11px] space-y-1">
-                              <strong class="font-bold block">Critérios a ajustar:</strong>
-                              <ul class="list-disc list-inside space-y-0.5 text-[10px] leading-tight text-rose-800">
-                                @for (motivo of item.motivosIncompatibilidade; track motivo) {
-                                  <li>{{ motivo }}</li>
-                                }
-                              </ul>
-                            </div>
-                          }
-
-                          @if (item.vantagemPrincipal) {
-                            <div class="text-[11px] text-slate-600 bg-amber-50/50 p-2 rounded-lg border border-amber-100">
-                              <span class="font-bold text-amber-900">Vantagem:</span> {{ item.vantagemPrincipal }}
-                            </div>
-                          }
-                        </div>
-
-                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
-                          <span>{{ item.sistemaAmortizacao }}</span>
-                          <span>{{ item.permiteFgts ? 'Aceita FGTS' : 'Sem FGTS' }}</span>
-                        </div>
-                      </div>
-                    }
-                  </div>
-
-                  <!-- NOTA FIXA OBRIGATÓRIA DE CONFERÊNCIA DE TAXAS (Sempre presente) -->
-                  <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 text-xs leading-relaxed flex items-start gap-3 shadow-xs">
-                    <span class="text-base shrink-0 mt-0.5">📌</span>
-                    <div class="space-y-0.5">
-                      <strong class="font-bold text-slate-900 block">Nota Obrigatória de Conferência dos Parâmetros Bancários:</strong>
-                      <p class="text-[11px] text-slate-600 leading-relaxed">
-                        Os parâmetros bancários apresentados são referência de mercado cadastrada pelo administrador do sistema e podem não refletir as condições vigentes na data de emissão. Antes de repassar este estudo ao cliente, confirme as taxas e condições diretamente com a instituição financeira.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- PRÓXIMOS PASSOS RECOMENDADOS & TRANSIÇÃO PARA ETAPA 1 -->
-                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                  <div class="flex items-start gap-3">
-                    <span class="text-xl">🗺️</span>
-                    <div class="space-y-1">
-                      <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                        Próximos Passos Recomendados
-                      </h4>
-                      <p class="text-xs text-slate-600 leading-relaxed max-w-3xl">
-                        Confirmada a viabilidade prévia pelo responsável técnico e pelo cliente, o próximo passo recomendável consiste na elaboração do projeto arquitetônico detalhado, desenvolvimento dos projetos executivos de engenharia e protocolo para aprovação municipal com emissão do Alvará de Construção e ART/RRT quitada.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div class="text-xs text-slate-500">
-                      Deseja detalhar os ambientes, custos finos e documentação completa?
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                      <button
-                        type="button"
-                        (click)="gerarPdfEstudoPrevio()"
-                        [disabled]="gerandoPdfEstudoPrevio()"
-                        class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-white text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-xs"
-                      >
-                        <span>📄 Baixar PDF do Estudo Prévio</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        (click)="avancarParaMontarProjeto()"
-                        class="px-6 py-2.5 rounded-xl bg-[#132A41] hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm flex items-center gap-2"
-                      >
-                        <span>Avançar para Etapa 1: Montar Projeto</span>
-                        <span>→</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            }
-
             <!-- ETAPA 1: MONTAR PROJETO -->
             @if (etapaAtiva() === 1) {
               <div class="space-y-8">
@@ -1860,16 +1246,7 @@ export const ESTADOS_BRASIL = [
                     }
 
                     <!-- Navegação da Etapa -->
-                    <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
-                      <button
-                        type="button"
-                        (click)="selecionarEtapa(0)"
-                        class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-2"
-                      >
-                        <span>←</span>
-                        <span>Estudo Prévio de Viabilidade</span>
-                      </button>
-
+                    <div class="pt-6 border-t border-slate-100 flex items-center justify-end">
                       <button
                         type="button"
                         (click)="selecionarEtapa(2)"
@@ -3313,12 +2690,6 @@ export const ESTADOS_BRASIL = [
                       }
                     </div>
 
-                    @if (!pastaCompletaLiberada()) {
-                      <div class="p-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-[11px] text-amber-200 flex items-center gap-2">
-                        <span>ℹ️</span>
-                        <span>Se ainda não possui todos os itens técnicos homologados, utilize o <strong>Estudo de Viabilidade Prévia de Crédito (Etapa 0)</strong> para apresentar ao cliente antes de gerar a pasta final.</span>
-                      </div>
-                    }
                     @if (percentualDocumentacao() < 100) {
                       <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-400/30 text-[11px] text-rose-200 flex items-center gap-2">
                         <span>📋</span>
@@ -3710,7 +3081,7 @@ export class ViabilizaIaComponent implements OnInit {
   readonly projetos = signal<any[]>([]);
   readonly carregandoProjetos = signal(false);
   readonly projetoAtual = signal<any | null>(null);
-  readonly etapaAtiva = signal<number>(0);
+  readonly etapaAtiva = signal<number>(1);
   readonly salvando = signal(false);
   readonly criandoProjeto = signal(false);
   readonly modalNovoProjetoAberto = signal(false);
@@ -4020,7 +3391,7 @@ export class ViabilizaIaComponent implements OnInit {
         endereco: this.novoProjetoEndereco.trim() || undefined,
         tipo_operacao: this.novoProjetoTipoOperacao,
         status: 'rascunho',
-        etapa_atual: 0,
+        etapa_atual: 1,
         situacao_lote: (this.novoProjetoTipoOperacao === 'construcao')
           ? 'proprio_quitado'
           : (this.novoProjetoTipoOperacao === 'reforma_pf' || this.novoProjetoTipoOperacao === 'condominio')
@@ -4080,7 +3451,7 @@ export class ViabilizaIaComponent implements OnInit {
     this.endereco.set(proj.endereco || '');
     this.tipoOperacao.set(proj.tipo_operacao || 'compra_construcao');
     this.status.set(proj.status || 'rascunho');
-    this.etapaAtiva.set(proj.etapa_atual ?? 0);
+    this.etapaAtiva.set(proj.etapa_atual && proj.etapa_atual > 0 ? proj.etapa_atual : 1);
 
     // Campos da Etapa 0
     this.dataNascimentoProponente.set(proj.data_nascimento_proponente || '');
@@ -4492,21 +3863,30 @@ export class ViabilizaIaComponent implements OnInit {
       const cliente = this.nomeCliente() || 'Cliente Interessado';
       const linhasResultado = this.calcularElegibilidade();
 
+      const logoUrl = await carregarLogoComFallback(
+        [perfil?.company_logo_url, '/logo-header.svg'].filter((u): u is string => !!u),
+        120, 40
+      );
+
       // Cabeçalho Navy com filete Copper
       doc.setFillColor(19, 42, 65); // #132A41
       doc.rect(14, 10, 182, 18, 'F');
       doc.setFillColor(181, 100, 42); // #B5642A
       doc.rect(14, 28, 182, 1.5, 'F');
 
+      if (logoUrl) {
+        doc.addImage(logoUrl, 'PNG', 16, 12, 14, 5);
+      }
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(255, 255, 255);
-      doc.text(nomeEmpresa.toUpperCase(), 20, 17);
+      doc.text(nomeEmpresa.toUpperCase(), logoUrl ? 32 : 20, 17);
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(203, 213, 225);
-      doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}`, 20, 23);
+      const cnpj = perfil?.company_cnpj ? ` • CNPJ ${perfil.company_cnpj}` : '';
+      doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}${cnpj}`, logoUrl ? 32 : 20, 23);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
@@ -4719,6 +4099,11 @@ export class ViabilizaIaComponent implements OnInit {
         14,
         287
       );
+      if (perfil?.company_address) {
+        doc.setFontSize(5.8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(perfil.company_address, 14, 290.5, { maxWidth: 182 });
+      }
 
       const nomeLimpo = cliente.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
       const nomeArquivo = `estudo-viabilidade-previa-${nomeLimpo}-${new Date().getTime()}.pdf`;
@@ -6075,21 +5460,30 @@ export class ViabilizaIaComponent implements OnInit {
     const crea = perfil?.crea_cau || 'CREA/CAU 000000/D';
     const dataEmissao = new Date().toLocaleDateString('pt-BR');
 
+    const logoUrl = await carregarLogoComFallback(
+      [perfil?.company_logo_url, '/logo-header.svg'].filter((u): u is string => !!u),
+      120, 40
+    );
+
     const desenharCabecalho = (tituloSecao: string, subtituloSecao: string) => {
       doc.setFillColor(19, 42, 65); // #132A41 Navy
       doc.rect(14, 10, 182, 16, 'F');
       doc.setFillColor(181, 100, 42); // #B5642A Copper
       doc.rect(14, 26, 182, 1.2, 'F');
 
+      if (logoUrl) {
+        doc.addImage(logoUrl, 'PNG', 16, 11.5, 14, 5);
+      }
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
-      doc.text(nomeEmpresa.toUpperCase(), 20, 17);
+      doc.text(nomeEmpresa.toUpperCase(), logoUrl ? 32 : 20, 17);
 
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(203, 213, 225);
-      doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}`, 20, 22);
+      const cnpj = perfil?.company_cnpj ? ` • CNPJ ${perfil.company_cnpj}` : '';
+      doc.text(`RESP. TÉCNICO: ${respTecnico.toUpperCase()} • ${crea}${cnpj}`, logoUrl ? 32 : 20, 22);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
@@ -6450,7 +5844,8 @@ export class ViabilizaIaComponent implements OnInit {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.8);
     doc.setTextColor(100, 116, 139);
-    doc.text(`${crea} • ${nomeEmpresa}`, 105, currentY + 27.5, { align: 'center' });
+    const cnpjAssinatura = perfil?.company_cnpj ? ` • CNPJ ${perfil.company_cnpj}` : '';
+    doc.text(`${crea} • ${nomeEmpresa}${cnpjAssinatura}`, 105, currentY + 27.5, { align: 'center' });
 
     // Numeração de Página em Todas as Páginas
     const totalPages = doc.getNumberOfPages();
@@ -6463,6 +5858,10 @@ export class ViabilizaIaComponent implements OnInit {
       doc.setTextColor(100, 116, 139);
       doc.text(`${nomeEmpresa} • Viabiliza IA • Pasta Técnica de Crédito Imobiliário`, 14, 291);
       doc.text(`Página ${i} de ${totalPages}`, 196, 291, { align: 'right' });
+      if (perfil?.company_address) {
+        doc.setFontSize(5.8);
+        doc.text(perfil.company_address, 14, 294.5, { maxWidth: 182 });
+      }
     }
 
     return doc;

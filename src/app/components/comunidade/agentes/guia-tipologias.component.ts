@@ -25,6 +25,11 @@ interface TipologiaPredial {
   plano_manutencao: AtividadeManutencao[] | null;
 }
 
+interface BlocoTextoFormatado {
+  titulo: string | null;
+  paragrafo: string;
+}
+
 type AbaFrente =
   | 'fundamentos_composicao'
   | 'execucao'
@@ -236,18 +241,22 @@ const ABAS: { key: AbaFrente; label: string; icone: string }[] = [
                         <p class="text-xs text-slate-400 italic">Tabela de manutenção não disponível no livro para este sistema.</p>
                       }
                     } @else {
-                      <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                        {{ textoAbaAtiva(t) }}
-                      </p>
+                      @for (bloco of formatarTextoEmBlocos(textoAbaAtiva(t), abaAtiva()); track $index) {
+                        <div class="mb-3 last:mb-0">
+                          @if (bloco.titulo) {
+                            <h4 class="text-xs sm:text-sm font-bold text-slate-800 mb-1">{{ bloco.titulo }}</h4>
+                          }
+                          <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">{{ bloco.paragrafo }}</p>
+                        </div>
+                      }
                     }
                   </div>
 
-                  <!-- Disclaimer ART/RRT -->
-                  <div class="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5">
-                    <span class="text-sm shrink-0">⚠️</span>
-                    <p class="text-[11px] text-amber-900 leading-relaxed">
-                      <strong>Estimativa de anteprojeto.</strong> O dimensionamento definitivo exige cálculo por
-                      profissional habilitado, com ART/RRT recolhida.
+                  <!-- Aviso de caráter consultivo -->
+                  <div class="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5">
+                    <span class="text-sm shrink-0">ℹ️</span>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">
+                      Conteúdo de referência técnica consultiva. Para dimensionamento e execução, consulte projeto elaborado por profissional habilitado.
                     </p>
                   </div>
                 </div>
@@ -307,6 +316,59 @@ export class GuiaTipologiasComponent implements OnInit {
   toggleExpandir(id: string): void {
     this.tipologiaExpandida.set(this.tipologiaExpandida() === id ? null : id);
     this.abaAtiva.set('fundamentos_composicao');
+  }
+
+  // Rótulos internos conhecidos que aparecem dentro dos textos vindos do
+  // banco, coladas ao restante do parágrafo. Cada um vira um subtítulo
+  // separado quando encontrado. A lista é por campo, porque cada campo do
+  // livro tem seu próprio conjunto de rótulos internos típicos.
+  private readonly ROTULOS_INTERNOS: Record<string, string[]> = {
+    fundamentos_composicao: ['Componentes', 'Aplicações típicas'],
+    execucao: ['Canteiro de obras'],
+    analise_viabilidade: ['Vantagens', 'Desvantagens', 'Viabilidade econômica'],
+    patologia_diagnostico: ['Sintomas', 'Causas prováveis', 'Diagnóstico'],
+    predimensionamento_texto: ['Critérios', 'Parâmetros de referência'],
+    conflitos_interfaciais: ['Interfaces críticas', 'Recomendações'],
+    enquadramento_normativo: ['Normas aplicáveis', 'Exigências'],
+  };
+
+  formatarTextoEmBlocos(texto: string, campo: string): BlocoTextoFormatado[] {
+    if (!texto) return [];
+    const rotulos = this.ROTULOS_INTERNOS[campo] || [];
+    if (rotulos.length === 0) {
+      return [{ titulo: null, paragrafo: texto }];
+    }
+
+    // Localiza a posição de cada rótulo conhecido dentro do texto, na
+    // ordem em que aparecem. Divide o texto nesses pontos.
+    const posicoes: { rotulo: string; index: number }[] = [];
+    for (const rotulo of rotulos) {
+      const idx = texto.indexOf(rotulo);
+      if (idx !== -1) posicoes.push({ rotulo, index: idx });
+    }
+    posicoes.sort((a, b) => a.index - b.index);
+
+    if (posicoes.length === 0) {
+      return [{ titulo: null, paragrafo: texto }];
+    }
+
+    const blocos: BlocoTextoFormatado[] = [];
+
+    // Texto antes do primeiro rótulo (se houver conteúdo relevante)
+    const inicio = texto.slice(0, posicoes[0].index).trim();
+    if (inicio.length > 0) {
+      blocos.push({ titulo: null, paragrafo: inicio });
+    }
+
+    for (let i = 0; i < posicoes.length; i++) {
+      const atual = posicoes[i];
+      const proximo = posicoes[i + 1];
+      const fim = proximo ? proximo.index : texto.length;
+      const conteudo = texto.slice(atual.index + atual.rotulo.length, fim).trim();
+      blocos.push({ titulo: atual.rotulo, paragrafo: conteudo });
+    }
+
+    return blocos;
   }
 
   textoAbaAtiva(t: TipologiaPredial): string {

@@ -1069,7 +1069,7 @@ export class SupabaseService {
     try {
       let { data: posts, error } = await this.client
         .from('feed_posts')
-        .select('*, autor:profissionais!feed_posts_autor_id_fkey(id, full_name, professional_title, avatar_url)')
+        .select('*, autor:profissionais_publico!feed_posts_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .order('criado_em', { ascending: false })
         .limit(50);
 
@@ -1077,7 +1077,7 @@ export class SupabaseService {
         // Fallback 1: sem FK constraint explícita
         const resFallback = await this.client
           .from('feed_posts')
-          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
+          .select('*, autor:profissionais_publico(id, full_name, professional_title, avatar_url)')
           .order('criado_em', { ascending: false })
           .limit(50);
 
@@ -1085,7 +1085,7 @@ export class SupabaseService {
           posts = resFallback.data;
           error = null;
         } else {
-          // Fallback 2: busca direta e join manual com profissionais
+          // Fallback 2: busca direta e join manual com profissionais_publico
           const resSimples = await this.client
             .from('feed_posts')
             .select('*')
@@ -1096,10 +1096,17 @@ export class SupabaseService {
             const autorIds = [...new Set(resSimples.data.map((p: any) => p.autor_id).filter(Boolean))];
             const autoresMap: Record<string, any> = {};
             if (autorIds.length > 0) {
-              const { data: autores } = await this.client
-                .from('profissionais')
+              let { data: autores } = await this.client
+                .from('profissionais_publico')
                 .select('id, full_name, professional_title, avatar_url')
                 .in('id', autorIds);
+              if (!autores || autores.length === 0) {
+                const resAutores = await this.client
+                  .from('profissionais')
+                  .select('id, full_name, professional_title, avatar_url')
+                  .in('id', autorIds);
+                autores = resAutores.data || [];
+              }
               (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
             }
             posts = resSimples.data.map((p: any) => ({
@@ -1127,14 +1134,14 @@ export class SupabaseService {
 
       let { data: comentarios } = await this.client
         .from('feed_comentarios')
-        .select('*, autor:profissionais!feed_comentarios_autor_id_fkey(id, full_name, professional_title, avatar_url)')
+        .select('*, autor:profissionais_publico!feed_comentarios_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .in('post_id', postIds)
         .order('criado_em', { ascending: true });
 
       if (!comentarios) {
         const resComFallback = await this.client
           .from('feed_comentarios')
-          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
+          .select('*, autor:profissionais_publico(id, full_name, professional_title, avatar_url)')
           .in('post_id', postIds)
           .order('criado_em', { ascending: true });
 
@@ -1151,10 +1158,17 @@ export class SupabaseService {
             const comAutorIds = [...new Set(resComSimples.data.map((c: any) => c.autor_id).filter(Boolean))];
             const comAutoresMap: Record<string, any> = {};
             if (comAutorIds.length > 0) {
-              const { data: comAutores } = await this.client
-                .from('profissionais')
+              let { data: comAutores } = await this.client
+                .from('profissionais_publico')
                 .select('id, full_name, professional_title, avatar_url')
                 .in('id', comAutorIds);
+              if (!comAutores || comAutores.length === 0) {
+                const resComAutores = await this.client
+                  .from('profissionais')
+                  .select('id, full_name, professional_title, avatar_url')
+                  .in('id', comAutorIds);
+                comAutores = resComAutores.data || [];
+              }
               (comAutores || []).forEach((a: any) => { comAutoresMap[a.id] = a; });
             }
             comentarios = resComSimples.data.map((c: any) => ({
@@ -2152,7 +2166,7 @@ export class SupabaseService {
       let topicos: any[] | null = null;
       const res = await this.client
         .from('forum_topicos')
-        .select('*, autor:profissionais!forum_topicos_autor_id_fkey(id, full_name, professional_title, avatar_url)')
+        .select('*, autor:profissionais_publico!forum_topicos_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .order('criado_em', { ascending: false });
 
       if (!res.error && res.data) {
@@ -2160,7 +2174,7 @@ export class SupabaseService {
       } else {
         const resFallback = await this.client
           .from('forum_topicos')
-          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
+          .select('*, autor:profissionais_publico(id, full_name, professional_title, avatar_url)')
           .order('criado_em', { ascending: false });
 
         if (!resFallback.error && resFallback.data) {
@@ -2175,10 +2189,17 @@ export class SupabaseService {
             const autorIds = [...new Set(resSimples.data.map((t: any) => t.autor_id).filter(Boolean))];
             const autoresMap: Record<string, any> = {};
             if (autorIds.length > 0) {
-              const { data: autores } = await this.client
-                .from('profissionais')
+              let { data: autores } = await this.client
+                .from('profissionais_publico')
                 .select('id, full_name, professional_title, avatar_url')
                 .in('id', autorIds);
+              if (!autores || autores.length === 0) {
+                const resAutores = await this.client
+                  .from('profissionais')
+                  .select('id, full_name, professional_title, avatar_url')
+                  .in('id', autorIds);
+                autores = resAutores.data || [];
+              }
               (autores || []).forEach((a: any) => { autoresMap[a.id] = a; });
             }
             topicos = resSimples.data.map((t: any) => ({
@@ -2201,7 +2222,7 @@ export class SupabaseService {
       let respostas: any[] = [];
       const resResp = await this.client
         .from('forum_respostas')
-        .select('*, autor:profissionais!forum_respostas_autor_id_fkey(id, full_name, professional_title, avatar_url)')
+        .select('*, autor:profissionais_publico!forum_respostas_autor_id_fkey(id, full_name, professional_title, avatar_url)')
         .in('topico_id', topicoIds)
         .order('criado_em', { ascending: true });
 
@@ -2210,7 +2231,7 @@ export class SupabaseService {
       } else {
         const resRespFallback = await this.client
           .from('forum_respostas')
-          .select('*, autor:profissionais(id, full_name, professional_title, avatar_url)')
+          .select('*, autor:profissionais_publico(id, full_name, professional_title, avatar_url)')
           .in('topico_id', topicoIds)
           .order('criado_em', { ascending: true });
 
@@ -2227,10 +2248,17 @@ export class SupabaseService {
             const respAutorIds = [...new Set(resRespSimples.data.map((r: any) => r.autor_id).filter(Boolean))];
             const respAutoresMap: Record<string, any> = {};
             if (respAutorIds.length > 0) {
-              const { data: respAutores } = await this.client
-                .from('profissionais')
+              let { data: respAutores } = await this.client
+                .from('profissionais_publico')
                 .select('id, full_name, professional_title, avatar_url')
                 .in('id', respAutorIds);
+              if (!respAutores || respAutores.length === 0) {
+                const resRespAutores = await this.client
+                  .from('profissionais')
+                  .select('id, full_name, professional_title, avatar_url')
+                  .in('id', respAutorIds);
+                respAutores = resRespAutores.data || [];
+              }
               (respAutores || []).forEach((a: any) => { respAutoresMap[a.id] = a; });
             }
             respostas = resRespSimples.data.map((r: any) => ({
@@ -2480,7 +2508,7 @@ export class SupabaseService {
       );
 
       const { data: participantes } = outroParticipanteIds.length > 0
-        ? await this.client.from('profissionais').select('id, full_name, professional_title, avatar_url').in('id', outroParticipanteIds)
+        ? await this.client.from('profissionais_publico').select('id, full_name, professional_title, avatar_url').in('id', outroParticipanteIds)
         : { data: [] };
 
       const { data: ultimasMensagens } = conversaIds.length > 0
@@ -2560,8 +2588,8 @@ export class SupabaseService {
       const session = await this.getSession();
       if (!session?.user || !termo.trim()) return [];
       const { data, error } = await this.client
-        .from('profissionais')
-        .select('id, full_name, professional_title, avatar_url, especializacao, categoria_profissional')
+        .from('profissionais_publico')
+        .select('id, full_name, professional_title, avatar_url')
         .neq('id', session.user.id)
         .ilike('full_name', `%${termo.trim()}%`)
         .limit(15);
@@ -2612,11 +2640,16 @@ export class SupabaseService {
   async listarMembrosComunidade(): Promise<any[]> {
     try {
       const { data, error } = await this.client
-        .from('profissionais')
-        .select('id, full_name, professional_title, bio, crea_cau, especializacao, categoria_profissional, avatar_url, banner_url, nivel_atual, email')
+        .from('profissionais_publico')
+        .select('id, full_name, professional_title, avatar_url')
         .order('full_name', { ascending: true });
 
       if (error) {
+        const fallback = await this.client
+          .from('profissionais')
+          .select('id, full_name, professional_title, avatar_url')
+          .order('full_name', { ascending: true });
+        if (fallback.data) return fallback.data;
         console.warn('Erro ao listar membros da comunidade:', error.message);
         return [];
       }
@@ -2744,12 +2777,20 @@ export class SupabaseService {
       const seguidoIds = conexoes.map((c: any) => c.seguido_id).filter(Boolean);
       if (seguidoIds.length === 0) return [];
 
-      const { data: profs, error: profsErr } = await this.client
-        .from('profissionais')
-        .select('id, full_name, professional_title, avatar_url, especializacao, categoria_profissional, nivel_atual')
+      let { data: profs, error: profsErr } = await this.client
+        .from('profissionais_publico')
+        .select('id, full_name, professional_title, avatar_url')
         .in('id', seguidoIds);
 
-      if (profsErr || !profs) return [];
+      if (profsErr || !profs || profs.length === 0) {
+        const fallback = await this.client
+          .from('profissionais')
+          .select('id, full_name, professional_title, avatar_url')
+          .in('id', seguidoIds);
+        if (fallback.data) profs = fallback.data;
+      }
+
+      if (!profs) return [];
 
       const profsMap = new Map<string, any>();
       profs.forEach((p: any) => profsMap.set(p.id, p));
@@ -3193,14 +3234,16 @@ export class SupabaseService {
 
       const matId = existente?.id || upsertData?.id;
       if (matId) {
-        // Registra também na nova tabela cursos_progresso_modulo
+        // Registra também na tabela cursos_progresso_modulo com colunas reais
         await this.client
           .from('cursos_progresso_modulo')
           .upsert({
             matricula_id: matId,
             modulo_id: moduloId,
-            concluido: true,
-            concluido_em: new Date().toISOString(),
+            video_concluido: true,
+            video_concluido_em: new Date().toISOString(),
+            avaliacao_modulo_aprovada: true,
+            avaliacao_modulo_nota: 100,
           }, { onConflict: 'matricula_id,modulo_id' });
       }
 
@@ -3398,17 +3441,18 @@ export class SupabaseService {
 
       const aprovado = nota >= notaMinima;
 
-      // Upsert no progresso do módulo
+      // Upsert no progresso do módulo — nomes de coluna corrigidos para
+      // bater com o schema real de cursos_progresso_modulo, que é o que
+      // modulo_curso_liberado() lê para decidir a liberação do próximo módulo.
       const { error } = await this.client
         .from('cursos_progresso_modulo')
         .upsert({
           matricula_id: matriculaId,
           modulo_id: moduloId,
-          concluido: aprovado,
-          nota_avaliacao: nota,
-          aprovado_avaliacao: aprovado,
-          respostas_avaliacao: respostas,
-          concluido_em: aprovado ? new Date().toISOString() : null,
+          video_concluido: true,
+          video_concluido_em: new Date().toISOString(),
+          avaliacao_modulo_aprovada: aprovado,
+          avaliacao_modulo_nota: nota,
         }, { onConflict: 'matricula_id,modulo_id' });
 
       if (error) {
@@ -3571,12 +3615,14 @@ export class SupabaseService {
 
   async contarMembrosAtivos(): Promise<number> {
     try {
-      const { count, error } = await this.client
-        .from('profissionais')
+      let { count, error } = await this.client
+        .from('profissionais_publico')
         .select('*', { count: 'exact', head: true });
-      if (error) {
-        console.warn('Erro ao contar membros ativos:', error.message);
-        return 0;
+      if (error || count === null) {
+        const fallback = await this.client
+          .from('profissionais')
+          .select('*', { count: 'exact', head: true });
+        return fallback.count || 0;
       }
       return count || 0;
     } catch (e: any) {
@@ -4181,6 +4227,38 @@ export class SupabaseService {
     }
   }
 
+  async creditarPontosLeituraArtigo(postId: string, tituloPost?: string): Promise<void> {
+    try {
+      const session = await this.getSession();
+      if (!session?.user || !postId) return;
+
+      // Verifica se este usuário já recebeu pontos por este artigo
+      const { data: jaCreditado } = await this.client
+        .from('gamificacao_eventos')
+        .select('id')
+        .eq('profissional_id', session.user.id)
+        .eq('tipo_acao', 'leitura_artigo')
+        .eq('referencia_id', postId)
+        .maybeSingle();
+
+      if (jaCreditado) return; // já pontuou por este artigo, não credita de novo
+
+      const { error } = await this.client.rpc('creditar_pontos', {
+        p_profissional_id: session.user.id,
+        p_tipo_acao: 'leitura_artigo',
+        p_pontos: 3,
+        p_referencia_id: postId,
+        p_descricao: tituloPost ? `Leitura: ${tituloPost}` : null,
+      });
+
+      if (error) {
+        console.warn('Falha ao creditar pontos de leitura de artigo:', error.message);
+      }
+    } catch (err: any) {
+      console.warn('Exceção ao creditar pontos de leitura de artigo:', err?.message || err);
+    }
+  }
+
   async obterAnalyticsBlog(): Promise<{
     totalVisualizacoes: number;
     totalPostsPublicados: number;
@@ -4715,10 +4793,17 @@ export class SupabaseService {
       const userIds = [...new Set(data.map((d: any) => d.user_id || d.profissional_id).filter(Boolean))];
       const profsMap: Record<string, any> = {};
       if (userIds.length > 0) {
-        const { data: profs } = await this.client
-          .from('profissionais')
-          .select('id, full_name, avatar_url, professional_title, nivel_atual')
+        let { data: profs } = await this.client
+          .from('profissionais_publico')
+          .select('id, full_name, avatar_url, professional_title')
           .in('id', userIds);
+        if (!profs || profs.length === 0) {
+          const fallback = await this.client
+            .from('profissionais')
+            .select('id, full_name, avatar_url, professional_title, nivel_atual')
+            .in('id', userIds);
+          profs = fallback.data || [];
+        }
         (profs || []).forEach((p: any) => {
           profsMap[p.id] = p;
         });

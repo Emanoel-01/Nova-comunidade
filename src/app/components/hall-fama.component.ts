@@ -703,10 +703,17 @@ export class HallFamaComponent implements OnInit, OnDestroy {
         const userIds = data.map((d: any) => d.user_id || d.id).filter(Boolean);
         const profsMap: Record<string, any> = {};
         if (userIds.length > 0) {
-          const { data: profs } = await this.supabaseService.client
-            .from('profissionais')
-            .select('id, full_name, avatar_url, professional_title, nivel_atual')
+          let { data: profs } = await this.supabaseService.client
+            .from('profissionais_publico')
+            .select('id, full_name, avatar_url, professional_title')
             .in('id', userIds);
+          if (!profs || profs.length === 0) {
+            const fallback = await this.supabaseService.client
+              .from('profissionais')
+              .select('id, full_name, avatar_url, professional_title, nivel_atual')
+              .in('id', userIds);
+            profs = fallback.data || [];
+          }
           (profs || []).forEach((p: any) => {
             profsMap[p.id] = p;
           });

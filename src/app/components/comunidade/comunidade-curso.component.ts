@@ -1093,9 +1093,9 @@ export class ComunidadeCursoComponent implements OnInit {
         const map: Record<string, { concluido: boolean; nota?: number | null; avaliacao_aprovada?: boolean }> = {};
         for (const item of progresso) {
           map[item.modulo_id] = {
-            concluido: item.concluido,
-            nota: item.nota,
-            avaliacao_aprovada: item.avaliacao_aprovada,
+            concluido: !!(item.video_concluido ?? item.concluido),
+            nota: item.avaliacao_modulo_nota ?? item.nota_avaliacao ?? item.nota,
+            avaliacao_aprovada: !!(item.avaliacao_modulo_aprovada ?? item.aprovado_avaliacao),
           };
         }
         this.progressoModulosMap.set(map);

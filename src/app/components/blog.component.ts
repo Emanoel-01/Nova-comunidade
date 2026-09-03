@@ -899,6 +899,7 @@ export class BlogComponent implements OnInit {
           this.processarEmbedInstagramSeNecessario(post);
           // Registra visualização não-bloqueante via URL direta
           this.supabaseService.registrarVisualizacaoPost(post.id);
+          this.supabaseService.creditarPontosLeituraArtigo(post.id, post.titulo);
         }
       }
     } else if (queryPostId) {
@@ -908,6 +909,7 @@ export class BlogComponent implements OnInit {
         this.atualizarSeoPost(post);
         this.processarEmbedInstagramSeNecessario(post);
         this.supabaseService.registrarVisualizacaoPost(post.id);
+        this.supabaseService.creditarPontosLeituraArtigo(post.id, post.titulo);
         // Redireciona links legados ?post= para a URL limpa /blog/:slug
         this.router.navigate(['/blog', post.slug || post.id], { replaceUrl: true });
       }
@@ -1041,6 +1043,7 @@ export class BlogComponent implements OnInit {
     this.processarEmbedInstagramSeNecessario(post);
     // Registra visualização não-bloqueante no clique do post
     this.supabaseService.registrarVisualizacaoPost(post.id);
+    this.supabaseService.creditarPontosLeituraArtigo(post.id, post.titulo);
     this.router.navigate(['/blog', post.slug || post.id]);
   }
 
