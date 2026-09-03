@@ -36,7 +36,7 @@ interface TemplateEmailOptions {
 
 export function gerarTemplateEmailAmorimTech(options: TemplateEmailOptions): { assunto: string; html: string } {
   const urlAcesso = options.linkAcesso || 'https://emanoelamorim.com';
-  const logoUrl = 'https://emanoelamorim.com/logo-header.jpg';
+  const logoUrl = 'https://emanoelamorim.com/logo-header.svg';
 
   let tituloAssunto = '';
   let corpoPrincipalHtml = '';
