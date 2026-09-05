@@ -1862,15 +1862,51 @@ export class SupabaseService {
         .insert({ material_id: materialId, profissional_id: session.user.id });
       if (error) return { error };
 
+      // CORREÇÃO DE SEGURANÇA (05/09/2026): não usamos mais o url_arquivo salvo
+      // (link assinado de 10 anos, reutilizável para sempre por quem o receber
+      // fora do app). Buscamos o storage_path puro e geramos um signed URL novo,
+      // de curta duração, a cada clique de download.
       const { data } = await this.client
         .from('materiais')
-        .select('url_arquivo')
+        .select('url_arquivo, storage_path')
         .eq('id', materialId)
         .maybeSingle();
+
+      if (data?.storage_path) {
+        const { data: signedData, error: signedError } = await this.client.storage
+          .from('materiais-comunidade')
+          .createSignedUrl(data.storage_path, 3600); // 1 hora
+
+        if (!signedError && signedData?.signedUrl) {
+          return { error: null, urlArquivo: signedData.signedUrl };
+        }
+        // Se a geração sob demanda falhar por qualquer motivo, cai no fallback
+        // abaixo (url_arquivo legado) para não travar o download do usuário.
+      }
 
       return { error: null, urlArquivo: data?.url_arquivo || null };
     } catch (e: any) {
       return { error: e };
+    }
+  }
+
+  /**
+   * Gera um signed URL de curta duração (padrão 1h) para um anexo de material
+   * (tabela material_anexos), a partir do storage_path salvo. Substitui o uso
+   * direto de anexo.url_arquivo (que antes guardava um link de 10 anos).
+   * Se o anexo não tiver storage_path (registro legado), cai no url_arquivo salvo.
+   */
+  async gerarUrlDownloadAnexo(anexo: { url_arquivo?: string; storage_path?: string }): Promise<string | null> {
+    try {
+      if (anexo?.storage_path) {
+        const { data, error } = await this.client.storage
+          .from('materiais-comunidade')
+          .createSignedUrl(anexo.storage_path, 3600);
+        if (!error && data?.signedUrl) return data.signedUrl;
+      }
+      return anexo?.url_arquivo || null;
+    } catch {
+      return anexo?.url_arquivo || null;
     }
   }
 
@@ -1915,10 +1951,16 @@ export class SupabaseService {
         return { error: uploadError };
       }
 
-      // Gera signed URL de longa duração (10 anos = 315360000s)
+      // CORREÇÃO DE SEGURANÇA (05/09/2026): não geramos mais signed URL de longa
+      // duração para salvar permanentemente no banco — um link assim, uma vez
+      // vazado (print, WhatsApp, e-mail), fica válido para sempre. O path puro
+      // do arquivo é salvo em storage_path; o signed URL correto (curto) é
+      // gerado sob demanda a cada download via gerarUrlDownloadMaterial().
+      // Ainda geramos um signed URL de curta duração aqui só para permitir a
+      // pré-visualização imediata no admin logo após o upload.
       const { data: signedData, error: signedError } = await this.client.storage
         .from('materiais-comunidade')
-        .createSignedUrl(path, 315360000);
+        .createSignedUrl(path, 3600);
 
       if (signedError) {
         return { error: signedError, path };
@@ -2916,6 +2958,7 @@ export class SupabaseService {
     descricao?: string;
     duracao?: string;
     vimeo_id?: string;
+    youtube_id?: string;
     ordem: number;
     exige_avaliacao?: boolean;
     trava_proximo_modulo?: boolean;
@@ -2929,6 +2972,7 @@ export class SupabaseService {
       if (modulo.descricao !== undefined) payload.descricao = modulo.descricao;
       if (modulo.duracao !== undefined) payload.duracao = modulo.duracao;
       if (modulo.vimeo_id !== undefined) payload.vimeo_id = modulo.vimeo_id;
+      if (modulo.youtube_id !== undefined) payload.youtube_id = modulo.youtube_id;
       if (modulo.exige_avaliacao !== undefined) payload.exige_avaliacao = modulo.exige_avaliacao;
       if (modulo.trava_proximo_modulo !== undefined) payload.trava_proximo_modulo = modulo.trava_proximo_modulo;
 
@@ -2946,6 +2990,7 @@ export class SupabaseService {
       descricao: string;
       duracao: string;
       vimeo_id: string;
+      youtube_id: string;
       ordem: number;
       exige_avaliacao: boolean;
       trava_proximo_modulo: boolean;
@@ -3235,7 +3280,7 @@ export class SupabaseService {
       const matId = existente?.id || upsertData?.id;
       if (matId) {
         // Registra também na tabela cursos_progresso_modulo com colunas reais
-        await this.client
+        const { error: erroProgresso } = await this.client
           .from('cursos_progresso_modulo')
           .upsert({
             matricula_id: matId,
@@ -3245,6 +3290,14 @@ export class SupabaseService {
             avaliacao_modulo_aprovada: true,
             avaliacao_modulo_nota: 100,
           }, { onConflict: 'matricula_id,modulo_id' });
+
+        if (erroProgresso) {
+          console.warn('Falha ao registrar progresso do módulo (video_concluido):', erroProgresso.message);
+          return { error: erroProgresso };
+        }
+      } else {
+        console.warn('marcarModuloConcluido: matId não obtido após upsert em cursos_matriculas — progresso não registrado.');
+        return { error: new Error('Não foi possível confirmar a matrícula. Recarregue a página e tente novamente.') };
       }
 
       return { error: null };
@@ -4232,23 +4285,12 @@ export class SupabaseService {
       const session = await this.getSession();
       if (!session?.user || !postId) return;
 
-      // Verifica se este usuário já recebeu pontos por este artigo
-      const { data: jaCreditado } = await this.client
-        .from('gamificacao_eventos')
-        .select('id')
-        .eq('profissional_id', session.user.id)
-        .eq('tipo_acao', 'leitura_artigo')
-        .eq('referencia_id', postId)
-        .maybeSingle();
-
-      if (jaCreditado) return; // já pontuou por este artigo, não credita de novo
-
-      const { error } = await this.client.rpc('creditar_pontos', {
-        p_profissional_id: session.user.id,
-        p_tipo_acao: 'leitura_artigo',
-        p_pontos: 3,
-        p_referencia_id: postId,
-        p_descricao: tituloPost ? `Leitura: ${tituloPost}` : null,
+      // A verificação de duplicidade e a validação do usuário agora
+      // acontecem dentro da função RPC (via auth.uid()), não é mais
+      // necessário checar aqui antes de chamar.
+      const { error } = await this.client.rpc('creditar_pontos_leitura_artigo', {
+        p_post_id: postId,
+        p_titulo: tituloPost || null,
       });
 
       if (error) {
@@ -4948,6 +4990,30 @@ export class SupabaseService {
     }
   }
 
+  /**
+   * Lista os módulos de um curso público (exibir_na_agenda = true) para
+   * exibição no balão de detalhes da Amorim Academy. Retorna apenas
+   * título, duração e ordem — nunca vimeo_id/youtube_id, que não devem
+   * ser expostos a visitantes anônimos.
+   */
+  async listarModulosPublicosDoCurso(cursoId: string): Promise<Array<{ titulo: string; duracao: string | null; ordem: number }>> {
+    try {
+      const { data, error } = await this.client
+        .from('cursos_modulos')
+        .select('titulo, duracao, ordem')
+        .eq('curso_id', cursoId)
+        .order('ordem', { ascending: true });
+      if (error) {
+        console.warn('Erro ao listar módulos públicos do curso:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e: any) {
+      console.warn('Exceção ao listar módulos públicos do curso:', e?.message || e);
+      return [];
+    }
+  }
+
   async atualizarCampoAgendaCurso(
     id: string,
     dados: {
@@ -5008,6 +5074,10 @@ export class SupabaseService {
     nome: string;
     disciplina_area?: string | null;
     foto_url?: string | null;
+    mini_bio?: string | null;
+    link_instagram?: string | null;
+    link_linkedin?: string | null;
+    link_site?: string | null;
     ativo?: boolean;
     ordem?: number;
   }): Promise<{ error: Error | null; data?: any }> {
@@ -5018,6 +5088,10 @@ export class SupabaseService {
           nome: dados.nome.trim(),
           disciplina_area: dados.disciplina_area?.trim() || null,
           foto_url: dados.foto_url?.trim() || null,
+          mini_bio: dados.mini_bio?.trim() || null,
+          link_instagram: dados.link_instagram?.trim() || null,
+          link_linkedin: dados.link_linkedin?.trim() || null,
+          link_site: dados.link_site?.trim() || null,
           ativo: dados.ativo ?? true,
           ordem: dados.ordem ?? 0,
         })
@@ -5035,6 +5109,10 @@ export class SupabaseService {
       nome: string;
       disciplina_area: string | null;
       foto_url: string | null;
+      mini_bio: string | null;
+      link_instagram: string | null;
+      link_linkedin: string | null;
+      link_site: string | null;
       ativo: boolean;
       ordem: number;
     }>
@@ -5103,6 +5181,8 @@ export class SupabaseService {
     nome: string;
     logo_url?: string | null;
     link_site?: string | null;
+    link_instagram?: string | null;
+    link_linkedin?: string | null;
     ativo?: boolean;
     ordem?: number;
   }): Promise<{ error: Error | null; data?: any }> {
@@ -5113,6 +5193,8 @@ export class SupabaseService {
           nome: dados.nome.trim(),
           logo_url: dados.logo_url?.trim() || null,
           link_site: dados.link_site?.trim() || null,
+          link_instagram: dados.link_instagram?.trim() || null,
+          link_linkedin: dados.link_linkedin?.trim() || null,
           ativo: dados.ativo ?? true,
           ordem: dados.ordem ?? 0,
         })
@@ -5130,6 +5212,8 @@ export class SupabaseService {
       nome: string;
       logo_url: string | null;
       link_site: string | null;
+      link_instagram: string | null;
+      link_linkedin: string | null;
       ativo: boolean;
       ordem: number;
     }>
@@ -5198,6 +5282,8 @@ export class SupabaseService {
     nome: string;
     logo_url?: string | null;
     link_site?: string | null;
+    link_instagram?: string | null;
+    link_linkedin?: string | null;
     ativo?: boolean;
     ordem?: number;
   }): Promise<{ error: Error | null; data?: any }> {
@@ -5208,6 +5294,8 @@ export class SupabaseService {
           nome: dados.nome.trim(),
           logo_url: dados.logo_url?.trim() || null,
           link_site: dados.link_site?.trim() || null,
+          link_instagram: dados.link_instagram?.trim() || null,
+          link_linkedin: dados.link_linkedin?.trim() || null,
           ativo: dados.ativo ?? true,
           ordem: dados.ordem ?? 0,
         })
@@ -5225,6 +5313,8 @@ export class SupabaseService {
       nome: string;
       logo_url: string | null;
       link_site: string | null;
+      link_instagram: string | null;
+      link_linkedin: string | null;
       ativo: boolean;
       ordem: number;
     }>

@@ -19,6 +19,7 @@ export interface MaterialAnexo {
   material_id?: string;
   nome_arquivo: string;
   url_arquivo: string;
+  storage_path?: string | null;
   formato?: string;
   tamanho?: string;
   ordem: number;
@@ -33,6 +34,7 @@ interface MaterialAdminItem {
   formato?: string;
   tamanho?: string;
   url_arquivo?: string;
+  storage_path?: string | null;
   plataforma_video?: 'vimeo' | 'youtube' | null;
   ativo: boolean;
   pago?: boolean;
@@ -929,6 +931,7 @@ export class AdminMateriaisComponent implements OnInit {
   readonly formTipoArquivoReal = signal<string>('');
   readonly formTamanho = signal<string>('');
   readonly formUrlArquivo = signal<string>('');
+  readonly formStoragePath = signal<string>('');
   readonly formPlataformaVideo = signal<'vimeo' | 'youtube'>('vimeo');
   readonly formAtivo = signal<boolean>(true);
   readonly formPago = signal<boolean>(false);
@@ -1129,13 +1132,17 @@ export class AdminMateriaisComponent implements OnInit {
         const ordem = this.anexosAtuais().length;
 
         if (material?.id) {
-          // Salva diretamente na tabela material_anexos
+          // Salva diretamente na tabela material_anexos.
+          // storage_path (path puro, sem token) é o que permite gerar um signed
+          // URL novo e curto a cada download; url_arquivo aqui vale só como
+          // fallback/preview imediato (1h) — não é o link usado no download real.
           const { data, error } = await this.supabaseService.client
             .from('material_anexos')
             .insert({
               material_id: material.id,
               nome_arquivo: file.name,
               url_arquivo: res.signedUrl,
+              storage_path: res.path,
               formato,
               tamanho,
               ordem
@@ -1156,6 +1163,7 @@ export class AdminMateriaisComponent implements OnInit {
               id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
               nome_arquivo: file.name,
               url_arquivo: res.signedUrl!,
+              storage_path: res.path,
               formato,
               tamanho,
               ordem
@@ -1203,6 +1211,9 @@ export class AdminMateriaisComponent implements OnInit {
 
       if (res.signedUrl) {
         this.formUrlArquivo.set(res.signedUrl);
+        // storage_path (path puro) é o que permite gerar signed URL curto sob
+        // demanda a cada download real — ver registrarDownloadMaterial().
+        this.formStoragePath.set(res.path || '');
         this.nomeArquivoEnviado.set(file.name);
 
         if (res.formato) {
@@ -1238,6 +1249,7 @@ export class AdminMateriaisComponent implements OnInit {
     this.formTipoArquivoReal.set('');
     this.formTamanho.set('');
     this.formUrlArquivo.set('');
+    this.formStoragePath.set('');
     this.formPlataformaVideo.set('vimeo');
     this.formAtivo.set(true);
     this.formPago.set(false);
@@ -1262,6 +1274,7 @@ export class AdminMateriaisComponent implements OnInit {
     this.formTipoArquivoReal.set(material.tipo_arquivo_real || '');
     this.formTamanho.set(material.tamanho || '');
     this.formUrlArquivo.set(material.url_arquivo || '');
+    this.formStoragePath.set(material.storage_path || '');
     this.formPlataformaVideo.set(material.plataforma_video || 'vimeo');
     this.formAtivo.set(material.ativo);
     this.formPago.set(!!material.pago);
@@ -1340,6 +1353,9 @@ export class AdminMateriaisComponent implements OnInit {
       tipo_arquivo_real: this.formTipoArquivoReal().trim().toLowerCase() || null,
       tamanho: this.formTamanho().trim() || (this.formCategoria() === 'Vídeos' ? defaultTamanhoVideo : 'Arquivo'),
       url_arquivo: urlArquivoFinal,
+      // storage_path só se aplica a arquivos reais do bucket (PDFs, zips etc.);
+      // vídeos usam link externo (YouTube/Vimeo) e não têm path de storage.
+      storage_path: this.formCategoria() === 'Vídeos' ? null : (this.formStoragePath().trim() || null),
       plataforma_video: this.formCategoria() === 'Vídeos' ? this.formPlataformaVideo() : null,
       ativo: this.formAtivo(),
       pago: this.formPago(),

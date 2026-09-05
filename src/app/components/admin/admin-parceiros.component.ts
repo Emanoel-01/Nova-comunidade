@@ -5,9 +5,12 @@ import { SupabaseService } from '../../../services/supabase.service';
 export interface ProfessorParceiro {
   id: string;
   nome: string;
-  cargo_titulo: string;
+  disciplina_area?: string | null;
+  cargo_titulo?: string | null; // compatibilidade com código existente
   foto_url?: string | null;
   mini_bio?: string | null;
+  link_site?: string | null;
+  link_instagram?: string | null;
   link_linkedin?: string | null;
   ordem: number;
   ativo: boolean;
@@ -17,10 +20,10 @@ export interface ProfessorParceiro {
 export interface SoftwareParceiro {
   id: string;
   nome: string;
-  categoria?: string | null;
   logo_url?: string | null;
-  descricao_curta?: string | null;
-  link_oficial?: string | null;
+  link_site?: string | null;
+  link_instagram?: string | null;
+  link_linkedin?: string | null;
   ordem: number;
   ativo: boolean;
   criado_em?: string;
@@ -29,9 +32,10 @@ export interface SoftwareParceiro {
 export interface EmpresaParceira {
   id: string;
   nome: string;
-  tipo?: string | null;
   logo_url?: string | null;
-  link_oficial?: string | null;
+  link_site?: string | null;
+  link_instagram?: string | null;
+  link_linkedin?: string | null;
   ordem: number;
   ativo: boolean;
   criado_em?: string;
@@ -225,12 +229,24 @@ export interface EmpresaParceira {
 
                     <div class="space-y-1 min-w-0 flex-1">
                       <h4 class="text-sm font-bold text-slate-900 truncate" [title]="prof.nome">{{ prof.nome }}</h4>
-                      <p class="text-xs text-indigo-600 font-semibold leading-tight line-clamp-2">{{ prof.cargo_titulo }}</p>
-                      @if (prof.link_linkedin) {
-                        <a [href]="prof.link_linkedin" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-1 mt-1">
-                          <span>LinkedIn</span> ↗
-                        </a>
-                      }
+                      <p class="text-xs text-indigo-600 font-semibold leading-tight line-clamp-2">{{ prof.disciplina_area || prof.cargo_titulo }}</p>
+                      <div class="flex items-center gap-2 pt-1">
+                        @if (prof.link_site) {
+                          <a [href]="prof.link_site" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-0.5">
+                            <span>Site</span> ↗
+                          </a>
+                        }
+                        @if (prof.link_instagram) {
+                          <a [href]="prof.link_instagram" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-pink-600 font-medium inline-flex items-center gap-0.5">
+                            <span>Instagram</span> ↗
+                          </a>
+                        }
+                        @if (prof.link_linkedin) {
+                          <a [href]="prof.link_linkedin" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-0.5">
+                            <span>LinkedIn</span> ↗
+                          </a>
+                        }
+                      </div>
                     </div>
                   </div>
 
@@ -310,26 +326,25 @@ export interface EmpresaParceira {
 
                     <div class="space-y-1 min-w-0 flex-1">
                       <h4 class="text-sm font-bold text-slate-900 truncate">{{ soft.nome }}</h4>
-                      @if (soft.categoria) {
-                        <span class="inline-block px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold text-[10px] tracking-wide">
-                          {{ soft.categoria }}
-                        </span>
-                      }
-                      @if (soft.link_oficial) {
-                        <div>
-                          <a [href]="soft.link_oficial" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-1">
-                            <span>Site Oficial</span> ↗
+                      <div class="flex items-center gap-2 pt-1">
+                        @if (soft.link_site) {
+                          <a [href]="soft.link_site" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-0.5">
+                            <span>Site</span> ↗
                           </a>
-                        </div>
-                      }
+                        }
+                        @if (soft.link_instagram) {
+                          <a [href]="soft.link_instagram" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-pink-600 font-medium inline-flex items-center gap-0.5">
+                            <span>Instagram</span> ↗
+                          </a>
+                        }
+                        @if (soft.link_linkedin) {
+                          <a [href]="soft.link_linkedin" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-0.5">
+                            <span>LinkedIn</span> ↗
+                          </a>
+                        }
+                      </div>
                     </div>
                   </div>
-
-                  @if (soft.descricao_curta) {
-                    <p class="text-xs text-slate-600 line-clamp-3 mb-4 leading-relaxed">
-                      {{ soft.descricao_curta }}
-                    </p>
-                  }
 
                   <!-- Ações -->
                   <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
@@ -401,18 +416,23 @@ export interface EmpresaParceira {
 
                     <div class="space-y-1 min-w-0 flex-1">
                       <h4 class="text-sm font-bold text-slate-900 truncate">{{ emp.nome }}</h4>
-                      @if (emp.tipo) {
-                        <span class="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold text-[10px] tracking-wide">
-                          {{ emp.tipo }}
-                        </span>
-                      }
-                      @if (emp.link_oficial) {
-                        <div>
-                          <a [href]="emp.link_oficial" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-1">
-                            <span>Site Oficial</span> ↗
+                      <div class="flex items-center gap-2 pt-1">
+                        @if (emp.link_site) {
+                          <a [href]="emp.link_site" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-0.5">
+                            <span>Site</span> ↗
                           </a>
-                        </div>
-                      }
+                        }
+                        @if (emp.link_instagram) {
+                          <a [href]="emp.link_instagram" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-pink-600 font-medium inline-flex items-center gap-0.5">
+                            <span>Instagram</span> ↗
+                          </a>
+                        }
+                        @if (emp.link_linkedin) {
+                          <a [href]="emp.link_linkedin" target="_blank" rel="noopener noreferrer" class="text-[11px] text-slate-400 hover:text-indigo-600 font-medium inline-flex items-center gap-0.5">
+                            <span>LinkedIn</span> ↗
+                          </a>
+                        }
+                      </div>
                     </div>
                   </div>
 
@@ -467,12 +487,12 @@ export interface EmpresaParceira {
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Cargo / Título Profissional *</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Disciplina / Área de Atuação *</label>
                 <input
                   type="text"
-                  #profCargoInput
-                  [value]="formProfessor.cargo_titulo"
-                  placeholder="Ex: Engenheiro Civil, Doutor em Patologia das Estruturas"
+                  #profDisciplinaInput
+                  [value]="formProfessor.disciplina_area"
+                  placeholder="Ex: Engenharia Diagnóstica, Patologia das Estruturas"
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -499,7 +519,29 @@ export interface EmpresaParceira {
                 ></textarea>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Site</label>
+                  <input
+                    type="url"
+                    #profSiteInput
+                    [value]="formProfessor.link_site"
+                    placeholder="https://site.com"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Instagram</label>
+                  <input
+                    type="url"
+                    #profInstagramInput
+                    [value]="formProfessor.link_instagram"
+                    placeholder="https://instagram.com/perfil"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
                 <div>
                   <label class="block text-xs font-bold text-slate-700 mb-1">Link LinkedIn</label>
                   <input
@@ -507,20 +549,20 @@ export interface EmpresaParceira {
                     #profLinkedinInput
                     [value]="formProfessor.link_linkedin"
                     placeholder="https://linkedin.com/in/perfil"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Ordem de Exibição</label>
-                  <input
-                    type="number"
-                    #profOrdemInput
-                    [value]="formProfessor.ordem"
-                    min="0"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Ordem de Exibição</label>
+                <input
+                  type="number"
+                  #profOrdemInput
+                  [value]="formProfessor.ordem"
+                  min="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
 
               <div class="pt-2">
@@ -550,9 +592,11 @@ export interface EmpresaParceira {
                 [disabled]="salvando()"
                 (click)="salvarProfessor(
                   profNomeInput.value,
-                  profCargoInput.value,
+                  profDisciplinaInput.value,
                   profFotoInput.value,
                   profBioInput.value,
+                  profSiteInput.value,
+                  profInstagramInput.value,
                   profLinkedinInput.value,
                   +profOrdemInput.value,
                   profAtivoInput.checked
@@ -597,17 +641,6 @@ export interface EmpresaParceira {
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Categoria</label>
-                <input
-                  type="text"
-                  #softCategoriaInput
-                  [value]="formSoftware.categoria"
-                  placeholder="Ex: Inspeção Predial / BIM / Orçamento"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">URL da Logo</label>
                 <input
                   type="url"
@@ -618,39 +651,50 @@ export interface EmpresaParceira {
                 />
               </div>
 
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Descrição Curta</label>
-                <textarea
-                  #softDescricaoInput
-                  [value]="formSoftware.descricao_curta"
-                  rows="3"
-                  placeholder="Como o software é utilizado nos cursos ou rotinas técnicas..."
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                ></textarea>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Oficial</label>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Site</label>
                   <input
                     type="url"
-                    #softLinkInput
-                    [value]="formSoftware.link_oficial"
+                    #softSiteInput
+                    [value]="formSoftware.link_site"
                     placeholder="https://software.com.br"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
                 <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Ordem de Exibição</label>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Instagram</label>
                   <input
-                    type="number"
-                    #softOrdemInput
-                    [value]="formSoftware.ordem"
-                    min="0"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    type="url"
+                    #softInstagramInput
+                    [value]="formSoftware.link_instagram"
+                    placeholder="https://instagram.com/software"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link LinkedIn</label>
+                  <input
+                    type="url"
+                    #softLinkedinInput
+                    [value]="formSoftware.link_linkedin"
+                    placeholder="https://linkedin.com/company/software"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Ordem de Exibição</label>
+                <input
+                  type="number"
+                  #softOrdemInput
+                  [value]="formSoftware.ordem"
+                  min="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
 
               <div class="pt-2">
@@ -680,10 +724,10 @@ export interface EmpresaParceira {
                 [disabled]="salvando()"
                 (click)="salvarSoftware(
                   softNomeInput.value,
-                  softCategoriaInput.value,
                   softLogoInput.value,
-                  softDescricaoInput.value,
-                  softLinkInput.value,
+                  softSiteInput.value,
+                  softInstagramInput.value,
+                  softLinkedinInput.value,
                   +softOrdemInput.value,
                   softAtivoInput.checked
                 )"
@@ -727,17 +771,6 @@ export interface EmpresaParceira {
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Empresa</label>
-                <input
-                  type="text"
-                  #empTipoInput
-                  [value]="formEmpresa.tipo"
-                  placeholder="Ex: Construtora / Incorporadora / Instalações"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">URL da Logo</label>
                 <input
                   type="url"
@@ -748,28 +781,50 @@ export interface EmpresaParceira {
                 />
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Oficial</label>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Site</label>
                   <input
                     type="url"
-                    #empLinkInput
-                    [value]="formEmpresa.link_oficial"
+                    #empSiteInput
+                    [value]="formEmpresa.link_site"
                     placeholder="https://empresa.com.br"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
                 <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Ordem de Exibição</label>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link Instagram</label>
                   <input
-                    type="number"
-                    #empOrdemInput
-                    [value]="formEmpresa.ordem"
-                    min="0"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    type="url"
+                    #empInstagramInput
+                    [value]="formEmpresa.link_instagram"
+                    placeholder="https://instagram.com/empresa"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Link LinkedIn</label>
+                  <input
+                    type="url"
+                    #empLinkedinInput
+                    [value]="formEmpresa.link_linkedin"
+                    placeholder="https://linkedin.com/company/empresa"
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Ordem de Exibição</label>
+                <input
+                  type="number"
+                  #empOrdemInput
+                  [value]="formEmpresa.ordem"
+                  min="0"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
 
               <div class="pt-2">
@@ -799,9 +854,10 @@ export interface EmpresaParceira {
                 [disabled]="salvando()"
                 (click)="salvarEmpresa(
                   empNomeInput.value,
-                  empTipoInput.value,
                   empLogoInput.value,
-                  empLinkInput.value,
+                  empSiteInput.value,
+                  empInstagramInput.value,
+                  empLinkedinInput.value,
                   +empOrdemInput.value,
                   empAtivoInput.checked
                 )"
@@ -843,9 +899,11 @@ export class AdminParceirosComponent implements OnInit {
   readonly professorEmEdicao = signal<ProfessorParceiro | null>(null);
   formProfessor = {
     nome: '',
-    cargo_titulo: '',
+    disciplina_area: '',
     foto_url: '',
     mini_bio: '',
+    link_site: '',
+    link_instagram: '',
     link_linkedin: '',
     ordem: 0,
     ativo: true
@@ -855,10 +913,10 @@ export class AdminParceirosComponent implements OnInit {
   readonly softwareEmEdicao = signal<SoftwareParceiro | null>(null);
   formSoftware = {
     nome: '',
-    categoria: '',
     logo_url: '',
-    descricao_curta: '',
-    link_oficial: '',
+    link_site: '',
+    link_instagram: '',
+    link_linkedin: '',
     ordem: 0,
     ativo: true
   };
@@ -867,9 +925,10 @@ export class AdminParceirosComponent implements OnInit {
   readonly empresaEmEdicao = signal<EmpresaParceira | null>(null);
   formEmpresa = {
     nome: '',
-    tipo: '',
     logo_url: '',
-    link_oficial: '',
+    link_site: '',
+    link_instagram: '',
+    link_linkedin: '',
     ordem: 0,
     ativo: true
   };
@@ -907,9 +966,11 @@ export class AdminParceirosComponent implements OnInit {
     this.professorEmEdicao.set(null);
     this.formProfessor = {
       nome: '',
-      cargo_titulo: '',
+      disciplina_area: '',
       foto_url: '',
       mini_bio: '',
+      link_site: '',
+      link_instagram: '',
       link_linkedin: '',
       ordem: this.professores().length + 1,
       ativo: true
@@ -921,9 +982,11 @@ export class AdminParceirosComponent implements OnInit {
     this.professorEmEdicao.set(prof);
     this.formProfessor = {
       nome: prof.nome,
-      cargo_titulo: prof.cargo_titulo,
+      disciplina_area: prof.disciplina_area || '',
       foto_url: prof.foto_url || '',
       mini_bio: prof.mini_bio || '',
+      link_site: prof.link_site || '',
+      link_instagram: prof.link_instagram || '',
       link_linkedin: prof.link_linkedin || '',
       ordem: prof.ordem,
       ativo: prof.ativo
@@ -938,15 +1001,17 @@ export class AdminParceirosComponent implements OnInit {
 
   async salvarProfessor(
     nome: string,
-    cargo: string,
+    disciplina: string,
     fotoUrl: string,
     miniBio: string,
+    site: string,
+    instagram: string,
     linkedin: string,
     ordem: number,
     ativo: boolean
   ): Promise<void> {
-    if (!nome.trim() || !cargo.trim()) {
-      this.exibirErro('Por favor, preencha o Nome e o Cargo/Título do professor.');
+    if (!nome.trim() || !disciplina.trim()) {
+      this.exibirErro('Por favor, preencha o Nome e a Disciplina/Área do professor.');
       return;
     }
 
@@ -954,9 +1019,11 @@ export class AdminParceirosComponent implements OnInit {
     try {
       const payload = {
         nome: nome.trim(),
-        cargo_titulo: cargo.trim(),
+        disciplina_area: disciplina.trim(),
         foto_url: fotoUrl.trim() || null,
         mini_bio: miniBio.trim() || null,
+        link_site: site.trim() || null,
+        link_instagram: instagram.trim() || null,
         link_linkedin: linkedin.trim() || null,
         ordem: isNaN(ordem) ? 0 : ordem,
         ativo
@@ -1016,10 +1083,10 @@ export class AdminParceirosComponent implements OnInit {
     this.softwareEmEdicao.set(null);
     this.formSoftware = {
       nome: '',
-      categoria: '',
       logo_url: '',
-      descricao_curta: '',
-      link_oficial: '',
+      link_site: '',
+      link_instagram: '',
+      link_linkedin: '',
       ordem: this.softwares().length + 1,
       ativo: true
     };
@@ -1030,10 +1097,10 @@ export class AdminParceirosComponent implements OnInit {
     this.softwareEmEdicao.set(soft);
     this.formSoftware = {
       nome: soft.nome,
-      categoria: soft.categoria || '',
       logo_url: soft.logo_url || '',
-      descricao_curta: soft.descricao_curta || '',
-      link_oficial: soft.link_oficial || '',
+      link_site: soft.link_site || '',
+      link_instagram: soft.link_instagram || '',
+      link_linkedin: soft.link_linkedin || '',
       ordem: soft.ordem,
       ativo: soft.ativo
     };
@@ -1047,10 +1114,10 @@ export class AdminParceirosComponent implements OnInit {
 
   async salvarSoftware(
     nome: string,
-    categoria: string,
     logoUrl: string,
-    descricao: string,
-    linkOficial: string,
+    site: string,
+    instagram: string,
+    linkedin: string,
     ordem: number,
     ativo: boolean
   ): Promise<void> {
@@ -1063,10 +1130,10 @@ export class AdminParceirosComponent implements OnInit {
     try {
       const payload = {
         nome: nome.trim(),
-        categoria: categoria.trim() || null,
         logo_url: logoUrl.trim() || null,
-        descricao_curta: descricao.trim() || null,
-        link_oficial: linkOficial.trim() || null,
+        link_site: site.trim() || null,
+        link_instagram: instagram.trim() || null,
+        link_linkedin: linkedin.trim() || null,
         ordem: isNaN(ordem) ? 0 : ordem,
         ativo
       };
@@ -1125,9 +1192,10 @@ export class AdminParceirosComponent implements OnInit {
     this.empresaEmEdicao.set(null);
     this.formEmpresa = {
       nome: '',
-      tipo: '',
       logo_url: '',
-      link_oficial: '',
+      link_site: '',
+      link_instagram: '',
+      link_linkedin: '',
       ordem: this.empresas().length + 1,
       ativo: true
     };
@@ -1138,9 +1206,10 @@ export class AdminParceirosComponent implements OnInit {
     this.empresaEmEdicao.set(emp);
     this.formEmpresa = {
       nome: emp.nome,
-      tipo: emp.tipo || '',
       logo_url: emp.logo_url || '',
-      link_oficial: emp.link_oficial || '',
+      link_site: emp.link_site || '',
+      link_instagram: emp.link_instagram || '',
+      link_linkedin: emp.link_linkedin || '',
       ordem: emp.ordem,
       ativo: emp.ativo
     };
@@ -1154,9 +1223,10 @@ export class AdminParceirosComponent implements OnInit {
 
   async salvarEmpresa(
     nome: string,
-    tipo: string,
     logoUrl: string,
-    linkOficial: string,
+    site: string,
+    instagram: string,
+    linkedin: string,
     ordem: number,
     ativo: boolean
   ): Promise<void> {
@@ -1169,9 +1239,10 @@ export class AdminParceirosComponent implements OnInit {
     try {
       const payload = {
         nome: nome.trim(),
-        tipo: tipo.trim() || null,
         logo_url: logoUrl.trim() || null,
-        link_oficial: linkOficial.trim() || null,
+        link_site: site.trim() || null,
+        link_instagram: instagram.trim() || null,
+        link_linkedin: linkedin.trim() || null,
         ordem: isNaN(ordem) ? 0 : ordem,
         ativo
       };

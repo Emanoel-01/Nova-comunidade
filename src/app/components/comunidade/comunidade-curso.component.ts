@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { montarUrlPlayerVimeo } from '../../utils/vimeo.util';
+import { montarUrlPlayerYoutube } from '../../utils/youtube.util';
 import { CertificadoPdfService } from '../../services/certificado-pdf.service';
 
 export interface CursoModuloAluno {
@@ -13,6 +14,7 @@ export interface CursoModuloAluno {
   duracao: string;
   descricao: string;
   vimeo_id?: string | null;
+  youtube_id?: string | null;
   exige_avaliacao?: boolean;
   trava_proximo_modulo?: boolean;
   status?: 'concluido' | 'em_andamento' | 'bloqueado';
@@ -563,7 +565,7 @@ export interface CursoAluno {
                             <span class="text-[11px] text-slate-500 font-normal">Ambiente Seguro de Capacitação</span>
                           </div>
 
-                          @let videoUrl = getVimeoUrl(mod.vimeo_id);
+                          @let videoUrl = getVideoUrlModulo(mod);
                           @if (videoUrl) {
                             <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-inner border border-slate-800">
                               <iframe
@@ -1076,6 +1078,26 @@ export class ComunidadeCursoComponent implements OnInit {
     }
   }
 
+  /**
+   * Recalcula quais módulos do curso estão liberados, consultando a RPC
+   * modulo_curso_liberado para cada um. Chamado ao abrir o curso e também
+   * logo após concluir um módulo, para que o próximo libere na hora sem
+   * precisar recarregar a página.
+   */
+  private async recarregarStatusLiberado(cursoId: string, matriculaId: string): Promise<void> {
+    const c = this.cursos().find(x => x.id === cursoId);
+    if (!c || !c.modulos || c.modulos.length === 0) return;
+
+    const libMap: Record<string, boolean> = {};
+    await Promise.all(
+      c.modulos.map(async mod => {
+        const liberado = await this.supabaseService.moduloEstaLiberado(matriculaId, mod.id);
+        libMap[mod.id] = liberado;
+      })
+    );
+    this.statusLiberadoMap.set(libMap);
+  }
+
   async abrirDetalheCurso(cursoId: string): Promise<void> {
     this.cursoSelecionadoId.set(cursoId);
     this.mensagemFeedback.set(null);
@@ -1101,16 +1123,7 @@ export class ComunidadeCursoComponent implements OnInit {
         this.progressoModulosMap.set(map);
 
         // Consultar RPC modulo_curso_liberado para cada módulo
-        if (c.modulos && c.modulos.length > 0) {
-          const libMap: Record<string, boolean> = {};
-          await Promise.all(
-            c.modulos.map(async mod => {
-              const liberado = await this.supabaseService.moduloEstaLiberado(c.matriculaId!, mod.id);
-              libMap[mod.id] = liberado;
-            })
-          );
-          this.statusLiberadoMap.set(libMap);
-        }
+        await this.recarregarStatusLiberado(cursoId, c.matriculaId);
       } catch (e) {
         console.warn('Erro ao carregar progresso detalhado:', e);
       }
@@ -1258,11 +1271,14 @@ export class ComunidadeCursoComponent implements OnInit {
     this.mensagemFeedback.set(null);
 
     try {
-      const { error } = await this.supabaseService.marcarModuloConcluido(cursoId, moduloId);
+      const res = await this.supabaseService.marcarModuloConcluido(cursoId, moduloId);
 
-      if (error) {
+      if (res.error) {
         this.tipoFeedback.set('erro');
-        this.mensagemFeedback.set('Não foi possível salvar o progresso: ' + (error.message || 'Tente novamente.'));
+        this.mensagemFeedback.set(
+          res.error.message ||
+          'Não foi possível registrar a conclusão do módulo. Tente novamente ou recarregue a página.'
+        );
         return;
       }
 
@@ -1285,6 +1301,12 @@ export class ComunidadeCursoComponent implements OnInit {
 
       this.tipoFeedback.set('sucesso');
       this.mensagemFeedback.set('Aula marcada como concluída!');
+
+      // Recalcula quais módulos estão liberados agora que este foi concluído
+      const cursoAtual = this.cursos().find(c => c.id === cursoId);
+      if (cursoAtual?.matriculaId) {
+        await this.recarregarStatusLiberado(cursoId, cursoAtual.matriculaId);
+      }
 
       // Abre automaticamente o próximo módulo liberado
       setTimeout(() => {
@@ -1360,6 +1382,18 @@ export class ComunidadeCursoComponent implements OnInit {
     const url = montarUrlPlayerVimeo(vimeoId);
     if (!url) return null;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  /**
+   * Escolhe o provedor de vídeo da aula: YouTube tem prioridade quando
+   * ambos estiverem preenchidos, senão cai para Vimeo.
+   */
+  getVideoUrlModulo(mod: { vimeo_id?: string | null; youtube_id?: string | null }): SafeResourceUrl | null {
+    const urlYoutube = montarUrlPlayerYoutube(mod.youtube_id);
+    if (urlYoutube) return this.sanitizer.bypassSecurityTrustResourceUrl(urlYoutube);
+    const urlVimeo = montarUrlPlayerVimeo(mod.vimeo_id);
+    if (urlVimeo) return this.sanitizer.bypassSecurityTrustResourceUrl(urlVimeo);
+    return null;
   }
 
   formatarData(dataStr: string | null | undefined): string {

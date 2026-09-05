@@ -703,14 +703,24 @@ export class ComunidadeMateriaisComponent implements OnInit {
     }
   }
 
-  baixarAnexo(anexo: any, materialTitulo: string): void {
-    if (!anexo?.url_arquivo) {
+  async baixarAnexo(anexo: any, materialTitulo: string): Promise<void> {
+    if (!anexo?.url_arquivo && !anexo?.storage_path) {
       this.tipoFeedback.set('alerta');
       this.mensagemFeedback.set('Arquivo de anexo não disponível para download.');
       return;
     }
     try {
-      window.open(anexo.url_arquivo, '_blank', 'noopener,noreferrer');
+      // CORREÇÃO DE SEGURANÇA (05/09/2026): gera um signed URL novo e curto
+      // (1h) a cada download, em vez de reutilizar o link salvo no banco
+      // (que antes valia por 10 anos e ficava exposto se vazado por print,
+      // WhatsApp ou e-mail).
+      const url = await this.supabaseService.gerarUrlDownloadAnexo(anexo);
+      if (!url) {
+        this.tipoFeedback.set('alerta');
+        this.mensagemFeedback.set('Não foi possível gerar o link de download. Tente novamente.');
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
       this.tipoFeedback.set('sucesso');
       this.mensagemFeedback.set(`Download do anexo "${anexo.nome_arquivo}" iniciado.`);
     } catch (e) {

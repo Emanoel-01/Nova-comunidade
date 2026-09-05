@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { extrairVimeoId, montarUrlPlayerVimeo } from '../../utils/vimeo.util';
+import { extrairYoutubeId, montarUrlPlayerYoutube } from '../../utils/youtube.util';
 import { CertificadoPdfService } from '../../services/certificado-pdf.service';
 
 export interface ModuloCursoAdmin {
@@ -12,6 +13,7 @@ export interface ModuloCursoAdmin {
   descricao?: string | null;
   duracao?: string | null;
   vimeo_id?: string | null;
+  youtube_id?: string | null;
   ordem: number;
   exige_avaliacao?: boolean;
   trava_proximo_modulo?: boolean;
@@ -45,6 +47,7 @@ export interface CursoAdmin {
   local?: string | null;
   imagem_capa_url?: string | null;
   exibir_na_agenda?: boolean;
+  preco?: number | null;
 }
 
 @Component({
@@ -656,6 +659,21 @@ export interface CursoAdmin {
                       </p>
                     </div>
 
+                    <div class="space-y-1.5 sm:col-span-3">
+                      <label class="block text-xs font-bold text-slate-700">Ou link do vídeo no YouTube (não listado ou público)</label>
+                      <input
+                        type="text"
+                        #formModYoutubeInput
+                        [value]="moduloFormDados.youtube_id"
+                        (input)="moduloFormDados.youtube_id = formModYoutubeInput.value"
+                        placeholder="Ex: https://youtu.be/BPwaRKHKLeA"
+                        class="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                      />
+                      <p class="text-[11px] text-slate-500">
+                        Cole o <strong>link completo</strong> (ex: <code class="bg-slate-100 px-1 py-0.5 rounded">https://youtu.be/BPwaRKHKLeA</code>) ou apenas o <strong>ID</strong> do vídeo. Funciona normalmente com vídeos marcados como "não listados" — a restrição de listagem não impede o embed aqui. Preencha <strong>Vimeo ou YouTube</strong>, não é necessário os dois; se ambos forem preenchidos, o YouTube tem prioridade na exibição.
+                      </p>
+                    </div>
+
                     <div class="space-y-1.5">
                       <label class="block text-xs font-bold text-slate-700">Ordem de Exibição</label>
                       <input
@@ -737,6 +755,32 @@ export interface CursoAdmin {
                         }
                       </div>
                     }
+
+                    @if (moduloFormDados.youtube_id?.trim()) {
+                      @let youtubePreviewUrl = getYoutubeUrl(moduloFormDados.youtube_id);
+                      <div class="space-y-1.5 sm:col-span-3 pt-1">
+                        <label class="block text-xs font-bold text-slate-700">Prévia do Player do YouTube</label>
+                        @if (youtubePreviewUrl) {
+                          <div class="aspect-video max-w-md w-full bg-black rounded-2xl overflow-hidden shadow-xs border border-slate-300">
+                            <iframe
+                              [src]="youtubePreviewUrl"
+                              class="w-full h-full"
+                              frameborder="0"
+                              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                              allowfullscreen
+                              title="Prévia do vídeo"
+                            ></iframe>
+                          </div>
+                        } @else {
+                          <div class="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2">
+                            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Formato de link ou ID do YouTube não reconhecido. Cole o link completo (youtu.be/ID ou youtube.com/watch?v=ID) ou apenas o ID de 11 caracteres.</span>
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
 
                   <div class="flex items-center justify-end gap-3 pt-2">
@@ -802,6 +846,14 @@ export interface CursoAdmin {
                                   <path d="M22.84 6.8c-.14 3.08-2.28 7.3-6.42 12.67-4.28 5.58-7.9 8.37-10.86 8.37-1.84 0-3.4-.68-4.68-2.04C-.4 24.44-.9 22.36.88 19.56c1.18-1.84 2.83-3.66 4.95-5.46.22 1.62.62 3.12 1.2 4.5.76 1.76 1.7 2.64 2.82 2.64 1.26 0 2.84-1.28 4.74-3.84 1.9-2.56 2.85-4.5 2.85-5.82 0-1.54-.72-2.31-2.16-2.31-.7 0-1.48.17-2.34.51.52-1.72 1.48-3.08 2.88-4.08 1.4-1 2.94-1.5 4.62-1.5 1.76 0 3.09.58 3.99 1.74.9 1.16 1.35 2.63 1.35 4.41z"/>
                                 </svg>
                                 Vimeo: {{ mod.vimeo_id }}
+                              </span>
+                            }
+                            @if (mod.youtube_id) {
+                              <span class="px-2 py-0.5 rounded-md bg-red-50 text-red-700 text-[11px] font-mono font-bold border border-red-100 flex items-center gap-1">
+                                <svg class="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M23.5 6.2a3.02 3.02 0 00-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.51A3.02 3.02 0 00.5 6.2 31.6 31.6 0 000 12a31.6 31.6 0 00.5 5.8 3.02 3.02 0 002.12 2.14c1.88.51 9.38.51 9.38.51s7.5 0 9.38-.51a3.02 3.02 0 002.12-2.14A31.6 31.6 0 0024 12a31.6 31.6 0 00-.5-5.8zM9.6 15.6V8.4l6.4 3.6-6.4 3.6z"/>
+                                </svg>
+                                YouTube: {{ mod.youtube_id }}
                               </span>
                             }
                             @if (mod.exige_avaliacao) {
@@ -1449,6 +1501,26 @@ export interface CursoAdmin {
                     />
                   </div>
 
+                  <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">
+                      Preço do Curso (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      #precoInput
+                      [value]="cursoAtivo()?.preco ?? ''"
+                      placeholder="Ex: 19.90"
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <p class="text-[11px] text-slate-400">
+                      Valor exibido na vitrine pública da Amorim Academy. Deixe em branco
+                      para exibir "Sob consulta". Este campo não ativa cobrança automática
+                      — é só informativo até o checkout de pagamento existir.
+                    </p>
+                  </div>
+
                   <!-- Configurações de Avaliação e Prazos do Curso -->
                   <div class="sm:col-span-2 p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-4">
                     <div class="text-xs font-bold text-slate-800">Diretrizes de Avaliação e Prazos do Curso</div>
@@ -1600,7 +1672,8 @@ export interface CursoAdmin {
                       editDataInicioInput.value,
                       editDataFimInput.value,
                       editLocalInput.value,
-                      editImagemCapaInput.value
+                      editImagemCapaInput.value,
+                      +precoInput.value
                     )"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
@@ -1785,12 +1858,13 @@ export interface CursoAdmin {
                         (change)="categoriaMaterialExclusivo.set($any($event.target).value)"
                         class="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option value="Geral">Geral</option>
                         <option value="Planilhas">Planilhas</option>
                         <option value="Modelos de Laudo">Modelos de Laudo</option>
                         <option value="Checklists">Checklists</option>
                         <option value="E-books">E-books</option>
-                        <option value="Apostilas & Slides">Apostilas & Slides</option>
+                        <option value="Vídeos">Vídeos</option>
+                        <option value="Skills Claude">Skills Claude</option>
+                        <option value="Outros">Outros</option>
                       </select>
                     </div>
 
@@ -2085,6 +2159,7 @@ export class AdminCursoComponent implements OnInit {
     descricao: '',
     duracao: '',
     vimeo_id: '',
+    youtube_id: '',
     ordem: 1,
     exige_avaliacao: false,
     trava_proximo_modulo: true,
@@ -2100,7 +2175,7 @@ export class AdminCursoComponent implements OnInit {
   readonly uploadandoMaterialExclusivo = signal<boolean>(false);
   readonly arquivoExclusivoSelecionado = signal<File | null>(null);
   readonly tituloMaterialExclusivo = signal<string>('');
-  readonly categoriaMaterialExclusivo = signal<string>('Geral');
+  readonly categoriaMaterialExclusivo = signal<string>('Outros');
   readonly descricaoMaterialExclusivo = signal<string>('');
   readonly obrigatorioMaterialExclusivo = signal<boolean>(false);
   readonly erroUploadMaterialExclusivo = signal<string | null>(null);
@@ -2309,6 +2384,7 @@ export class AdminCursoComponent implements OnInit {
       descricao: '',
       duracao: '',
       vimeo_id: '',
+      youtube_id: '',
       ordem: totalExistentes + 1,
       exige_avaliacao: false,
       trava_proximo_modulo: true,
@@ -2323,6 +2399,7 @@ export class AdminCursoComponent implements OnInit {
       descricao: modulo.descricao || '',
       duracao: modulo.duracao || '',
       vimeo_id: modulo.vimeo_id || '',
+      youtube_id: modulo.youtube_id || '',
       ordem: modulo.ordem,
       exige_avaliacao: modulo.exige_avaliacao ?? false,
       trava_proximo_modulo: modulo.trava_proximo_modulo ?? true,
@@ -2339,6 +2416,12 @@ export class AdminCursoComponent implements OnInit {
 
   getVimeoUrl(vimeoId?: string | null): SafeResourceUrl | null {
     const url = montarUrlPlayerVimeo(vimeoId);
+    if (!url) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  getYoutubeUrl(youtubeId?: string | null): SafeResourceUrl | null {
+    const url = montarUrlPlayerYoutube(youtubeId);
     if (!url) return null;
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
@@ -2361,6 +2444,15 @@ export class AdminCursoComponent implements OnInit {
       }
     }
 
+    let youtubeIdFinal: string | null = null;
+    if (this.moduloFormDados.youtube_id && this.moduloFormDados.youtube_id.trim()) {
+      youtubeIdFinal = extrairYoutubeId(this.moduloFormDados.youtube_id);
+      if (!youtubeIdFinal) {
+        this.exibirErro('Não foi possível identificar o ID do vídeo do YouTube. Cole o link completo (ex: https://youtu.be/BPwaRKHKLeA) ou apenas o ID.');
+        return;
+      }
+    }
+
     this.salvando.set(true);
     try {
       const editId = this.editandoModuloId();
@@ -2371,6 +2463,7 @@ export class AdminCursoComponent implements OnInit {
           descricao: this.moduloFormDados.descricao.trim() || '',
           duracao: this.moduloFormDados.duracao.trim() || '',
           vimeo_id: vimeoIdFinal || '',
+          youtube_id: youtubeIdFinal || '',
           ordem: this.moduloFormDados.ordem || 1,
           exige_avaliacao: this.moduloFormDados.exige_avaliacao,
           trava_proximo_modulo: this.moduloFormDados.trava_proximo_modulo,
@@ -2390,6 +2483,7 @@ export class AdminCursoComponent implements OnInit {
           descricao: this.moduloFormDados.descricao.trim() || undefined,
           duracao: this.moduloFormDados.duracao.trim() || undefined,
           vimeo_id: vimeoIdFinal || undefined,
+          youtube_id: youtubeIdFinal || undefined,
           ordem: this.moduloFormDados.ordem || 1,
           exige_avaliacao: this.moduloFormDados.exige_avaliacao,
           trava_proximo_modulo: this.moduloFormDados.trava_proximo_modulo,
@@ -2458,7 +2552,7 @@ export class AdminCursoComponent implements OnInit {
   limparFormMaterialExclusivo(): void {
     this.arquivoExclusivoSelecionado.set(null);
     this.tituloMaterialExclusivo.set('');
-    this.categoriaMaterialExclusivo.set('Geral');
+    this.categoriaMaterialExclusivo.set('Outros');
     this.descricaoMaterialExclusivo.set('');
     this.obrigatorioMaterialExclusivo.set(false);
     this.erroUploadMaterialExclusivo.set(null);
@@ -2499,7 +2593,7 @@ export class AdminCursoComponent implements OnInit {
     this.erroUploadMaterialExclusivo.set(null);
 
     try {
-      const categoria = this.categoriaMaterialExclusivo().trim() || 'Geral';
+      const categoria = this.categoriaMaterialExclusivo().trim() || 'Outros';
       const uploadRes = await this.supabaseService.uploadArquivoMaterial(file, categoria);
       if (uploadRes.error) {
         this.erroUploadMaterialExclusivo.set(uploadRes.error.message || 'Falha no upload do arquivo.');
@@ -2813,7 +2907,8 @@ export class AdminCursoComponent implements OnInit {
     dataInicio?: string | null,
     dataFim?: string | null,
     local?: string | null,
-    imagemCapaUrl?: string | null
+    imagemCapaUrl?: string | null,
+    preco?: number | null
   ): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
@@ -2841,6 +2936,7 @@ export class AdminCursoComponent implements OnInit {
         data_fim: (exibirNaAgenda && dataFim?.trim()) ? dataFim.trim() : null,
         local: (exibirNaAgenda && formato !== 'gravado' && local?.trim()) ? local.trim() : null,
         imagem_capa_url: (exibirNaAgenda && imagemCapaUrl?.trim()) ? imagemCapaUrl.trim() : null,
+        preco: (preco !== undefined && preco !== null && !isNaN(preco) && preco > 0) ? preco : null,
       });
 
       if (res.error) {

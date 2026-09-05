@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { gerarLinkWhatsapp } from '../utils/whatsapp.util';
@@ -484,69 +484,15 @@ export interface MesCalendario {
                 <div class="bg-white rounded-3xl p-6 border border-slate-200 animate-pulse h-64 hidden md:block"></div>
               </div>
             } @else {
-              <!-- Grade de Destaques: Curso Predial 4.0 confirmado + cursos cadastrados no Supabase -->
+              <!-- Grade de Destaques: cursos cadastrados no Supabase -->
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- Card Oficial Confirmado: Curso Predial 4.0 Recife -->
-                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group">
-                  <div>
-                    <div class="relative h-48 bg-slate-900 overflow-hidden">
-                      <img
-                        src="https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop"
-                        alt="Curso Predial 4.0"
-                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
-                      />
-                      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
-                      <div class="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
-                        <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
-                          Turma Confirmada
-                        </span>
-                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
-                          30h
-                        </span>
-                      </div>
-                      <div class="absolute bottom-3 left-3.5 right-3.5 text-white space-y-0.5">
-                        <div class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                          <span>📅</span>
-                          <span>27 a 29 de novembro de 2026</span>
-                        </div>
-                        <div class="text-[11px] text-slate-200 flex items-center gap-1.5">
-                          <span>📍</span>
-                          <span>Recife / PE (Presencial + Online)</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="p-6 space-y-3">
-                      <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors">
-                        Curso Predial 4.0 — Engenharia Diagnóstica na Prática
-                      </h4>
-                      <p class="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3">
-                        Inspeção Predial com IA baseada na NBR 16747 e Vistoria Cautelar com NBR 13752:2024 (item 7.3.3.2). 20h presenciais em Recife com estudo de caso de campo + 10h online.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="p-6 pt-0 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                      <span class="text-[10px] uppercase font-bold text-slate-400 block">Status</span>
-                      <span class="text-xs font-bold text-emerald-700">Inscrições Abertas</span>
-                    </div>
-                    <a
-                      [href]="gerarLinkWhatsappCurso('Curso Predial 4.0 - Recife')"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
-                    >
-                      <span>Garantir Vaga</span>
-                      <span>→</span>
-                    </a>
-                  </div>
-                </div>
 
                 <!-- Cursos Dinâmicos do Supabase (se houver) -->
                 @for (curso of cursosAgenda(); track curso.id) {
-                  <div class="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group">
+                  <div
+                    (click)="abrirDetalheCurso(curso)"
+                    class="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group cursor-pointer"
+                  >
                     <div>
                       <div class="relative h-48 bg-slate-900 overflow-hidden">
                         <img
@@ -560,9 +506,9 @@ export interface MesCalendario {
                           <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
                             {{ formatarFormato(curso.formato) }}
                           </span>
-                          @if (curso.carga_horaria) {
+                          @if (curso.carga_horaria_certificado) {
                             <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
-                              {{ curso.carga_horaria }}h
+                              {{ curso.carga_horaria_certificado }}
                             </span>
                           }
                         </div>
@@ -599,6 +545,7 @@ export interface MesCalendario {
                         [href]="gerarLinkWhatsappCurso(curso.titulo)"
                         target="_blank"
                         rel="noopener noreferrer"
+                        (click)="$event.stopPropagation()"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
                       >
                         <span>Garantir Vaga</span>
@@ -640,7 +587,7 @@ export interface MesCalendario {
               <div class="pt-6 border-t border-slate-100 mt-6">
                 <!-- Grid responsivo: desktop 5 colunas, tablet 3 colunas, mobile 2 colunas -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-                  @for (mes of gradeMensal; track mes.mesAno) {
+                  @for (mes of gradeMensal(); track mes.mesAno) {
                     <div
                       class="rounded-2xl p-4 border transition-all flex flex-col justify-between space-y-2 text-left"
                       [class.bg-emerald-50]="mes.confirmado"
@@ -856,7 +803,7 @@ export interface MesCalendario {
             </div>
 
             <!-- Accordion E: Professores Parceiros (Dados dinâmicos do Supabase) -->
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
               <button
                 type="button"
                 (click)="toggleAccordion('professores')"
@@ -875,18 +822,46 @@ export interface MesCalendario {
                   } @else if (professores().length > 0) {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       @for (prof of professores(); track prof.id) {
-                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-4">
-                          @if (prof.foto_url) {
-                            <img [src]="prof.foto_url" [alt]="prof.nome" class="w-12 h-12 rounded-xl object-cover" />
-                          } @else {
-                            <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-black flex items-center justify-center">
-                              {{ prof.nome.charAt(0) }}
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                          <div class="flex items-start gap-4">
+                            @if (prof.foto_url) {
+                              <img [src]="prof.foto_url" [alt]="prof.nome" class="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0" />
+                            } @else {
+                              <div class="w-14 h-14 rounded-xl bg-indigo-100 text-indigo-700 font-black flex items-center justify-center text-lg shrink-0">
+                                {{ prof.nome.charAt(0) }}
+                              </div>
+                            }
+                            <div class="min-w-0 flex-1">
+                              <h4 class="text-sm font-bold text-slate-900 truncate">{{ prof.nome }}</h4>
+                              <p class="text-xs text-indigo-600 font-semibold line-clamp-1">{{ prof.disciplina_area }}</p>
+                              @if (prof.mini_bio) {
+                                <p class="text-xs text-slate-500 line-clamp-2 mt-1 italic leading-relaxed">
+                                  {{ prof.mini_bio }}
+                                </p>
+                              }
+                            </div>
+                          </div>
+
+                          <!-- Redes Sociais do Professor -->
+                          @if (prof.link_site || prof.link_instagram || prof.link_linkedin) {
+                            <div class="flex items-center gap-3 pt-3 mt-3 border-t border-slate-200/60 text-xs font-semibold">
+                              @if (prof.link_site) {
+                                <a [href]="prof.link_site" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>Site</span> ↗
+                                </a>
+                              }
+                              @if (prof.link_instagram) {
+                                <a [href]="prof.link_instagram" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-pink-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>Instagram</span> ↗
+                                </a>
+                              }
+                              @if (prof.link_linkedin) {
+                                <a [href]="prof.link_linkedin" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>LinkedIn</span> ↗
+                                </a>
+                              }
                             </div>
                           }
-                          <div class="min-w-0">
-                            <h4 class="text-xs font-bold text-slate-900 truncate">{{ prof.nome }}</h4>
-                            <p class="text-[11px] text-indigo-600 line-clamp-1">{{ prof.disciplina_area }}</p>
-                          </div>
                         </div>
                       }
                     </div>
@@ -900,7 +875,7 @@ export interface MesCalendario {
             </div>
 
             <!-- Accordion F: Softwares Parceiros (Dados dinâmicos do Supabase) -->
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
               <button
                 type="button"
                 (click)="toggleAccordion('softwares')"
@@ -917,12 +892,39 @@ export interface MesCalendario {
                   @if (carregandoParceiros()) {
                     <div class="p-4 text-center text-xs text-slate-400 animate-pulse">Carregando softwares...</div>
                   } @else if (softwares().length > 0) {
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                       @for (soft of softwares(); track soft.id) {
-                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                          <h4 class="text-xs font-bold text-slate-900">{{ soft.nome }}</h4>
-                          @if (soft.descricao_curta) {
-                            <p class="text-[11px] text-slate-500 line-clamp-2">{{ soft.descricao_curta }}</p>
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                          <div class="flex items-center gap-3 mb-2">
+                            @if (soft.logo_url) {
+                              <img [src]="soft.logo_url" [alt]="soft.nome" class="w-10 h-10 rounded-lg object-contain p-0.5 bg-white border border-slate-200 shrink-0" />
+                            } @else {
+                              <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-700 font-black flex items-center justify-center text-sm shrink-0 border border-indigo-100">
+                                {{ soft.nome.charAt(0) }}
+                              </div>
+                            }
+                            <h4 class="text-xs font-bold text-slate-900 truncate flex-1">{{ soft.nome }}</h4>
+                          </div>
+
+                          <!-- Redes Sociais do Software -->
+                          @if (soft.link_site || soft.link_instagram || soft.link_linkedin) {
+                            <div class="flex items-center gap-3 pt-2 border-t border-slate-200/60 text-[11px] font-semibold">
+                              @if (soft.link_site) {
+                                <a [href]="soft.link_site" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>Site</span> ↗
+                                </a>
+                              }
+                              @if (soft.link_instagram) {
+                                <a [href]="soft.link_instagram" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-pink-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>Instagram</span> ↗
+                                </a>
+                              }
+                              @if (soft.link_linkedin) {
+                                <a [href]="soft.link_linkedin" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>LinkedIn</span> ↗
+                                </a>
+                              }
+                            </div>
                           }
                         </div>
                       }
@@ -937,7 +939,7 @@ export interface MesCalendario {
             </div>
 
             <!-- Accordion G: Empresas Parceiras (Dados dinâmicos do Supabase) -->
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
               <button
                 type="button"
                 (click)="toggleAccordion('empresas')"
@@ -954,12 +956,39 @@ export interface MesCalendario {
                   @if (carregandoParceiros()) {
                     <div class="p-4 text-center text-xs text-slate-400 animate-pulse">Carregando empresas...</div>
                   } @else if (empresas().length > 0) {
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       @for (emp of empresas(); track emp.id) {
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
-                          <span class="text-xs font-bold text-slate-900 block truncate">{{ emp.nome }}</span>
-                          @if (emp.tipo) {
-                            <span class="text-[10px] text-emerald-700 font-semibold">{{ emp.tipo }}</span>
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-slate-300 transition-colors">
+                          <div class="flex items-center gap-3 mb-2">
+                            @if (emp.logo_url) {
+                              <img [src]="emp.logo_url" [alt]="emp.nome" class="w-10 h-10 rounded-lg object-contain p-0.5 bg-white border border-slate-200 shrink-0" />
+                            } @else {
+                              <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 font-black flex items-center justify-center text-sm shrink-0 border border-emerald-100">
+                                {{ emp.nome.charAt(0) }}
+                              </div>
+                            }
+                            <span class="text-xs font-bold text-slate-900 block truncate flex-1">{{ emp.nome }}</span>
+                          </div>
+
+                          <!-- Redes Sociais da Empresa -->
+                          @if (emp.link_site || emp.link_instagram || emp.link_linkedin) {
+                            <div class="flex items-center gap-3 pt-2 border-t border-slate-200/60 text-[11px] font-semibold">
+                              @if (emp.link_site) {
+                                <a [href]="emp.link_site" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>Site</span> ↗
+                                </a>
+                              }
+                              @if (emp.link_instagram) {
+                                <a [href]="emp.link_instagram" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-pink-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>Instagram</span> ↗
+                                </a>
+                              }
+                              @if (emp.link_linkedin) {
+                                <a [href]="emp.link_linkedin" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 transition-colors">
+                                  <span>LinkedIn</span> ↗
+                                </a>
+                              }
+                            </div>
                           }
                         </div>
                       }
@@ -1135,6 +1164,140 @@ export interface MesCalendario {
           </div>
         </section>
 
+        <!-- Modal de Detalhes do Curso (balão expandido ao clicar no card) -->
+        @if (cursoDetalheAberto(); as curso) {
+          <div
+            class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            (click)="fecharDetalheCurso()"
+          >
+            <div
+              class="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
+              (click)="$event.stopPropagation()"
+            >
+              <!-- Cabeçalho com imagem -->
+              <div class="relative h-48 sm:h-56 bg-slate-900 overflow-hidden rounded-t-3xl">
+                <img
+                  [src]="curso.imagem_capa_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                  [alt]="curso.titulo"
+                  class="w-full h-full object-cover opacity-90"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20"></div>
+                <button
+                  type="button"
+                  (click)="fecharDetalheCurso()"
+                  class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-700 flex items-center justify-center shadow-md cursor-pointer transition-colors"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div class="absolute bottom-4 left-5 right-5 text-white space-y-1">
+                  <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900 inline-block">
+                    {{ formatarFormato(curso.formato) }}
+                  </span>
+                  <h3 class="text-xl sm:text-2xl font-black leading-tight">{{ curso.titulo }}</h3>
+                </div>
+              </div>
+
+              <!-- Corpo do modal -->
+              <div class="p-6 sm:p-8 space-y-6">
+
+                <!-- Linha de metadados rápidos -->
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                  <span class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 font-bold">
+                    📅 {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
+                  </span>
+                  @if (curso.local) {
+                    <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 font-bold">
+                      📍 {{ curso.local }}
+                    </span>
+                  }
+                  @if (curso.carga_horaria_certificado) {
+                    <span class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 font-bold">
+                      ⏱ {{ curso.carga_horaria_certificado }}
+                    </span>
+                  }
+                  @if (curso.categoria) {
+                    <span class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">
+                      {{ curso.categoria }}
+                    </span>
+                  }
+                </div>
+
+                <!-- Descrição completa -->
+                @if (curso.descricao) {
+                  <div class="space-y-1.5">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Sobre o curso</h4>
+                    <p class="text-sm text-slate-700 leading-relaxed">{{ curso.descricao }}</p>
+                  </div>
+                }
+
+                <!-- Texto normativo / público-alvo -->
+                @if (curso.texto_certificado) {
+                  <div class="space-y-1.5">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Para quem é este curso</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">{{ curso.texto_certificado }}</p>
+                  </div>
+                }
+
+                <!-- Instrutor -->
+                @if (curso.instrutor_nome) {
+                  <div class="space-y-1.5">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Instrutor</h4>
+                    <p class="text-sm font-bold text-slate-900">{{ curso.instrutor_nome }}</p>
+                    @if (curso.instrutor_qualificacao) {
+                      <p class="text-xs text-slate-500">{{ curso.instrutor_qualificacao }}</p>
+                    }
+                  </div>
+                }
+
+                <!-- Índice de módulos/aulas -->
+                <div class="space-y-2">
+                  <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Conteúdo programático</h4>
+                  @if (carregandoModulosDetalhe()) {
+                    <div class="p-4 text-center text-xs text-slate-400 animate-pulse">Carregando módulos...</div>
+                  } @else if (modulosDoCursoDetalhe().length > 0) {
+                    <div class="space-y-2">
+                      @for (mod of modulosDoCursoDetalhe(); track mod.ordem) {
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                          <div class="flex items-center gap-3 min-w-0">
+                            <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 font-black text-[11px] flex items-center justify-center shrink-0">
+                              {{ mod.ordem }}
+                            </span>
+                            <span class="text-xs font-semibold text-slate-800 truncate">{{ mod.titulo }}</span>
+                          </div>
+                          @if (mod.duracao) {
+                            <span class="text-[11px] text-slate-400 font-medium shrink-0 ml-2">{{ mod.duracao }}</span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="text-xs text-slate-400">Conteúdo programático em finalização.</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Rodapé fixo com preço e CTA -->
+              <div class="p-6 sm:p-8 pt-0 sticky bottom-0 bg-white border-t border-slate-100 flex items-center justify-between gap-4">
+                <div>
+                  <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
+                  <span class="text-lg font-black text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
+                </div>
+                <a
+                  [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <span>Garantir Vaga</span>
+                  <span>→</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+
       </div>
     </div>
   `
@@ -1152,6 +1315,11 @@ export class AmorimAcademyComponent implements OnInit {
   readonly calendarioAberto = signal(false);
   readonly agenteSelecionado = signal<AgenteIA | null>(null);
   readonly accordionAberto = signal<string | null>('incubadora');
+
+  // Detalhe do Curso (modal)
+  readonly cursoDetalheAberto = signal<any | null>(null);
+  readonly modulosDoCursoDetalhe = signal<Array<{ titulo: string; duracao: string | null; ordem: number }>>([]);
+  readonly carregandoModulosDetalhe = signal<boolean>(false);
 
   // Dados do Supabase
   readonly cursosAgenda = signal<any[]>([]);
@@ -1270,25 +1438,60 @@ export class AmorimAcademyComponent implements OnInit {
     }
   ];
 
-  // Grade mensal de 15 meses (Out/2026 a Dez/2027)
-  // ÚNICO DADO CONFIRMADO: Nov/2026 Curso Predial 4.0 Recife
-  readonly gradeMensal: MesCalendario[] = [
-    { mesAno: 'Out / 2026', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Nov / 2026', nomeCurso: 'Curso Predial 4.0', dataOuStatus: '27 a 29 de nov · Recife', confirmado: true, local: 'Recife/PE' },
-    { mesAno: 'Dez / 2026', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Jan / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Fev / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Mar / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Abr / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Mai / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Jun / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Jul / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Ago / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Set / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Out / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Nov / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false },
-    { mesAno: 'Dez / 2027', nomeCurso: 'A definir', dataOuStatus: 'A definir', confirmado: false }
-  ];
+  /**
+   * Grade de 15 meses (mês atual + 14 seguintes) montada dinamicamente a
+   * partir dos cursos reais cadastrados com exibir_na_agenda=true e
+   * data_inicio preenchida. Substitui a lista fixa que existia antes —
+   * agora qualquer curso novo cadastrado no admin aparece automaticamente
+   * aqui, sem precisar editar código.
+   */
+  readonly gradeMensal = computed<MesCalendario[]>(() => {
+    const cursos = this.cursosAgenda();
+    const meses: MesCalendario[] = [];
+    const hoje = new Date();
+    const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    for (let i = 0; i < 15; i++) {
+      const dataRef = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      const mes = dataRef.getMonth();
+      const ano = dataRef.getFullYear();
+      const mesAno = `${nomesMeses[mes]} / ${ano}`;
+
+      // Procura, entre os cursos reais, algum com data_inicio dentro deste mês/ano
+      const cursoDoMes = cursos.find((c: any) => {
+        if (!c.data_inicio) return false;
+        const d = new Date(c.data_inicio + 'T00:00:00');
+        return d.getMonth() === mes && d.getFullYear() === ano;
+      });
+
+      if (cursoDoMes) {
+        const dataInicio = new Date(cursoDoMes.data_inicio + 'T00:00:00');
+        const dataFim = cursoDoMes.data_fim ? new Date(cursoDoMes.data_fim + 'T00:00:00') : null;
+        const diaInicio = dataInicio.getDate();
+        const diaFim = dataFim ? dataFim.getDate() : null;
+        const statusData = diaFim && diaFim !== diaInicio
+          ? `${diaInicio} a ${diaFim} de ${nomesMeses[mes].toLowerCase()}`
+          : `${diaInicio} de ${nomesMeses[mes].toLowerCase()}`;
+
+        meses.push({
+          mesAno,
+          nomeCurso: cursoDoMes.titulo,
+          dataOuStatus: cursoDoMes.local ? `${statusData} · ${cursoDoMes.local}` : statusData,
+          confirmado: true,
+          local: cursoDoMes.local || undefined,
+        });
+      } else {
+        meses.push({
+          mesAno,
+          nomeCurso: 'A definir',
+          dataOuStatus: 'A definir',
+          confirmado: false,
+        });
+      }
+    }
+
+    return meses;
+  });
 
   async ngOnInit(): Promise<void> {
     this.seoService.atualizar({
@@ -1405,6 +1608,23 @@ export class AmorimAcademyComponent implements OnInit {
   formatarMoeda(valor?: number | null): string {
     if (!valor || valor <= 0) return 'Sob consulta';
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  async abrirDetalheCurso(curso: any): Promise<void> {
+    this.cursoDetalheAberto.set(curso);
+    this.modulosDoCursoDetalhe.set([]);
+    this.carregandoModulosDetalhe.set(true);
+    try {
+      const modulos = await this.supabaseService.listarModulosPublicosDoCurso(curso.id);
+      this.modulosDoCursoDetalhe.set(modulos);
+    } finally {
+      this.carregandoModulosDetalhe.set(false);
+    }
+  }
+
+  fecharDetalheCurso(): void {
+    this.cursoDetalheAberto.set(null);
+    this.modulosDoCursoDetalhe.set([]);
   }
 
   gerarLinkWhatsappCurso(tituloCurso: string): string {
