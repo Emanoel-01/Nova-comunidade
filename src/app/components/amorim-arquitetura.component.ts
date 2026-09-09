@@ -436,32 +436,134 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
           </div>
         </section>
 
-        <!-- Seção 6: Atendimento para Síndicos (Alô Síndico) -->
-        <section class="pt-1 sm:pt-2">
-          <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6 max-w-5xl mx-auto">
-            <div class="space-y-2 text-center md:text-left">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/15 text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider max-w-full">
-                <span class="shrink-0">⚡</span>
-                <span class="break-words">Canal Direto do Síndico</span>
+        <!-- Seção 6: Alô Síndico — Canal Direto para Síndicos e Gestores Prediais -->
+        <section class="space-y-6 sm:space-y-8 lg:space-y-10" id="alo-sindico-destaque">
+          <div class="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] sm:text-xs font-semibold tracking-wide shadow-sm max-w-full">
+              <svg class="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span class="break-words">Para Síndicos e Gestores Prediais</span>
+            </div>
+            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Alô, Síndico! Sua gestão predial não precisa ser um mistério.
+            </h2>
+            <p class="text-slate-600 text-xs sm:text-base leading-relaxed max-w-2xl mx-auto">
+              Sem jargão técnico. Aqui você entende o que precisa saber sobre o seu prédio e já sai com uma cotação na mão.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div class="h-2 w-full bg-amber-500"></div>
+              <div class="p-5 sm:p-7 space-y-4 flex-1 flex flex-col justify-between">
+                <div class="space-y-2.5">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Quando pedir uma inspeção predial?</h3>
+                  <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                    Trincas, infiltrações, manchas na fachada ou simplesmente o prédio completando 5, 10 ou 15 anos são bons motivos para chamar um profissional. Quanto antes o diagnóstico, mais barato o reparo.
+                  </p>
+                </div>
+                <div class="pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-amber-700">
+                  <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Prevenção e economia real</span>
+                </div>
               </div>
-              <h3 class="text-lg sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
-                Precisa de vistoria ou laudo para seu condomínio?
-              </h3>
-              <p class="text-amber-100 text-xs sm:text-sm max-w-xl text-justify md:text-left">
-                Síndicos, administradoras e gestores de condomínio: consulte nosso assistente técnico inteligente Alô Síndico com IA, ou feche uma parceria para laudos em massa usando a tecnologia do nosso software Predial 4.0 — agilidade, padronização e preço justo para sua carteira de imóveis.
-              </p>
             </div>
 
-            <div class="shrink-0 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <a
-                href="https://emanoelamorim.com/contato#alo-sindico"
-                class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-all duration-200 text-xs sm:text-sm cursor-pointer whitespace-nowrap min-h-[44px]"
-              >
-                <span>Acessar Alô Síndico</span>
-                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </a>
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div class="h-2 w-full bg-blue-600"></div>
+              <div class="p-5 sm:p-7 space-y-4 flex-1 flex flex-col justify-between">
+                <div class="space-y-2.5">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">O que é essa tal de NBR 16747?</h3>
+                  <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                    É a norma técnica que define como um prédio deve ser inspecionado no Brasil. Um laudo dentro dela protege você juridicamente e evita multas — e é exatamente o que a gente entrega.
+                  </p>
+                </div>
+                <div class="pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-blue-700">
+                  <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Segurança jurídica garantida</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div class="h-2 w-full bg-emerald-600"></div>
+              <div class="p-5 sm:p-7 space-y-4 flex-1 flex flex-col justify-between">
+                <div class="space-y-2.5">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Quanto custa? Depende do quê?</h3>
+                  <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
+                    O valor varia com o tamanho do prédio, a quantidade de sistemas a inspecionar e a complexidade encontrada. Sem letra miúda: você recebe uma cotação clara antes de fechar qualquer coisa.
+                  </p>
+                </div>
+                <div class="pt-3 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                  <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Cotação transparente e ágil</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="max-w-4xl mx-auto pt-4">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-5 sm:p-8 lg:p-10 text-white text-center shadow-lg space-y-4 sm:space-y-6">
+              <div class="space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/10 backdrop-blur-xs text-white text-[11px] sm:text-xs font-bold uppercase tracking-wider max-w-full">
+                  <span class="shrink-0">⚡</span>
+                  <span class="break-words">Atendimento Especial para Síndicos</span>
+                </div>
+                <h3 class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+                  Fale agora com quem entende do assunto — sem compromisso.
+                </h3>
+                <p class="text-amber-100 text-xs sm:text-sm max-w-xl mx-auto text-justify sm:text-center">
+                  Tire dúvidas sobre seu edifício com nossa inteligência artificial ou receba um orçamento personalizado no seu WhatsApp.
+                </p>
+              </div>
+
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1 sm:pt-2">
+                <a
+                  routerLink="/contato"
+                  fragment="alo-sindico"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 bg-slate-950 hover:bg-slate-900 text-white font-bold rounded-xl shadow-xl transition-all duration-200 text-xs sm:text-sm cursor-pointer min-h-[44px]"
+                >
+                  <span>Conversar no Alô Síndico</span>
+                  <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
+
+                <a
+                  [href]="linkWhatsappSindico"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  id="btn-whatsapp-alo-sindico"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-xl transition-all duration-200 text-xs sm:text-sm cursor-pointer min-h-[44px]"
+                >
+                  <svg class="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.044c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.13.332.202.043.073.043.419-.101.824z"/>
+                  </svg>
+                  <span>Pedir Cotação no WhatsApp</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -495,6 +597,7 @@ export class AmorimArquiteturaComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
   private readonly seoService = inject(SeoService);
 
+  readonly linkWhatsappSindico = gerarLinkWhatsapp('tech-sindico');
   readonly gestaoManutencao = signal<PortfolioProject[]>([]);
 
   async ngOnInit(): Promise<void> {

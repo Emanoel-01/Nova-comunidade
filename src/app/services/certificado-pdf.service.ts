@@ -2,6 +2,11 @@ import { Injectable } from '@angular/core';
 import { jsPDF } from 'jspdf';
 import { carregarLogoComFallback } from '../utils/pdf-logo.util';
 
+export interface ItemCargaHoraria {
+  atividade: string;
+  horas: string;
+}
+
 export interface DadosCertificado {
   nomeAluno: string;
   tituloCurso: string;
@@ -13,6 +18,13 @@ export interface DadosCertificado {
   moduloPredialVinculado?: string | null;
   instrutorNome?: string | null;
   instrutorQualificacao?: string | null;
+  tipoCertificado?: string | null;
+  textoAmparoLegal?: string | null;
+  conteudoProgramatico?: string | null;
+  cpfAluno?: string | null;
+  desempenho?: string | null;
+  incluirAssinaturaAluno?: boolean | null;
+  cargaHorariaDiscriminada?: ItemCargaHoraria[] | null;
 }
 
 /**
@@ -289,11 +301,21 @@ export class CertificadoPdfService {
     doc.setLineWidth(0.22);
     doc.line((pageWidth / 2) - (lineW / 2), 74.5, (pageWidth / 2) + (lineW / 2), 74.5);
 
+    // CPF do aluno, discreto, abaixo do nome
+    const temCpf = !!(dados.cpfAluno && dados.cpfAluno.trim());
+    const cpfOffset = temCpf ? 3.5 : 0;
+    if (temCpf) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
+      doc.text(`CPF: ${dados.cpfAluno!.trim()}`, pageWidth / 2, 78.5, { align: 'center' });
+    }
+
     // 7. Texto de Conclusão e Nome do Curso
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.8);
     doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
-    doc.text('concluiu com êxito todas as etapas, módulos didáticos e avaliações do curso', pageWidth / 2, 82.5, { align: 'center' });
+    doc.text('concluiu com êxito todas as etapas, módulos didáticos e avaliações do curso', pageWidth / 2, 82.5 + cpfOffset, { align: 'center' });
 
     // Nome do Curso entre aspas em Negrito Navy
     doc.setFont('helvetica', 'bold');
@@ -303,188 +325,278 @@ export class CertificadoPdfService {
     doc.setFontSize(cursoFontSize);
     doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
     const splitTitulo = doc.splitTextToSize(`“${dados.tituloCurso || 'Curso de Engenharia Diagnóstica'}”`, 190);
-    doc.text(splitTitulo, pageWidth / 2, 91.5, { align: 'center' });
+    doc.text(splitTitulo, pageWidth / 2, 91.5 + cpfOffset, { align: 'center' });
 
     // 8. Texto Normativo / Carga Horária (Concatenados harmoniosamente)
     const textoCompleto = this.formatarTextoCertificadoCompleto(dados.textoNormativo, dados.cargaHoraria);
     const tituloOffset = (splitTitulo.length - 1) * 5;
-    const normativoY = 98.5 + tituloOffset;
+    const normativoY = 98.5 + tituloOffset + cpfOffset;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.8);
     doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
     const splitNormativo = doc.splitTextToSize(textoCompleto, 175);
     doc.text(splitNormativo, pageWidth / 2, normativoY, { align: 'center' });
 
-    // 9. Rodapé Dinâmico (3 Colunas se houver Instrutor, ou 2 Colunas se for apenas Institucional)
-    const bottomSectionY = 140;
-    const temInstrutor = !!(dados.instrutorNome && dados.instrutorNome.trim().length > 0);
+    // Variáveis de Emissão e Código para uso no Verso
     const dataEmissaoFormatada = this.formatarDataExtenso(dados.dataEmissaoIso || dados.dataEmissao);
     const codigoVerificacao = (dados.codigoVerificacao || 'AMTECH-PENDENTE').toUpperCase();
 
+    // Bloco de 3 Colunas de Assinatura (Instrutor | Responsável Técnico | Aluno)
+    // Com a remoção da faixa de emissão e rodapé inferior, ganha mais respiro vertical
+    const bottomSectionY = 155;
+    const inicioAssinaturas = 25;
+    const fimAssinaturas = 272;
+    const larguraTotal = fimAssinaturas - inicioAssinaturas;
+    const larguraColuna = larguraTotal / 3;
+
+    const instrutorX = inicioAssinaturas + larguraColuna * 0.5;
+    const respTecX = inicioAssinaturas + larguraColuna * 1.5;
+    const alunoX = inicioAssinaturas + larguraColuna * 2.5;
+
+    // Coluna 1: Assinatura do Instrutor do Curso
+    const temInstrutor = !!(dados.instrutorNome && dados.instrutorNome.trim().length > 0);
+    const nomeInstrutor = temInstrutor ? dados.instrutorNome!.trim() : 'Coordenação Acadêmica';
+    const qualifInstrutor = temInstrutor
+      ? (dados.instrutorQualificacao || 'Docente / Instrutor(a)').trim()
+      : 'Corpo Docente AmorimTech';
+
     if (temInstrutor) {
-      // =========================================================================
-      // LAYOUT DE 3 COLUNAS (Autenticidade | Instrutor(a) | Responsável Técnico)
-      // =========================================================================
-
-      // Coluna 1: Dados de Emissão & Autenticidade (Esquerda, X = 22)
-      const leftColX = 22;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.6);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('DADOS DE EMISSÃO & AUTENTICIDADE', leftColX, bottomSectionY);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.4);
-      doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
-      doc.text(`Local e Data: Recife – PE, ${dataEmissaoFormatada}`, leftColX, bottomSectionY + 4.6);
-
-      doc.text('Código de Autenticidade: ', leftColX, bottomSectionY + 8.8);
-      const prefixCodeWidth = doc.getTextWidth('Código de Autenticidade: ');
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text(codigoVerificacao, leftColX + prefixCodeWidth, bottomSectionY + 8.8);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.0);
-      doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
-      doc.text('Amorim Arquitetura, Tech & Academy', leftColX, bottomSectionY + 13.2);
-      doc.text('CNPJ 35.673.731/0001-82', leftColX, bottomSectionY + 16.8);
-      doc.text('Rua Leonardo Bezerra Cavalcante, nº 672, Sala 06', leftColX, bottomSectionY + 20.4);
-      doc.text('Parnamirim, CEP 52.060-035, Recife/PE', leftColX, bottomSectionY + 24.0);
-
-      // Coluna 2: Assinatura do Instrutor do Curso (Centro, X = 158)
-      const instrutorX = 158;
-      const nomeInstrutor = dados.instrutorNome!.trim();
-      const qualifInstrutor = (dados.instrutorQualificacao || 'Docente / Instrutor(a)').trim();
-
-      // Assinatura estilizada em Times Italic (mesmo padrão visual da assinatura do Responsável Técnico)
       doc.setFont('times', 'italic');
       doc.setFontSize(13.5);
       doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
       doc.text(nomeInstrutor, instrutorX, bottomSectionY + 6.0, { align: 'center' });
-
-      // Linha de assinatura do instrutor
-      doc.setDrawColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.setLineWidth(0.25);
-      doc.line(instrutorX - 25, bottomSectionY + 9.8, instrutorX + 25, bottomSectionY + 9.8);
-
-      // Nome impresso do instrutor
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.6);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text(nomeInstrutor, instrutorX, bottomSectionY + 14.0, { align: 'center' });
-
-      // Qualificação / Registro do instrutor (Copper)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.4);
-      doc.setTextColor(copperAccent[0], copperAccent[1], copperAccent[2]);
-      const splitQualif = doc.splitTextToSize(qualifInstrutor, 52);
-      doc.text(splitQualif, instrutorX, bottomSectionY + 17.8, { align: 'center' });
-
-      // Papel institucional
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5.8);
-      doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
-      const offsetQualif = (splitQualif.length - 1) * 3.2;
-      doc.text('Instrutor(a) do Curso', instrutorX, bottomSectionY + 21.6 + offsetQualif, { align: 'center' });
-
-      // Coluna 3: Assinatura do Responsável Técnico Institucional (Direita, X = 248)
-      const respTecX = 248;
-
-      doc.setFont('times', 'italic');
-      doc.setFontSize(13.5);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('Emanoel S. de Amorim', respTecX, bottomSectionY + 6.0, { align: 'center' });
-
-      doc.setDrawColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.setLineWidth(0.25);
-      doc.line(respTecX - 25, bottomSectionY + 9.8, respTecX + 25, bottomSectionY + 9.8);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.6);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('Emanoel Silva de Amorim', respTecX, bottomSectionY + 14.0, { align: 'center' });
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.4);
-      doc.setTextColor(copperAccent[0], copperAccent[1], copperAccent[2]);
-      doc.text('CAU A133593-6 · Arquiteto e Urbanista', respTecX, bottomSectionY + 17.8, { align: 'center' });
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5.8);
-      doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
-      doc.text('Responsável Técnico · AmorimTech', respTecX, bottomSectionY + 21.6, { align: 'center' });
-    } else {
-      // =========================================================================
-      // LAYOUT DE 2 COLUNAS (Autenticidade | Responsável Técnico)
-      // =========================================================================
-
-      // Coluna Esquerda: Dados de Emissão & Autenticidade (Início em X = 25)
-      const leftColX = 25;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6.8);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('DADOS DE EMISSÃO & AUTENTICIDADE', leftColX, bottomSectionY);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.8);
-      doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
-      doc.text(`Local e Data: Recife – PE, ${dataEmissaoFormatada}`, leftColX, bottomSectionY + 4.8);
-
-      doc.text('Código de Autenticidade: ', leftColX, bottomSectionY + 9.2);
-      const prefixCodeWidth = doc.getTextWidth('Código de Autenticidade: ');
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text(codigoVerificacao, leftColX + prefixCodeWidth, bottomSectionY + 9.2);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.4);
-      doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
-      doc.text('Amorim Arquitetura, Tech & Academy', leftColX, bottomSectionY + 13.8);
-      doc.text('CNPJ 35.673.731/0001-82', leftColX, bottomSectionY + 17.6);
-      doc.text('Rua Leonardo Bezerra Cavalcante, nº 672, Sala 06', leftColX, bottomSectionY + 21.4);
-      doc.text('Parnamirim, CEP 52.060-035, Recife/PE', leftColX, bottomSectionY + 25.2);
-
-      // Coluna Direita: Assinatura do Responsável Técnico (Centralizada em X = 232)
-      const sigX = 232;
-
-      doc.setFont('times', 'italic');
-      doc.setFontSize(15);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('Emanoel S. de Amorim', sigX, bottomSectionY + 6.0, { align: 'center' });
-
-      doc.setDrawColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.setLineWidth(0.25);
-      doc.line(sigX - 30, bottomSectionY + 9.8, sigX + 30, bottomSectionY + 9.8);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.0);
-      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
-      doc.text('Emanoel Silva de Amorim', sigX, bottomSectionY + 14.2, { align: 'center' });
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.0);
-      doc.setTextColor(copperAccent[0], copperAccent[1], copperAccent[2]);
-      doc.text('CAU A133593-6 · Arquiteto e Urbanista', sigX, bottomSectionY + 18.2, { align: 'center' });
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.4);
-      doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
-      doc.text('Responsável Técnico · AmorimTech', sigX, bottomSectionY + 22.0, { align: 'center' });
     }
 
-    // 10. Rodapé Inferior de Autenticidade com Link Público (REQUISITO 4.4)
-    const footerY = 197.5;
-    doc.setDrawColor(220, 226, 235);
-    doc.setLineWidth(0.2);
-    doc.line(22, footerY - 3.2, pageWidth - 22, footerY - 3.2);
+    doc.setDrawColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    doc.setLineWidth(0.25);
+    doc.line(instrutorX - 25, bottomSectionY + 9.8, instrutorX + 25, bottomSectionY + 9.8);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.4);
+    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    doc.text(nomeInstrutor, instrutorX, bottomSectionY + 14.0, { align: 'center' });
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.2);
+    doc.setTextColor(copperAccent[0], copperAccent[1], copperAccent[2]);
+    const splitQualif = doc.splitTextToSize(qualifInstrutor, 52);
+    doc.text(splitQualif, instrutorX, bottomSectionY + 17.8, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.2);
+    doc.setFontSize(5.8);
     doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
-    const footerText = 'Este certificado digital possui validade técnica profissional conforme a legislação vigente e pode ter sua integridade confirmada junto aos registros da AmorimTech. Verifique a autenticidade em emanoelamorim.com/verificar-certificado com o código acima.';
-    const splitFooter = doc.splitTextToSize(footerText, 250);
-    doc.text(splitFooter, pageWidth / 2, footerY, { align: 'center' });
+    const offsetQualif = (splitQualif.length - 1) * 3.2;
+    doc.text('Instrutor(a) do Curso', instrutorX, bottomSectionY + 21.6 + offsetQualif, { align: 'center' });
+
+    // Coluna 2: Assinatura do Responsável Técnico Institucional
+    doc.setFont('times', 'italic');
+    doc.setFontSize(13.5);
+    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    doc.text('Emanoel S. de Amorim', respTecX, bottomSectionY + 6.0, { align: 'center' });
+
+    doc.setDrawColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    doc.setLineWidth(0.25);
+    doc.line(respTecX - 25, bottomSectionY + 9.8, respTecX + 25, bottomSectionY + 9.8);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.4);
+    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    doc.text('Emanoel Silva de Amorim', respTecX, bottomSectionY + 14.0, { align: 'center' });
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.2);
+    doc.setTextColor(copperAccent[0], copperAccent[1], copperAccent[2]);
+    doc.text('CAU A133593-6 · Arquiteto e Urbanista', respTecX, bottomSectionY + 17.8, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5.8);
+    doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
+    doc.text('Responsável Técnico · AmorimTech', respTecX, bottomSectionY + 21.6, { align: 'center' });
+
+    // Coluna 3: Assinatura do Aluno (com orientação gov.br integrada)
+    doc.setDrawColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    doc.setLineWidth(0.25);
+    doc.line(alunoX - 25, bottomSectionY + 9.8, alunoX + 25, bottomSectionY + 9.8);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.6);
+    doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+    const linhasAlunoTitulo = doc.splitTextToSize('Assinatura do Aluno', 50);
+    doc.text(linhasAlunoTitulo, alunoX, bottomSectionY + 14.0, { align: 'center' });
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(5.6);
+    doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
+    const linhasAlunoNota = doc.splitTextToSize('(Utilize a assinatura digital do Gov.br)', 50);
+    doc.text(linhasAlunoNota, alunoX, bottomSectionY + 18.2, { align: 'center' });
+
+    // Segunda página — apenas para Qualificação Profissional
+    if (dados.tipoCertificado === 'qualificacao_profissional') {
+      doc.addPage('a4', 'landscape');
+
+      // Reaproveita a mesma paleta e moldura da primeira página para consistência visual
+      doc.setFillColor(bgOffWhite[0], bgOffWhite[1], bgOffWhite[2]);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      doc.setDrawColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.setLineWidth(0.55);
+      doc.rect(marginOut, marginOut, pageWidth - (marginOut * 2), pageHeight - (marginOut * 2), 'S');
+
+      doc.setDrawColor(copperAccent[0], copperAccent[1], copperAccent[2]);
+      doc.setLineWidth(0.28);
+      doc.rect(marginIn, marginIn, pageWidth - (marginIn * 2), pageHeight - (marginIn * 2), 'S');
+
+      let cursorY = 22;
+      const contentX = 20;
+      const contentWidth = pageWidth - 40;
+      const rodapeY = pageHeight - 35;
+
+      // 2.1. Topo — Conteúdo Programático
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text('Conteúdo Programático', contentX, cursorY);
+      cursorY += 7;
+
+      // Conteúdo programático (com ajuste dinâmico de fonte se for longo)
+      const textoConteudo = (dados.conteudoProgramatico && dados.conteudoProgramatico.trim())
+        ? dados.conteudoProgramatico.trim()
+        : 'Conteúdo programático detalhado disponível mediante solicitação junto à coordenação do curso.';
+
+      let fontSizeConteudo = 9.5;
+      let lineHeightConteudo = 4.8;
+      let linhasConteudo = doc.splitTextToSize(textoConteudo, contentWidth);
+
+      if (linhasConteudo.length > 14) {
+        fontSizeConteudo = 8.2;
+        lineHeightConteudo = 4.0;
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(fontSizeConteudo);
+      doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
+      linhasConteudo = doc.splitTextToSize(textoConteudo, contentWidth);
+      doc.text(linhasConteudo, contentX, cursorY);
+      cursorY += (linhasConteudo.length * lineHeightConteudo) + 4;
+
+      // Habilitação de uso da plataforma Predial 4.0, se o curso tiver módulo vinculado
+      if (dados.moduloPredialVinculado && cursorY < rodapeY - 45) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(copperAccent[0], copperAccent[1], copperAccent[2]);
+        doc.text('Habilitação de Uso da Plataforma', contentX, cursorY);
+        cursorY += 4.8;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
+        const textoHabilitacao = `Este certificado habilita e certifica o profissional para uso da plataforma Predial 4.0, referente ao módulo de ${dados.moduloPredialVinculado}.`;
+        const linhasHabilitacao = doc.splitTextToSize(textoHabilitacao, contentWidth);
+        doc.text(linhasHabilitacao, contentX, cursorY);
+        cursorY += (linhasHabilitacao.length * 4.2) + 4;
+      }
+
+      // 2.2. Centro — Tabela de Carga Horária + Aproveitamento (texto limpo, sem caracteres de tabela)
+      if (dados.cargaHorariaDiscriminada && dados.cargaHorariaDiscriminada.length > 0) {
+        cursorY += 8;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+        doc.text('Carga Horária Detalhada', contentX, cursorY);
+        cursorY += 7;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(slateMedium[0], slateMedium[1], slateMedium[2]);
+        const colHorasX = contentX + contentWidth;
+        for (const item of dados.cargaHorariaDiscriminada) {
+          const atividadeLimpa = (item.atividade || '').replace(/\|/g, '').trim();
+          const horasLimpas = (item.horas || '').replace(/\|/g, '').trim();
+          doc.text(atividadeLimpa, contentX, cursorY);
+          doc.text(horasLimpas, colHorasX, cursorY, { align: 'right' });
+          cursorY += 4.5;
+        }
+        cursorY += 4;
+      }
+
+      if (dados.desempenho && dados.desempenho.trim()) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(copperAccent[0], copperAccent[1], copperAccent[2]);
+        doc.text(`Aproveitamento Técnico / Frequência: ${dados.desempenho.trim()}`, contentX, cursorY);
+        cursorY += 10;
+      }
+
+      // 2.3. Pré-Rodapé — Duas mini-colunas (Dados Corporativos | Validação com link clicável)
+      const preRodapeY = Math.min(cursorY + 6, rodapeY - 22);
+      const miniColEsqX = contentX;
+      const miniColDirX = pageWidth / 2 + 10;
+
+      // Mini-coluna 1 (esquerda) — Dados da Empresa
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.2);
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.text('Amorim Arquitetura, Tech & Academy', miniColEsqX, preRodapeY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.6);
+      doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
+      doc.text('CNPJ 35.673.731/0001-82', miniColEsqX, preRodapeY + 4.5);
+      doc.text('Rua Leonardo Bezerra Cavalcante, nº 672, Sala 06', miniColEsqX, preRodapeY + 8.5);
+      doc.text('Parnamirim, CEP 52.060-035, Recife/PE', miniColEsqX, preRodapeY + 12.5);
+
+      // Mini-coluna 2 (direita) — Validação e Autenticidade
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.2);
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.text('DADOS DE EMISSÃO & AUTENTICIDADE', miniColDirX, preRodapeY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.6);
+      doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
+      doc.text(`Local e Data: Recife – PE, ${dataEmissaoFormatada}`, miniColDirX, preRodapeY + 4.5);
+
+      doc.text('Código de Autenticidade: ', miniColDirX, preRodapeY + 8.5);
+      const prefixCodeWidth2 = doc.getTextWidth('Código de Autenticidade: ');
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+      doc.text(codigoVerificacao, miniColDirX + prefixCodeWidth2, preRodapeY + 8.5);
+
+      // Link clicável de verificação
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.4);
+      doc.setTextColor(37, 99, 235);
+      const linkText = 'Verificar Autenticidade de Certificado | Amorim Academy';
+      (doc as any).textWithLink(linkText, miniColDirX, preRodapeY + 13, {
+        url: 'https://emanoelamorim.com/verificar-certificado',
+      });
+      const linkWidth = doc.getTextWidth(linkText);
+      doc.setDrawColor(37, 99, 235);
+      doc.setLineWidth(0.15);
+      doc.line(miniColDirX, preRodapeY + 13.6, miniColDirX + linkWidth, preRodapeY + 13.6);
+
+      // 2.4. Base Absoluta — Amparo Legal (130mm) + Código de Verificação
+      const larguraAmparoLegal = 130; // mm — resulta em ~13-14cm, dentro do range de 12-14cm
+      const centroX = pageWidth / 2;
+
+      if (dados.textoAmparoLegal) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(navyPrimary[0], navyPrimary[1], navyPrimary[2]);
+        doc.text('Amparo Legal', centroX, rodapeY, { align: 'center' });
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8.5);
+        doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
+        const linhasAmparo = doc.splitTextToSize(dados.textoAmparoLegal, larguraAmparoLegal);
+        doc.text(linhasAmparo, centroX, rodapeY + 5.5, { align: 'center' });
+      }
+
+      // Código de verificação — última linha, base absoluta, centralizado
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(slateMuted[0], slateMuted[1], slateMuted[2]);
+      doc.text(`Código de verificação: ${codigoVerificacao}`, centroX, pageHeight - 12, { align: 'center' });
+    }
 
     return doc;
   }

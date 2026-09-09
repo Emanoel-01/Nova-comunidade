@@ -93,8 +93,8 @@ export interface MesCalendario {
             </div>
 
             <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 text-center">
-              <span class="text-xs font-semibold text-emerald-400 block uppercase tracking-wider">235% ROI</span>
-              <span class="text-sm font-bold text-slate-200">Retorno médio comprovado</span>
+              <span class="text-xs font-semibold text-emerald-400 block uppercase tracking-wider">R$ 8 mil+</span>
+              <span class="text-sm font-bold text-slate-200">Valor de mercado do laudo</span>
             </div>
 
             <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 text-center">
@@ -471,91 +471,338 @@ export interface MesCalendario {
             </p>
           </div>
 
-          <!-- Subseção: Próximos Cursos em Destaque (Carrossel / Grid) -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span>Próximos Cursos em Destaque</span>
-            </h3>
-
+          <!-- Subseção: Vitrine de Cursos em 6 Blocos -->
+          <div class="space-y-12">
             @if (carregandoAgenda()) {
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div class="bg-white rounded-3xl p-6 border border-slate-200 animate-pulse h-64"></div>
                 <div class="bg-white rounded-3xl p-6 border border-slate-200 animate-pulse h-64 hidden md:block"></div>
               </div>
             } @else {
-              <!-- Grade de Destaques: cursos cadastrados no Supabase -->
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                <!-- Cursos Dinâmicos do Supabase (se houver) -->
-                @for (curso of cursosAgenda(); track curso.id) {
-                  <div
-                    (click)="abrirDetalheCurso(curso)"
-                    class="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group cursor-pointer"
-                  >
-                    <div>
-                      <div class="relative h-48 bg-slate-900 overflow-hidden">
+              <!-- BLOCO 1: Imersões Presenciais -->
+              <div id="secao-imersoes" class="space-y-4">
+                <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <span>Imersões Presenciais</span>
+                </h3>
+                <p class="text-sm text-slate-500 -mt-2">A experiência prática — vivência de campo em Recife, PE</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                  @for (curso of cursosImersao(); track curso.id) {
+                    <div (click)="abrirDetalheCurso(curso)" class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden cursor-pointer group">
+                      <div class="relative h-32 overflow-hidden">
                         <img
                           [src]="curso.imagem_capa_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
                           [alt]="curso.titulo"
-                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           (error)="$any($event.target).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
                         />
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
-                        <div class="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
-                          <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
-                            {{ formatarFormato(curso.formato) }}
-                          </span>
-                          @if (curso.carga_horaria_certificado) {
-                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
-                              {{ curso.carga_horaria_certificado }}
-                            </span>
-                          }
-                        </div>
-                        <div class="absolute bottom-3 left-3.5 right-3.5 text-white space-y-0.5">
-                          <div class="text-xs font-bold text-amber-300">
-                            {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
-                          </div>
-                          @if (curso.local) {
-                            <div class="text-[11px] text-slate-200 truncate">
-                              📍 {{ curso.local }}
-                            </div>
-                          }
+                      </div>
+                      <div class="p-4">
+                        <h5 class="text-white text-xs font-bold leading-snug">{{ curso.titulo }}</h5>
+                        <div class="text-amber-300 text-[11px] font-bold mt-1.5">
+                          📍 {{ curso.local || 'Recife, PE' }} · {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
                         </div>
                       </div>
-
-                      <div class="p-6 space-y-3">
-                        <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
-                          {{ curso.titulo }}
-                        </h4>
-                        @if (curso.descricao) {
-                          <p class="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3">
-                            {{ curso.descricao }}
-                          </p>
-                        }
-                      </div>
                     </div>
-
-                    <div class="p-6 pt-0 border-t border-slate-100 flex items-center justify-between">
-                      <div>
-                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
-                        <span class="text-xs font-bold text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
-                      </div>
-                      <a
-                        [href]="gerarLinkWhatsappCurso(curso.titulo)"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        (click)="$event.stopPropagation()"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
-                      >
-                        <span>Garantir Vaga</span>
-                        <span>→</span>
-                      </a>
-                    </div>
-                  </div>
-                }
-
+                  }
+                </div>
               </div>
+
+              <!-- BLOCO 2: Certificações Técnicas -->
+              <div id="secao-certificacoes" class="space-y-4">
+                <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <span>Certificações Técnicas</span>
+                </h3>
+                <p class="text-sm text-slate-500 -mt-2">A especialização — normas oficiais (NBR 16747, 13752, 9050)</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  @for (curso of cursosCertificacao(); track curso.id) {
+                    <div
+                      (click)="abrirDetalheCurso(curso)"
+                      class="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group cursor-pointer"
+                    >
+                      <div>
+                        <div class="relative h-48 bg-slate-900 overflow-hidden">
+                          <img
+                            [src]="curso.imagem_capa_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                            [alt]="curso.titulo"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                            (error)="$any($event.target).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                          />
+                          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
+                          <div class="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
+                              {{ formatarFormato(curso.formato) }}
+                            </span>
+                            @if (curso.carga_horaria_certificado) {
+                              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
+                                {{ curso.carga_horaria_certificado }}
+                              </span>
+                            }
+                          </div>
+                          <div class="absolute bottom-3 left-3.5 right-3.5 text-white space-y-0.5">
+                            <div class="text-xs font-bold text-amber-300">
+                              {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
+                            </div>
+                            @if (curso.local) {
+                              <div class="text-[11px] text-slate-200 truncate">
+                                📍 {{ curso.local }}
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <div class="p-6 space-y-3">
+                          <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
+                            {{ curso.titulo }}
+                          </h4>
+                          @if (curso.descricao) {
+                            <p class="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3">
+                              {{ curso.descricao }}
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="p-6 pt-0 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
+                          <span class="text-xs font-bold text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
+                        </div>
+                        <a
+                          [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          (click)="$event.stopPropagation()"
+                          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+                        >
+                          <span>Garantir Vaga</span>
+                          <span>→</span>
+                        </a>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- BLOCO 3: Qualificação Profissional -->
+              <div id="secao-qualificacao" class="space-y-4">
+                <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                  <span>Qualificação Profissional</span>
+                </h3>
+                <p class="text-sm text-slate-500 -mt-2">Formação prática em ferramentas e metodologias de mercado</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  @for (curso of cursosQualificacao(); track curso.id) {
+                    <div
+                      (click)="abrirDetalheCurso(curso)"
+                      class="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group cursor-pointer"
+                    >
+                      <div>
+                        <div class="relative h-48 bg-slate-900 overflow-hidden">
+                          <img
+                            [src]="curso.imagem_capa_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                            [alt]="curso.titulo"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                            (error)="$any($event.target).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                          />
+                          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
+                          <div class="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
+                              {{ formatarFormato(curso.formato) }}
+                            </span>
+                            @if (curso.carga_horaria_certificado) {
+                              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
+                                {{ curso.carga_horaria_certificado }}
+                              </span>
+                            }
+                          </div>
+                          <div class="absolute bottom-3 left-3.5 right-3.5 text-white space-y-0.5">
+                            <div class="text-xs font-bold text-amber-300">
+                              {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
+                            </div>
+                            @if (curso.local) {
+                              <div class="text-[11px] text-slate-200 truncate">
+                                📍 {{ curso.local }}
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <div class="p-6 space-y-3">
+                          <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
+                            {{ curso.titulo }}
+                          </h4>
+                          @if (curso.descricao) {
+                            <p class="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3">
+                              {{ curso.descricao }}
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="p-6 pt-0 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
+                          <span class="text-xs font-bold text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
+                        </div>
+                        <a
+                          [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          (click)="$event.stopPropagation()"
+                          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+                        >
+                          <span>Garantir Vaga</span>
+                          <span>→</span>
+                        </a>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- BLOCO 4: Cursos Livres / Fast-Track (cards compactos) -->
+              <div id="secao-livres" class="space-y-4">
+                <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                  <span>Cursos Livres — Fast-Track</span>
+                </h3>
+                <p class="text-sm text-slate-500 -mt-2">Habilidades pontuais, acesso imediato</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  @for (curso of cursosLivres(); track curso.id) {
+                    <div
+                      (click)="abrirDetalheCurso(curso)"
+                      class="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl p-2 pr-3 cursor-pointer hover:shadow-md transition-shadow"
+                    >
+                      <img
+                        [src]="curso.imagem_capa_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                        [alt]="curso.titulo"
+                        class="w-10 h-10 rounded-lg object-cover shrink-0"
+                        (error)="$any($event.target).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                      />
+                      <div class="min-w-0 flex-1">
+                        <h5 class="text-xs font-bold text-slate-900 truncate">{{ curso.titulo }}</h5>
+                        <span class="text-[10px] text-slate-400">{{ curso.carga_horaria_certificado }}</span>
+                      </div>
+                      <span class="text-xs font-black text-amber-700 shrink-0">{{ formatarMoeda(curso.preco) }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- BLOCO 5: Pacotes e Licença Anual -->
+              <div id="secao-pacotes" class="space-y-4">
+                <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <span>Pacotes e Licença Anual</span>
+                </h3>
+                <p class="text-sm text-slate-500 -mt-2">Duas formas de economizar</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  @for (curso of cursosPacoteLicenca(); track curso.id) {
+                    <div
+                      (click)="abrirDetalheCurso(curso)"
+                      class="bg-gradient-to-b from-amber-50/60 to-white rounded-3xl border-2 border-amber-400 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group cursor-pointer relative"
+                    >
+                      <span class="absolute top-3 left-3 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-900">
+                        {{ curso.titulo.includes('Licença') ? 'Licença' : 'Pacote' }}
+                      </span>
+
+                      <div>
+                        <div class="relative h-48 bg-slate-900 overflow-hidden">
+                          <img
+                            [src]="curso.imagem_capa_url || 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                            [alt]="curso.titulo"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                            (error)="$any($event.target).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
+                          />
+                          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
+                          <div class="absolute top-3.5 right-3.5 flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
+                              {{ formatarFormato(curso.formato) }}
+                            </span>
+                            @if (curso.carga_horaria_certificado) {
+                              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
+                                {{ curso.carga_horaria_certificado }}
+                              </span>
+                            }
+                          </div>
+                          <div class="absolute bottom-3 left-3.5 right-3.5 text-white space-y-0.5">
+                            <div class="text-xs font-bold text-amber-300">
+                              {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
+                            </div>
+                            @if (curso.local) {
+                              <div class="text-[11px] text-slate-200 truncate">
+                                📍 {{ curso.local }}
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <div class="p-6 space-y-3">
+                          <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
+                            {{ curso.titulo }}
+                          </h4>
+                          @if (curso.descricao) {
+                            <p class="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3">
+                              {{ curso.descricao }}
+                            </p>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="p-6 pt-0 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
+                          <span class="text-xs font-bold text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
+                        </div>
+                        <a
+                          [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          (click)="$event.stopPropagation()"
+                          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+                        >
+                          <span>Garantir Vaga</span>
+                          <span>→</span>
+                        </a>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- BLOCO 6: Retorno sobre Investimento (substitui a antiga seção Incubadora Profissional) -->
+              <div class="rounded-3xl p-8 sm:p-10 text-white" style="background: linear-gradient(135deg, #1E1B4B, #312E81);">
+                <div class="text-[11px] font-black uppercase tracking-wider text-indigo-200 mb-3">Retorno sobre o investimento</div>
+                <p class="text-lg sm:text-xl font-bold leading-relaxed max-w-3xl">
+                  Um único laudo de <span class="text-amber-300">Inspeção Predial</span>, cobrado no preço médio de mercado (R$ 8.000), já vale <span class="text-amber-300">quase 3x</span> o valor da Licença Anual completa.
+                  <br class="hidden sm:block">
+                  Uma única <span class="text-amber-300">Vistoria Cautelar de Vizinhança</span>, no preço de mercado (R$ 20.000), vale <span class="text-amber-300">quase 7x</span> a Licença.
+                </p>
+                <p class="text-xs sm:text-sm text-indigo-200 mt-4 max-w-2xl">
+                  Você não está comprando um curso — está adquirindo a chave para um mercado onde um único trabalho já paga o investimento do ano inteiro.
+                </p>
+              </div>
+
+              <!-- BLOCO 7: Trilhas In-Company -->
+              <div class="rounded-3xl p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6" style="background: linear-gradient(135deg, #1E293B, #0F172A);">
+                <div>
+                  <h3 class="text-white text-lg sm:text-xl font-black mb-2">🏢 Trilhas In-Company</h3>
+                  <p class="text-slate-300 text-sm max-w-lg">
+                    Precisa treinar a equipe técnica da sua construtora ou órgão público? Montamos trilhas sob medida com emissão de certificados oficiais.
+                  </p>
+                </div>
+                <a
+                  href="https://wa.me/5581991298803?text=Ol%C3%A1!%20Gostaria%20de%20saber%20mais%20sobre%20trilhas%20In-Company%20para%20minha%20empresa."
+                  target="_blank"
+                  class="shrink-0 inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition-all whitespace-nowrap"
+                >
+                  Falar com Consultor B2B →
+                </a>
+              </div>
+
             }
           </div>
 
@@ -632,68 +879,7 @@ export interface MesCalendario {
           </div>
         </section>
 
-        <!-- ========================================================================= -->
-        <!-- SEÇÃO 6: RESULTADOS DA INCUBADORA (100% REAIS, NUNCA PLACEHOLDER)        -->
-        <!-- ========================================================================= -->
-        <section class="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-sm space-y-8">
-          <div class="text-center max-w-3xl mx-auto space-y-3">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-              <span>Resultados Comprovados</span>
-            </div>
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Resultados Reais da Incubadora Profissional
-            </h2>
-            <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-              Números auditados de turmas anteriores e projetos reais executados com apoio direto da equipe técnica.
-            </p>
-          </div>
 
-          <!-- Métricas Centrais -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <div class="bg-emerald-50/60 rounded-2xl p-6 border border-emerald-200 text-center space-y-1">
-              <span class="text-3xl sm:text-4xl font-black text-emerald-700">235%</span>
-              <span class="text-xs font-bold text-emerald-900 uppercase tracking-wider block">ROI Médio</span>
-            </div>
-
-            <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center space-y-1">
-              <span class="text-lg sm:text-xl font-black text-slate-900">R$ 67.166,40</span>
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Investido</span>
-            </div>
-
-            <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center space-y-1">
-              <span class="text-lg sm:text-xl font-black text-emerald-700">R$ 224.999,99</span>
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Valor Gerado</span>
-            </div>
-
-            <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center space-y-1">
-              <span class="text-lg sm:text-xl font-black text-slate-900">4 / 1 / 2 / 1</span>
-              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Contratações / Inovação / Artigos / Relatório</span>
-            </div>
-          </div>
-
-          <!-- 4 Casos Nominais Reais -->
-          <div class="pt-4 space-y-4">
-            <h3 class="text-base font-bold text-slate-900">Profissionais Incubados com Resultados Comprovados:</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span class="text-xs font-bold text-slate-900 block">Paulo Ewerton Ribeiro da Silva</span>
-                <span class="text-[11px] text-slate-500 block">Engenharia Diagnóstica & Vistorias</span>
-              </div>
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span class="text-xs font-bold text-slate-900 block">Hugo Ewerton Pereira Silva</span>
-                <span class="text-[11px] text-slate-500 block">Laudos Periciais & Copiloto</span>
-              </div>
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span class="text-xs font-bold text-slate-900 block">Adriana Gonçalves Araujo</span>
-                <span class="text-[11px] text-slate-500 block">Consultoria & Inovação Técnica</span>
-              </div>
-              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                <span class="text-xs font-bold text-slate-900 block">Vinícius de Assis Souto Maior Arruda</span>
-                <span class="text-[11px] text-slate-500 block">Planejamento & Gestão de Obras</span>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <!-- ========================================================================= -->
         <!-- SEÇÃO 7: REDE E MENTORIA (PARCEIROS & ECOSSISTEMA)                        -->
@@ -730,7 +916,7 @@ export interface MesCalendario {
               @if (accordionAberto() === 'incubadora') {
                 <div class="px-5 pb-5 text-xs sm:text-sm text-slate-600 leading-relaxed space-y-2 border-t border-slate-100 pt-3">
                   <p>
-                    Programa de transição de carreira e consolidação técnica com suporte direto na elaboração dos primeiros laudos e perícias com corresponsabilidade profissional. Consulte a Seção de Resultados acima para ver números auditados com 235% de ROI médio comprovado.
+                    Programa de transição de carreira e consolidação técnica com suporte direto na elaboração dos primeiros laudos e perícias com corresponsabilidade profissional. Veja o bloco "Retorno sobre o Investimento" acima para entender o potencial de retorno de cada certificação.
                   </p>
                 </div>
               }
@@ -1323,6 +1509,23 @@ export class AmorimAcademyComponent implements OnInit {
 
   // Dados do Supabase
   readonly cursosAgenda = signal<any[]>([]);
+
+  readonly cursosImersao = computed(() =>
+    this.cursosAgenda().filter(c => c.categoria_vitrine === 'imersao')
+  );
+  readonly cursosCertificacao = computed(() =>
+    this.cursosAgenda().filter(c => c.categoria_vitrine === 'certificacao')
+  );
+  readonly cursosQualificacao = computed(() =>
+    this.cursosAgenda().filter(c => c.categoria_vitrine === 'qualificacao')
+  );
+  readonly cursosLivres = computed(() =>
+    this.cursosAgenda().filter(c => c.categoria_vitrine === 'livre')
+  );
+  readonly cursosPacoteLicenca = computed(() =>
+    this.cursosAgenda().filter(c => c.categoria_vitrine === 'pacote_licenca')
+  );
+
   readonly carregandoAgenda = signal<boolean>(true);
 
   readonly professores = signal<any[]>([]);
@@ -1594,20 +1797,29 @@ export class AmorimAcademyComponent implements OnInit {
   }
 
   formatarFormato(formato?: string): string {
-    if (!formato) return 'Presencial';
+    if (!formato) return 'EAD';
     const mapa: Record<string, string> = {
-      'gravado': 'Online (Gravado)',
-      'ao_vivo': 'Online ao Vivo',
-      'presencial_hibrido': 'Presencial / Híbrido',
+      'gravado': 'EAD',
+      'ao_vivo': 'Remoto',
       'presencial': 'Presencial',
-      'hibrido': 'Híbrido'
+      'presencial_hibrido': 'Híbrido (Presencial + Remoto)',
+      'hibrido': 'Híbrido',
     };
     return mapa[formato.toLowerCase()] || formato;
   }
 
   formatarMoeda(valor?: number | null): string {
-    if (!valor || valor <= 0) return 'Sob consulta';
+    if (valor === 0) return 'Gratuito';
+    if (valor === null || valor === undefined || valor < 0) return 'Sob consulta';
     return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  irParaImersoes(): void {
+    document.getElementById('secao-imersoes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  irParaPacotesLicenca(): void {
+    (document.getElementById('secao-pacotes') || document.getElementById('secao-pacotes-licenca'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async abrirDetalheCurso(curso: any): Promise<void> {

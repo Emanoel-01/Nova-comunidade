@@ -4,7 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { extrairVimeoId, montarUrlPlayerVimeo } from '../../utils/vimeo.util';
 import { extrairYoutubeId, montarUrlPlayerYoutube } from '../../utils/youtube.util';
-import { CertificadoPdfService } from '../../services/certificado-pdf.service';
+import { CertificadoPdfService, ItemCargaHoraria } from '../../services/certificado-pdf.service';
 
 export interface ModuloCursoAdmin {
   id: string;
@@ -32,6 +32,13 @@ export interface CursoAdmin {
   carga_horaria_certificado?: string | null;
   instrutor_nome?: string | null;
   instrutor_qualificacao?: string | null;
+  tipo_certificado?: string | null;
+  texto_amparo_legal?: string | null;
+  conteudo_programatico?: string | null;
+  exibir_cpf_aluno?: boolean | null;
+  desempenho_texto?: string | null;
+  incluir_assinatura_aluno?: boolean | null;
+  carga_horaria_discriminada?: ItemCargaHoraria[] | null;
   tem_avaliacao_por_modulo?: boolean;
   nota_minima_avaliacao_modulo?: number | null;
   nota_minima_avaliacao_final?: number | null;
@@ -289,13 +296,51 @@ export interface CursoAdmin {
                         </div>
 
                         <div class="space-y-1.5 sm:col-span-2">
-                          <label class="block text-xs font-bold text-slate-700">URL da imagem de capa do curso</label>
+                          <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <label class="block text-xs font-bold text-slate-700">URL da imagem de capa do curso</label>
+                            <label
+                              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                              [class.opacity-50]="enviandoCapaCurso()"
+                              [class.pointer-events-none]="enviandoCapaCurso()"
+                            >
+                              @if (enviandoCapaCurso()) {
+                                <span class="w-3.5 h-3.5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></span>
+                                <span>Enviando capa...</span>
+                              } @else {
+                                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span>Fazer upload de imagem</span>
+                              }
+                              <input
+                                type="file"
+                                class="hidden"
+                                accept="image/png, image/jpeg, image/webp, image/gif"
+                                [disabled]="enviandoCapaCurso()"
+                                (change)="onCapaNovoCursoSelected($event, novoImagemCapaInput)"
+                              />
+                            </label>
+                          </div>
                           <input
                             type="url"
                             #novoImagemCapaInput
-                            placeholder="https://exemplo.com/imagem-capa.jpg"
+                            (input)="previaCapaNovoCurso.set(novoImagemCapaInput.value)"
+                            placeholder="https://exemplo.com/imagem-capa.jpg ou clique no botão de upload acima"
                             class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
+                          @if (previaCapaNovoCurso()) {
+                            <div class="space-y-1.5 pt-1">
+                              <label class="block text-xs font-bold text-slate-700">Prévia da Capa</label>
+                              <div class="p-2 bg-white rounded-2xl border border-slate-200 max-w-sm">
+                                <img
+                                  [src]="previaCapaNovoCurso()"
+                                  alt="Prévia da Imagem de Capa"
+                                  class="w-full h-36 object-cover rounded-xl"
+                                  referrerpolicy="no-referrer"
+                                />
+                              </div>
+                            </div>
+                          }
                         </div>
                       </div>
                     </div>
@@ -957,6 +1002,75 @@ export interface CursoAdmin {
 
               <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
                 
+                <!-- Tipo de Certificado -->
+                <div class="p-5 sm:p-6 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-4">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-600"></span>
+                    <h5 class="text-xs sm:text-sm font-bold text-slate-800">
+                      Tipo de Certificado
+                    </h5>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label
+                      class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
+                      [class.border-indigo-500]="tipoCertificadoSelecionado() === 'livre'"
+                      [class.bg-indigo-50]="tipoCertificadoSelecionado() === 'livre'"
+                      [class.border-slate-200]="tipoCertificadoSelecionado() !== 'livre'"
+                    >
+                      <input
+                        type="radio"
+                        name="tipoCertificado"
+                        value="livre"
+                        [checked]="tipoCertificadoSelecionado() === 'livre'"
+                        (change)="tipoCertificadoSelecionado.set('livre')"
+                        class="mt-0.5"
+                      />
+                      <div>
+                        <p class="text-xs sm:text-sm font-bold text-slate-900">Curso Livre</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Modelo atual — 1 página, sem verso adicional.</p>
+                      </div>
+                    </label>
+
+                    <label
+                      class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
+                      [class.border-indigo-500]="tipoCertificadoSelecionado() === 'qualificacao_profissional'"
+                      [class.bg-indigo-50]="tipoCertificadoSelecionado() === 'qualificacao_profissional'"
+                      [class.border-slate-200]="tipoCertificadoSelecionado() !== 'qualificacao_profissional'"
+                    >
+                      <input
+                        type="radio"
+                        name="tipoCertificado"
+                        value="qualificacao_profissional"
+                        [checked]="tipoCertificadoSelecionado() === 'qualificacao_profissional'"
+                        (change)="tipoCertificadoSelecionado.set('qualificacao_profissional')"
+                        class="mt-0.5"
+                      />
+                      <div>
+                        <p class="text-xs sm:text-sm font-bold text-slate-900">Qualificação Profissional</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">2 páginas — inclui conteúdo programático e amparo legal (Lei 9.394/96).</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  @if (tipoCertificadoSelecionado() === 'qualificacao_profissional') {
+                    <div class="space-y-2 pt-2">
+                      <label class="block text-xs font-bold text-slate-700">
+                        Conteúdo Programático (verso do certificado)
+                      </label>
+                      <textarea
+                        rows="4"
+                        [value]="conteudoProgramatico()"
+                        (input)="conteudoProgramatico.set($any($event.target).value)"
+                        placeholder="Ex: Módulo 1 — Introdução e normas técnicas (4h); Módulo 2 — Metodologia de vistoria (8h); ..."
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      ></textarea>
+                      <p class="text-[11px] text-slate-400">
+                        Deixe em branco enquanto o conteúdo do curso ainda não estiver desenvolvido — o certificado exibirá um aviso de "conteúdo disponível mediante solicitação" até este campo ser preenchido.
+                      </p>
+                    </div>
+                  }
+                </div>
+
                 <!-- Informações Normativas e Carga Horária -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div class="space-y-2 sm:col-span-2">
@@ -1038,12 +1152,153 @@ export interface CursoAdmin {
                   </div>
                 </div>
 
+                <!-- Configurações Adicionais do Certificado: CPF, Desempenho e Assinatura -->
+                <div class="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                    <h5 class="text-xs sm:text-sm font-bold text-slate-800">
+                      Personalização e Identificação do Aluno
+                    </h5>
+                  </div>
+
+                  <div class="space-y-3">
+                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        [checked]="exibirCpfAluno()"
+                        (change)="exibirCpfAluno.set(!exibirCpfAluno())"
+                        class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <div>
+                        <span class="text-xs font-bold text-slate-700">Exibir CPF do aluno no certificado</span>
+                        <p class="text-[11px] text-slate-400">
+                          Utiliza o CPF cadastrado no perfil profissional do aluno, posicionado de forma discreta logo abaixo do nome.
+                        </p>
+                      </div>
+                    </label>
+
+                    <div class="space-y-1.5 pt-1">
+                      <label class="block text-xs font-bold text-slate-700">
+                        Desempenho / Aproveitamento (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        [value]="desempenhoTexto()"
+                        (input)="desempenhoTexto.set($any($event.target).value)"
+                        placeholder="Ex: Nota: 9.5, Aprovado, Frequência: 100%"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p class="text-[11px] text-slate-400">
+                        Texto curto inserido após a carga horária no corpo da frente do certificado.
+                      </p>
+                    </div>
+
+                    <label class="flex items-center gap-2.5 cursor-pointer select-none pt-1">
+                      <input
+                        type="checkbox"
+                        [checked]="incluirAssinaturaAluno()"
+                        (change)="incluirAssinaturaAluno.set(!incluirAssinaturaAluno())"
+                        class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <div>
+                        <span class="text-xs font-bold text-slate-700">Incluir orientação de assinatura eletrônica do aluno (gov.br)</span>
+                        <p class="text-[11px] text-slate-400">
+                          Exibe nota no rodapé instruindo o diplomado a assinar digitalmente via assinador.iti.br ou app gov.br após o download.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Carga Horária Discriminada (JSONB) -->
+                <div class="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                      <h5 class="text-xs sm:text-sm font-bold text-slate-800">
+                        Discriminação da Carga Horária (Verso do Certificado)
+                      </h5>
+                    </div>
+                    <button
+                      type="button"
+                      (click)="adicionarItemCargaHoraria()"
+                      class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs cursor-pointer inline-flex items-center gap-1 transition-colors"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Adicionar Linha</span>
+                    </button>
+                  </div>
+                  <p class="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
+                    Discrimine as atividades e horas que compõem o curso (ex: Teoria, Prática na Plataforma, Mentoria). Esses itens serão exibidos na tabela central do verso do certificado.
+                  </p>
+
+                  <div class="space-y-2.5">
+                    @for (item of cargaHorariaDiscriminada(); track $index) {
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="text"
+                          [value]="item.atividade"
+                          (input)="atualizarItemCargaHoraria($index, 'atividade', $any($event.target).value)"
+                          placeholder="Ex: Aulas Práticas na Plataforma"
+                          class="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <input
+                          type="text"
+                          [value]="item.horas"
+                          (input)="atualizarItemCargaHoraria($index, 'horas', $any($event.target).value)"
+                          placeholder="Ex: 30h"
+                          class="w-24 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          (click)="removerItemCargaHoraria($index)"
+                          title="Remover linha"
+                          class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center cursor-pointer transition-colors"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    } @empty {
+                      <div class="p-4 rounded-xl bg-white border border-dashed border-slate-300 text-center text-xs text-slate-400">
+                        Nenhuma discriminação cadastrada. O certificado utilizará apenas a carga horária total declarada acima.
+                      </div>
+                    }
+                  </div>
+
+                  @if (cargaHorariaDiscriminada().length > 0) {
+                    <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <span class="font-bold text-slate-700">Soma das atividades:</span>
+                        <span class="font-bold text-indigo-700 ml-1">{{ somaCargaHorariaDiscriminada() }}</span>
+                        <span class="text-slate-400 ml-2">· Carga horária total declarada: {{ cargaHorariaInput.value || '—' }}</span>
+                      </div>
+                      @if (verificarDivergenciaCargaHoraria(cargaHorariaInput.value)) {
+                        <span class="text-amber-600 font-bold flex items-center gap-1">
+                          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          Atenção: os valores não coincidem.
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+
                 <!-- Botões de Ação -->
                 <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
                   <button
                     type="button"
                     [disabled]="gerandoPdfTeste()"
-                    (click)="baixarCertificadoTeste(textoNormativoInput.value, cargaHorariaInput.value, instrutorNomeInput.value, instrutorQualificacaoInput.value)"
+                    (click)="baixarCertificadoTeste(
+                      textoNormativoInput.value,
+                      cargaHorariaInput.value,
+                      instrutorNomeInput.value,
+                      instrutorQualificacaoInput.value
+                    )"
                     class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
                     @if (gerandoPdfTeste()) {
@@ -1060,7 +1315,12 @@ export interface CursoAdmin {
                   <button
                     type="button"
                     [disabled]="salvando()"
-                    (click)="salvarConfiguracaoCertificado(textoNormativoInput.value, cargaHorariaInput.value, instrutorNomeInput.value, instrutorQualificacaoInput.value)"
+                    (click)="salvarConfiguracaoCertificado(
+                      textoNormativoInput.value,
+                      cargaHorariaInput.value,
+                      instrutorNomeInput.value,
+                      instrutorQualificacaoInput.value
+                    )"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
                     @if (salvando()) {
@@ -1076,10 +1336,10 @@ export interface CursoAdmin {
                 <div class="p-6 rounded-3xl bg-slate-50 border border-slate-200/80 space-y-4">
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase tracking-wider text-[#132A41]">Prévia Visual do Certificado Oficial (Amorim Academy)</span>
-                    <span class="text-[11px] font-bold text-[#B5642A]">Design Oficial 4.0</span>
+                    <span class="text-[11px] font-bold text-[#B5642A]">Design Oficial 5.0 · Frente Limpa</span>
                   </div>
                   
-                  <div class="p-8 sm:p-10 rounded-2xl bg-[#FEFCF8] border-2 border-[#132A41] relative overflow-hidden text-center space-y-4 max-w-2xl mx-auto shadow-md">
+                  <div class="p-8 sm:p-10 rounded-2xl bg-[#FEFCF8] border-2 border-[#132A41] relative overflow-hidden text-center space-y-5 max-w-2xl mx-auto shadow-md">
                     <!-- Borda interna em cobre -->
                     <div class="absolute inset-1.5 border border-[#B5642A] pointer-events-none"></div>
                     
@@ -1103,6 +1363,11 @@ export interface CursoAdmin {
                     <div class="text-xl sm:text-2xl font-serif font-bold text-[#B5642A]">
                       [NOME DO ALUNO]
                     </div>
+                    @if (exibirCpfAluno()) {
+                      <div class="text-[10px] text-slate-500 -mt-2">
+                        CPF: 000.000.000-00
+                      </div>
+                    }
                     <div class="w-48 h-px bg-[#132A41]/30 mx-auto"></div>
 
                     <div class="text-xs text-slate-600">
@@ -1113,58 +1378,53 @@ export interface CursoAdmin {
                       “{{ cursoAtivo()?.titulo || 'Título do Curso' }}”
                     </div>
 
-                    <div class="text-xs text-slate-500 leading-relaxed max-w-md mx-auto italic">
+                    <div class="text-xs text-slate-500 leading-relaxed max-w-md mx-auto italic pb-2">
                       {{ formatarPreviaTexto(textoNormativoInput.value, cargaHorariaInput.value) }}
+                      @if (desempenhoTexto().trim()) {
+                        <span class="font-bold text-slate-700"> · Desempenho: {{ desempenhoTexto().trim() }}</span>
+                      }
                     </div>
 
-                    <!-- Rodapé com Dupla Assinatura Condicional -->
-                    <div class="pt-4 border-t border-slate-200/80 text-left text-[9px] text-slate-500">
-                      @if (instrutorNomeInput.value.trim()) {
-                        <!-- Grade de 3 Colunas: Emissão / Instrutor / Responsável Técnico -->
-                        <div class="grid grid-cols-3 gap-3 items-end">
-                          <div>
-                            <div class="font-bold text-[#132A41]">DADOS DE EMISSÃO & AUTENTICIDADE</div>
-                            <div>Local e Data: Recife – PE, [Data de Emissão]</div>
-                            <div>Código: <span class="font-mono font-bold text-[#132A41]">AMTECH-XXXXXXXX</span></div>
-                            <div class="pt-1 text-[8px] text-slate-400">Amorim Arquitetura, Tech & Academy · CNPJ 35.673.731/0001-82</div>
-                          </div>
-
-                          <div class="text-center">
+                    <!-- Rodapé da Frente: 3 Colunas de Assinatura com Amplo Respiro Vertical -->
+                    <div class="pt-6 border-t border-slate-200/80 text-[9px] text-slate-500">
+                      <!-- Grade de 3 Colunas: Instrutor / Responsável Técnico / Aluno -->
+                      <div class="grid grid-cols-3 gap-3 items-end text-center">
+                        <!-- Coluna 1: Instrutor -->
+                        <div>
+                          @if (instrutorNomeInput.value.trim()) {
                             <div class="font-serif italic font-semibold text-xs text-[#132A41]">{{ instrutorNomeInput.value.trim() }}</div>
-                            <div class="w-28 h-px bg-slate-300 mx-auto mb-1"></div>
+                            <div class="w-24 h-px bg-slate-300 mx-auto mb-1"></div>
                             <div class="font-bold text-[#132A41] text-[9.5px] leading-tight">{{ instrutorNomeInput.value.trim() }}</div>
                             <div class="font-bold text-[#B5642A] text-[8.5px] leading-tight">
                               {{ instrutorQualificacaoInput.value.trim() || 'Instrutor(a) do Curso' }}
                             </div>
                             <div class="text-[8px] text-slate-400">Instrutor(a) do Curso</div>
-                          </div>
+                          } @else {
+                            <div class="h-4"></div>
+                            <div class="w-24 h-px bg-slate-200 mx-auto mb-1"></div>
+                            <div class="font-bold text-slate-400 text-[9px]">Instrutor(a)</div>
+                            <div class="text-[8px] text-slate-400 italic">Corpo Docente AmorimTech</div>
+                          }
+                        </div>
 
-                          <div class="text-right">
-                            <div class="font-serif italic font-semibold text-xs text-[#132A41]">Emanoel S. de Amorim</div>
-                            <div class="w-28 h-px bg-slate-300 ml-auto mb-1"></div>
-                            <div class="font-bold text-[#132A41] text-[9.5px] leading-tight">Emanoel Silva de Amorim</div>
-                            <div class="font-bold text-[#B5642A] text-[8.5px] leading-tight">CAU A133593-6 · Arquiteto e Urbanista</div>
-                            <div class="text-[8px] text-slate-400">Responsável Técnico · AmorimTech</div>
-                          </div>
+                        <!-- Coluna 2: Responsável Técnico -->
+                        <div>
+                          <div class="font-serif italic font-semibold text-xs text-[#132A41]">Emanoel S. de Amorim</div>
+                          <div class="w-24 h-px bg-slate-300 mx-auto mb-1"></div>
+                          <div class="font-bold text-[#132A41] text-[9.5px] leading-tight">Emanoel Silva de Amorim</div>
+                          <div class="font-bold text-[#B5642A] text-[8.5px] leading-tight">CAU A133593-6 · Arquiteto e Urbanista</div>
+                          <div class="text-[8px] text-slate-400">Responsável Técnico · AmorimTech</div>
                         </div>
-                      } @else {
-                        <!-- Grade de 2 Colunas: Emissão / Responsável Técnico -->
-                        <div class="grid grid-cols-2 gap-4 items-end">
-                          <div>
-                            <div class="font-bold text-[#132A41]">DADOS DE EMISSÃO & AUTENTICIDADE</div>
-                            <div>Local e Data: Recife – PE, [Data de Emissão]</div>
-                            <div>Código: <span class="font-mono font-bold text-[#132A41]">AMTECH-XXXXXXXX</span></div>
-                            <div class="pt-1 text-[8px] text-slate-400">Amorim Arquitetura, Tech & Academy · CNPJ 35.673.731/0001-82</div>
-                          </div>
-                          <div class="text-right">
-                            <div class="font-serif italic font-semibold text-xs text-[#132A41]">Emanoel S. de Amorim</div>
-                            <div class="w-36 h-px bg-slate-300 ml-auto mb-1"></div>
-                            <div class="font-bold text-[#132A41]">Emanoel Silva de Amorim</div>
-                            <div class="font-bold text-[#B5642A]">CAU A133593-6 · Arquiteto e Urbanista</div>
-                            <div class="text-[8px] text-slate-400">Responsável Técnico · AmorimTech</div>
-                          </div>
+
+                        <!-- Coluna 3: Aluno Diplomado -->
+                        <div>
+                          <div class="font-serif italic font-semibold text-xs text-slate-400">[Nome do Aluno]</div>
+                          <div class="w-24 h-px bg-slate-300 mx-auto mb-1"></div>
+                          <div class="font-bold text-[#132A41] text-[9.5px] leading-tight">Aluno(a) Diplomado(a)</div>
+                          <div class="text-[8px] text-[#B5642A] font-semibold">Assinatura do Aluno</div>
+                          <div class="text-[7.5px] text-slate-400">Assinatura Eletrônica Avançada gov.br</div>
                         </div>
-                      }
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1511,13 +1771,24 @@ export interface CursoAdmin {
                       min="0"
                       #precoInput
                       [value]="cursoAtivo()?.preco ?? ''"
+                      [disabled]="cursoGratuito()"
                       placeholder="Ex: 19.90"
-                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
+                    <label class="flex items-center gap-2 pt-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        [checked]="cursoGratuito()"
+                        (change)="alternarCursoGratuito(precoInput)"
+                        class="rounded border-slate-300"
+                      />
+                      <span class="text-xs font-medium text-slate-700">Este curso é gratuito</span>
+                    </label>
                     <p class="text-[11px] text-slate-400">
-                      Valor exibido na vitrine pública da Amorim Academy. Deixe em branco
-                      para exibir "Sob consulta". Este campo não ativa cobrança automática
-                      — é só informativo até o checkout de pagamento existir.
+                      Valor exibido na vitrine pública da Amorim Academy. Marque "Este curso é gratuito"
+                      para exibir "Gratuito" (preço = 0), ou deixe o campo vazio para exibir "Sob consulta"
+                      (preço ainda não definido). Este campo não ativa cobrança automática — é só
+                      informativo até o checkout de pagamento existir.
                     </p>
                   </div>
 
@@ -1639,14 +1910,52 @@ export interface CursoAdmin {
                           </div>
 
                           <div class="space-y-1.5 sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-700">URL da imagem de capa do curso</label>
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                              <label class="block text-xs font-bold text-slate-700">URL da imagem de capa do curso</label>
+                              <label
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                                [class.opacity-50]="enviandoCapaCurso()"
+                                [class.pointer-events-none]="enviandoCapaCurso()"
+                              >
+                                @if (enviandoCapaCurso()) {
+                                  <span class="w-3.5 h-3.5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></span>
+                                  <span>Enviando capa...</span>
+                                } @else {
+                                  <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                  </svg>
+                                  <span>Fazer upload de imagem</span>
+                                }
+                                <input
+                                  type="file"
+                                  class="hidden"
+                                  accept="image/png, image/jpeg, image/webp, image/gif"
+                                  [disabled]="enviandoCapaCurso()"
+                                  (change)="onCapaEditCursoSelected($event, editImagemCapaInput)"
+                                />
+                              </label>
+                            </div>
                             <input
                               type="url"
                               #editImagemCapaInput
                               [value]="cursoAtivo()?.imagem_capa_url || ''"
-                              placeholder="https://exemplo.com/capa.jpg"
+                              (input)="previaCapaEditCurso.set(editImagemCapaInput.value)"
+                              placeholder="https://exemplo.com/capa.jpg ou clique no botão de upload acima"
                               class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
+                            @if (obterPreviaCapaEdit(editImagemCapaInput.value)) {
+                              <div class="space-y-1.5 pt-1">
+                                <label class="block text-xs font-bold text-slate-700">Prévia da Capa</label>
+                                <div class="p-2 bg-white rounded-2xl border border-slate-200 max-w-sm">
+                                  <img
+                                    [src]="obterPreviaCapaEdit(editImagemCapaInput.value)"
+                                    alt="Prévia da Imagem de Capa"
+                                    class="w-full h-36 object-cover rounded-xl"
+                                    referrerpolicy="no-referrer"
+                                  />
+                                </div>
+                              </div>
+                            }
                           </div>
                         </div>
                       </div>
@@ -1673,7 +1982,7 @@ export interface CursoAdmin {
                       editDataFimInput.value,
                       editLocalInput.value,
                       editImagemCapaInput.value,
-                      +precoInput.value
+                      precoInput.value
                     )"
                     class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
                   >
@@ -2151,6 +2460,11 @@ export class AdminCursoComponent implements OnInit {
   readonly editExibirAgenda = signal<boolean>(false);
   readonly editFormato = signal<'gravado' | 'ao_vivo' | 'presencial_hibrido'>('gravado');
 
+  // Upload & Prévia da Capa do Curso
+  readonly enviandoCapaCurso = signal<boolean>(false);
+  readonly previaCapaNovoCurso = signal<string>('');
+  readonly previaCapaEditCurso = signal<string | null>(null);
+
   // Módulo form state
   readonly criandoModulo = signal<boolean>(false);
   readonly editandoModuloId = signal<string | null>(null);
@@ -2212,6 +2526,14 @@ export class AdminCursoComponent implements OnInit {
   readonly mensagemSucesso = signal<string | null>(null);
   readonly mensagemErro = signal<string | null>(null);
 
+  readonly tipoCertificadoSelecionado = signal<string>('livre');
+  readonly conteudoProgramatico = signal<string>('');
+  readonly exibirCpfAluno = signal<boolean>(false);
+  readonly desempenhoTexto = signal<string>('');
+  readonly incluirAssinaturaAluno = signal<boolean>(false);
+  readonly cursoGratuito = signal<boolean>(false);
+  readonly cargaHorariaDiscriminada = signal<ItemCargaHoraria[]>([]);
+
   readonly cursoAtivo = computed<CursoAdmin | null>(() => {
     const id = this.cursoSelecionadoId();
     if (!id) return null;
@@ -2237,11 +2559,66 @@ export class AdminCursoComponent implements OnInit {
   abrirModalCriarCurso(): void {
     this.novoExibirAgenda.set(false);
     this.novoFormato.set('gravado');
+    this.previaCapaNovoCurso.set('');
     this.criandoNovoCurso.set(true);
   }
 
   cancelarCriacaoCurso(): void {
+    this.previaCapaNovoCurso.set('');
     this.criandoNovoCurso.set(false);
+  }
+
+  async onCapaNovoCursoSelected(event: Event, inputEl: HTMLInputElement): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file: File | undefined = input?.files?.[0];
+    if (!file) return;
+
+    this.enviandoCapaCurso.set(true);
+    try {
+      const res = await this.supabaseService.uploadImagemBlog(file);
+      if (res.error || !res.url) {
+        this.exibirErro('Erro ao fazer upload da capa do curso: ' + (res.error?.message || 'Falha no armazenamento.'));
+        return;
+      }
+      inputEl.value = res.url;
+      this.previaCapaNovoCurso.set(res.url);
+      this.exibirSucesso('Imagem de capa enviada com sucesso!');
+    } catch (err: any) {
+      this.exibirErro('Erro no upload da capa do curso: ' + (err?.message || err));
+    } finally {
+      this.enviandoCapaCurso.set(false);
+      if (input) input.value = '';
+    }
+  }
+
+  async onCapaEditCursoSelected(event: Event, inputEl: HTMLInputElement): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file: File | undefined = input?.files?.[0];
+    if (!file) return;
+
+    this.enviandoCapaCurso.set(true);
+    try {
+      const res = await this.supabaseService.uploadImagemBlog(file);
+      if (res.error || !res.url) {
+        this.exibirErro('Erro ao fazer upload da capa do curso: ' + (res.error?.message || 'Falha no armazenamento.'));
+        return;
+      }
+      inputEl.value = res.url;
+      this.previaCapaEditCurso.set(res.url);
+      this.exibirSucesso('Imagem de capa enviada com sucesso!');
+    } catch (err: any) {
+      this.exibirErro('Erro no upload da capa do curso: ' + (err?.message || err));
+    } finally {
+      this.enviandoCapaCurso.set(false);
+      if (input) input.value = '';
+    }
+  }
+
+  obterPreviaCapaEdit(urlAtualNoInput: string): string {
+    if (this.previaCapaEditCurso() !== null) {
+      return this.previaCapaEditCurso()!;
+    }
+    return urlAtualNoInput || this.cursoAtivo()?.imagem_capa_url || '';
   }
 
   async salvarNovoCurso(
@@ -2296,6 +2673,7 @@ export class AdminCursoComponent implements OnInit {
 
       this.exibirSucesso('Curso criado com sucesso!');
       this.criandoNovoCurso.set(false);
+      this.previaCapaNovoCurso.set('');
       await this.carregarCursos();
 
       if (res.data?.id) {
@@ -2347,29 +2725,100 @@ export class AdminCursoComponent implements OnInit {
     this.cursoSelecionadoId.set(id);
     this.secaoAtiva.set('modulos');
     this.cancelarFormularioModulo();
+    this.previaCapaEditCurso.set(null);
     const curso = this.cursos().find(c => c.id === id);
     if (curso) {
       this.editExibirAgenda.set(curso.exibir_na_agenda ?? false);
       this.editFormato.set(curso.formato || 'gravado');
+      this.tipoCertificadoSelecionado.set(curso.tipo_certificado || 'livre');
+      this.conteudoProgramatico.set(curso.conteudo_programatico || '');
+      this.exibirCpfAluno.set(!!curso.exibir_cpf_aluno);
+      this.desempenhoTexto.set(curso.desempenho_texto || '');
+      this.incluirAssinaturaAluno.set(!!curso.incluir_assinatura_aluno);
+      this.cargaHorariaDiscriminada.set(
+        Array.isArray(curso.carga_horaria_discriminada) ? [...curso.carga_horaria_discriminada] : []
+      );
+      this.cursoGratuito.set(curso.preco === 0);
     }
   }
 
   voltarParaListaCursos(): void {
     this.cursoSelecionadoId.set(null);
     this.cancelarFormularioModulo();
+    this.previaCapaEditCurso.set(null);
   }
 
   setSecaoAtiva(secao: 'modulos' | 'certificado' | 'alunos' | 'dados'): void {
     this.secaoAtiva.set(secao);
     if (secao === 'dados') {
+      this.previaCapaEditCurso.set(null);
       const c = this.cursoAtivo();
       if (c) {
         this.editExibirAgenda.set(c.exibir_na_agenda ?? false);
         this.editFormato.set(c.formato || 'gravado');
+        this.cursoGratuito.set(c.preco === 0);
+      }
+    }
+    if (secao === 'certificado') {
+      const c = this.cursoAtivo();
+      if (c) {
+        this.tipoCertificadoSelecionado.set(c.tipo_certificado || 'livre');
+        this.conteudoProgramatico.set(c.conteudo_programatico || '');
+        this.exibirCpfAluno.set(!!c.exibir_cpf_aluno);
+        this.desempenhoTexto.set(c.desempenho_texto || '');
+        this.incluirAssinaturaAluno.set(!!c.incluir_assinatura_aluno);
+        this.cargaHorariaDiscriminada.set(
+          Array.isArray(c.carga_horaria_discriminada) ? [...c.carga_horaria_discriminada] : []
+        );
       }
     }
     if (secao === 'alunos') {
       this.carregarAlunosMatriculados();
+    }
+  }
+
+  adicionarItemCargaHoraria(): void {
+    this.cargaHorariaDiscriminada.update(itens => [...itens, { atividade: '', horas: '' }]);
+  }
+
+  removerItemCargaHoraria(index: number): void {
+    this.cargaHorariaDiscriminada.update(itens => itens.filter((_, i) => i !== index));
+  }
+
+  atualizarItemCargaHoraria(index: number, campo: 'atividade' | 'horas', valor: string): void {
+    this.cargaHorariaDiscriminada.update(itens =>
+      itens.map((item, i) => (i === index ? { ...item, [campo]: valor } : item))
+    );
+  }
+
+  somaCargaHorariaDiscriminada(): string {
+    const itens = this.cargaHorariaDiscriminada();
+    let total = 0;
+    for (const item of itens) {
+      const match = item.horas ? item.horas.match(/\d+/) : null;
+      if (match) {
+        total += parseInt(match[0], 10);
+      }
+    }
+    return total > 0 ? `${total}h` : '0h';
+  }
+
+  verificarDivergenciaCargaHoraria(cargaHorariaTotalTexto?: string): boolean {
+    if (!cargaHorariaTotalTexto) return false;
+    const soma = this.somaCargaHorariaDiscriminada();
+    const numSoma = soma.match(/\d+/)?.[0];
+    const numTotal = cargaHorariaTotalTexto.match(/\d+/)?.[0];
+    if (numSoma && numTotal) {
+      return numSoma !== numTotal;
+    }
+    return false;
+  }
+
+  alternarCursoGratuito(precoInput?: HTMLInputElement): void {
+    const novoValor = !this.cursoGratuito();
+    this.cursoGratuito.set(novoValor);
+    if (novoValor && precoInput) {
+      precoInput.value = '0';
     }
   }
 
@@ -2781,18 +3230,32 @@ export class AdminCursoComponent implements OnInit {
     textoNormativo: string,
     cargaHoraria: string,
     instrutorNome: string = '',
-    instrutorQualificacao: string = ''
+    instrutorQualificacao: string = '',
+    conteudoProgramatico?: string
   ): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
 
     this.salvando.set(true);
     try {
+      const tipo = this.tipoCertificadoSelecionado();
+      const textoConteudo = (conteudoProgramatico !== undefined && conteudoProgramatico !== null && conteudoProgramatico !== '')
+        ? conteudoProgramatico
+        : this.conteudoProgramatico();
+
       const res = await this.supabaseService.atualizarCurso(cId, {
         texto_certificado: textoNormativo.trim() || null,
         carga_horaria_certificado: cargaHoraria.trim() || null,
         instrutor_nome: instrutorNome.trim() || null,
         instrutor_qualificacao: instrutorQualificacao.trim() || null,
+        tipo_certificado: tipo,
+        conteudo_programatico: tipo === 'qualificacao_profissional'
+          ? (textoConteudo.trim() || null)
+          : null,
+        exibir_cpf_aluno: this.exibirCpfAluno(),
+        desempenho_texto: this.desempenhoTexto().trim() || null,
+        incluir_assinatura_aluno: this.incluirAssinaturaAluno(),
+        carga_horaria_discriminada: this.cargaHorariaDiscriminada().filter(it => it.atividade.trim() || it.horas.trim()),
       });
 
       if (res.error) {
@@ -2802,6 +3265,17 @@ export class AdminCursoComponent implements OnInit {
 
       this.exibirSucesso('Configurações do certificado salvas com sucesso!');
       await this.carregarCursos();
+      const cursoAtualizado = this.cursos().find(c => c.id === cId);
+      if (cursoAtualizado) {
+        this.tipoCertificadoSelecionado.set(cursoAtualizado.tipo_certificado || 'livre');
+        this.conteudoProgramatico.set(cursoAtualizado.conteudo_programatico || '');
+        this.exibirCpfAluno.set(!!cursoAtualizado.exibir_cpf_aluno);
+        this.desempenhoTexto.set(cursoAtualizado.desempenho_texto || '');
+        this.incluirAssinaturaAluno.set(!!cursoAtualizado.incluir_assinatura_aluno);
+        this.cargaHorariaDiscriminada.set(
+          Array.isArray(cursoAtualizado.carga_horaria_discriminada) ? [...cursoAtualizado.carga_horaria_discriminada] : []
+        );
+      }
     } catch (e: any) {
       this.exibirErro('Erro ao salvar certificado: ' + (e?.message || e));
     } finally {
@@ -2813,13 +3287,19 @@ export class AdminCursoComponent implements OnInit {
     textoNormativo: string,
     cargaHoraria: string,
     instrutorNome: string = '',
-    instrutorQualificacao: string = ''
+    instrutorQualificacao: string = '',
+    conteudoProgramatico?: string
   ): Promise<void> {
     const curso = this.cursoAtivo();
     if (!curso) return;
 
     this.gerandoPdfTeste.set(true);
     try {
+      const tipo = this.tipoCertificadoSelecionado() || curso.tipo_certificado || 'livre';
+      const textoConteudo = (conteudoProgramatico !== undefined && conteudoProgramatico !== null && conteudoProgramatico !== '')
+        ? conteudoProgramatico
+        : this.conteudoProgramatico();
+
       const res = await this.certificadoPdfService.gerarEBaixarCertificadoPDF({
         nomeAluno: 'NOME DO ALUNO (MODELO DE TESTE)',
         tituloCurso: curso.titulo,
@@ -2827,8 +3307,18 @@ export class AdminCursoComponent implements OnInit {
         cargaHoraria: cargaHoraria.trim() || undefined,
         dataEmissaoIso: new Date().toISOString(),
         codigoVerificacao: 'AMTECH-TESTE01',
+        moduloPredialVinculado: curso.modulo_predial_vinculado || undefined,
         instrutorNome: instrutorNome.trim() || undefined,
         instrutorQualificacao: instrutorQualificacao.trim() || undefined,
+        tipoCertificado: tipo,
+        textoAmparoLegal: curso.texto_amparo_legal || undefined,
+        conteudoProgramatico: tipo === 'qualificacao_profissional'
+          ? (textoConteudo.trim() || curso.conteudo_programatico || undefined)
+          : undefined,
+        cpfAluno: this.exibirCpfAluno() ? '000.000.000-00' : undefined,
+        desempenho: this.desempenhoTexto().trim() || undefined,
+        incluirAssinaturaAluno: this.incluirAssinaturaAluno(),
+        cargaHorariaDiscriminada: this.cargaHorariaDiscriminada().filter(it => it.atividade.trim() || it.horas.trim()),
       });
 
       if (res.sucesso) {
@@ -2848,7 +3338,8 @@ export class AdminCursoComponent implements OnInit {
       texto,
       this.cursoAtivo()?.carga_horaria_certificado || '',
       this.cursoAtivo()?.instrutor_nome || '',
-      this.cursoAtivo()?.instrutor_qualificacao || ''
+      this.cursoAtivo()?.instrutor_qualificacao || '',
+      this.conteudoProgramatico() || this.cursoAtivo()?.conteudo_programatico || ''
     );
   }
 
@@ -2877,8 +3368,16 @@ export class AdminCursoComponent implements OnInit {
         cargaHoraria: curso.carga_horaria_certificado || undefined,
         dataEmissaoIso: matricula.certificado_emitido_em || matricula.atualizado_em || matricula.criado_em,
         codigoVerificacao: codigoVerificacao || undefined,
+        moduloPredialVinculado: curso.modulo_predial_vinculado || undefined,
         instrutorNome: curso.instrutor_nome || undefined,
         instrutorQualificacao: curso.instrutor_qualificacao || undefined,
+        tipoCertificado: curso.tipo_certificado || 'livre',
+        textoAmparoLegal: curso.texto_amparo_legal || undefined,
+        conteudoProgramatico: curso.conteudo_programatico || undefined,
+        cpfAluno: curso.exibir_cpf_aluno ? (matricula.aluno?.cpf_responsavel || undefined) : undefined,
+        desempenho: matricula.desempenho || curso.desempenho_texto || undefined,
+        incluirAssinaturaAluno: curso.incluir_assinatura_aluno || false,
+        cargaHorariaDiscriminada: curso.carga_horaria_discriminada || undefined,
       });
 
       if (res.sucesso) {
@@ -2908,7 +3407,7 @@ export class AdminCursoComponent implements OnInit {
     dataFim?: string | null,
     local?: string | null,
     imagemCapaUrl?: string | null,
-    preco?: number | null
+    precoInputVal?: string | number | null
   ): Promise<void> {
     const cId = this.cursoSelecionadoId();
     if (!cId) return;
@@ -2921,6 +3420,12 @@ export class AdminCursoComponent implements OnInit {
     this.salvando.set(true);
     try {
       const vinculoVal = vinculo?.trim() ? vinculo.trim() : null;
+      const precoVal = this.cursoGratuito()
+        ? 0
+        : (precoInputVal !== undefined && precoInputVal !== null && `${precoInputVal}`.trim() !== '' && !isNaN(parseFloat(`${precoInputVal}`))
+            ? parseFloat(`${precoInputVal}`)
+            : null);
+
       const res = await this.supabaseService.atualizarCurso(cId, {
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,
@@ -2936,7 +3441,7 @@ export class AdminCursoComponent implements OnInit {
         data_fim: (exibirNaAgenda && dataFim?.trim()) ? dataFim.trim() : null,
         local: (exibirNaAgenda && formato !== 'gravado' && local?.trim()) ? local.trim() : null,
         imagem_capa_url: (exibirNaAgenda && imagemCapaUrl?.trim()) ? imagemCapaUrl.trim() : null,
-        preco: (preco !== undefined && preco !== null && !isNaN(preco) && preco > 0) ? preco : null,
+        preco: precoVal,
       });
 
       if (res.error) {
@@ -2946,6 +3451,10 @@ export class AdminCursoComponent implements OnInit {
 
       this.exibirSucesso('Dados gerais do curso atualizados com sucesso!');
       await this.carregarCursos();
+      const cursoAtualizado = this.cursos().find(c => c.id === cId);
+      if (cursoAtualizado) {
+        this.cursoGratuito.set(cursoAtualizado.preco === 0);
+      }
     } catch (e: any) {
       this.exibirErro('Erro ao atualizar dados: ' + (e?.message || e));
     } finally {

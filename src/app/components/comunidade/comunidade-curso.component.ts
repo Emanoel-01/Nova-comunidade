@@ -4,7 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../../../services/supabase.service';
 import { montarUrlPlayerVimeo } from '../../utils/vimeo.util';
 import { montarUrlPlayerYoutube } from '../../utils/youtube.util';
-import { CertificadoPdfService } from '../../services/certificado-pdf.service';
+import { CertificadoPdfService, ItemCargaHoraria } from '../../services/certificado-pdf.service';
 
 export interface CursoModuloAluno {
   id: string;
@@ -41,6 +41,21 @@ export interface CursoAluno {
   instrutorNome?: string | null;
   instrutor_qualificacao?: string | null;
   instrutorQualificacao?: string | null;
+  tipo_certificado?: string | null;
+  tipoCertificado?: string | null;
+  texto_amparo_legal?: string | null;
+  textoAmparoLegal?: string | null;
+  conteudo_programatico?: string | null;
+  conteudoProgramatico?: string | null;
+  exibir_cpf_aluno?: boolean | null;
+  exibirCpfAluno?: boolean | null;
+  desempenho_texto?: string | null;
+  desempenhoTexto?: string | null;
+  incluir_assinatura_aluno?: boolean | null;
+  incluirAssinaturaAluno?: boolean | null;
+  carga_horaria_discriminada?: ItemCargaHoraria[] | null;
+  cargaHorariaDiscriminada?: ItemCargaHoraria[] | null;
+  desempenho?: string | null;
   tem_avaliacao_por_modulo?: boolean;
   nota_minima_avaliacao_modulo?: number | null;
   nota_minima_avaliacao_final?: number | null;
@@ -1334,11 +1349,15 @@ export class ComunidadeCursoComponent implements OnInit {
     this.mensagemFeedback.set(null);
 
     try {
-      const { error } = await this.supabaseService.emitirCertificado(cursoId);
+      const resultado = await this.supabaseService.emitirCertificado(cursoId);
 
-      if (error) {
+      if (resultado.error) {
         this.tipoFeedback.set('erro');
-        this.mensagemFeedback.set('Erro ao emitir certificado: ' + (error.message || 'Tente novamente.'));
+        if (resultado.progressoIncompleto) {
+          this.mensagemFeedback.set(`Conclua todos os módulos antes de emitir o certificado (${resultado.progressoIncompleto.concluidos} de ${resultado.progressoIncompleto.total} concluídos).`);
+        } else {
+          this.mensagemFeedback.set('Erro ao emitir certificado: ' + (resultado.error.message || 'Tente novamente.'));
+        }
         return;
       }
 
@@ -1348,7 +1367,13 @@ export class ComunidadeCursoComponent implements OnInit {
       this.cursos.update(lista =>
         lista.map(item =>
           item.id === cursoId
-            ? { ...item, certificadoEmitidoEm: dataHoje, avaliacaoAprovado: true }
+            ? {
+                ...item,
+                certificadoEmitidoEm: dataHoje,
+                avaliacaoAprovado: true,
+                codigo_verificacao: resultado.codigo_verificacao || item.codigo_verificacao,
+                codigoVerificacao: resultado.codigo_verificacao || item.codigoVerificacao,
+              }
             : item
         )
       );
@@ -1455,6 +1480,27 @@ export class ComunidadeCursoComponent implements OnInit {
         codigoVerificacao = await this.supabaseService.garantirCodigoVerificacaoMatricula(curso.matriculaId);
       }
 
+      const cpfParaCertificado = (curso.exibir_cpf_aluno ?? curso.exibirCpfAluno)
+        ? (perfil?.cpf_responsavel || undefined)
+        : undefined;
+
+      const desempenhoParaCertificado = (
+        curso.desempenho ||
+        curso.desempenho_texto ||
+        curso.desempenhoTexto ||
+        undefined
+      );
+
+      const incluirAssinatura = !!(
+        curso.incluir_assinatura_aluno ?? curso.incluirAssinaturaAluno
+      );
+
+      const cargaHorariaDiscriminada = (
+        curso.carga_horaria_discriminada ||
+        curso.cargaHorariaDiscriminada ||
+        undefined
+      );
+
       const res = await this.certificadoPdfService.gerarEBaixarCertificadoPDF({
         nomeAluno,
         tituloCurso: curso.titulo,
@@ -1462,8 +1508,16 @@ export class ComunidadeCursoComponent implements OnInit {
         cargaHoraria: curso.carga_horaria_certificado || curso.cargaHorariaCertificado || undefined,
         dataEmissaoIso: curso.certificadoEmitidoEm || undefined,
         codigoVerificacao: codigoVerificacao || undefined,
+        moduloPredialVinculado: curso.modulo_predial_vinculado || curso.moduloPredialVinculado || undefined,
         instrutorNome: curso.instrutor_nome || curso.instrutorNome || undefined,
         instrutorQualificacao: curso.instrutor_qualificacao || curso.instrutorQualificacao || undefined,
+        tipoCertificado: curso.tipo_certificado || curso.tipoCertificado || 'livre',
+        textoAmparoLegal: curso.texto_amparo_legal || curso.textoAmparoLegal || undefined,
+        conteudoProgramatico: curso.conteudo_programatico || curso.conteudoProgramatico || undefined,
+        cpfAluno: cpfParaCertificado,
+        desempenho: desempenhoParaCertificado,
+        incluirAssinaturaAluno: incluirAssinatura,
+        cargaHorariaDiscriminada,
       });
 
       if (res.sucesso) {

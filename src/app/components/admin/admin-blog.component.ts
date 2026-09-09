@@ -215,13 +215,37 @@ export interface AdminNewsletterAssinante {
               </div>
 
               <div class="space-y-1.5 sm:col-span-3">
-                <label class="block text-xs font-bold text-slate-700">URL da Imagem de Capa</label>
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <label class="block text-xs font-bold text-slate-700">URL da Imagem de Capa</label>
+                  <label
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                    [class.opacity-50]="enviandoCapaPost()"
+                    [class.pointer-events-none]="enviandoCapaPost()"
+                  >
+                    @if (enviandoCapaPost()) {
+                      <span class="w-3.5 h-3.5 border-2 border-orange-600/30 border-t-orange-600 rounded-full animate-spin"></span>
+                      <span>Enviando capa...</span>
+                    } @else {
+                      <svg class="w-3.5 h-3.5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <span>Fazer upload de imagem</span>
+                    }
+                    <input
+                      type="file"
+                      class="hidden"
+                      accept="image/png, image/jpeg, image/webp, image/gif"
+                      [disabled]="enviandoCapaPost()"
+                      (change)="onCapaPostSelected($event, capaInput)"
+                    />
+                  </label>
+                </div>
                 <input
                   type="text"
                   #capaInput
                   [value]="formPost.imagem_capa_url"
                   (input)="formPost.imagem_capa_url = capaInput.value"
-                  placeholder="https://drive.google.com/thumbnail?id=...&sz=w1000 ou link público de imagem"
+                  placeholder="https://drive.google.com/thumbnail?id=...&sz=w1000 ou faça o upload ao lado"
                   class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
                 />
               </div>
@@ -981,6 +1005,7 @@ export class AdminBlogComponent implements OnInit {
 
   quillInstance: Quill | null = null;
   readonly enviandoImagemEditor = signal(false);
+  readonly enviandoCapaPost = signal<boolean>(false);
 
   formPost = {
     titulo: '',
@@ -1208,6 +1233,32 @@ export class AdminBlogComponent implements OnInit {
       }
     };
     input.click();
+  }
+
+  async onCapaPostSelected(event: Event, capaInputRef?: HTMLInputElement): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file: File | undefined = input?.files?.[0];
+    if (!file) return;
+
+    this.enviandoCapaPost.set(true);
+    try {
+      const res = await this.supabaseService.uploadImagemBlog(file);
+      if (res.error || !res.url) {
+        this.exibirErro('Erro ao fazer upload da imagem de capa: ' + (res.error?.message || 'Falha no armazenamento.'));
+        return;
+      }
+
+      this.formPost.imagem_capa_url = res.url;
+      if (capaInputRef) {
+        capaInputRef.value = res.url;
+      }
+      this.exibirSucesso('Imagem de capa enviada com sucesso!');
+    } catch (err: any) {
+      this.exibirErro('Erro no upload da capa: ' + (err?.message || err));
+    } finally {
+      this.enviandoCapaPost.set(false);
+      if (input) input.value = '';
+    }
   }
 
   async salvarPost(): Promise<void> {

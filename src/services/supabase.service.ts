@@ -3020,7 +3020,7 @@ export class SupabaseService {
     try {
       const res = await this.client
         .from('cursos_matriculas')
-        .select('*, aluno:profissionais!cursos_matriculas_profissional_id_fkey(id, full_name, professional_title, email)')
+        .select('*, aluno:profissionais!cursos_matriculas_profissional_id_fkey(id, full_name, professional_title, email, cpf_responsavel)')
         .eq('curso_id', cursoId)
         .order('atualizado_em', { ascending: false });
 
@@ -3028,7 +3028,7 @@ export class SupabaseService {
 
       const resFallback = await this.client
         .from('cursos_matriculas')
-        .select('*, aluno:profissionais(id, full_name, professional_title, email)')
+        .select('*, aluno:profissionais(id, full_name, professional_title, email, cpf_responsavel)')
         .eq('curso_id', cursoId)
         .order('atualizado_em', { ascending: false });
 
@@ -3047,7 +3047,7 @@ export class SupabaseService {
       if (profIds.length > 0) {
         const { data: profs } = await this.client
           .from('profissionais')
-          .select('id, full_name, professional_title, email')
+          .select('id, full_name, professional_title, email, cpf_responsavel')
           .in('id', profIds);
         (profs || []).forEach((p: any) => { profsMap[p.id] = p; });
       }
@@ -3536,36 +3536,38 @@ export class SupabaseService {
     }
   }
 
-  async emitirCertificado(cursoId: string): Promise<{ error: Error | null; codigo_verificacao?: string }> {
+  async emitirCertificado(cursoId: string): Promise<{ error: Error | null; codigo_verificacao?: string; progressoIncompleto?: { concluidos: number; total: number } }> {
     try {
       const session = await this.getSession();
       if (!session?.user) return { error: new Error('Não autenticado.') };
 
-      // Verifica se já existe código salvo
-      const { data: matExistente } = await this.client
+      const { data: matricula } = await this.client
         .from('cursos_matriculas')
-        .select('id, codigo_verificacao, certificado_emitido_em')
+        .select('id')
         .eq('curso_id', cursoId)
         .eq('profissional_id', session.user.id)
         .maybeSingle();
 
-      let codigo = matExistente?.codigo_verificacao;
-      if (!codigo) {
-        codigo = gerarCodigoVerificacaoCertificado();
+      if (!matricula) return { error: new Error('Matrícula não encontrada.') };
+
+      const { data, error } = await this.client.rpc('emitir_certificado', {
+        p_matricula_id: matricula.id,
+      });
+
+      if (error) return { error };
+
+      const resp = data as any;
+      if (!resp?.sucesso) {
+        if (resp?.modulos_total !== undefined) {
+          return {
+            error: new Error(resp.erro || 'Progresso incompleto.'),
+            progressoIncompleto: { concluidos: resp.modulos_concluidos, total: resp.modulos_total },
+          };
+        }
+        return { error: new Error(resp?.erro || 'Não foi possível emitir o certificado.') };
       }
 
-      const { error } = await this.client
-        .from('cursos_matriculas')
-        .update({
-          certificado_emitido_em: matExistente?.certificado_emitido_em || new Date().toISOString(),
-          avaliacao_aprovado: true,
-          codigo_verificacao: codigo,
-          atualizado_em: new Date().toISOString(),
-        })
-        .eq('curso_id', cursoId)
-        .eq('profissional_id', session.user.id);
-
-      return { error, codigo_verificacao: codigo };
+      return { error: null, codigo_verificacao: resp.codigo_verificacao };
     } catch (e: any) {
       return { error: e };
     }
@@ -4114,14 +4116,14 @@ export class SupabaseService {
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-zA-Z0-9._-]/g, '_');
 
-      const path = `blog_conteudo/${Date.now()}_${cleanName}`;
+      const path = `blog_conteudo/${cleanName}`;
 
       // Upload para o bucket materiais-comunidade
       const { error: uploadError } = await this.client.storage
         .from('materiais-comunidade')
         .upload(path, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
 
       if (uploadError) {
