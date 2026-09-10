@@ -1,16 +1,54 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { SupabaseService } from '../../../services/supabase.service';
 
 @Component({
   selector: 'app-comunidade-feed',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="space-y-6">
 
-      <!-- 1. Caixa de Criação de Post (Topo) -->
-      <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs transition-all space-y-4">
+      @if (carregando()) {
+        <div class="space-y-4">
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="h-4 bg-slate-200 rounded-md w-32"></div>
+            <div class="h-10 bg-slate-100 rounded-xl"></div>
+          </div>
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="h-4 bg-slate-200 rounded-md w-48"></div>
+            <div class="h-20 bg-slate-100 rounded-xl"></div>
+          </div>
+        </div>
+      } @else if (!temAcesso()) {
+        <!-- Bloco de Acesso Restrito (Exclusivo para Membros Licenciados) -->
+        <div class="rounded-3xl bg-amber-50/80 border border-amber-200/80 p-8 sm:p-12 text-center space-y-5 shadow-xs animate-fadeIn">
+          <div class="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto text-3xl shadow-inner">
+            🔒
+          </div>
+          <div class="space-y-2 max-w-lg mx-auto">
+            <h3 class="text-lg sm:text-xl font-black text-amber-950 tracking-tight">
+              Área exclusiva para membros licenciados
+            </h3>
+            <p class="text-xs sm:text-sm text-amber-900/80 leading-relaxed">
+              Esta área faz parte da licença anual do ecossistema AmorimTech.<br class="hidden sm:inline">
+              Fórum Técnico e Eventos seguem abertos a todos os membros cadastrados.
+            </p>
+          </div>
+          <div class="pt-2">
+            <a
+              routerLink="/amorim-academy"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all cursor-pointer min-h-[44px]"
+            >
+              <span>Conhecer a licença</span>
+              <span>→</span>
+            </a>
+          </div>
+        </div>
+      } @else {
+        <!-- 1. Caixa de Criação de Post (Topo) -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-xs transition-all space-y-4">
         
         <div class="flex items-start gap-3.5 sm:gap-4">
           <!-- Avatar Usuário Autenticado -->
@@ -408,12 +446,15 @@ import { SupabaseService } from '../../../services/supabase.service';
         </div>
       }
 
+      }
+
     </div>
   `
 })
 export class ComunidadeFeedComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
 
+  readonly temAcesso = signal<boolean>(false);
   readonly posts = signal<any[]>([]);
   readonly carregando = signal<boolean>(true);
   readonly publicando = signal<boolean>(false);
@@ -433,8 +474,19 @@ export class ComunidadeFeedComponent implements OnInit {
   readonly comentarioInputs = signal<{ [postId: string]: string }>({});
 
   async ngOnInit(): Promise<void> {
-    await this.carregarUsuario();
-    await this.carregarPosts();
+    this.carregando.set(true);
+    try {
+      const acesso = await this.supabaseService.temPermissaoModulo('comunidade', 'feed');
+      this.temAcesso.set(acesso);
+      if (acesso) {
+        await this.carregarUsuario();
+        await this.carregarPosts();
+      }
+    } catch (e) {
+      console.warn('Erro ao verificar permissão do feed:', e);
+    } finally {
+      this.carregando.set(false);
+    }
   }
 
   async carregarUsuario(): Promise<void> {

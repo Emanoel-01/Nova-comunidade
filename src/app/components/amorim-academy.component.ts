@@ -497,12 +497,24 @@ export interface MesCalendario {
                           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           (error)="$any($event.target).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb186156a?q=80&w=800&auto=format&fit=crop'"
                         />
+                        @if (curso.status_lancamento === 'previsto') {
+                          <div class="absolute top-2 left-2">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs">
+                              {{ obterBadgePrevisao(curso) }}
+                            </span>
+                          </div>
+                        }
                       </div>
                       <div class="p-4">
                         <h5 class="text-white text-xs font-bold leading-snug">{{ curso.titulo }}</h5>
                         <div class="text-amber-300 text-[11px] font-bold mt-1.5">
                           📍 {{ curso.local || 'Recife, PE' }} · {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
                         </div>
+                        @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
+                          <p class="text-[10px] text-amber-200/90 mt-2 font-medium">
+                            Turma sujeita a quórum mínimo de 5 participantes.
+                          </p>
+                        }
                       </div>
                     </div>
                   }
@@ -532,9 +544,15 @@ export interface MesCalendario {
                           />
                           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
                           <div class="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
-                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
-                              {{ formatarFormato(curso.formato) }}
-                            </span>
+                            @if (curso.status_lancamento === 'previsto') {
+                              <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs">
+                                {{ obterBadgePrevisao(curso) }}
+                              </span>
+                            } @else {
+                              <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
+                                {{ formatarFormato(curso.formato) }}
+                              </span>
+                            }
                             @if (curso.carga_horaria_certificado) {
                               <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
                                 {{ curso.carga_horaria_certificado }}
@@ -562,6 +580,11 @@ export interface MesCalendario {
                               {{ curso.descricao }}
                             </p>
                           }
+                          @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
+                            <p class="text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2.5 border border-amber-200/60 font-medium">
+                              Turma sujeita a quórum mínimo de 5 participantes.
+                            </p>
+                          }
                         </div>
                       </div>
 
@@ -570,16 +593,22 @@ export interface MesCalendario {
                           <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
                           <span class="text-xs font-bold text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
                         </div>
-                        <a
-                          [href]="gerarLinkWhatsappCurso(curso.titulo)"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          (click)="$event.stopPropagation()"
-                          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
-                        >
-                          <span>Garantir Vaga</span>
-                          <span>→</span>
-                        </a>
+                        @if (curso.status_lancamento === 'previsto') {
+                          <span class="inline-flex items-center px-3 py-2 rounded-xl bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200/80">
+                            {{ obterBadgePrevisao(curso) }}
+                          </span>
+                        } @else {
+                          <a
+                            [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            (click)="$event.stopPropagation()"
+                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+                          >
+                            <span>Garantir Vaga</span>
+                            <span>→</span>
+                          </a>
+                        }
                       </div>
                     </div>
                   }
@@ -609,9 +638,15 @@ export interface MesCalendario {
                           />
                           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
                           <div class="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
-                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
-                              {{ formatarFormato(curso.formato) }}
-                            </span>
+                            @if (curso.status_lancamento === 'previsto') {
+                              <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs">
+                                {{ obterBadgePrevisao(curso) }}
+                              </span>
+                            } @else {
+                              <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
+                                {{ formatarFormato(curso.formato) }}
+                              </span>
+                            }
                             @if (curso.carga_horaria_certificado) {
                               <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
                                 {{ curso.carga_horaria_certificado }}
@@ -639,6 +674,11 @@ export interface MesCalendario {
                               {{ curso.descricao }}
                             </p>
                           }
+                          @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
+                            <p class="text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2.5 border border-amber-200/60 font-medium">
+                              Turma sujeita a quórum mínimo de 5 participantes.
+                            </p>
+                          }
                         </div>
                       </div>
 
@@ -647,16 +687,22 @@ export interface MesCalendario {
                           <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
                           <span class="text-xs font-bold text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
                         </div>
-                        <a
-                          [href]="gerarLinkWhatsappCurso(curso.titulo)"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          (click)="$event.stopPropagation()"
-                          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
-                        >
-                          <span>Garantir Vaga</span>
-                          <span>→</span>
-                        </a>
+                        @if (curso.status_lancamento === 'previsto') {
+                          <span class="inline-flex items-center px-3 py-2 rounded-xl bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200/80">
+                            {{ obterBadgePrevisao(curso) }}
+                          </span>
+                        } @else {
+                          <a
+                            [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            (click)="$event.stopPropagation()"
+                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+                          >
+                            <span>Garantir Vaga</span>
+                            <span>→</span>
+                          </a>
+                        }
                       </div>
                     </div>
                   }
@@ -685,8 +731,17 @@ export interface MesCalendario {
                       <div class="min-w-0 flex-1">
                         <h5 class="text-xs font-bold text-slate-900 truncate">{{ curso.titulo }}</h5>
                         <span class="text-[10px] text-slate-400">{{ curso.carga_horaria_certificado }}</span>
+                        @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
+                          <span class="block text-[9px] text-amber-700 font-medium">Quórum mín. 5 part.</span>
+                        }
                       </div>
-                      <span class="text-xs font-black text-amber-700 shrink-0">{{ formatarMoeda(curso.preco) }}</span>
+                      @if (curso.status_lancamento === 'previsto') {
+                        <span class="text-[10px] font-black text-amber-900 bg-amber-100 px-2 py-1 rounded-lg shrink-0">
+                          {{ obterBadgePrevisao(curso) }}
+                        </span>
+                      } @else {
+                        <span class="text-xs font-black text-amber-700 shrink-0">{{ formatarMoeda(curso.preco) }}</span>
+                      }
                     </div>
                   }
                 </div>
@@ -719,9 +774,15 @@ export interface MesCalendario {
                           />
                           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30"></div>
                           <div class="absolute top-3.5 right-3.5 flex items-center gap-2">
-                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
-                              {{ formatarFormato(curso.formato) }}
-                            </span>
+                            @if (curso.status_lancamento === 'previsto') {
+                              <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs">
+                                {{ obterBadgePrevisao(curso) }}
+                              </span>
+                            } @else {
+                              <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/95 text-slate-900">
+                                {{ formatarFormato(curso.formato) }}
+                              </span>
+                            }
                             @if (curso.carga_horaria_certificado) {
                               <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-white border border-white/20">
                                 {{ curso.carga_horaria_certificado }}
@@ -749,6 +810,11 @@ export interface MesCalendario {
                               {{ curso.descricao }}
                             </p>
                           }
+                          @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
+                            <p class="text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2.5 border border-amber-200/60 font-medium">
+                              Turma sujeita a quórum mínimo de 5 participantes.
+                            </p>
+                          }
                         </div>
                       </div>
 
@@ -757,16 +823,22 @@ export interface MesCalendario {
                           <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
                           <span class="text-xs font-bold text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
                         </div>
-                        <a
-                          [href]="gerarLinkWhatsappCurso(curso.titulo)"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          (click)="$event.stopPropagation()"
-                          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
-                        >
-                          <span>Garantir Vaga</span>
-                          <span>→</span>
-                        </a>
+                        @if (curso.status_lancamento === 'previsto') {
+                          <span class="inline-flex items-center px-3 py-2 rounded-xl bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200/80">
+                            {{ obterBadgePrevisao(curso) }}
+                          </span>
+                        } @else {
+                          <a
+                            [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            (click)="$event.stopPropagation()"
+                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[44px]"
+                          >
+                            <span>Garantir Vaga</span>
+                            <span>→</span>
+                          </a>
+                        }
                       </div>
                     </div>
                   }
@@ -1390,6 +1462,11 @@ export interface MesCalendario {
 
                 <!-- Linha de metadados rápidos -->
                 <div class="flex flex-wrap items-center gap-3 text-xs">
+                  @if (curso.status_lancamento === 'previsto') {
+                    <span class="px-3 py-1.5 rounded-full bg-amber-100 text-amber-900 font-bold border border-amber-300">
+                      ⏳ {{ obterBadgePrevisao(curso) }}
+                    </span>
+                  }
                   <span class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 font-bold">
                     📅 {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
                   </span>
@@ -1409,6 +1486,13 @@ export interface MesCalendario {
                     </span>
                   }
                 </div>
+
+                @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
+                  <div class="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                    <span>Turma sujeita a quórum mínimo de 5 participantes.</span>
+                  </div>
+                }
 
                 <!-- Descrição completa -->
                 @if (curso.descricao) {
@@ -1470,15 +1554,21 @@ export interface MesCalendario {
                   <span class="text-[10px] uppercase font-bold text-slate-400 block">Investimento</span>
                   <span class="text-lg font-black text-slate-900">{{ formatarMoeda(curso.preco) }}</span>
                 </div>
-                <a
-                  [href]="gerarLinkWhatsappCurso(curso.titulo)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-all shadow-xs cursor-pointer"
-                >
-                  <span>Garantir Vaga</span>
-                  <span>→</span>
-                </a>
+                @if (curso.status_lancamento === 'previsto') {
+                  <span class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-100 text-amber-900 text-sm font-bold border border-amber-300 shadow-xs">
+                    <span>{{ obterBadgePrevisao(curso) }}</span>
+                  </span>
+                } @else {
+                  <a
+                    [href]="gerarLinkWhatsappCurso(curso.titulo)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    <span>Garantir Vaga</span>
+                    <span>→</span>
+                  </a>
+                }
               </div>
             </div>
           </div>
@@ -1770,6 +1860,29 @@ export class AmorimAcademyComponent implements OnInit {
 
   fecharModalAgente(): void {
     this.agenteSelecionado.set(null);
+  }
+
+  obterBadgePrevisao(curso: any): string {
+    if (!curso) return 'Previsto em breve';
+    if (curso.mes_previsto && curso.ano_previsto) {
+      return `Previsto para ${curso.mes_previsto}/${curso.ano_previsto}`;
+    }
+    const dataRef = curso.data_prevista || curso.data_inicio || curso.mes_previsto || curso.previsao_lancamento;
+    if (!dataRef) return 'Previsto em breve';
+    try {
+      const partes = String(dataRef).split('-');
+      if (partes.length >= 2) {
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const mIdx = parseInt(partes[1], 10) - 1;
+        const ano = partes[0];
+        if (mIdx >= 0 && mIdx < 12) {
+          return `Previsto para ${meses[mIdx]}/${ano}`;
+        }
+      }
+      return `Previsto para ${dataRef}`;
+    } catch {
+      return 'Previsto em breve';
+    }
   }
 
   formatarPeriodo(dataInicio?: string | null, dataFim?: string | null): string {

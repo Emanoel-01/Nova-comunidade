@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal, computed, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { SupabaseService } from '../../../services/supabase.service';
 
 export interface MembroCard {
@@ -19,7 +20,7 @@ export interface MembroCard {
 @Component({
   selector: 'app-comunidade-membros',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="space-y-6 animate-fadeIn">
 
@@ -44,6 +45,44 @@ export interface MembroCard {
           </button>
         </div>
       }
+
+      @if (carregando()) {
+        <div class="space-y-4">
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="h-4 bg-slate-200 rounded-md w-32"></div>
+            <div class="h-10 bg-slate-100 rounded-xl"></div>
+          </div>
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="h-4 bg-slate-200 rounded-md w-48"></div>
+            <div class="h-20 bg-slate-100 rounded-xl"></div>
+          </div>
+        </div>
+      } @else if (!temAcesso()) {
+        <!-- Bloco de Acesso Restrito (Exclusivo para Membros Licenciados) -->
+        <div class="rounded-3xl bg-amber-50/80 border border-amber-200/80 p-8 sm:p-12 text-center space-y-5 shadow-xs animate-fadeIn">
+          <div class="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto text-3xl shadow-inner">
+            🔒
+          </div>
+          <div class="space-y-2 max-w-lg mx-auto">
+            <h3 class="text-lg sm:text-xl font-black text-amber-950 tracking-tight">
+              Área exclusiva para membros licenciados
+            </h3>
+            <p class="text-xs sm:text-sm text-amber-900/80 leading-relaxed">
+              Esta área faz parte da licença anual do ecossistema AmorimTech.<br class="hidden sm:inline">
+              Fórum Técnico e Eventos seguem abertos a todos os membros cadastrados.
+            </p>
+          </div>
+          <div class="pt-2">
+            <a
+              routerLink="/amorim-academy"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all cursor-pointer min-h-[44px]"
+            >
+              <span>Conhecer a licença</span>
+              <span>→</span>
+            </a>
+          </div>
+        </div>
+      } @else {
 
       <!-- 1. Banner Principal: Rede de Membros & Networking -->
       <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-7 text-white border border-indigo-800/30 shadow-md relative overflow-hidden">
@@ -460,12 +499,15 @@ export interface MembroCard {
         </div>
       }
 
+      }
+
     </div>
   `
 })
 export class ComunidadeMembrosComponent implements OnInit {
   private readonly supabaseService = inject(SupabaseService);
 
+  readonly temAcesso = signal<boolean>(false);
   readonly abrirConversaCom = output<any>();
   readonly verPerfil = output<void>();
 
@@ -564,6 +606,12 @@ export class ComunidadeMembrosComponent implements OnInit {
   async carregarDados(): Promise<void> {
     this.carregando.set(true);
     try {
+      const acesso = await this.supabaseService.temPermissaoModulo('comunidade', 'membros');
+      this.temAcesso.set(acesso);
+      if (!acesso) {
+        return;
+      }
+
       const session = await this.supabaseService.getSession();
       if (session?.user) {
         this.meuId.set(session.user.id);

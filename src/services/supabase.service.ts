@@ -295,6 +295,17 @@ export class SupabaseService {
     return this.listarProfissionaisComPermissoes();
   }
 
+  /**
+   * Calcula a data de validade padrão de 365 dias (1 ano) a partir de uma data base
+   * (data de liberação ou data atual se não informada). Retorna no formato YYYY-MM-DD.
+   */
+  calcularValidadePadrao365Dias(dataBase?: string | null): string {
+    const d = dataBase ? new Date(dataBase) : new Date();
+    const dataValida = isNaN(d.getTime()) ? new Date() : d;
+    dataValida.setDate(dataValida.getDate() + 365);
+    return dataValida.toISOString().split('T')[0];
+  }
+
   async upsertPermissao(permissao: {
     profissionalId: string;
     produto: 'predial4' | 'comunidade';
@@ -302,8 +313,14 @@ export class SupabaseService {
     liberado: boolean;
     validade?: string | null;
     nivelAcesso?: string | null;
+    dataLiberacao?: string | null;
   }): Promise<{ error: Error | null }> {
     try {
+      let validadeFinal = permissao.validade || null;
+      if (permissao.liberado && !validadeFinal) {
+        validadeFinal = this.calcularValidadePadrao365Dias(permissao.dataLiberacao);
+      }
+
       const { error } = await this.client
         .from('permissoes_acesso')
         .upsert({
@@ -311,7 +328,7 @@ export class SupabaseService {
           produto: permissao.produto,
           modulo: permissao.modulo,
           liberado: permissao.liberado,
-          validade: permissao.validade || null,
+          validade: validadeFinal,
           nivel_acesso: permissao.nivelAcesso || null,
           atualizado_em: new Date().toISOString(),
         }, { onConflict: 'profissional_id,produto,modulo' });
@@ -327,8 +344,14 @@ export class SupabaseService {
     nivel_atual?: string;
     licenca_tipo?: string | null;
     licenca_validade?: string | null;
+    data_liberacao?: string | null;
   }): Promise<{ data?: any; error: Error | null }> {
     try {
+      let licencaValidade = dados.licenca_validade || null;
+      if (dados.licenca_tipo && dados.licenca_tipo !== 'vitalicia' && !licencaValidade) {
+        licencaValidade = this.calcularValidadePadrao365Dias(dados.data_liberacao);
+      }
+
       const { data, error } = await this.client
         .from('profissionais')
         .insert({
@@ -336,7 +359,7 @@ export class SupabaseService {
           email: dados.email,
           nivel_atual: dados.nivel_atual || 'Membro Trainee',
           ...(dados.licenca_tipo ? { licenca_tipo: dados.licenca_tipo } : {}),
-          ...(dados.licenca_validade ? { licenca_validade: dados.licenca_validade } : {}),
+          ...(licencaValidade ? { licenca_validade: licencaValidade } : {}),
         })
         .select()
         .single();
@@ -769,6 +792,7 @@ export class SupabaseService {
       nivel_atual?: string;
       licenca_tipo?: string | null;
       licenca_validade?: string | null;
+      data_liberacao?: string | null;
     }
   ): Promise<{ error: Error | null }> {
     try {
@@ -776,7 +800,16 @@ export class SupabaseService {
       if (dados.full_name !== undefined) updatePayload.full_name = dados.full_name;
       if (dados.nivel_atual !== undefined) updatePayload.nivel_atual = dados.nivel_atual;
       if (dados.licenca_tipo !== undefined) updatePayload.licenca_tipo = dados.licenca_tipo;
-      if (dados.licenca_validade !== undefined) updatePayload.licenca_validade = dados.licenca_validade;
+
+      if (dados.licenca_validade !== undefined) {
+        let val = dados.licenca_validade || null;
+        if (dados.licenca_tipo && dados.licenca_tipo !== 'vitalicia' && !val) {
+          val = this.calcularValidadePadrao365Dias(dados.data_liberacao);
+        }
+        updatePayload.licenca_validade = val;
+      } else if (dados.licenca_tipo && dados.licenca_tipo !== 'vitalicia') {
+        updatePayload.licenca_validade = this.calcularValidadePadrao365Dias(dados.data_liberacao);
+      }
 
       const { error } = await this.client
         .from('profissionais')
@@ -3084,19 +3117,23 @@ export class SupabaseService {
     profissionalId: string,
     cursoId: string,
     liberado: boolean,
-    validade?: string | null
+    validade?: string | null,
+    dataLiberacao?: string | null
   ): Promise<{ error: Error | null }> {
     try {
+      let validadeFinal = validade || null;
+      if (liberado && !validadeFinal) {
+        validadeFinal = this.calcularValidadePadrao365Dias(dataLiberacao);
+      }
+
       const payload: any = {
         profissional_id: profissionalId,
         produto: 'comunidade',
         modulo: cursoId,
         liberado,
+        validade: validadeFinal,
         atualizado_em: new Date().toISOString(),
       };
-      if (validade !== undefined) {
-        payload.validade = validade || null;
-      }
       const { error } = await this.client
         .from('permissoes_acesso')
         .upsert(payload, { onConflict: 'profissional_id,produto,modulo' });

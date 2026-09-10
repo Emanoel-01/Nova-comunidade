@@ -79,18 +79,20 @@
         </button>
 
         <!-- Botão Histórico de Análises -->
-        <button
-          id="btn-historico-analises"
-          type="button"
-          (click)="abrirModalHistorico()"
-          class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200/80 active:scale-95"
-          title="Ver análises de editais anteriores"
-        >
-          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Histórico</span>
-        </button>
+        @if (funcoesAvancadasLiberadas()) {
+          <button
+            id="btn-historico-analises"
+            type="button"
+            (click)="abrirModalHistorico()"
+            class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200/80 active:scale-95"
+            title="Ver análises de editais anteriores"
+          >
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Histórico</span>
+          </button>
+        }
 
         <!-- Botão Reiniciar Checklist -->
         <button
@@ -111,25 +113,27 @@
     <div class="mt-6 pt-5 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       
       <!-- Card: Pool Mensal de Análises (A/B) -->
-      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
-        <div class="flex items-center justify-between text-xs font-bold text-slate-600">
-          <span>Pool de Análises (Mês)</span>
-          <span class="text-slate-900 font-black">{{ statusPacotes().analisesUsadasMes }} / {{ statusPacotes().limiteAnalisesMes }}</span>
+      @if (funcoesAvancadasLiberadas()) {
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+            <span>Pool de Análises (Mês)</span>
+            <span class="text-slate-900 font-black">{{ statusPacotes().analisesUsadasMes }} / {{ statusPacotes().limiteAnalisesMes }}</span>
+          </div>
+          <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-300"
+              [class.bg-emerald-500]="statusPacotes().analisesRestantesMes > 2"
+              [class.bg-amber-500]="statusPacotes().analisesRestantesMes <= 2 && statusPacotes().analisesRestantesMes > 0"
+              [class.bg-rose-500]="statusPacotes().analisesRestantesMes === 0"
+              [style.width.%]="statusPacotes().limiteAnalisesMes > 0 ? (statusPacotes().analisesUsadasMes / statusPacotes().limiteAnalisesMes) * 100 : 0"
+            ></div>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500">
+            <span>{{ statusPacotes().analisesRestantesMes }} análises disponíveis</span>
+            <span class="font-medium text-indigo-600">Edital / Documentos</span>
+          </div>
         </div>
-        <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-300"
-            [class.bg-emerald-500]="statusPacotes().analisesRestantesMes > 2"
-            [class.bg-amber-500]="statusPacotes().analisesRestantesMes <= 2 && statusPacotes().analisesRestantesMes > 0"
-            [class.bg-rose-500]="statusPacotes().analisesRestantesMes === 0"
-            [style.width.%]="statusPacotes().limiteAnalisesMes > 0 ? (statusPacotes().analisesUsadasMes / statusPacotes().limiteAnalisesMes) * 100 : 0"
-          ></div>
-        </div>
-        <div class="flex items-center justify-between text-[10px] text-slate-500">
-          <span>{{ statusPacotes().analisesRestantesMes }} análises disponíveis</span>
-          <span class="font-medium text-indigo-600">Edital / Documentos</span>
-        </div>
-      </div>
+      }
 
       <!-- Card: Mensagens de Chat Especialista -->
       <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
@@ -307,7 +311,7 @@
         <!-- Área de Upload dos Arquivos do Edital -->
         <div class="space-y-3 pt-2">
           <!-- Lista de Arquivos Já Anexados -->
-          @if (arquivosEdital().length > 0) {
+          @if (funcoesAvancadasLiberadas() && arquivosEdital().length > 0) {
             <div class="space-y-2">
               <div class="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
                 <span>Arquivos do Edital Anexados ({{ arquivosEdital().length }})</span>
@@ -388,32 +392,34 @@
         </div>
 
         <!-- Botão de Ação: Analisar Edital com IA -->
-        <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
-          <div class="text-xs text-slate-600">
-            <strong class="text-slate-800">Próximo Passo:</strong> A IA do Claude Sonnet 5 examina todos os arquivos do edital na íntegra, detecta armadilhas jurídicas e extrai os modelos de declarações.
-          </div>
+        @if (funcoesAvancadasLiberadas()) {
+          <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+            <div class="text-xs text-slate-600">
+              <strong class="text-slate-800">Próximo Passo:</strong> A IA examina todos os arquivos do edital na íntegra, detecta armadilhas jurídicas e extrai os modelos de declarações.
+            </div>
 
-          <button
-            id="btn-analisar-edital-ia"
-            type="button"
-            (click)="executarAnaliseEdital()"
-            [disabled]="analisandoEdital() || (arquivosEdital().length === 0 && !nomeEdital().trim()) || !temCreditosAnalise()"
-            class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1c3c5c] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
-          >
-            @if (analisandoEdital()) {
-              <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>Processando Edital (Claude Sonnet 5)...</span>
-            } @else {
-              <svg class="w-4 h-4 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>Analisar Edital & Extrair Declarações</span>
-            }
-          </button>
-        </div>
+            <button
+              id="btn-analisar-edital-ia"
+              type="button"
+              (click)="executarAnaliseEdital()"
+              [disabled]="analisandoEdital() || (arquivosEdital().length === 0 && !nomeEdital().trim()) || !temCreditosAnalise()"
+              class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#132A41] hover:bg-[#1c3c5c] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
+            >
+              @if (analisandoEdital()) {
+                <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>Processando Edital...</span>
+              } @else {
+                <svg class="w-4 h-4 text-[#B5642A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Analisar Edital & Extrair Declarações</span>
+              }
+            </button>
+          </div>
+        }
       </div>
 
       <!-- 4 Categorias do Checklist com Upload Individual -->
@@ -522,19 +528,21 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
-          <button
-            id="btn-auditar-docs-inferior"
-            type="button"
-            (click)="executarAnaliseDocumentacao()"
-            [disabled]="analisandoDocumentacao() || totalDocumentosAnexados() === 0 || !temCreditosAnalise()"
-            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200 active:scale-95"
-          >
-            @if (analisandoDocumentacao()) {
-              <span>Auditando Documentos...</span>
-            } @else {
-              <span>Auditar Documentação Anexada</span>
-            }
-          </button>
+          @if (funcoesAvancadasLiberadas()) {
+            <button
+              id="btn-auditar-docs-inferior"
+              type="button"
+              (click)="executarAnaliseDocumentacao()"
+              [disabled]="analisandoDocumentacao() || totalDocumentosAnexados() === 0 || !temCreditosAnalise()"
+              class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200 active:scale-95"
+            >
+              @if (analisandoDocumentacao()) {
+                <span>Auditando Documentos...</span>
+              } @else {
+                <span>Auditar Documentação Anexada</span>
+              }
+            </button>
+          }
 
           <button
             id="btn-ir-documentos-proposta"
@@ -680,36 +688,36 @@
   @if (abaAtiva() === 'auditoria_docs') {
     <div class="space-y-6">
       @if (resultadoAnaliseDocumentacao(); as audit) {
-        
-        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-            <div>
-              <span class="text-[11px] font-black uppercase text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md">
-                Auditoria Preventiva Concluída
-              </span>
-              <h4 class="text-lg font-black text-slate-900 mt-1">Conformidade Documental do Licitante</h4>
+        @if (funcoesAvancadasLiberadas()) {
+          <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+              <div>
+                <span class="text-[11px] font-black uppercase text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md">
+                  Auditoria Preventiva Concluída
+                </span>
+                <h4 class="text-lg font-black text-slate-900 mt-1">Conformidade Documental do Licitante</h4>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <span
+                  class="px-3 py-1 rounded-xl text-xs font-black uppercase"
+                  [class.bg-emerald-100]="audit.status_geral_habilitacao === 'Apto'"
+                  [class.text-emerald-800]="audit.status_geral_habilitacao === 'Apto'"
+                  [class.bg-amber-100]="audit.status_geral_habilitacao === 'Apto com Ressalvas'"
+                  [class.text-amber-800]="audit.status_geral_habilitacao === 'Apto com Ressalvas'"
+                  [class.bg-rose-100]="audit.status_geral_habilitacao === 'Inapto / Risco de Inabilitação'"
+                  [class.text-rose-800]="audit.status_geral_habilitacao === 'Inapto / Risco de Inabilitação'"
+                >
+                  {{ audit.status_geral_habilitacao || 'Conferência Concluída' }}
+                </span>
+              </div>
             </div>
 
-            <div class="flex items-center gap-3">
-              <span
-                class="px-3 py-1 rounded-xl text-xs font-black uppercase"
-                [class.bg-emerald-100]="audit.status_geral_habilitacao === 'Apto'"
-                [class.text-emerald-800]="audit.status_geral_habilitacao === 'Apto'"
-                [class.bg-amber-100]="audit.status_geral_habilitacao === 'Apto com Ressalvas'"
-                [class.text-amber-800]="audit.status_geral_habilitacao === 'Apto com Ressalvas'"
-                [class.bg-rose-100]="audit.status_geral_habilitacao === 'Inapto / Risco de Inabilitação'"
-                [class.text-rose-800]="audit.status_geral_habilitacao === 'Inapto / Risco de Inabilitação'"
-              >
-                {{ audit.status_geral_habilitacao || 'Conferência Concluída' }}
-              </span>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 leading-relaxed">
+              {{ audit.parecer_preventivo }}
             </div>
           </div>
-
-          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 leading-relaxed">
-            {{ audit.parecer_preventivo }}
-          </div>
-        </div>
-
+        }
       } @else {
         <div class="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-3">
           <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl">
@@ -846,7 +854,7 @@
         </div>
 
         <!-- CONTEÚDO SUB-ABA 1: DECLARAÇÕES EXIGIDAS -->
-        @if (subAbaDocumentos() === 'declaracoes') {
+        @if (funcoesAvancadasLiberadas() && subAbaDocumentos() === 'declaracoes') {
           <div class="p-6 sm:p-7 space-y-6">
             
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
@@ -964,7 +972,7 @@
         }
 
         <!-- CONTEÚDO SUB-ABA 2: CAPA / FOLHA DE ROSTO (PDF) -->
-        @if (subAbaDocumentos() === 'capa') {
+        @if (funcoesAvancadasLiberadas() && subAbaDocumentos() === 'capa') {
           <div class="p-6 sm:p-7 space-y-6">
             
             <div class="space-y-1 pb-4 border-b border-slate-100">
@@ -1263,7 +1271,7 @@
   }
 
   <!-- Modal 2: Completar Perfil Rápido -->
-  @if (modalCompletarPerfilAberto()) {
+  @if (funcoesAvancadasLiberadas() && modalCompletarPerfilAberto()) {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fade-in">
       <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         
@@ -1479,7 +1487,7 @@
   }
 
   <!-- Modal 4: Histórico de Análises de Editais -->
-  @if (modalHistoricoAberto()) {
+  @if (funcoesAvancadasLiberadas() && modalHistoricoAberto()) {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fade-in">
       <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
         

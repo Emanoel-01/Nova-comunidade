@@ -428,12 +428,7 @@ import { ViabilizaIaComponent } from './comunidade/viabiliza-ia.component';
             ></app-comunidade-mensagens>
           } @else if (abaAtiva() === 'hall-fama') {
             <!-- Hall da Fama Conectado ao Componente Real -->
-            <div class="space-y-6">
-              <div class="p-4 rounded-2xl bg-white border border-slate-200 text-xs text-slate-600">
-                <p><strong>Hall da Fama da Comunidade:</strong> ranking de engajamento e pontuações dos membros.</p>
-              </div>
-              <app-hall-fama></app-hall-fama>
-            </div>
+            <app-hall-fama></app-hall-fama>
           } @else if (abaAtiva() === 'curso') {
             <!-- Área do Curso Predial 4.0 -->
             <app-comunidade-curso></app-comunidade-curso>

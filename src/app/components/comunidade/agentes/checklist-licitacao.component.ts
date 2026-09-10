@@ -46,6 +46,9 @@ export class ChecklistLicitacaoComponent implements OnInit {
   private readonly motorPdfService = inject(MotorPdfService);
   private readonly geradorDocxService = inject(GeradorDocxLicitacaoService);
 
+  // Controle de liberação de funções avançadas de licitação
+  readonly funcoesAvancadasLiberadas = signal<boolean>(false);
+
   // -------------------------------------------------------------------------
   // 0. Navegação por Abas Principais
   // -------------------------------------------------------------------------

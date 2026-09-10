@@ -50,6 +50,44 @@ export interface HistoricoVencedor {
   imports: [CommonModule, RouterModule],
   template: `
     <div [class]="modoCompacto() ? 'space-y-4' : 'space-y-6'">
+
+      @if (!modoCompacto() && loading()) {
+        <div class="space-y-4">
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="h-4 bg-slate-200 rounded-md w-32"></div>
+            <div class="h-10 bg-slate-100 rounded-xl"></div>
+          </div>
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs animate-pulse space-y-4">
+            <div class="h-4 bg-slate-200 rounded-md w-48"></div>
+            <div class="h-20 bg-slate-100 rounded-xl"></div>
+          </div>
+        </div>
+      } @else if (!modoCompacto() && !temAcesso()) {
+        <!-- Bloco de Acesso Restrito (Exclusivo para Membros Licenciados) -->
+        <div class="rounded-3xl bg-amber-50/80 border border-amber-200/80 p-8 sm:p-12 text-center space-y-5 shadow-xs animate-fadeIn">
+          <div class="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-200 text-amber-700 flex items-center justify-center mx-auto text-3xl shadow-inner">
+            🔒
+          </div>
+          <div class="space-y-2 max-w-lg mx-auto">
+            <h3 class="text-lg sm:text-xl font-black text-amber-950 tracking-tight">
+              Área exclusiva para membros licenciados
+            </h3>
+            <p class="text-xs sm:text-sm text-amber-900/80 leading-relaxed">
+              Esta área faz parte da licença anual do ecossistema AmorimTech.<br class="hidden sm:inline">
+              Fórum Técnico e Eventos seguem abertos a todos os membros cadastrados.
+            </p>
+          </div>
+          <div class="pt-2">
+            <a
+              routerLink="/amorim-academy"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs hover:shadow-md transition-all cursor-pointer min-h-[44px]"
+            >
+              <span>Conhecer a licença</span>
+              <span>→</span>
+            </a>
+          </div>
+        </div>
+      } @else {
       
       <!-- ======================================================= -->
       <!-- 1. HERO / CABEÇALHO DO HALL DA FAMA                    -->
@@ -551,6 +589,8 @@ export interface HistoricoVencedor {
         </div>
       }
 
+      }
+
     </div>
   `
 })
@@ -558,6 +598,7 @@ export class HallFamaComponent implements OnInit, OnDestroy {
   private readonly supabaseService = inject(SupabaseService);
 
   readonly modoCompacto = input<boolean>(false);
+  readonly temAcesso = signal<boolean>(false);
   readonly regrasPontuacao = REGRAS_PONTUACAO;
 
   readonly loading = signal<boolean>(true);
@@ -654,12 +695,36 @@ export class HallFamaComponent implements OnInit, OnDestroy {
   });
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([
-      this.carregarRanking(),
-      this.carregarPremios(),
-      this.carregarHistorico()
-    ]);
-    this.iniciarRealtime();
+    if (this.modoCompacto()) {
+      this.temAcesso.set(true);
+      await Promise.all([
+        this.carregarRanking(),
+        this.carregarPremios(),
+        this.carregarHistorico()
+      ]);
+      this.iniciarRealtime();
+      return;
+    }
+
+    this.loading.set(true);
+    try {
+      const acesso = await this.supabaseService.temPermissaoModulo('comunidade', 'hall-da-fama');
+      this.temAcesso.set(acesso);
+      if (!acesso) {
+        return;
+      }
+
+      await Promise.all([
+        this.carregarRanking(),
+        this.carregarPremios(),
+        this.carregarHistorico()
+      ]);
+      this.iniciarRealtime();
+    } catch (e) {
+      console.warn('Erro ao verificar permissão do Hall da Fama:', e);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   ngOnDestroy(): void {
