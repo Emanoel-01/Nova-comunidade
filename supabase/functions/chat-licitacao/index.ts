@@ -266,43 +266,15 @@ Diretrizes de resposta:
       }
     }
 
-    // 8. Fallback inteligente baseado em regras se a API não estiver conectada
+    // 8. Se a API não respondeu ou chave ausente, retornar serviço indisponível
     if (!respostaAssistente) {
-      const msgLower = mensagemLimpa.toLowerCase();
-      
-      if (msgLower.includes('impugn') || msgLower.includes('prazo')) {
-        respostaAssistente = `De acordo com o **Artigo 164 da Lei Federal nº 14.133/2021**, qualquer pessoa pode impugnar o edital de licitação por irregularidade ou solicitar esclarecimentos.
-
-**Prazos Fundamentais:**
-1. **Prazo para protocolo:** Até **3 (três) dias úteis** antes da data fixada para a abertura do certame.
-2. **Prazo de resposta da Administração:** Até **3 (três) dias úteis**, limitado ao último dia útil anterior à abertura da sessão. A resposta vincula a Administração e deve ser publicada no PNCP e sítio oficial.
-3. **Efeito:** Se a impugnação for acolhida com alteração substancial que afete a formulação das propostas, a Administração é obrigada a reabrir o prazo inicial de divulgação do edital (Art. 55, § 1º).
-
-*Recomendação prática:* Protocolize a impugnação diretamente no sistema eletrônico (PNCP/Compras.gov) com fundamentação jurídica detalhada e requerimento expresso de suspensão da sessão até a decisão.`;
-      } else if (msgLower.includes('atestado') || msgLower.includes('capacidade técnica') || msgLower.includes('cat')) {
-        respostaAssistente = `Sobre a **Qualificação Técnica (Art. 67 da Lei 14.133/2021)**:
-
-1. **Atestados de Capacidade Técnico-Operacional (da empresa):** O edital só pode exigir comprovação de experiência nas parcelas de **maior relevância técnica e valor significativo**, limitado a no máximo **50% dos quantitativos** dos itens essenciais (Art. 67, § 1º e § 2º).
-2. **Capacidade Técnico-Profissional (do RT):** Comprova-se pela apresentação de CAT averbada no CREA/CAU do profissional indicado como responsável técnico. É vedada a exigência de quantitativos mínimos para a equipe profissional (jurisprudência consolidada do TCU).
-3. **Vínculo do Responsável Técnico:** Conforme o Art. 67, § 6º e a Súmula 272 do TCU, não se pode exigir que o RT tenha vínculo empregatício CLT prévio no momento da licitação. Um contrato de prestação de serviços ou declaração de compromisso é suficiente.`;
-      } else if (msgLower.includes('índice') || msgLower.includes('balanço') || msgLower.includes('capital')) {
-        respostaAssistente = `Na **Qualificação Econômico-Financeira (Art. 69 da Lei 14.133/2021)**:
-
-1. **Índices Contábeis Usuais:** A Administração pode exigir Liquidez Geral (LG), Solvência Geral (SG) e Liquidez Corrente (LC), normalmente com valores >= 1,0. É vedada a fixação de índices não usuais ou excessivamente restritivos sem estudo técnico prévio justificando a necessidade (Art. 69, § 5º).
-2. **Patrimônio Líquido Mínimo:** Se a empresa não atingir os índices contábeis exigidos, a lei permite a exigência alternativa de comprovação de patrimônio líquido ou capital social mínimo, limitado ao teto estrito de **10% do valor estimado da contratação** (Art. 69, § 4º).
-3. **Garantia de Proposta:** Não pode exceder **1% do valor estimado** da licitação (Art. 58).`;
-      } else {
-        respostaAssistente = `Com base na **Lei Federal nº 14.133/2021 (Nova Lei de Licitações e Contratos)**:
-
-Para a questão apresentada (*"${mensagemLimpa.slice(0, 100)}..."*), é essencial verificar os critérios objetivos de julgamento e as vedações expressas aos excessos de formalismo da Administração Pública.
-
-**Pontos-chave recomendados para esta análise:**
-- **Princípio da Vinculação ao Edital x Razoabilidade:** A comissão de contratação ou agente de contratação não pode criar exigências surpresa ou inabilitar licitante por mero vício formal sanável (Art. 12, III e Art. 64, § 1º).
-- **Saneamento de Falhas:** O agente de contratação é autorizado e incentivado a realizar diligências para sanear erros ou falhas formais que não alterem a substância da proposta ou a validade jurídica dos documentos.
-- **Dúvidas sobre o Edital:** Se houver contradição ou obscuridade, o melhor caminho é protocolar Pedido de Esclarecimento formal com antecedência mínima de 3 dias úteis.
-
-Se desejar, informe trechos específicos da cláusula do edital ou do documento para uma análise detalhada!`;
-      }
+      return new Response(
+        JSON.stringify({
+          error: 'servico_indisponivel',
+          message: 'Análise indisponível no momento. Tente novamente mais tarde.'
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // 9. Gravar as mensagens em public.chat_licitacao_mensagens
