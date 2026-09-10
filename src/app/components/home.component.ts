@@ -88,30 +88,6 @@ interface Institution {
             <span class="text-emerald-400 shrink-0">→</span>
           </a>
         </div>
-
-        <!-- Prova Social na Dobra -->
-        <div class="pt-5 sm:pt-6 border-t border-indigo-800/60 max-w-3xl mx-auto">
-          <div class="grid grid-cols-3 gap-2 sm:gap-6 text-center">
-            <div class="flex flex-col items-center justify-center">
-              <span class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white">+15 anos</span>
-              <span class="text-[11px] sm:text-xs text-indigo-200 font-medium">de atuação na construção civil</span>
-            </div>
-            <div class="flex flex-col items-center justify-center border-x border-indigo-800/60 px-1 sm:px-4">
-              <span class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-emerald-400">
-                @if (totalProjetosPortfolio() >= 5) {
-                  +{{ totalProjetosPortfolio() }}
-                } @else {
-                  +500
-                }
-              </span>
-              <span class="text-[11px] sm:text-xs text-indigo-200 font-medium">projetos e laudos executados</span>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-              <span class="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white">+200.000m²</span>
-              <span class="text-[11px] sm:text-xs text-indigo-200 font-medium">de empreendimentos gerenciados</span>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -160,9 +136,12 @@ interface Institution {
 
           <!-- Texto e Estatísticas à direita -->
           <div class="lg:col-span-7 space-y-6">
-            <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Minha Missão e Propósito
-            </h2>
+            <div>
+              <span class="text-xs sm:text-sm font-bold uppercase tracking-wider text-indigo-600 block mb-1">Emanoel Amorim</span>
+              <h2 class="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+                Minha Missão e Propósito
+              </h2>
+            </div>
 
             <div class="space-y-4 text-slate-600 leading-relaxed text-xs sm:text-base text-justify">
               <p>
@@ -518,9 +497,11 @@ interface Institution {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                   </svg>
                 </div>
-                <h3 class="text-lg sm:text-xl font-bold text-white mb-1.5 sm:mb-2">Conteúdo Exclusivo</h3>
-                <p class="text-slate-300 text-xs sm:text-sm max-w-xs mb-5 sm:mb-6">
-                  Faça login para visualizar este conteúdo.
+                <h3 class="text-sm sm:text-base font-bold text-white mb-1.5 sm:mb-2 max-w-xs leading-snug">
+                  Você já tem acesso à Comunidade Business 4.0?
+                </h3>
+                <p class="text-slate-300 text-xs max-w-xs mb-5 sm:mb-6">
+                  Entre com seu login para liberar os agentes de IA, materiais exclusivos e suporte contínuo.
                 </p>
                 <a
                   routerLink="/comunidade"

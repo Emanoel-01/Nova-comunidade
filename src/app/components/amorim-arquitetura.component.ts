@@ -11,6 +11,7 @@ export interface PortfolioProject {
   year: string;
   client: string;
   location: string;
+  description?: string;
 }
 
 export interface ServiceCard {
@@ -108,6 +109,11 @@ export class ServiceGridComponent {
             <h4 class="text-base sm:text-lg font-bold text-white leading-snug mb-1">
               {{ current.title }}
             </h4>
+            @if (current.description) {
+              <p class="text-xs text-slate-200 leading-snug mb-1 line-clamp-2">
+                {{ current.description }}
+              </p>
+            }
             <p class="text-xs text-slate-300 font-medium">
               📍 {{ current.location }}
             </p>
@@ -121,6 +127,11 @@ export class ServiceGridComponent {
             <h4 class="text-base sm:text-lg font-bold text-white leading-snug mb-2 max-w-[240px]">
               {{ current.title }}
             </h4>
+            @if (current.description) {
+              <p class="text-xs text-slate-200 leading-snug mb-2 max-w-[240px]">
+                {{ current.description }}
+              </p>
+            }
             <p class="text-xs text-slate-300 font-medium">
               📍 {{ current.location }}
             </p>
@@ -239,7 +250,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
               Excelência técnica para proteger o seu patrimônio.
             </h1>
             <p class="text-white/80 text-[13px] min-[360px]:text-sm sm:text-base leading-relaxed max-w-xl mb-6 sm:mb-7 text-left">
-              Referência em Engenharia Condominial e Diagnóstica em Pernambuco, com mais de 15 anos de atuação em projetos públicos e privados de grande porte. Rigor técnico das normas ABNT e IBAPE, unido à inovação da Construção 4.0.
+              Referência em Engenharia Condominial e Diagnóstica em Pernambuco, com sólida atuação em projetos públicos e privados de grande porte. Rigor técnico das normas ABNT e IBAPE, unido à inovação da Construção 4.0.
             </p>
             <div class="flex flex-col sm:flex-row gap-3">
               <a
@@ -254,21 +265,6 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
               <a href="#diagnostica" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold rounded-xl transition-colors text-xs sm:text-sm min-h-[44px]">
                 Explorar serviços
               </a>
-            </div>
-          </div>
-
-          <div class="relative z-10 border-t border-white/15 grid grid-cols-3 divide-x divide-white/15 bg-black/20">
-            <div class="px-2 sm:px-4 py-4 sm:py-6 lg:py-7 text-center flex flex-col justify-center">
-              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-tight">+15 anos</p>
-              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-white/70 mt-1 leading-tight sm:leading-normal">de atuação na construção civil</p>
-            </div>
-            <div class="px-2 sm:px-4 py-4 sm:py-6 lg:py-7 text-center flex flex-col justify-center">
-              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-tight">+500</p>
-              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-white/70 mt-1 leading-tight sm:leading-normal">projetos e laudos executados</p>
-            </div>
-            <div class="px-2 sm:px-4 py-4 sm:py-6 lg:py-7 text-center flex flex-col justify-center">
-              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-tight">+200.000m²</p>
-              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-white/70 mt-1 leading-tight sm:leading-normal">de empreendimentos gerenciados</p>
             </div>
           </div>
         </section>
@@ -302,7 +298,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
               Portfólio
             </h2>
             <p class="text-slate-600 text-xs sm:text-base">
-              Mais de 15 anos de serviços executados para órgãos públicos, instituições e empreendimentos privados.
+              Amplo histórico de serviços técnicos executados para órgãos públicos, instituições e empreendimentos privados.
             </p>
           </div>
 
@@ -572,7 +568,7 @@ export class PortfolioCarouselComponent implements OnInit, OnDestroy {
         <section class="pt-1 sm:pt-2">
           <div class="bg-blue-50 border border-blue-100 rounded-3xl p-6 sm:p-10 lg:p-12 text-center max-w-4xl mx-auto shadow-sm">
             <h3 class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 mb-3 sm:mb-4 tracking-tight">
-              Mais de 500 projetos e laudos executados com sucesso
+              Excelência técnica e rigor normativo em cada entrega
             </h3>
             <p class="text-slate-600 text-xs sm:text-base max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed text-justify sm:text-center">
               A Amorim Arquitetura é a escolha de grandes instituições públicas, privadas e condomínios que não abrem mão de segurança, rigor normativo e tecnologia de ponta.
@@ -751,7 +747,8 @@ export class AmorimArquiteturaComponent implements OnInit {
       title: 'Fiscalização das Obras de Restauro no Palácio Joaquim Nabuco (ALEPE)',
       year: '2026',
       client: 'ALEPE',
-      location: 'Recife/PE'
+      location: 'Recife/PE',
+      description: 'Supervisão técnica de restauro na sede histórica da ALEPE com aplicação de diário eletrônico e controle tecnológico, resultando na antecipação da entrega de 24 para 18 meses.'
     },
     {
       img: 'https://static.wixstatic.com/media/152459_15e60566f08a4fcf828b0c37630ce2ed~mv2.jpg/v1/fill/w_480,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/sol.jpg',
@@ -793,7 +790,7 @@ export class AmorimArquiteturaComponent implements OnInit {
   readonly servicosDiagnostica: ServiceCard[] = [
     {
       title: 'Laudos Técnicos e Vistorias',
-      description: 'Evite riscos e assegure seus direitos com laudos certificados. Elaboramos Laudos de Vistoria Cautelar de Vizinhança, Inspeção Predial e Assistência Técnica Pericial: mais exatos, padronizados e entregues muito mais rápido — com um preço bem mais acessível — graças à tecnologia do nosso software Predial 4.0. Solicite uma cotação sem compromisso.',
+      description: 'Inspeção Predial, Vistoria Cautelar de Vizinhança, Laudos Periciais e Consultoria Técnica com o respaldo de quem tem mais de 15 anos de atuação.',
       items: [
         'Laudos de Vistoria Predial e Garantia',
         'Reforma (NBR 16280) e Acessibilidade (NBR 9050)',

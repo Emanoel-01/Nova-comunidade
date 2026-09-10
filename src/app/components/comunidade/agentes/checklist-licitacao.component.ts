@@ -101,14 +101,14 @@ export class ChecklistLicitacaoComponent implements OnInit {
   readonly carregandoStatus = signal<boolean>(false);
 
   // -------------------------------------------------------------------------
-  // 4. Análise de Edital (IA - Claude Sonnet 5)
+  // 4. Análise de Edital (IA)
   // -------------------------------------------------------------------------
   readonly analisandoEdital = signal<boolean>(false);
   readonly resultadoAnaliseEdital = signal<any | null>(null);
   readonly analiseEditalId = signal<string | null>(null);
 
   // -------------------------------------------------------------------------
-  // 5. Análise de Documentação Hospedada (IA - Claude Sonnet 5)
+  // 5. Análise de Documentação Hospedada (IA)
   // -------------------------------------------------------------------------
   readonly analisandoDocumentacao = signal<boolean>(false);
   readonly resultadoAnaliseDocumentacao = signal<any | null>(null);
@@ -1057,7 +1057,7 @@ export class ChecklistLicitacaoComponent implements OnInit {
   }
 
   // -------------------------------------------------------------------------
-  // Execução de Análise de Edital (IA - Claude Sonnet 5)
+  // Execução de Análise de Edital (IA)
   // -------------------------------------------------------------------------
   async executarAnaliseEdital(): Promise<void> {
     if (!this.temCreditosAnalise()) {
@@ -1110,7 +1110,7 @@ export class ChecklistLicitacaoComponent implements OnInit {
   }
 
   // -------------------------------------------------------------------------
-  // Execução de Auditoria de Documentação (IA - Claude Sonnet 5)
+  // Execução de Auditoria de Documentação (IA)
   // -------------------------------------------------------------------------
   async executarAnaliseDocumentacao(): Promise<void> {
     if (!this.temCreditosAnalise()) {

@@ -3167,7 +3167,6 @@ export class AdminUsuariosComponent implements OnInit {
     { key: 'viabiliza-ia', nome: 'Viabiliza IA', descricao: 'Assessoria de crédito imobiliário, comparação bancária e pasta de crédito.', produto: 'comunidade' },
     { key: 'reajuste-contrato', nome: 'Agente: Reajuste de Contrato', descricao: 'Cálculo de reajuste FGV/SINAENCO.', produto: 'comunidade' },
     { key: 'biblioteca-prompts', nome: 'Agente: Biblioteca de Prompts', descricao: 'Prompts e templates para engenharia e arquitetura.', produto: 'comunidade' },
-    { key: 'skills-catalogo', nome: 'Agente: Skills Claude', descricao: 'Catálogo de skills e automações operacionais.', produto: 'comunidade' },
     { key: 'checklist-licitacao', nome: 'Agente: Checklist de Licitação', descricao: 'Checklist Lei 14.133/2021 de contratações públicas.', produto: 'comunidade' },
     { key: 'levantamento-quantitativos', nome: 'Agente: Levantamento de Quantitativos', descricao: 'Cálculo paramétrico de materiais e insumos.', produto: 'comunidade' },
     { key: 'custos-viabilidade', nome: 'Agente: Custos & Viabilidade', descricao: 'Estudo de viabilidade NBR 12.721, CUB e VGV.', produto: 'comunidade' },

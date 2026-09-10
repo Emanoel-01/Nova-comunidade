@@ -280,7 +280,7 @@ export interface MonthFlowItem {
           [class]="abaAtiva() === 'engenharia-valor' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
         >
           <span>💡</span>
-          <span>8. Engenharia de Valor & IA</span>
+          <span>8. Engenharia de Valor</span>
         </button>
       </div>
 

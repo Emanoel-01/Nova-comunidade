@@ -537,7 +537,7 @@ type TabResultado = 'memorial' | 'otimizacoes' | 'dimensionamento' | 'layout_zon
 
               <div>
                 <h3 class="text-lg font-bold text-slate-900">Efetivo de Operários & Perfil da Análise</h3>
-                <p class="text-xs text-slate-500 mt-1">Defina o contingente no pico para cálculo das áreas de vivência (NR-18) e escolha a lente técnica da IA.</p>
+                <p class="text-xs text-slate-500 mt-1">Defina o contingente no pico para cálculo das áreas de vivência (NR-18) e escolha a abordagem técnica do plano.</p>
               </div>
 
               <!-- Faixa de Trabalhadores no Pico -->

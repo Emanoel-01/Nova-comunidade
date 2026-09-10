@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../services/supabase.service';
 import { ReajusteContratoComponent } from './agentes/reajuste-contrato.component';
 import { BibliotecaPromptsComponent } from './agentes/biblioteca-prompts.component';
-import { SkillsCatalogoComponent } from './agentes/skills-catalogo.component';
 import { ChecklistLicitacaoComponent } from './agentes/checklist-licitacao.component';
 import { LevantamentoQuantitativosComponent } from './agentes/levantamento-quantitativos.component';
 import { CustosViabilidadeComponent } from './agentes/custos-viabilidade.component';
@@ -16,7 +15,6 @@ export type FerramentaAtiva =
   | 'lista'
   | 'reajuste-contrato'
   | 'biblioteca-prompts'
-  | 'skills-catalogo'
   | 'checklist-licitacao'
   | 'levantamento-quantitativos'
   | 'custos-viabilidade'
@@ -32,7 +30,6 @@ export type FerramentaAtiva =
     CommonModule,
     ReajusteContratoComponent,
     BibliotecaPromptsComponent,
-    SkillsCatalogoComponent,
     ChecklistLicitacaoComponent,
     LevantamentoQuantitativosComponent,
     CustosViabilidadeComponent,
@@ -251,65 +248,7 @@ export type FerramentaAtiva =
             </div>
           </div>
 
-          <!-- CARD 3: SKILLS CLAUDE -->
-          <div class="bg-white rounded-3xl p-6 border-2 border-[#B5642A]/40 shadow-sm hover:shadow-xl hover:border-[#B5642A] transition-all flex flex-col justify-between group relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#B5642A]/15 to-transparent rounded-bl-full pointer-events-none"></div>
-
-            <div class="space-y-4">
-              <!-- Topo do Card com Ícone e Badge Condicional -->
-              <div class="flex items-center justify-between">
-                <div class="w-12 h-12 rounded-2xl bg-[#132A41] text-[#E59866] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-
-                @if (temPermissao('skills-catalogo')) {
-                  <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
-                    Disponível
-                  </span>
-                } @else {
-                  <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-wider border border-amber-200/80 flex items-center gap-1">
-                    <span>🔒</span>
-                    <span>Acesso Restrito</span>
-                  </span>
-                }
-              </div>
-
-              <!-- Conteúdo -->
-              <div class="space-y-2">
-                <h4 class="text-lg font-black text-slate-900 group-hover:text-[#B5642A] transition-colors">
-                  Skills Claude
-                </h4>
-                <p class="text-xs text-slate-600 leading-relaxed">
-                  Pacotes de instruções reutilizáveis para automatizar orçamentos, projetos e fluxos complexos no seu Claude.
-                </p>
-              </div>
-
-              <!-- Tags de Recursos -->
-              <div class="flex flex-wrap gap-1.5 pt-1">
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-[#B5642A] border border-amber-200/60">Claude Code / CLI</span>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Claude Cowork</span>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Guia Passo a Passo</span>
-              </div>
-            </div>
-
-            <!-- Botão de Ação -->
-            <div class="pt-6">
-              <button
-                type="button"
-                (click)="abrirFerramenta('skills-catalogo')"
-                class="w-full py-3 px-4 rounded-xl bg-[#132A41] hover:bg-[#1f3f60] text-white text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group-hover:shadow-md"
-              >
-                <span>Acessar Skills & Guias</span>
-                <svg class="w-4 h-4 text-[#E59866] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- CARD 4: CHECKLIST DE LICITAÇÃO -->
+          <!-- CARD 3: CHECKLIST DE LICITAÇÃO -->
           <div class="bg-white rounded-3xl p-6 border-2 border-emerald-200 shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all flex flex-col justify-between group relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
 
@@ -633,6 +572,7 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">Previsto para maio de 2027</span>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">18 Sistemas</span>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Sem IA</span>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Cálculo Instantâneo</span>
@@ -682,7 +622,7 @@ export type FerramentaAtiva =
               <!-- Conteúdo -->
               <div class="space-y-2">
                 <h4 class="text-lg font-black text-slate-900 group-hover:text-rose-600 transition-colors">
-                  EVTE — Comparação de Sistemas
+                  EVTE — Comparação de Tipologias
                 </h4>
                 <p class="text-xs text-slate-600 leading-relaxed">
                   Compare tipologias construtivas contra as restrições do seu projeto — pontos positivos, pontos
@@ -692,6 +632,7 @@ export type FerramentaAtiva =
 
               <!-- Tags de Recursos -->
               <div class="flex flex-wrap gap-1.5 pt-1">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">Previsto para maio de 2027</span>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60">IA Comparativa</span>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">2 a 8 Sistemas</span>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Ranking Top 3</span>
@@ -763,31 +704,6 @@ export type FerramentaAtiva =
 
           <!-- Componente da Biblioteca de Prompts -->
           <app-biblioteca-prompts></app-biblioteca-prompts>
-        </div>
-
-      } @else if (ferramentaAtiva() === 'skills-catalogo') {
-
-        <!-- 5. Visualização do Módulo: Skills Claude -->
-        <div class="space-y-6">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <button
-              type="button"
-              (click)="voltarParaLista()"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0"
-            >
-              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span>Voltar para todos os Agentes</span>
-            </button>
-
-            <span class="text-xs font-bold text-slate-400 break-words">
-              Módulo: Skills Claude & Guias de Instalação
-            </span>
-          </div>
-
-          <!-- Componente do Catálogo de Skills -->
-          <app-skills-catalogo></app-skills-catalogo>
         </div>
 
       } @else if (ferramentaAtiva() === 'checklist-licitacao') {
@@ -987,7 +903,6 @@ export class ComunidadeAgentesComponent implements OnInit {
   private static readonly MODULOS_COM_PERMISSAO: FerramentaAtiva[] = [
     'reajuste-contrato',
     'biblioteca-prompts',
-    'skills-catalogo',
     'checklist-licitacao',
     'levantamento-quantitativos',
     'custos-viabilidade',
@@ -1049,8 +964,6 @@ export class ComunidadeAgentesComponent implements OnInit {
         return 'Reajuste de Contrato';
       case 'biblioteca-prompts':
         return 'Biblioteca de Prompts';
-      case 'skills-catalogo':
-        return 'Skills Claude';
       case 'checklist-licitacao':
         return 'Checklist de Licitação';
       case 'levantamento-quantitativos':

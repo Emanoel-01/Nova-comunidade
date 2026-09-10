@@ -124,8 +124,8 @@ type ModoAcesso = 'login' | 'recuperar' | 'redefinir' | 'solicitacao' | 'solicit
                 <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   Entrar na Comunidade
                 </h2>
-                <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                  Digite seu e-mail e senha cadastrados para acessar.
+                <p class="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
+                  Você já tem acesso à Comunidade Business 4.0? Entre com seu login para liberar os agentes de IA, materiais exclusivos e suporte contínuo.
                 </p>
               </div>
 

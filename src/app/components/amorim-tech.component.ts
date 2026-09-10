@@ -136,7 +136,7 @@ import { SeoService } from '../services/seo.service';
               </div>
               <h3 class="text-sm sm:text-base font-bold text-slate-900">Capacitação da equipe incluída</h3>
               <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
-                Ao implantar a esteira da AmorimTech, sua equipe técnica ganha acesso integral à Amorim Academy e à Comunidade Business 4.0 para treinamento contínuo — sem custo adicional.
+                Acesso incluso aos cursos de nivelamento do acervo para os técnicos licenciados da equipe, além do Fórum Técnico e da agenda de Eventos para todo o time. Habilitações operacionais mediante a respectiva Certificação Técnica individual.
               </p>
             </div>
           </div>
@@ -287,13 +287,13 @@ import { SeoService } from '../services/seo.service';
               <div class="space-y-3 sm:space-y-4">
                 <div class="flex items-center gap-2 flex-wrap">
                   <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 border border-white/15 text-indigo-300 flex items-center justify-center font-bold text-sm">03</div>
-                  <span class="text-[10px] font-bold uppercase text-indigo-300 bg-indigo-400/15 px-2 py-1 rounded-full">Em desenvolvimento</span>
+                  <span class="text-[10px] font-bold uppercase text-amber-300 bg-amber-400/20 border border-amber-300/30 px-2.5 py-1 rounded-full">Previsto para fevereiro de 2027</span>
                 </div>
                 <h3 class="text-base sm:text-xl font-bold tracking-tight">
                   Engenharia Condominial
                 </h3>
                 <p class="text-indigo-100/80 text-xs sm:text-sm leading-relaxed text-justify">
-                  Do laudo técnico à obra concluída. Transforma o diagnóstico num Termo de Referência completo — orçamento, caderno de encargos e fiscalização.
+                  Transforme o diagnóstico predial em um Termo de Referência executivo completo: Memorial Descritivo, Caderno de Encargos, Plano de Ação e Orçamento Paramétrico SINAPI/BDI.
                 </p>
               </div>
 
@@ -305,7 +305,7 @@ import { SeoService } from '../services/seo.service';
                   <span class="text-indigo-300 font-bold shrink-0">—</span><span>Orçamento de Referência (SINAPI)</span>
                 </li>
                 <li class="flex items-start gap-2.5 text-xs sm:text-sm text-indigo-100/90">
-                  <span class="text-indigo-300 font-bold shrink-0">—</span><span>Caderno de Encargos e Fiscalização de Obra</span>
+                  <span class="text-indigo-300 font-bold shrink-0">—</span><span>Caderno de Encargos</span>
                 </li>
               </ul>
             </div>

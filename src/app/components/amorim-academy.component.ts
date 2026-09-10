@@ -11,6 +11,7 @@ export interface AgenteIA {
   subtitulo: string;
   icone: string;
   descricaoLiteral: string;
+  tagPrevisao?: string;
 }
 
 export interface EbookItem {
@@ -57,7 +58,7 @@ export interface MesCalendario {
 
           <!-- Subtítulo -->
           <p class="text-slate-300 text-base sm:text-lg lg:text-xl max-w-3xl mx-auto leading-relaxed font-normal">
-            Laudos automatizados com IA, copiloto pericial (NBR 16747), esteira de crédito bancário e networking direto. Um só login. Tudo modular. Pagamento via Pix parcelado sem travar seu limite.
+            O ecossistema que une formação técnica prática, engenharia diagnóstica normativa e ferramentas de Inteligência Artificial para alavancar sua carreira e seu escritório.
           </p>
 
           <!-- 2 CTAs -->
@@ -85,21 +86,11 @@ export interface MesCalendario {
             </a>
           </div>
 
-          <!-- Faixa de 3 Métricas -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-slate-800/80 max-w-4xl mx-auto">
+          <!-- Destaque de Acesso Integrado -->
+          <div class="pt-6 border-t border-slate-800/80 max-w-md mx-auto">
             <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 text-center">
               <span class="text-xs font-semibold text-cyan-400 block uppercase tracking-wider">1 Único Login</span>
               <span class="text-sm font-bold text-slate-200">SaaS + Comunidade + IA</span>
-            </div>
-
-            <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 text-center">
-              <span class="text-xs font-semibold text-emerald-400 block uppercase tracking-wider">R$ 8 mil+</span>
-              <span class="text-sm font-bold text-slate-200">Valor de mercado do laudo</span>
-            </div>
-
-            <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 text-center">
-              <span class="text-xs font-semibold text-amber-400 block uppercase tracking-wider">Pix Parcelado</span>
-              <span class="text-sm font-bold text-slate-200">Cancele quando quiser</span>
             </div>
           </div>
         </div>
@@ -138,7 +129,7 @@ export interface MesCalendario {
                   <h3 class="text-xl font-bold text-slate-900 mt-1">Predial 4.0</h3>
                 </div>
                 <p class="text-slate-600 text-sm leading-relaxed">
-                  Automatize vistorias e laudos periciais de ponta a ponta. Inspeção Predial (NBR 16747) com classificação de criticidade em três níveis (P1, P2, P3), além de Vistoria Cautelar de Vizinhança (NBR 13752:2024, item 7.3.3.2) para blindagem jurídica pré-obra.
+                  Automatize vistorias e laudos técnicos de ponta a ponta. Inspeção Predial (NBR 16747) com classificação de criticidade em três níveis (P1, P2, P3), além de Vistoria Cautelar de Vizinhança (NBR 13752:2024, item 7.3.3.2) para blindagem jurídica pré-obra.
                 </p>
               </div>
 
@@ -168,7 +159,7 @@ export interface MesCalendario {
                   <h3 class="text-xl font-bold text-slate-900 mt-1">Comunidade Business 4.0</h3>
                 </div>
                 <p class="text-slate-600 text-sm leading-relaxed">
-                  Mural de vagas em todo o Brasil, fórum técnico moderado, acervo completo de planilhas e modelos de laudo editáveis, Netflix de Cursos com emissão de certificados oficiais para alavancar sua autoridade no mercado.
+                  Mural de vagas em todo o Brasil, fórum técnico moderado, acervo completo de planilhas e modelos de laudo editáveis, acervo de cursos em vídeo com emissão de certificados para alavancar sua autoridade no mercado.
                 </p>
               </div>
 
@@ -185,68 +176,28 @@ export interface MesCalendario {
               </div>
             </div>
 
-            <!-- Pilar 3: Viabiliza IA (Accordion expansível) -->
+            <!-- Pilar 3: Agentes de Produtividade & IA 4.0 -->
             <div class="bg-white rounded-3xl p-7 border border-amber-200/80 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-full space-y-6 bg-gradient-to-b from-white to-amber-50/20">
               <div class="space-y-4">
                 <div class="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center font-black text-xl">
-                  🏦
+                  ⚡
                 </div>
                 <div>
-                  <span class="text-xs uppercase tracking-wider font-bold text-amber-700 block">Assessoria de Crédito Imobiliário</span>
-                  <h3 class="text-xl font-bold text-slate-900 mt-1">Viabiliza IA</h3>
+                  <span class="text-xs uppercase tracking-wider font-bold text-amber-700 block">Ferramentas Especializadas</span>
+                  <h3 class="text-xl font-bold text-slate-900 mt-1">Agentes de Produtividade & IA 4.0</h3>
                 </div>
                 <p class="text-slate-600 text-sm leading-relaxed">
-                  A máquina de viabilizar crédito para o seu cliente: um fluxo estruturado em 7 etapas que leva o projeto do zero até uma pasta de crédito completa, pronta para o banco liberar a carta de crédito.
+                  Ferramentas determinísticas para a rotina de projeto e obra: Reajuste FGV, Levantamento de Quantitativos, Custos pela NBR 12.721, Plano de Canteiro pela NR-18 e a Bíblia da Edificação com 41 tipologias.
                 </p>
-
-                <!-- Botão para alternar Accordion das 7 etapas -->
-                <button
-                  type="button"
-                  (click)="toggleViabilizaEtapas()"
-                  class="w-full py-2.5 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
-                >
-                  <span>Ver as 7 etapas do fluxo</span>
-                  <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="viabilizaAberto()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                <!-- Conteúdo do Accordion: 7 Etapas Reais -->
-                @if (viabilizaAberto()) {
-                  <div class="space-y-2 pt-2 border-t border-amber-100 text-xs text-slate-700">
-                    <div class="p-2 bg-white rounded-lg border border-slate-100">
-                      <strong>1. Montar Projeto:</strong> definição dos ambientes da edificação (dispensável se for só aquisição de terreno).
-                    </div>
-                    <div class="p-2 bg-white rounded-lg border border-slate-100">
-                      <strong>2. Quanto Custa:</strong> dimensionamento de custo com base em CUB real e taxas de juros vigentes.
-                    </div>
-                    <div class="p-2 bg-white rounded-lg border border-slate-100">
-                      <strong>3. Documentação:</strong> organização dos documentos exigidos para a análise bancária.
-                    </div>
-                    <div class="p-2 bg-white rounded-lg border border-slate-100">
-                      <strong>4. Comparação Bancária:</strong> análise de linhas de crédito elegíveis, lado a lado.
-                    </div>
-                    <div class="p-2 bg-white rounded-lg border border-slate-100">
-                      <strong>5. Simulação Avançada:</strong> refinamento do cenário financeiro.
-                    </div>
-                    <div class="p-2 bg-white rounded-lg border border-slate-100">
-                      <strong>6. Construir vs. Alugar:</strong> comparação de custo real entre as duas opções (em operações com construção).
-                    </div>
-                    <div class="p-2 bg-white rounded-lg border border-slate-100">
-                      <strong>7. Agendamento & Pasta:</strong> fechamento e organização final da pasta de crédito.
-                    </div>
-                  </div>
-                }
               </div>
 
               <div class="pt-4 border-t border-slate-100">
                 <a
-                  [href]="linkWhatsappViabiliza"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm transition-all min-h-[44px]"
+                  href="#secao-agentes"
+                  (click)="irParaAgentes($event)"
+                  class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition-all min-h-[44px] cursor-pointer"
                 >
-                  <span>Consultar Viabiliza IA</span>
+                  <span>Conhecer os Agentes</span>
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
@@ -315,22 +266,22 @@ export interface MesCalendario {
         </section>
 
         <!-- ========================================================================= -->
-        <!-- SEÇÃO 3: HUB DE 10 AGENTES (MODAL COM TEXTO LITERAL DO BLOG)             -->
+        <!-- SEÇÃO 3: HUB DE 9 AGENTES (MODAL COM TEXTO LITERAL DO BLOG)              -->
         <!-- ========================================================================= -->
-        <section class="space-y-12">
+        <section id="secao-agentes" class="space-y-12">
           <div class="text-center max-w-3xl mx-auto space-y-3">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold uppercase tracking-wider">
               <span>Inteligência Artificial Aplicada</span>
             </div>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Hub de Agentes — 10 Ferramentas de IA Especializadas
+              Hub de Agentes — 9 Ferramentas Especializadas
             </h2>
             <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
               Ferramentas técnicas projetadas para automatizar tarefas que hoje ainda são feitas na mão ou em planilhas avulsas. Clique no card para ver o fluxo completo.
             </p>
           </div>
 
-          <!-- Grid de 10 cards clicáveis -->
+          <!-- Grid de 9 cards clicáveis -->
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             @for (agente of agentes; track agente.id) {
               <button
@@ -345,6 +296,11 @@ export interface MesCalendario {
                   <h3 class="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-cyan-600 transition-colors leading-snug">
                     {{ agente.nome }}
                   </h3>
+                  @if (agente.tagPrevisao) {
+                    <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 leading-tight">
+                      {{ agente.tagPrevisao }}
+                    </span>
+                  }
                 </div>
 
                 <div class="flex items-center justify-between text-[11px] font-semibold text-cyan-600 group-hover:text-cyan-700">
@@ -372,7 +328,14 @@ export interface MesCalendario {
                       {{ agenteSelecionado()?.icone }}
                     </div>
                     <div>
-                      <span class="text-[10px] uppercase font-bold tracking-wider text-cyan-600 block">Agente de IA</span>
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[10px] uppercase font-bold tracking-wider text-cyan-600 block">Agente de IA</span>
+                        @if (agenteSelecionado()?.tagPrevisao) {
+                          <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                            {{ agenteSelecionado()?.tagPrevisao }}
+                          </span>
+                        }
+                      </div>
                       <h3 class="text-lg sm:text-xl font-black text-slate-900">{{ agenteSelecionado()?.nome }}</h3>
                     </div>
                   </div>
@@ -418,45 +381,7 @@ export interface MesCalendario {
         </section>
 
         <!-- ========================================================================= -->
-        <!-- SEÇÃO 4: BLOCO DE CONFIANÇA                                               -->
-        <!-- ========================================================================= -->
-        <section class="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl p-8 sm:p-12 text-white border border-slate-800 shadow-md">
-          <div class="max-w-3xl mx-auto text-center space-y-3 mb-8 sm:mb-10">
-            <span class="text-xs uppercase tracking-wider font-bold text-amber-400 block">Flexibilidade Real</span>
-            <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-              Um só login. Um ecossistema feito para caber no seu bolso.
-            </h2>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div class="bg-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-xs text-center space-y-2">
-              <div class="text-2xl mb-1">🧩</div>
-              <h3 class="text-base font-bold text-white">Customizável</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Monte o seu acesso do jeito que fizer sentido para o seu momento profissional.
-              </p>
-            </div>
-
-            <div class="bg-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-xs text-center space-y-2">
-              <div class="text-2xl mb-1">💳</div>
-              <h3 class="text-base font-bold text-white">Pix parcelado sem cartão</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Parcelamento inteligente direto sem travar o limite do seu cartão de crédito.
-              </p>
-            </div>
-
-            <div class="bg-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-xs text-center space-y-2">
-              <div class="text-2xl mb-1">🔓</div>
-              <h3 class="text-base font-bold text-white">Cancele quando quiser</h3>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                Sem travas contratuais abusivas: pare de pagar as parcelas seguintes a qualquer momento.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- ========================================================================= -->
-        <!-- SEÇÃO 5: AGENDA DE CURSOS & CALENDÁRIO COMPLETO                           -->
+        <!-- SEÇÃO 4: AGENDA DE CURSOS & CALENDÁRIO COMPLETO                           -->
         <!-- ========================================================================= -->
         <section class="space-y-10">
           <div class="text-center max-w-3xl mx-auto space-y-3">
@@ -579,6 +504,11 @@ export interface MesCalendario {
                             <p class="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3">
                               {{ curso.descricao }}
                             </p>
+                          }
+                          @if (isCertificacaoParte1OuParte2(curso)) {
+                            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs leading-relaxed font-medium">
+                              Habilitação técnica nominal, vinculada ao seu CPF. Chegue pronto para produzir: uma empresa licenciada aloca você em um assento sem pagar formação nova.
+                            </div>
                           }
                           @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
                             <p class="text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2.5 border border-amber-200/60 font-medium">
@@ -845,16 +775,14 @@ export interface MesCalendario {
                 </div>
               </div>
 
-              <!-- BLOCO 6: Retorno sobre Investimento (substitui a antiga seção Incubadora Profissional) -->
+              <!-- BLOCO 6: Como a Cobrança Funciona -->
               <div class="rounded-3xl p-8 sm:p-10 text-white" style="background: linear-gradient(135deg, #1E1B4B, #312E81);">
-                <div class="text-[11px] font-black uppercase tracking-wider text-indigo-200 mb-3">Retorno sobre o investimento</div>
+                <div class="text-[11px] font-black uppercase tracking-wider text-indigo-200 mb-3">COMO A COBRANÇA FUNCIONA</div>
                 <p class="text-lg sm:text-xl font-bold leading-relaxed max-w-3xl">
-                  Um único laudo de <span class="text-amber-300">Inspeção Predial</span>, cobrado no preço médio de mercado (R$ 8.000), já vale <span class="text-amber-300">quase 3x</span> o valor da Licença Anual completa.
-                  <br class="hidden sm:block">
-                  Uma única <span class="text-amber-300">Vistoria Cautelar de Vizinhança</span>, no preço de mercado (R$ 20.000), vale <span class="text-amber-300">quase 7x</span> a Licença.
+                  Você define o preço do seu trabalho. A AmorimTech cobra uma taxa de emissão <span class="text-amber-300">por documento entregue</span>, com regra própria para cada módulo e <span class="text-amber-300">teto definido em todos eles</span>.
                 </p>
                 <p class="text-xs sm:text-sm text-indigo-200 mt-4 max-w-2xl">
-                  Você não está comprando um curso — está adquirindo a chave para um mercado onde um único trabalho já paga o investimento do ano inteiro.
+                  Sem franquia e sem mensalidade por laudo que você não emitiu. Na Inspeção Predial, por exemplo, a taxa acompanha o valor do contrato e para de crescer em <span class="text-amber-300">R$ 3.000</span> — por mais alto que seja o trabalho.
                 </p>
               </div>
 
@@ -1584,10 +1512,8 @@ export class AmorimAcademyComponent implements OnInit {
 
   // Links do WhatsApp
   readonly linkWhatsapp = 'https://wa.me/5581991298803?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20um%20consultor%20da%20Amorim%20Academy.';
-  readonly linkWhatsappViabiliza = 'https://wa.me/5581991298803?text=Ol%C3%A1!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Viabiliza%20IA%20e%20a%20esteira%20de%20cr%C3%A9dito%20imobili%C3%A1rio.';
 
   // Estados de Accordion e Modais
-  readonly viabilizaAberto = signal(false);
   readonly calendarioAberto = signal(false);
   readonly agenteSelecionado = signal<AgenteIA | null>(null);
   readonly accordionAberto = signal<string | null>('incubadora');
@@ -1623,7 +1549,7 @@ export class AmorimAcademyComponent implements OnInit {
   readonly empresas = signal<any[]>([]);
   readonly carregandoParceiros = signal<boolean>(true);
 
-  // 10 Agentes com descrição literal do post do blog
+  // 9 Agentes com descrição literal do post do blog
   readonly agentes: AgenteIA[] = [
     {
       id: 'reajuste',
@@ -1640,18 +1566,12 @@ export class AmorimAcademyComponent implements OnInit {
       descricaoLiteral: 'Catálogo com 369 prompts especializados, organizados por categoria, prontos para copiar e usar na sua ferramenta de IA preferida.'
     },
     {
-      id: 'skills-claude',
-      nome: 'Skills Claude',
-      subtitulo: 'Ecossistema Claude pronto',
-      icone: '🤖',
-      descricaoLiteral: 'Mais que um curso: você aprende o ecossistema Claude e já sai com skills prontas para baixar e usar direto no seu fluxo de trabalho, sem precisar montar nada do zero. E isso é só o começo — o agente está em evolução para ganhar seu próprio chat dentro da Comunidade: o aluno só vai precisar copiar o objetivo, encaminhar a documentação do caso e receber o material pronto, sem precisar sair da Comunidade para nenhuma outra IA.'
-    },
-    {
       id: 'licitacao',
       nome: 'Checklist de Licitação',
       subtitulo: 'Setor de licitações automatizado',
       icone: '📑',
-      descricaoLiteral: 'Muito mais que um checklist: é o seu setor de licitações automatizado. Você sobe o PDF do edital, e a IA analisa o documento e extrai automaticamente o checklist completo de exigências — não só de habilitação, mas também da proposta de preço e da proposta técnica, quando o edital exigir. A partir da documentação já cadastrada do seu perfil profissional, o agente avalia se você está em conformidade e habilitado nas três frentes. E se estiver tudo certo, o diferencial: o sistema gera a documentação pronta para a licitação usando os seus próprios dados — folha de rosto, capa e declarações, tudo em papel timbrado com sua logo e seu registro CREA/CAU real, prontos para assinatura. O resultado sai unificado em PDF: proposta de habilitação, de preço e técnica, cada uma pronta, no mesmo pacote.'
+      descricaoLiteral: 'Disponível hoje: o checklist completo de habilitação para a Lei 14.133/2021 — jurídica, fiscal, trabalhista, econômico-financeira e técnica —, com as declarações padrão já redigidas, a base legal de cada exigência e link direto para a emissão das certidões. Em desenvolvimento, previsto para janeiro de 2028: leitura automática do edital em PDF para gerar o checklist daquela licitação específica, controle de vigência dos documentos da empresa com alerta de renovação, e montagem da proposta de habilitação e preço em papel timbrado, pronta para assinatura no gov.br.',
+      tagPrevisao: 'Nível 1 disponível · Níveis 2 a 4 previstos para janeiro de 2028'
     },
     {
       id: 'quantitativos',
@@ -1669,7 +1589,7 @@ export class AmorimAcademyComponent implements OnInit {
     },
     {
       id: 'canteiro',
-      nome: 'Plano de Canteiro de Obras (IA)',
+      nome: 'Plano de Canteiro de Obras',
       subtitulo: 'Layout e memorial com IA',
       icone: '🚧',
       descricaoLiteral: 'Geração assistida de layout e memorial de canteiro, com apoio de inteligência artificial.'
@@ -1684,16 +1604,18 @@ export class AmorimAcademyComponent implements OnInit {
     {
       id: 'pre-dimensionamento',
       nome: 'Calculadora de Pré-dimensionamento',
-      subtitulo: '18 sistemas em 3 níveis',
+      subtitulo: '21 sistemas em 3 níveis',
       icone: '🧮',
-      descricaoLiteral: 'Cobre 18 sistemas construtivos diferentes, em três níveis de profundidade: Nível 1 é fórmula direta, para uma resposta rápida; Nível 2 organiza o cálculo por tabela de escolha, quando existe mais de uma variável em jogo; Nível 3 entra em cálculo multi-variável, para quando o caso exige mais precisão.'
+      descricaoLiteral: 'Cobre 21 sistemas construtivos diferentes, em três níveis de profundidade: Nível 1 é fórmula direta, para uma resposta rápida; Nível 2 organiza o cálculo por tabela de escolha, quando existe mais de uma variável em jogo; Nível 3 entra em cálculo multi-variável, para quando o caso exige mais precisão.',
+      tagPrevisao: 'Previsto para maio de 2027'
     },
     {
       id: 'evte',
-      nome: 'EVTE — Estudo de Viabilidade Técnica e Econômica',
+      nome: 'EVTE — Comparação de Tipologias',
       subtitulo: 'Comparador de tipologias',
       icone: '⚖️',
-      descricaoLiteral: 'O agente comparador de tipologias. Você informa as características do seu projeto, do terreno, do canteiro e suas restrições — orçamentárias, logísticas, de mão de obra — e ele compara essas condições com as tipologias construtivas disponíveis na base técnica para indicar, sistema por sistema, qual a mais viável técnica e financeiramente para o seu caso: fundação, estrutura, vedações, climatização. O resultado sai como ranking comparativo com pontos positivos e pontos de atenção de cada tipologia. Um detalhe importante por trava normativa: a ferramenta nunca aprova nem reprova uma tipologia — ela organiza a comparação para apoiar sua análise. A decisão final é sempre do profissional.'
+      descricaoLiteral: 'Previsto para maio de 2027. O agente comparador de tipologias: você informa as características do seu projeto, do terreno, do canteiro e suas restrições — orçamentárias, logísticas, de mão de obra — e ele compara essas condições com as tipologias construtivas da base técnica, organizando um ranking comparativo com pontos positivos e pontos de atenção de cada uma: fundação, estrutura, vedações, climatização. Um detalhe importante por trava normativa: a ferramenta nunca aprova nem reprova uma tipologia — ela organiza a comparação para apoiar a sua análise. A decisão final é sempre do profissional.',
+      tagPrevisao: 'Previsto para maio de 2027'
     }
   ];
 
@@ -1789,13 +1711,13 @@ export class AmorimAcademyComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.seoService.atualizar({
       title: 'Amorim Academy | Formação, Mercado e Mentoria em Engenharia Diagnóstica',
-      description: 'O ecossistema que transforma diagnóstico técnico em contratos de alto valor: Curso Predial 4.0, Comunidade Business 4.0, Viabiliza IA e Hub de Agentes.',
+      description: 'O ecossistema que une formação técnica prática, engenharia diagnóstica normativa e ferramentas de Inteligência Artificial para alavancar sua carreira e seu escritório.',
       canonicalPath: '/amorim-academy',
       schema: {
         '@context': 'https://schema.org',
         '@type': 'Service',
         name: 'Amorim Academy — Formação e Mentoria em Engenharia Diagnóstica',
-        description: 'Laudos automatizados com IA, copiloto pericial (NBR 16747), esteira de crédito bancário e networking direto.',
+        description: 'O ecossistema que une formação técnica prática, engenharia diagnóstica normativa e ferramentas de Inteligência Artificial para alavancar sua carreira e seu escritório.',
         url: 'https://emanoelamorim.com/amorim-academy',
         serviceType: 'Formação e Mentoria Profissional em Engenharia Diagnóstica',
         provider: {
@@ -1840,10 +1762,6 @@ export class AmorimAcademyComponent implements OnInit {
     } finally {
       this.carregandoParceiros.set(false);
     }
-  }
-
-  toggleViabilizaEtapas(): void {
-    this.viabilizaAberto.update(v => !v);
   }
 
   toggleCalendarioCompleto(): void {
@@ -1931,6 +1849,11 @@ export class AmorimAcademyComponent implements OnInit {
     document.getElementById('secao-imersoes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  irParaAgentes(event?: Event): void {
+    event?.preventDefault();
+    document.getElementById('secao-agentes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   irParaPacotesLicenca(): void {
     (document.getElementById('secao-pacotes') || document.getElementById('secao-pacotes-licenca'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -1955,5 +1878,10 @@ export class AmorimAcademyComponent implements OnInit {
   gerarLinkWhatsappCurso(tituloCurso: string): string {
     const texto = encodeURIComponent(`Olá! Vim pela Amorim Academy e gostaria de garantir minha vaga no curso "${tituloCurso}".`);
     return `https://wa.me/5581991298803?text=${texto}`;
+  }
+
+  isCertificacaoParte1OuParte2(curso: any): boolean {
+    const t = (curso?.titulo || '').toLowerCase();
+    return t.includes('parte 1') || t.includes('parte 2');
   }
 }
