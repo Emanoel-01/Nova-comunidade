@@ -32,7 +32,7 @@ import { SeoService } from '../services/seo.service';
                 O copiloto técnico para engenheiros e arquitetos que fazem vistorias e emitem laudos. Da vistoria em campo à obra concluída, com inteligência artificial em cada etapa — laudos mais rápidos e padronizados, sem perder rigor técnico.
               </p>
 
-              <div class="flex flex-col sm:flex-row gap-3 pt-1 sm:pt-2">
+              <div class="flex flex-col sm:flex-row flex-wrap gap-3 pt-1 sm:pt-2">
                 <a
                   href="https://app-predial.emanoelamorim.com/"
                   target="_blank"
@@ -41,6 +41,12 @@ import { SeoService } from '../services/seo.service';
                 >
                   <span>Acessar o Predial 4.0</span>
                   <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <a
+                  routerLink="/como-funciona"
+                  class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold rounded-xl transition-colors text-xs sm:text-sm min-h-[44px]"
+                >
+                  Como funciona a contratação
                 </a>
                 <a
                   [href]="linkWhatsappTech"

@@ -4,6 +4,7 @@ import { PlaceholderPageComponent } from './components/placeholder-page.componen
 import { AmorimArquiteturaComponent } from './components/amorim-arquitetura.component';
 import { AmorimTechComponent } from './components/amorim-tech.component';
 import { AmorimAcademyComponent } from './components/amorim-academy.component';
+import { ComoFuncionaComponent } from './components/como-funciona.component';
 import { ContatoComponent } from './components/contato.component';
 import { LinksBioComponent } from './components/links-bio.component';
 import { ComunidadeComponent } from './components/comunidade.component';
@@ -30,6 +31,10 @@ export const routes: Routes = [
   {
     path: 'amorim-academy',
     component: AmorimAcademyComponent,
+  },
+  {
+    path: 'como-funciona',
+    component: ComoFuncionaComponent,
   },
   {
     path: 'verificar-certificado',

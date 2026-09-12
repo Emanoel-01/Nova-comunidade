@@ -1,4 +1,4 @@
-export type OrigemWhatsapp = 'home' | 'arquitetura' | 'tech' | 'tech-sindico' | 'academy' | 'contato' | 'footer' | 'links-bio' | 'viabiliza-ia';
+export type OrigemWhatsapp = 'home' | 'arquitetura' | 'tech' | 'tech-sindico' | 'academy' | 'contato' | 'footer' | 'links-bio' | 'viabiliza-ia' | 'como-funciona';
 
 const MENSAGENS: Record<OrigemWhatsapp, string> = {
   'home': 'Olá! Vim pelo site da AmorimTech e quero saber mais sobre os serviços de engenharia diagnóstica.',
@@ -6,6 +6,7 @@ const MENSAGENS: Record<OrigemWhatsapp, string> = {
   'tech': 'Olá! Vim pela página da Amorim Tech e quero saber mais sobre o Predial 4.0.',
   'tech-sindico': 'Olá! Sou síndico(a) e gostaria de uma cotação para inspeção predial do meu edifício.',
   'academy': 'Olá! Vim pela página da Amorim Academy e quero saber mais sobre o Curso Predial 4.0.',
+  'como-funciona': 'Olá! Vim pela página Como Funciona o Acesso e gostaria de falar com um consultor da equipe.',
   'contato': 'Olá! Vim pelo site e quero falar com a equipe.',
   'footer': 'Olá! Vim pelo site da AmorimTech.',
   'links-bio': 'Olá! Vim pelo seu link na bio e quero saber mais.',

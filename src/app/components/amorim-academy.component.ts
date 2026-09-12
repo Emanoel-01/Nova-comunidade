@@ -431,6 +431,13 @@ export interface MesCalendario {
                         }
                       </div>
                       <div class="p-4">
+                        @if (obterSeloLicenca(curso, 'escuro'); as selo) {
+                          <div class="mb-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold" [class]="selo.classe">
+                              {{ selo.texto }}
+                            </span>
+                          </div>
+                        }
                         <h5 class="text-white text-xs font-bold leading-snug">{{ curso.titulo }}</h5>
                         <div class="text-amber-300 text-[11px] font-bold mt-1.5">
                           📍 {{ curso.local || 'Recife, PE' }} · {{ formatarPeriodo(curso.data_inicio, curso.data_fim) }}
@@ -497,6 +504,13 @@ export interface MesCalendario {
                         </div>
 
                         <div class="p-6 space-y-3">
+                          @if (obterSeloLicenca(curso); as selo) {
+                            <div>
+                              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide" [class]="selo.classe">
+                                {{ selo.texto }}
+                              </span>
+                            </div>
+                          }
                           <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
                             {{ curso.titulo }}
                           </h4>
@@ -596,6 +610,13 @@ export interface MesCalendario {
                         </div>
 
                         <div class="p-6 space-y-3">
+                          @if (obterSeloLicenca(curso); as selo) {
+                            <div>
+                              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide" [class]="selo.classe">
+                                {{ selo.texto }}
+                              </span>
+                            </div>
+                          }
                           <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
                             {{ curso.titulo }}
                           </h4>
@@ -660,7 +681,14 @@ export interface MesCalendario {
                       />
                       <div class="min-w-0 flex-1">
                         <h5 class="text-xs font-bold text-slate-900 truncate">{{ curso.titulo }}</h5>
-                        <span class="text-[10px] text-slate-400">{{ curso.carga_horaria_certificado }}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="text-[10px] text-slate-400">{{ curso.carga_horaria_certificado }}</span>
+                          @if (obterSeloLicenca(curso); as selo) {
+                            <span class="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full" [class]="selo.classe">
+                              {{ selo.texto }}
+                            </span>
+                          }
+                        </div>
                         @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
                           <span class="block text-[9px] text-amber-700 font-medium">Quórum mín. 5 part.</span>
                         }
@@ -691,7 +719,7 @@ export interface MesCalendario {
                       class="bg-gradient-to-b from-amber-50/60 to-white rounded-3xl border-2 border-amber-400 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group cursor-pointer relative"
                     >
                       <span class="absolute top-3 left-3 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-900">
-                        {{ curso.titulo.includes('Licença') ? 'Licença' : 'Pacote' }}
+                        {{ curso.categoria_vitrine === 'pacote_licenca' ? 'Licença' : 'Pacote' }}
                       </span>
 
                       <div>
@@ -732,6 +760,13 @@ export interface MesCalendario {
                         </div>
 
                         <div class="p-6 space-y-3">
+                          @if (obterSeloLicenca(curso); as selo) {
+                            <div>
+                              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide" [class]="selo.classe">
+                                {{ selo.texto }}
+                              </span>
+                            </div>
+                          }
                           <h4 class="text-lg font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
                             {{ curso.titulo }}
                           </h4>
@@ -739,6 +774,18 @@ export interface MesCalendario {
                             <p class="text-slate-600 text-xs sm:text-sm leading-relaxed line-clamp-3">
                               {{ curso.descricao }}
                             </p>
+                          }
+                          @if (curso.categoria_vitrine === 'pacote_licenca') {
+                            <div class="pt-1">
+                              <a
+                                routerLink="/como-funciona"
+                                (click)="$event.stopPropagation()"
+                                class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-900 underline decoration-amber-400 transition-colors"
+                              >
+                                <span>Ver detalhes de como funciona a contratação</span>
+                                <span>→</span>
+                              </a>
+                            </div>
                           }
                           @if (curso.tipo_turma === 'convidado' || curso.tipo_turma === 'imersao') {
                             <p class="text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2.5 border border-amber-200/60 font-medium">
@@ -776,14 +823,23 @@ export interface MesCalendario {
               </div>
 
               <!-- BLOCO 6: Como a Cobrança Funciona -->
-              <div class="rounded-3xl p-8 sm:p-10 text-white" style="background: linear-gradient(135deg, #1E1B4B, #312E81);">
-                <div class="text-[11px] font-black uppercase tracking-wider text-indigo-200 mb-3">COMO A COBRANÇA FUNCIONA</div>
-                <p class="text-lg sm:text-xl font-bold leading-relaxed max-w-3xl">
-                  Você define o preço do seu trabalho. A AmorimTech cobra uma taxa de emissão <span class="text-amber-300">por documento entregue</span>, com regra própria para cada módulo e <span class="text-amber-300">teto definido em todos eles</span>.
-                </p>
-                <p class="text-xs sm:text-sm text-indigo-200 mt-4 max-w-2xl">
-                  Sem franquia e sem mensalidade por laudo que você não emitiu. Na Inspeção Predial, por exemplo, a taxa acompanha o valor do contrato e para de crescer em <span class="text-amber-300">R$ 3.000</span> — por mais alto que seja o trabalho.
-                </p>
+              <div class="rounded-3xl p-8 sm:p-10 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6" style="background: linear-gradient(135deg, #1E1B4B, #312E81);">
+                <div class="space-y-3 max-w-3xl">
+                  <div class="text-[11px] font-black uppercase tracking-wider text-indigo-200">COMO A COBRANÇA FUNCIONA</div>
+                  <p class="text-lg sm:text-xl font-bold leading-relaxed">
+                    Você define o preço do seu trabalho. A AmorimTech cobra uma taxa de emissão <span class="text-amber-300">por documento entregue</span>, com regra própria para cada módulo e <span class="text-amber-300">teto definido em todos eles</span>.
+                  </p>
+                  <p class="text-xs sm:text-sm text-indigo-200">
+                    Sem franquia e sem mensalidade por laudo que você não emitiu. Na Inspeção Predial, por exemplo, a taxa acompanha o valor do contrato e para de crescer em <span class="text-amber-300">R$ 3.000</span> — por mais alto que seja o trabalho.
+                  </p>
+                </div>
+                <a
+                  routerLink="/como-funciona"
+                  class="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                >
+                  <span>Ver precificação completa</span>
+                  <span>→</span>
+                </a>
               </div>
 
               <!-- BLOCO 7: Trilhas In-Company -->
@@ -1390,6 +1446,11 @@ export interface MesCalendario {
 
                 <!-- Linha de metadados rápidos -->
                 <div class="flex flex-wrap items-center gap-3 text-xs">
+                  @if (obterSeloLicenca(curso); as selo) {
+                    <span class="px-3 py-1.5 rounded-full font-bold" [class]="selo.classe">
+                      {{ selo.texto }}
+                    </span>
+                  }
                   @if (curso.status_lancamento === 'previsto') {
                     <span class="px-3 py-1.5 rounded-full bg-amber-100 text-amber-900 font-bold border border-amber-300">
                       ⏳ {{ obterBadgePrevisao(curso) }}
@@ -1883,5 +1944,40 @@ export class AmorimAcademyComponent implements OnInit {
   isCertificacaoParte1OuParte2(curso: any): boolean {
     const t = (curso?.titulo || '').toLowerCase();
     return t.includes('parte 1') || t.includes('parte 2');
+  }
+
+  obterSeloLicenca(curso: any, tema: 'claro' | 'escuro' = 'claro'): { texto: string; classe: string } | null {
+    if (!curso) return null;
+    const incluso = curso.incluso_na_licenca === true || curso.incluso_na_licenca === 'true' || curso.incluso_na_licenca === 't';
+    const desconto = parseInt(String(curso.desconto_licenciado || 0), 10) || 0;
+
+    if (incluso) {
+      return {
+        texto: 'Incluído na Licença Anual',
+        classe: tema === 'escuro'
+          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60'
+          : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
+      };
+    }
+
+    if (desconto > 0) {
+      return {
+        texto: `${desconto}% de desconto para licenciados`,
+        classe: tema === 'escuro'
+          ? 'bg-amber-950/80 text-amber-300 border border-amber-700/60'
+          : 'bg-amber-50 text-amber-900 border border-amber-200/80'
+      };
+    }
+
+    if (curso.categoria_vitrine === 'certificacao') {
+      return {
+        texto: 'Preço único, sem desconto',
+        classe: tema === 'escuro'
+          ? 'bg-slate-800 text-slate-300 border border-slate-700'
+          : 'bg-slate-100 text-slate-600 border border-slate-200'
+      };
+    }
+
+    return null;
   }
 }

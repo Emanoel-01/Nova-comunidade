@@ -114,6 +114,7 @@ export class AppComponent {
     { label: 'Amorim Arquitetura', path: '/amorim-arquitetura' },
     { label: 'Amorim Tech', path: '/amorim-tech' },
     { label: 'Amorim Academy', path: '/amorim-academy' },
+    { label: 'Como Funciona', path: '/como-funciona' },
     { label: 'Blog', path: '/blog' },
     { label: 'Comunidade', path: '/comunidade' },
     { label: 'Contato', path: '/contato' },
