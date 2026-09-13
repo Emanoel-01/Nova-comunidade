@@ -392,33 +392,7 @@ import { SeoService } from '../services/seo.service';
             </p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 max-w-7xl mx-auto">
-            <!-- Futuro 1: Plano de Manutenção Digital 4.0 -->
-            <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
-              <div class="space-y-3 sm:space-y-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-105 transition-transform">
-                  <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <span class="text-[11px] font-extrabold uppercase tracking-widest text-blue-600 block mb-1">
-                    GESTÃO PREDITIVA
-                  </span>
-                  <h3 class="text-sm sm:text-base font-bold text-slate-900">
-                    Plano de Manutenção 4.0
-                  </h3>
-                </div>
-                <p class="text-slate-600 text-xs sm:text-sm leading-relaxed text-justify">
-                  Cronogramas preventivos automatizados, alertas de periodicidade e controle orçamentário para síndicos e gestores prediais.
-                </p>
-              </div>
-              <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-bold">
-                <span>Em Desenvolvimento</span>
-                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-              </div>
-            </div>
-
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 max-w-7xl mx-auto">
             <!-- Futuro 2: Entrega e Recebimento de Áreas Comuns -->
             <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 group">
               <div class="space-y-3 sm:space-y-4">

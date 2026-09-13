@@ -6627,6 +6627,34 @@ export class SupabaseService {
       return [];
     }
   }
+
+  async criarLeadCaptura(dados: {
+    nome: string;
+    email: string;
+    whatsapp?: string;
+    interesse: 'predial-4-0' | 'academy-cursos' | 'consultoria-arquitetura' | 'comunidade' | 'outro';
+    mensagem?: string;
+  }): Promise<{ ok: boolean; error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('leads_captura')
+        .insert({
+          nome: (dados.nome || '').trim(),
+          email: (dados.email || '').trim().toLowerCase(),
+          whatsapp: dados.whatsapp?.trim() || null,
+          interesse: dados.interesse,
+          mensagem: dados.mensagem?.trim() || null,
+          origem: 'instagram-bio',
+        });
+
+      if (error) {
+        return { ok: false, error };
+      }
+      return { ok: true, error: null };
+    } catch (e: any) {
+      return { ok: false, error: e };
+    }
+  }
 }
 
 
