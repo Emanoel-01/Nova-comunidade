@@ -45,7 +45,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     route: '/amorim-arquitetura',
     title: 'Amorim Arquitetura | Engenharia Diagnóstica e Consultiva em Pernambuco',
     description: 'Excelência técnica para proteger o seu patrimônio. Engenharia condominial e diagnóstica em Pernambuco, unindo o rigor técnico das normas ABNT com a Construção 4.0.',
-    canonicalPath: '/amorim-arquitetura',
+    canonicalPath: '/amorim-arquitetura/',
     ogImage: '/og-fallback-institucional.jpg',
     schema: {
       '@context': 'https://schema.org',
@@ -69,7 +69,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     route: '/amorim-tech',
     title: 'Amorim Tech | Predial 4.0 — SaaS de Inspeção Predial com IA',
     description: 'Plataforma de gestão e inteligência predial avançada. Laudos técnicos, vistoria cautelar e diagnóstico por inteligência artificial para engenheiros, arquitetos e síndicos.',
-    canonicalPath: '/amorim-tech',
+    canonicalPath: '/amorim-tech/',
     ogImage: '/og-fallback-institucional.jpg',
     schema: {
       '@context': 'https://schema.org',
@@ -89,7 +89,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     route: '/amorim-academy',
     title: 'Amorim Academy | Formação, Mercado e Mentoria em Engenharia Diagnóstica',
     description: 'Curso Predial 4.0, Incubadora Profissional e Mentor Anjo — formação técnica com corresponsabilidade, inserção no mercado e mentoria individualizada.',
-    canonicalPath: '/amorim-academy',
+    canonicalPath: '/amorim-academy/',
     ogImage: '/og-fallback-institucional.jpg',
     schema: {
       '@context': 'https://schema.org',
@@ -109,28 +109,28 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     route: '/blog',
     title: 'Blog | AmorimTech',
     description: 'Artigos técnicos sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.',
-    canonicalPath: '/blog',
+    canonicalPath: '/blog/',
     ogImage: '/og-fallback-institucional.jpg',
   },
   {
     route: '/contato',
     title: 'Contato | AmorimTech',
     description: 'Fale com a AmorimTech — consultoria, laudos técnicos e formação em engenharia diagnóstica.',
-    canonicalPath: '/contato',
+    canonicalPath: '/contato/',
     ogImage: '/og-fallback-institucional.jpg',
   },
   {
     route: '/comunidade',
     title: 'Comunidade AmorimTech | Login',
     description: 'Acesse a Comunidade AmorimTech — conteúdos, agentes de IA, cursos e networking para profissionais de engenharia diagnóstica.',
-    canonicalPath: '/comunidade',
+    canonicalPath: '/comunidade/',
     ogImage: '/og-fallback-institucional.jpg',
   },
   {
     route: '/links',
     title: 'Emanoel Amorim · Links e Contatos',
     description: 'Acesse os canais oficiais, soluções em engenharia diagnóstica, plataformas e formações do ecossistema Emanoel Amorim.',
-    canonicalPath: '/links',
+    canonicalPath: '/links/',
   },
 ];
 
@@ -240,7 +240,7 @@ function staticPrerenderPlugin(): Plugin {
               .map((p) => {
                 const routeSlug = p.slug || p.id;
                 const lastmod = (p.atualizado_em || p.criado_em || new Date().toISOString()).split('T')[0];
-                return `  <url>\n    <loc>${baseUrl}/blog/${encodeURIComponent(routeSlug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`;
+                return `  <url>\n    <loc>${baseUrl}/blog/${encodeURIComponent(routeSlug)}/</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`;
               })
               .join('\n');
 
@@ -251,7 +251,7 @@ function staticPrerenderPlugin(): Plugin {
             // 2. Pré-renderizar página estática em HTML para cada post publicado
             for (const post of posts) {
               const routeSlug = post.slug || post.id;
-              const fullCanonicalUrl = `${baseUrl}/blog/${encodeURIComponent(routeSlug)}`;
+              const fullCanonicalUrl = `${baseUrl}/blog/${encodeURIComponent(routeSlug)}/`;
               const postTitle = `${post.titulo || 'Artigo'} | Blog AmorimTech`;
               const postDesc = post.resumo || 'Artigo técnico sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.';
 
