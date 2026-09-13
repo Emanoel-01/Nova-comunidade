@@ -6655,6 +6655,53 @@ export class SupabaseService {
       return { ok: false, error: e };
     }
   }
+
+  async listarLeadsCaptura(): Promise<LeadCaptura[]> {
+    try {
+      const { data, error } = await this.client
+        .from('leads_captura')
+        .select('*')
+        .order('criado_em', { ascending: false });
+
+      if (error) {
+        return [];
+      }
+      return (data as LeadCaptura[]) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  async atualizarStatusLeadCaptura(
+    leadId: string,
+    novoStatus: 'novo' | 'em-contato' | 'qualificado' | 'convertido' | 'descartado'
+  ): Promise<{ error: Error | null }> {
+    try {
+      const { error } = await this.client
+        .from('leads_captura')
+        .update({ status: novoStatus })
+        .eq('id', leadId);
+
+      if (error) {
+        return { error };
+      }
+      return { error: null };
+    } catch (e: any) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+  }
+}
+
+export interface LeadCaptura {
+  id: string;
+  nome: string;
+  email: string;
+  whatsapp?: string | null;
+  interesse: 'predial-4-0' | 'academy-cursos' | 'consultoria-arquitetura' | 'comunidade' | 'outro';
+  origem: string;
+  mensagem?: string | null;
+  status: 'novo' | 'em-contato' | 'qualificado' | 'convertido' | 'descartado';
+  criado_em: string;
 }
 
 

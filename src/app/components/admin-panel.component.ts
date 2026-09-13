@@ -14,6 +14,7 @@ import { AdminBlogAnalyticsComponent } from './admin/admin-blog-analytics.compon
 import { AdminNotificacoesComponent } from './admin/admin-notificacoes.component';
 import { AdminPortfolioComponent } from './admin/admin-portfolio.component';
 import { AdminAloSindicoComponent } from './admin/admin-alo-sindico.component';
+import { AdminLeadsCapturaComponent } from './admin/admin-leads-captura.component';
 import { AdminPremiosComponent } from './admin/admin-premios.component';
 import { AdminViabilizaIaComponent } from './admin/admin-viabiliza-ia.component';
 import { AdminParceirosComponent } from './admin/admin-parceiros.component';
@@ -45,6 +46,7 @@ interface NavSectionItem {
     AdminNotificacoesComponent,
     AdminPortfolioComponent,
     AdminAloSindicoComponent,
+    AdminLeadsCapturaComponent,
     AdminPremiosComponent,
     AdminViabilizaIaComponent,
     AdminParceirosComponent
@@ -331,6 +333,23 @@ interface NavSectionItem {
                 }
               </button>
 
+              <!-- Leads do Minisite (Instagram / Bio) -->
+              <button
+                type="button"
+                id="leads-captura"
+                (click)="selecionarAba('leads-captura')"
+                [class]="abaAtiva() === 'leads-captura'
+                  ? 'w-full flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold shadow-sm cursor-pointer'
+                  : 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-amber-300 hover:bg-slate-800 hover:text-amber-200 font-medium transition-colors cursor-pointer'"
+              >
+                <div class="flex items-center gap-3">
+                  <svg class="w-4 h-4 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  <span>Leads Minisite</span>
+                </div>
+              </button>
+
               <!-- Viabiliza IA (Linhas de Crédito & Solicitações) -->
               <button
                 type="button"
@@ -556,6 +575,11 @@ interface NavSectionItem {
               <app-admin-alo-sindico></app-admin-alo-sindico>
             }
 
+            <!-- CASO: Leads do Minisite — Instagram -->
+            @case ('leads-captura') {
+              <app-admin-leads-captura></app-admin-leads-captura>
+            }
+
             <!-- CASO: Prêmios do Hall da Fama -->
             @case ('premios-hall-fama') {
               <app-admin-premios></app-admin-premios>
@@ -633,6 +657,7 @@ export class AdminPanelComponent implements OnInit {
     'convites-acessos': { titulo: 'Convites e Acessos' },
     'gestao-usuarios': { titulo: 'Gestão de Usuários & Licenças' },
     'alo-sindico': { titulo: 'Alô Síndico — Atendimento & Leads com IA' },
+    'leads-captura': { titulo: 'Leads do Minisite — Instagram' },
     'premios-hall-fama': { titulo: 'Gestão de Prêmios do Hall da Fama' },
     'viabiliza-ia': { titulo: 'Viabiliza IA — Linhas de Crédito & Solicitações' },
   };

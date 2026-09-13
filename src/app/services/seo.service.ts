@@ -17,11 +17,17 @@ export class SeoService {
   private readonly dynamicSchemaId = 'dynamic-jsonld';
 
   atualizar(dados: SeoData): void {
+    let canonicalPath = dados.canonicalPath;
+    if (canonicalPath !== '/' && canonicalPath !== '/cv' && !canonicalPath.endsWith('/')) {
+      canonicalPath = `${canonicalPath}/`;
+    }
+    const fullCanonicalUrl = `${this.baseUrl}${canonicalPath}`;
+
     this.titleService.setTitle(dados.title);
     this.metaService.updateTag({ name: 'description', content: dados.description });
     this.metaService.updateTag({ property: 'og:title', content: dados.title });
     this.metaService.updateTag({ property: 'og:description', content: dados.description });
-    this.metaService.updateTag({ property: 'og:url', content: `${this.baseUrl}${dados.canonicalPath}` });
+    this.metaService.updateTag({ property: 'og:url', content: fullCanonicalUrl });
     this.metaService.updateTag({ property: 'og:type', content: 'website' });
     if (dados.ogImage) {
       this.metaService.updateTag({ property: 'og:image', content: dados.ogImage });
@@ -37,7 +43,7 @@ export class SeoService {
         link.setAttribute('rel', 'canonical');
         document.head.appendChild(link);
       }
-      link.setAttribute('href', `${this.baseUrl}${dados.canonicalPath}`);
+      link.setAttribute('href', fullCanonicalUrl);
     }
 
     this.injetarSchema(dados.schema || null);
