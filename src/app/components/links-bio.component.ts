@@ -162,7 +162,7 @@ import { SupabaseService } from '../../services/supabase.service';
               <ul class="space-y-1.5 text-xs text-slate-600">
                 <li class="flex items-start gap-2">
                   <span class="w-1.5 h-1.5 rounded-full bg-[#B5642A] mt-1.5 shrink-0"></span>
-                  <span>Dois módulos no ar e outros cinco em desenvolvimento</span>
+                  <span>Dois módulos no ar e outros em desenvolvimento</span>
                 </li>
                 <li class="flex items-start gap-2">
                   <span class="w-1.5 h-1.5 rounded-full bg-[#B5642A] mt-1.5 shrink-0"></span>
@@ -449,7 +449,7 @@ import { SupabaseService } from '../../services/supabase.service';
                         }
                         <div class="flex flex-wrap gap-x-3 gap-y-1 pt-0.5 text-[11px] text-slate-500">
                           @if (curso.formato) { <span>{{ curso.formato }}</span> }
-                          @if (curso.carga_horaria_certificado) { <span>{{ curso.carga_horaria_certificado }}h</span> }
+                          @if (curso.carga_horaria_certificado) { <span>{{ curso.carga_horaria_certificado }}</span> }
                           @if (curso.mes_previsto) { <span>{{ curso.mes_previsto }}</span> }
                           @if (curso.status_lancamento) { <span class="text-[#B5642A] font-semibold">{{ curso.status_lancamento }}</span> }
                         </div>

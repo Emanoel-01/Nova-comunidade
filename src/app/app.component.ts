@@ -137,7 +137,8 @@ export class AppComponent {
   private updateChromeVisibility(url: string): void {
     const isAppShellRoute =
       url === '/admin' || url.startsWith('/admin?') || url.startsWith('/admin#') || url.startsWith('/admin/') ||
-      url === '/comunidade/preview' || url.startsWith('/comunidade/preview?') || url.startsWith('/comunidade/preview#') || url.startsWith('/comunidade/preview/');
+      url === '/comunidade/preview' || url.startsWith('/comunidade/preview?') || url.startsWith('/comunidade/preview#') || url.startsWith('/comunidade/preview/') ||
+      url === '/links' || url.startsWith('/links?') || url.startsWith('/links#') || url.startsWith('/links/');
     this.showChromeDoSite.set(!isAppShellRoute);
   }
 

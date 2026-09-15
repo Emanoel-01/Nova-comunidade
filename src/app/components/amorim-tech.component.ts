@@ -81,8 +81,8 @@ import { SeoService } from '../services/seo.service';
 
           <div class="relative z-10 border-t border-white/10 grid grid-cols-3 divide-x divide-white/10 bg-black/20">
             <div class="px-2 sm:px-4 py-4 sm:py-5 lg:py-6 text-center flex flex-col justify-center">
-              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-white tracking-tight leading-tight">3 módulos</p>
-              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-slate-400 mt-1 leading-tight sm:leading-normal">um só ecossistema</p>
+              <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-white tracking-tight leading-tight">2 módulos</p>
+              <p class="text-[10px] min-[360px]:text-[11px] sm:text-xs text-slate-400 mt-1 leading-tight sm:leading-normal">no ar hoje</p>
             </div>
             <div class="px-2 sm:px-4 py-4 sm:py-5 lg:py-6 text-center flex flex-col justify-center">
               <p class="text-sm min-[360px]:text-base min-[400px]:text-lg sm:text-2xl font-extrabold text-white tracking-tight leading-tight">100% IA</p>
@@ -492,7 +492,7 @@ export class AmorimTechComponent implements OnInit {
           name: 'Predial 4.0',
           alternateName: 'Predial 4.0 — SaaS de Inspeção Predial com IA',
           description: 'Plataforma de gestão e inteligência predial avançada. Laudos técnicos, vistoria cautelar e diagnóstico por inteligência artificial para engenheiros, arquitetos e síndicos.',
-          url: 'https://emanoelamorim.com/amorim-tech',
+          url: 'https://emanoelamorim.com/amorim-tech/',
           applicationCategory: 'BusinessApplication',
           applicationSubCategory: 'Software de Inspeção e Manutenção Predial',
           operatingSystem: 'Web, Android, iOS',
@@ -556,7 +556,7 @@ export class AmorimTechComponent implements OnInit {
               name: 'Que tipos de laudo a plataforma emite?',
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: 'A plataforma conta atualmente com dois módulos em operação, o de check-up predial e o de vistoria cautelar de vizinhança, e outros cinco em desenvolvimento.',
+                text: 'Dois módulos estão em operação: o laudo de inspeção predial, conforme a NBR 16747, e o laudo de vistoria cautelar de vizinhança, conforme a NBR 13752 e a norma do IBAPE/SP. O módulo de Engenharia Condominial está previsto para fevereiro de 2027, e outros módulos estão em desenvolvimento.',
               },
             },
           ],
