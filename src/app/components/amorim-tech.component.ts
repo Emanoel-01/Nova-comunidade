@@ -485,19 +485,83 @@ export class AmorimTechComponent implements OnInit {
       title: 'Amorim Tech | Predial 4.0 — SaaS de Inspeção Predial com IA',
       description: 'Plataforma de gestão e inteligência predial avançada. Laudos técnicos, vistoria cautelar e diagnóstico por inteligência artificial para engenheiros, arquitetos e síndicos.',
       canonicalPath: '/amorim-tech',
-      schema: {
-        '@context': 'https://schema.org',
-        '@type': 'Service',
-        name: 'Predial 4.0 — SaaS de Inspeção Predial com IA',
-        description: 'Plataforma de gestão e inteligência predial avançada. Laudos técnicos, vistoria cautelar e diagnóstico por inteligência artificial para engenheiros, arquitetos e síndicos.',
-        url: 'https://emanoelamorim.com/amorim-tech',
-        serviceType: 'Software de Gestão e Vistoria Predial com IA',
-        provider: {
-          '@type': 'Organization',
-          '@id': 'https://emanoelamorim.com/#organization',
-          name: 'AmorimTech',
+      schema: [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: 'Predial 4.0',
+          alternateName: 'Predial 4.0 — SaaS de Inspeção Predial com IA',
+          description: 'Plataforma de gestão e inteligência predial avançada. Laudos técnicos, vistoria cautelar e diagnóstico por inteligência artificial para engenheiros, arquitetos e síndicos.',
+          url: 'https://emanoelamorim.com/amorim-tech',
+          applicationCategory: 'BusinessApplication',
+          applicationSubCategory: 'Software de Inspeção e Manutenção Predial',
+          operatingSystem: 'Web, Android, iOS',
+          inLanguage: 'pt-BR',
+          featureList: [
+            'Vistoria em campo com funcionamento offline',
+            'Diagnóstico assistido por inteligência artificial',
+            'Geração de laudo técnico pronto para assinatura',
+            'Vistoria cautelar de vizinhança',
+            'Sincronização em nuvem entre dispositivos',
+          ],
+          author: {
+            '@type': 'Organization',
+            '@id': 'https://emanoelamorim.com/#organization',
+            name: 'AmorimTech',
+          },
+          publisher: {
+            '@type': 'Organization',
+            '@id': 'https://emanoelamorim.com/#organization',
+            name: 'AmorimTech',
+          },
         },
-      },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: 'O que é o Predial 4.0?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'É uma plataforma de engenharia diagnóstica que acompanha todo o percurso técnico, da vistoria em campo até o laudo pronto para assinatura. Reúne coleta de dados estruturada, diagnóstico assistido por inteligência artificial e geração automática do documento técnico.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'O Predial 4.0 funciona sem internet?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Sim. A vistoria em campo funciona integralmente offline, o que permite trabalhar em subsolos, casas de máquinas e áreas sem cobertura. Os dados ficam no dispositivo e são sincronizados com a nuvem assim que a conexão é restabelecida.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Como a inteligência artificial é usada nos laudos?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'A inteligência artificial analisa as constatações registradas em campo e propõe o enquadramento técnico e a redação do diagnóstico. A proposta passa obrigatoriamente por revisão do profissional responsável, que mantém o controle sobre o conteúdo do laudo.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Para quem o Predial 4.0 foi feito?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Para engenheiros, arquitetos, empresas de manutenção predial, administradoras e síndicos que produzem ou contratam laudos técnicos de inspeção predial, vistoria cautelar de vizinhança e acompanhamento de manutenção.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Que tipos de laudo a plataforma emite?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'A plataforma conta atualmente com dois módulos em operação, o de check-up predial e o de vistoria cautelar de vizinhança, e outros cinco em desenvolvimento.',
+              },
+            },
+          ],
+        },
+      ],
     });
   }
 }
