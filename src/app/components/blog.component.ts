@@ -946,22 +946,182 @@ export class BlogComponent implements OnInit {
       description: post.resumo || 'Artigo técnico sobre engenharia diagnóstica, inspeção predial, gestão condominial e tecnologia aplicada à construção civil.',
       ogImage: post.imagem_capa_url || undefined,
       canonicalPath: `/blog/${encodeURIComponent(routeSlug)}`,
-      schema: {
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: post.titulo,
-        description: post.resumo || undefined,
-        image: post.imagem_capa_url || undefined,
-        datePublished: post.criado_em,
-        dateModified: post.atualizado_em || post.criado_em,
-        url: `https://emanoelamorim.com/blog/${encodeURIComponent(routeSlug)}`,
-        publisher: {
-          '@type': 'Organization',
-          '@id': 'https://emanoelamorim.com/#organization',
-          name: 'AmorimTech',
-        },
-      },
+      schema: this.montarSchemasPost(post),
     });
+  }
+
+  private montarSchemasPost(post: BlogPost): object | object[] {
+    const routeSlug = post.slug || post.id;
+    const postSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.titulo,
+      description: post.resumo || undefined,
+      image: post.imagem_capa_url || undefined,
+      datePublished: post.criado_em,
+      dateModified: post.atualizado_em || post.criado_em,
+      url: `https://emanoelamorim.com/blog/${encodeURIComponent(routeSlug)}`,
+      author: {
+        '@type': 'Person',
+        '@id': 'https://emanoelamorim.com/#emanoel-amorim',
+        name: 'Emanoel Silva de Amorim',
+        jobTitle: 'Arquiteto e Urbanista, Mestre em Engenharia Civil',
+        url: 'https://emanoelamorim.com/',
+        sameAs: [
+          'https://www.instagram.com/oemanoelamorim/',
+          'https://www.researchgate.net/profile/Emanoel-Amorim',
+          'http://lattes.cnpq.br/8865037855941412',
+        ],
+      },
+      publisher: {
+        '@type': 'Organization',
+        '@id': 'https://emanoelamorim.com/#organization',
+        name: 'AmorimTech',
+      },
+    };
+
+    const faqSchema = this.extrairFaqSchema(post.conteudo);
+    return faqSchema ? [postSchema, faqSchema] : postSchema;
+  }
+
+  private extrairFaqSchema(conteudo?: string | null): any | null {
+    if (!conteudo) return null;
+
+    const h2Regex = /<h2\b[^>]*>([\s\S]*?)<\/h2>/gi;
+    let match: RegExpExecArray | null;
+    let faqStartIndex = -1;
+
+    while ((match = h2Regex.exec(conteudo)) !== null) {
+      const textoH2 = this.stripHtmlAndDecode(match[1]).trim();
+      if (textoH2.toLowerCase() === 'perguntas frequentes') {
+        faqStartIndex = match.index + match[0].length;
+        break;
+      }
+    }
+
+    if (faqStartIndex === -1) {
+      return null;
+    }
+
+    const trechoAposH2 = conteudo.slice(faqStartIndex);
+    const proximoH2Index = trechoAposH2.search(/<h2\b/i);
+    const secaoFaq = proximoH2Index !== -1 ? trechoAposH2.slice(0, proximoH2Index) : trechoAposH2;
+
+    const h3Regex = /<h3\b[^>]*>([\s\S]*?)<\/h3>/gi;
+    const questions: Array<{
+      '@type': 'Question';
+      name: string;
+      acceptedAnswer: {
+        '@type': 'Answer';
+        text: string;
+      };
+    }> = [];
+
+    let h3Match: RegExpExecArray | null;
+    const h3Positions: Array<{ index: number; end: number; perguntaHtml: string }> = [];
+
+    while ((h3Match = h3Regex.exec(secaoFaq)) !== null) {
+      h3Positions.push({
+        index: h3Match.index,
+        end: h3Match.index + h3Match[0].length,
+        perguntaHtml: h3Match[1],
+      });
+    }
+
+    for (let i = 0; i < h3Positions.length; i++) {
+      const item = h3Positions[i];
+      const pergunta = this.stripHtmlAndDecode(item.perguntaHtml).trim();
+      const nextH3Index = i + 1 < h3Positions.length ? h3Positions[i + 1].index : secaoFaq.length;
+      const blocoResposta = secaoFaq.slice(item.end, nextH3Index);
+
+      const pRegex = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+      let pMatch: RegExpExecArray | null;
+      const paragrafos: string[] = [];
+      while ((pMatch = pRegex.exec(blocoResposta)) !== null) {
+        const pTexto = this.stripHtmlAndDecode(pMatch[1]).trim();
+        if (pTexto) {
+          paragrafos.push(pTexto);
+        }
+      }
+
+      const resposta = paragrafos.join(' ').trim();
+      if (pergunta && resposta) {
+        questions.push({
+          '@type': 'Question',
+          name: pergunta,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: resposta,
+          },
+        });
+      }
+    }
+
+    if (questions.length === 0) {
+      return null;
+    }
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: questions,
+    };
+  }
+
+  private stripHtmlAndDecode(html: string): string {
+    if (!html) return '';
+    return this.decodeHtmlEntities(html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
+  }
+
+  private decodeHtmlEntities(text: string): string {
+    if (!text) return '';
+    const entities: Record<string, string> = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&apos;': "'",
+      '&nbsp;': ' ',
+      '&aacute;': 'á', '&Aacute;': 'Á',
+      '&agrave;': 'à', '&Agrave;': 'À',
+      '&acirc;': 'â', '&Acirc;': 'Â',
+      '&atilde;': 'ã', '&Atilde;': 'Ã',
+      '&eacute;': 'é', '&Eacute;': 'É',
+      '&egrave;': 'è', '&Egrave;': 'È',
+      '&ecirc;': 'ê', '&Ecirc;': 'Ê',
+      '&iacute;': 'í', '&Iacute;': 'Í',
+      '&oacute;': 'ó', '&Oacute;': 'Ó',
+      '&ocirc;': 'ô', '&Ocirc;': 'Ô',
+      '&otilde;': 'õ', '&Otilde;': 'Õ',
+      '&uacute;': 'ú', '&Uacute;': 'Ú',
+      '&uuml;': 'ü', '&Uuml;': 'Ü',
+      '&ccedil;': 'ç', '&Ccedil;': 'Ç',
+      '&mdash;': '—',
+      '&ndash;': '–',
+      '&hellip;': '…',
+      '&bull;': '•',
+      '&copy;': '©',
+      '&reg;': '®',
+      '&deg;': '°',
+    };
+
+    return text
+      .replace(/&[a-zA-Z]+;/g, match => entities[match] || entities[match.toLowerCase()] || match)
+      .replace(/&#(\d+);/g, (_, dec) => {
+        try {
+          return String.fromCodePoint(parseInt(dec, 10));
+        } catch {
+          return _;
+        }
+      })
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+        try {
+          return String.fromCodePoint(parseInt(hex, 16));
+        } catch {
+          return _;
+        }
+      });
   }
 
   async carregarPosts(): Promise<void> {
