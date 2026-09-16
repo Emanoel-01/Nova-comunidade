@@ -10,7 +10,147 @@ interface RouteSeo {
   description: string;
   canonicalPath: string;
   ogImage?: string;
-  schema?: object;
+  schema?: object | object[];
+}
+
+function decodeHtmlEntities(text: string): string {
+  if (!text) return '';
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&nbsp;': ' ',
+    '&aacute;': 'á', '&Aacute;': 'Á',
+    '&agrave;': 'à', '&Agrave;': 'À',
+    '&acirc;': 'â', '&Acirc;': 'Â',
+    '&atilde;': 'ã', '&Atilde;': 'Ã',
+    '&eacute;': 'é', '&Eacute;': 'É',
+    '&egrave;': 'è', '&Egrave;': 'È',
+    '&ecirc;': 'ê', '&Ecirc;': 'Ê',
+    '&iacute;': 'í', '&Iacute;': 'Í',
+    '&oacute;': 'ó', '&Oacute;': 'Ó',
+    '&ocirc;': 'ô', '&Ocirc;': 'Ô',
+    '&otilde;': 'õ', '&Otilde;': 'Õ',
+    '&uacute;': 'ú', '&Uacute;': 'Ú',
+    '&uuml;': 'ü', '&Uuml;': 'Ü',
+    '&ccedil;': 'ç', '&Ccedil;': 'Ç',
+    '&mdash;': '—',
+    '&ndash;': '–',
+    '&hellip;': '…',
+    '&bull;': '•',
+    '&copy;': '©',
+    '&reg;': '®',
+    '&deg;': '°',
+  };
+
+  return text
+    .replace(/&[a-zA-Z]+;/g, match => entities[match] || entities[match.toLowerCase()] || match)
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCodePoint(parseInt(dec, 10));
+      } catch {
+        return _;
+      }
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        return String.fromCodePoint(parseInt(hex, 16));
+      } catch {
+        return _;
+      }
+    });
+}
+
+function stripHtmlAndDecode(html: string): string {
+  if (!html) return '';
+  return decodeHtmlEntities(html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
+}
+
+function extrairFaqSchema(conteudo?: string | null): any | null {
+  if (!conteudo) return null;
+
+  const h2Regex = /<h2\b[^>]*>([\s\S]*?)<\/h2>/gi;
+  let match: RegExpExecArray | null;
+  let faqStartIndex = -1;
+
+  while ((match = h2Regex.exec(conteudo)) !== null) {
+    const textoH2 = stripHtmlAndDecode(match[1]).trim();
+    if (textoH2.toLowerCase() === 'perguntas frequentes') {
+      faqStartIndex = match.index + match[0].length;
+      break;
+    }
+  }
+
+  if (faqStartIndex === -1) {
+    return null;
+  }
+
+  const trechoAposH2 = conteudo.slice(faqStartIndex);
+  const proximoH2Index = trechoAposH2.search(/<h2\b/i);
+  const secaoFaq = proximoH2Index !== -1 ? trechoAposH2.slice(0, proximoH2Index) : trechoAposH2;
+
+  const h3Regex = /<h3\b[^>]*>([\s\S]*?)<\/h3>/gi;
+  const questions: Array<{
+    '@type': 'Question';
+    name: string;
+    acceptedAnswer: {
+      '@type': 'Answer';
+      text: string;
+    };
+  }> = [];
+
+  let h3Match: RegExpExecArray | null;
+  const h3Positions: Array<{ index: number; end: number; perguntaHtml: string }> = [];
+
+  while ((h3Match = h3Regex.exec(secaoFaq)) !== null) {
+    h3Positions.push({
+      index: h3Match.index,
+      end: h3Match.index + h3Match[0].length,
+      perguntaHtml: h3Match[1],
+    });
+  }
+
+  for (let i = 0; i < h3Positions.length; i++) {
+    const item = h3Positions[i];
+    const pergunta = stripHtmlAndDecode(item.perguntaHtml).trim();
+    const nextH3Index = i + 1 < h3Positions.length ? h3Positions[i + 1].index : secaoFaq.length;
+    const blocoResposta = secaoFaq.slice(item.end, nextH3Index);
+
+    const pRegex = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+    let pMatch: RegExpExecArray | null;
+    const paragrafos: string[] = [];
+    while ((pMatch = pRegex.exec(blocoResposta)) !== null) {
+      const pTexto = stripHtmlAndDecode(pMatch[1]).trim();
+      if (pTexto) {
+        paragrafos.push(pTexto);
+      }
+    }
+
+    const resposta = paragrafos.join(' ').trim();
+    if (pergunta && resposta) {
+      questions.push({
+        '@type': 'Question',
+        name: pergunta,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: resposta,
+        },
+      });
+    }
+  }
+
+  if (questions.length === 0) {
+    return null;
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: questions,
+  };
 }
 
 const PUBLIC_ROUTES_SEO: RouteSeo[] = [
@@ -132,6 +272,13 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     description: 'Acesse os canais oficiais, soluções em engenharia diagnóstica, plataformas e formações do ecossistema Emanoel Amorim.',
     canonicalPath: '/links/',
   },
+  {
+    route: '/como-funciona',
+    title: 'Como Funciona o Acesso e Precificação | Emanoel Amorim',
+    description: 'Entenda o modelo de acesso: certificação profissional, licença anual e taxa de emissão por laudo. Sem pacotes obrigatórios, pague pelo que usa.',
+    canonicalPath: '/como-funciona/',
+    ogImage: '/og-fallback-institucional.jpg',
+  },
 ];
 
 function staticPrerenderPlugin(): Plugin {
@@ -212,7 +359,7 @@ function staticPrerenderPlugin(): Plugin {
       try {
         const supabaseUrl = 'https://kvesxatnmgvflqzuqgrz.supabase.co';
         const supabaseKey = 'sb_publishable_w1BVDyfby4kHakiBvO05ZA_R9Xgk3mu';
-        const res = await fetch(`${supabaseUrl}/rest/v1/blog_posts?publicado=eq.true&select=id,titulo,slug,resumo,imagem_capa_url,criado_em,atualizado_em`, {
+        const res = await fetch(`${supabaseUrl}/rest/v1/blog_posts?publicado=eq.true&select=id,titulo,slug,resumo,imagem_capa_url,criado_em,atualizado_em,conteudo`, {
           headers: {
             apikey: supabaseKey,
             Authorization: `Bearer ${supabaseKey}`,
@@ -228,6 +375,7 @@ function staticPrerenderPlugin(): Plugin {
             imagem_capa_url?: string | null;
             criado_em?: string;
             atualizado_em?: string;
+            conteudo?: string | null;
           }>;
           const sitemapDistPath = path.join(distDir, 'sitemap.xml');
           let sitemapXml = fs.existsSync(sitemapDistPath)
@@ -264,12 +412,27 @@ function staticPrerenderPlugin(): Plugin {
                 datePublished: post.criado_em,
                 dateModified: post.atualizado_em || post.criado_em,
                 url: fullCanonicalUrl,
+                author: {
+                  '@type': 'Person',
+                  '@id': 'https://emanoelamorim.com/#emanoel-amorim',
+                  name: 'Emanoel Silva de Amorim',
+                  jobTitle: 'Arquiteto e Urbanista, Mestre em Engenharia Civil',
+                  url: 'https://emanoelamorim.com/',
+                  sameAs: [
+                    'https://www.instagram.com/oemanoelamorim/',
+                    'https://www.researchgate.net/profile/Emanoel-Amorim',
+                    'http://lattes.cnpq.br/8865037855941412',
+                  ],
+                },
                 publisher: {
                   '@type': 'Organization',
                   '@id': 'https://emanoelamorim.com/#organization',
                   name: 'AmorimTech',
                 },
               };
+
+              const faqSchema = extrairFaqSchema(post.conteudo);
+              const finalSchema = faqSchema ? [postSchema, faqSchema] : postSchema;
 
               let postHtml = templateHtml;
 
@@ -280,7 +443,7 @@ function staticPrerenderPlugin(): Plugin {
                 postHtml = postHtml.replace('</head>', `  <title>${postTitle}</title>\n</head>`);
               }
 
-              const schemaTag = `\n    <!-- Schema.org Specific Route Data -->\n    <script type="application/ld+json" id="dynamic-jsonld">\n${JSON.stringify(postSchema, null, 2)}\n    </script>`;
+              const schemaTag = `\n    <!-- Schema.org Specific Route Data -->\n    <script type="application/ld+json" id="dynamic-jsonld">\n${JSON.stringify(finalSchema, null, 2)}\n    </script>`;
 
               const imageTags = post.imagem_capa_url
                 ? `\n    <meta property="og:image" content="${post.imagem_capa_url}">\n    <meta name="twitter:image" content="${post.imagem_capa_url}">`
@@ -311,6 +474,12 @@ function staticPrerenderPlugin(): Plugin {
 
               // Injetar antes de </head>
               postHtml = postHtml.replace('</head>', `${seoTags}\n</head>`);
+
+              // Injetar corpo do artigo dentro de <app-root> se houver conteudo
+              if (post.conteudo && post.conteudo.trim()) {
+                const articleHtml = `<app-root><article><h1>${post.titulo || ''}</h1>${post.conteudo}</article></app-root>`;
+                postHtml = postHtml.replace(/<app-root\b[^>]*>[\s\S]*?<\/app-root>/i, () => articleHtml);
+              }
 
               const targetDir = path.join(distDir, 'blog', routeSlug);
               fs.mkdirSync(targetDir, { recursive: true });
