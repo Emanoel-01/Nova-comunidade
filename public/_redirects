@@ -1,3 +1,6 @@
-/blog/:slug    /blog/:slug/index.html   200
-/cv            /cv.html                 200
-/*             /index.html              200
+/blog/:slug              /blog/:slug/index.html   200
+/cv                      /cv.html                 200
+/verificar-certificado   /index.html              200
+/comunidade/preview      /index.html              200
+/redefinir-senha         /index.html              200
+/admin                   /index.html              200

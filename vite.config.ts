@@ -271,6 +271,7 @@ const PUBLIC_ROUTES_SEO: RouteSeo[] = [
     title: 'Emanoel Amorim · Links e Contatos',
     description: 'Acesse os canais oficiais, soluções em engenharia diagnóstica, plataformas e formações do ecossistema Emanoel Amorim.',
     canonicalPath: '/links/',
+    ogImage: '/og-fallback-institucional.jpg',
   },
   {
     route: '/como-funciona',
