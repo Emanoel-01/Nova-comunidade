@@ -1411,19 +1411,16 @@ export class SupabaseService {
   }): Promise<{ data?: any; error: Error | null }> {
     try {
       const valorCondominio = dados.nome_condominio?.trim() || dados.condominio?.trim() || null;
-      const { data, error } = await this.client
-        .from('alo_sindico_leads')
-        .insert({
-          nome: dados.nome.trim(),
-          telefone: dados.telefone.trim(),
-          email: dados.email.trim().toLowerCase(),
-          nome_condominio: valorCondominio,
-          status: 'novo',
-        })
-        .select('*')
-        .single();
+      const { data, error } = await this.client.rpc('criar_lead_sindico', {
+        p_nome: dados.nome.trim(),
+        p_telefone: dados.telefone.trim(),
+        p_email: dados.email.trim().toLowerCase(),
+        p_nome_condominio: valorCondominio,
+      });
       if (error) return { error };
-      return { data, error: null };
+      if (!data) return { error: new Error('Lead não pôde ser registrado.') };
+      // A RPC devolve o uuid puro. O chamador espera um objeto com .id.
+      return { data: { id: data as string }, error: null };
     } catch (e: any) {
       return { error: e };
     }
